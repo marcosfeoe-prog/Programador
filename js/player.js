@@ -56,7 +56,7 @@ export class Player {
   nearTruck() {
     const t = this.truck;
     if (!t.mesh || t.body) return false;
-    return Math.hypot(this.pos.x - t.mesh.position.x, this.pos.z - t.mesh.position.z) < 4.5;
+    return Math.hypot(this.pos.x - t.mesh.position.x, this.pos.z - t.mesh.position.z) < 6;
   }
 
   cycleCamera() {

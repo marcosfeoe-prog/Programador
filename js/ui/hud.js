@@ -124,7 +124,9 @@ export class HUD {
     }
 
     // Local
-    E['health-bar'].style.width = `${Math.max(0, player.health)}%`;
+    const hp = Math.max(0, player.health);
+    E['health-bar'].style.width = `${hp}%`;
+    E['health-bar'].style.background = hp > 60 ? '#6ee7a8' : hp > 30 ? '#ffb547' : '#ff4d4d';
     E['wind-val'].textContent = `${Math.round(msToKmh(g.localWind))} km/h`;
     E['wind-val'].style.color = g.localWind > 33 ? '#ff5050' : g.localWind > 18 ? '#ffb547' : '';
     E['pres-val'].textContent = `${(1008 - g.pressureDrop).toFixed(1)} hPa`;

@@ -242,7 +242,7 @@ export class Forest {
   }
 
   buildChunks() {
-    const CHUNK = (this.CHUNK = this.quality.trees <= 10000 ? 800 : this.quality.trees <= 22000 ? 560 : 420);
+    const CHUNK = (this.CHUNK = this.quality.trees <= 10000 ? 800 : this.quality.trees <= 22000 ? 640 : 560);
     const half = this.terrain.half;
     const nC = Math.ceil(this.terrain.size / CHUNK);
     this.nC = nC;

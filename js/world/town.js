@@ -515,7 +515,7 @@ export class Town {
     // Picape do jogador (caçador de tempestades)
     this.playerTruck = { x: -318, z: -4.6, yaw: -Math.PI / 2, type: 'pickup', color: '#f0f0ee', player: true };
     this.cars.push(this.playerTruck);
-    this.playerSpawn = new THREE.Vector3(-312, 0, -8);
+    this.playerSpawn = new THREE.Vector3(-315.5, 0, -8);
 
     // Instancia os veículos
     for (const c of this.cars) {

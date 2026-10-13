@@ -263,9 +263,8 @@ body {
 #health-bar {
   height: 100%;
   width: 100%;
-  background: linear-gradient(90deg, #ff4d4d, #ffb547, #6ee7a8);
-  background-size: 210px 100%;
-  transition: width 0.2s;
+  background: #6ee7a8;
+  transition: width 0.2s, background-color 0.3s;
 }
 
 #feed {
