@@ -197,7 +197,7 @@ export class HUD {
         <span>Árvores derrubadas</span><b>${st.trees}</b>
         <span>Veículos deslocados</span><b>${st.vehicles}</b>
         <span>Postes derrubados</span><b>${st.poles}</b>
-        <span>Indicadores de dano avaliados</span><b>${t.damageLog.length}</b>
+        <span>Indicadores de dano avaliados</span><b>${t.diCount || 0}</b>
       </div>
       <div class="rep-note">${note}</div>`;
     this.el.report.classList.remove('hidden');

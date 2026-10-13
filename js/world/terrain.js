@@ -326,7 +326,7 @@ export class Terrain {
         const i1 = ri * segA + a1;
         const i2 = (ri + 1) * segA + a;
         const i3 = (ri + 1) * segA + a1;
-        ri2.push(i0, i2, i1, i1, i2, i3);
+        ri2.push(i0, i1, i2, i1, i3, i2);
       }
     }
     const rg = new THREE.BufferGeometry();

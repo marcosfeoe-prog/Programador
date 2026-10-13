@@ -196,7 +196,7 @@ vec2 clouds(vec3 p, bool cheap) {
   if (hl > 0.0 && hl < 1.0) {
     vec3 q = vec3(p.x + uWindOff.x, p.y, p.z + uWindOff.y);
     float cov = uCoverage;
-    if (uStormAlpha > 0.0) cov += 0.35 * uStormAlpha * smoothstep(uBaseR * 2.6, uBaseR * 0.9, length(p.xz - uStormPos));
+    if (uStormAlpha > 0.0) cov += 0.18 * uStormAlpha * smoothstep(uBaseR * 1.6, uBaseR * 0.8, length(p.xz - uStormPos));
     vec4 n = texture(tNoise, q * vec3(1.0 / 2600.0, 1.0 / 1800.0, 1.0 / 2600.0));
     float big = texture(tNoise, q * (1.0 / 11000.0) + 0.37).a;
     cov = sat(cov + (big - 0.5) * 0.5);
@@ -228,18 +228,35 @@ vec2 clouds(vec3 p, bool cheap) {
     Rt *= (0.8 + 0.2 * smoothstep(0.0, 0.25, hn)) * (1.0 - 0.22 * smoothstep(0.45, 0.85, hn));
     float domeStart = topN - 0.16;
     if (hn > domeStart) Rt *= sqrt(max(0.0, 1.0 - pow((hn - domeStart) / max(topN + 0.06 - domeStart, 0.01), 2.0)));
-    float tower = smoothstep(Rt, Rt * 0.55, du);
+    // lóbulos irregulares da torre
+    float lobe = texture(tNoise, vec3(ru.x / 2600.0, p.y / 3000.0, ru.y / 2600.0)).a;
+    float RtL = Rt * (0.82 + 0.36 * lobe);
+    float tower = RtL > 1.0 ? smoothstep(RtL, RtL * 0.5, du) : 0.0;
     cov = max(cov, tower);
+    // Linha de torres de flanco (cúmulos congestus alinhados no flanco traseiro)
+    if (uGrowth > 0.5) {
+      vec2 rgt = vec2(-uStormDir.y, uStormDir.x);
+      for (int k = 1; k <= 4; k++) {
+        float fk = float(k);
+        vec2 c = uUpdraft - uStormDir * (fk * 1700.0) + rgt * (fk * 800.0);
+        float rk = uTowerR * (0.68 - fk * 0.1);
+        float topk = (0.85 - fk * 0.16) * smoothstep(0.5, 1.0, uGrowth);
+        float hk = clamp(hn / max(topk, 0.05), 0.0, 2.0);
+        float rr2 = rk * (hk > 0.75 ? sqrt(max(0.0, 1.0 - pow((hk - 0.75) / 0.3, 2.0))) : 1.0);
+        float dk = length(p.xz - c);
+        if (rr2 > 1.0) cov = max(cov, smoothstep(rr2, rr2 * 0.45, dk) * step(0.0, hn));
+      }
+    }
 
     // Bigorna espalhando-se a favor do vento em altitude
     if (uAnvil > 0.0) {
       float aL = uAnvilLen * uAnvil;
       float fa = sat(along / max(aL, 1.0));
-      float aBot = mix(0.74, 0.86, fa);
+      float aBot = mix(0.8, 0.88, fa);
       float aTop = mix(1.0, 0.95, fa);
-      float w = Rt + uTowerR * 0.35 + max(along, 0.0) * 0.42;
+      float w = max(Rt * 0.95, uTowerR * 0.6) + max(along, 0.0) * 0.36;
       float vprof = smoothstep(aBot, aBot + 0.05, hn) * smoothstep(aTop + 0.02, aTop - 0.04, hn);
-      float anv = smoothstep(w, w * 0.62, abs(side)) * smoothstep(-uTowerR * 1.4, -uTowerR * 0.5, along)
+      float anv = smoothstep(w, w * 0.62, abs(side)) * smoothstep(-uTowerR * 1.0, -uTowerR * 0.3, along)
                 * smoothstep(aL, aL * 0.55, along) * vprof * uAnvil;
       // Overshooting top
       float ot = smoothstep(uTowerR * 0.45, uTowerR * 0.1, du) * smoothstep(1.1, 0.98, hn) * step(0.9, hn) * uAnvil;
@@ -488,9 +505,18 @@ void main() {
   vec4 n2 = texture(tCur, vUv - vec2(uTexel.x, 0.0));
   vec4 n3 = texture(tCur, vUv + vec2(0.0, uTexel.y));
   vec4 n4 = texture(tCur, vUv - vec2(0.0, uTexel.y));
-  vec4 mn = min(cur, min(min(n1, n2), min(n3, n4)));
-  vec4 mx = max(cur, max(max(n1, n2), max(n3, n4)));
-  vec4 avg = (cur * 2.0 + n1 + n2 + n3 + n4) / 6.0;
+  // média espacial que não atravessa bordas (pesos pela semelhança da transmitância)
+  float w1 = 1.0 / (1.0 + 40.0 * abs(n1.a - cur.a));
+  float w2 = 1.0 / (1.0 + 40.0 * abs(n2.a - cur.a));
+  float w3 = 1.0 / (1.0 + 40.0 * abs(n3.a - cur.a));
+  float w4 = 1.0 / (1.0 + 40.0 * abs(n4.a - cur.a));
+  vec4 avg = (cur * 2.0 + n1 * w1 + n2 * w2 + n3 * w3 + n4 * w4) / (2.0 + w1 + w2 + w3 + w4);
+  // limites apenas dos vizinhos semelhantes (evita vazamento através das bordas)
+  vec4 mn = cur, mx = cur;
+  if (w1 > 0.3) { mn = min(mn, n1); mx = max(mx, n1); }
+  if (w2 > 0.3) { mn = min(mn, n2); mx = max(mx, n2); }
+  if (w3 > 0.3) { mn = min(mn, n3); mx = max(mx, n3); }
+  if (w4 > 0.3) { mn = min(mn, n4); mx = max(mx, n4); }
   // direção do raio deste pixel (mundo)
   vec4 vp = uInvProj * vec4(vUv * 2.0 - 1.0, 1.0, 1.0);
   vec3 rd = normalize((uCamWorld * vec4(normalize(vp.xyz / vp.w), 0.0)).xyz);
@@ -498,9 +524,11 @@ void main() {
   vec3 pv = (uPrevViewInv * vec4(rd, 0.0)).xyz;
   vec4 pc = uPrevProj * vec4(pv, 1.0);
   vec2 puv = pc.xy / pc.w * 0.5 + 0.5;
+  // câmera parada: usa exatamente o mesmo texel (sem borrar)
+  if (all(lessThan(abs(puv - vUv), uTexel * 0.3))) puv = vUv;
   float valid = (pv.z < 0.0 && puv.x > 0.0 && puv.x < 1.0 && puv.y > 0.0 && puv.y < 1.0) ? 1.0 : 0.0;
   vec4 hist = texture(tHist, puv);
-  vec4 ext = (mx - mn) * 0.15;
+  vec4 ext = (mx - mn) * 0.1 + vec4(0.004);
   hist = clamp(hist, mn - ext, mx + ext);
   float b = uBlend * valid;
   gl_FragColor = mix(avg, hist, b);

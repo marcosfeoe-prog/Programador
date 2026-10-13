@@ -5,8 +5,7 @@ import { RNG, smoothstep, clamp } from '../util/math.js';
 import { mergeColored } from './parts.js';
 import { distToRoad } from './terrain.js';
 
-const CHUNK = 400;
-const LOD_DIST = 650;
+
 
 function jitterGeo(g, amt, rng) {
   const p = g.attributes.position;
@@ -243,6 +242,7 @@ export class Forest {
   }
 
   buildChunks() {
+    const CHUNK = (this.CHUNK = this.quality.trees <= 10000 ? 800 : this.quality.trees <= 22000 ? 560 : 420);
     const half = this.terrain.half;
     const nC = Math.ceil(this.terrain.size / CHUNK);
     this.nC = nC;
@@ -457,7 +457,7 @@ export class Forest {
     // LOD por chunk
     for (const ch of this.chunks) {
       const d = Math.hypot(ch.center.x - camPos.x, ch.center.z - camPos.z);
-      const near = d < LOD_DIST;
+      const near = d < this.CHUNK * 0.75 + 380;
       for (let t = 0; t < 2; t++) {
         if (!ch.near[t]) continue;
         ch.near[t].visible = near;

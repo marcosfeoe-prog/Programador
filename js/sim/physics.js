@@ -96,6 +96,16 @@ export class Physics {
     let active = 0;
     for (const b of this.bodies) if (!b.frozen) active++;
     if (active <= this.maxActive) return;
+    // congela peças grandes já pousadas (parede/telhado no chão) e as mais distantes da câmera
+    if (active > this.maxActive * 1.25 && this.focus) {
+      const cand = this.bodies.filter((b) => !b.frozen && b.kind === 'part' && (b.sleeping || b.grounded));
+      cand.sort((a, b) => b.pos.distanceToSquared(this.focus) - a.pos.distanceToSquared(this.focus));
+      for (const b of cand) {
+        if (active <= this.maxActive) break;
+        b.frozen = true;
+        active--;
+      }
+    }
     // congela os mais antigos que estão dormindo
     for (const b of this.bodies) {
       if (active <= this.maxActive) break;

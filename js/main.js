@@ -115,6 +115,9 @@ class Game {
     this.scene.add(this.hemi);
     this.flashLight = new THREE.DirectionalLight(0xbfd0ff, 0);
     this.scene.add(this.flashLight, this.flashLight.target);
+    // Clarão elétrico de transformadores/fios rompidos ilumina os arredores
+    this.powerLight = new THREE.PointLight(0x7fe0ff, 0, 1400, 1.2);
+    this.scene.add(this.powerLight);
 
     P(0.05, 'Gerando texturas procedurais…');
     this.T = await generateTextures(r, Q.texSize, (f, n) => P(0.05 + f * 0.35, `Gerando texturas: ${n}`));
@@ -328,6 +331,7 @@ class Game {
     this.handleStormEvents();
     this.damage.update(dt, st.tornado, this.elapsed);
     this.handleDamageEvents();
+    this.physics.focus = this.camera.position;
     this.physics.step(dt);
     for (const im of this.physics.impacts) {
       const d = this.camera.position.distanceTo(_v.set(im.x, im.y, im.z));
@@ -470,7 +474,7 @@ class Game {
 
     // Neblina
     const pu = this.post.uniforms;
-    const fogD = 0.000075 + env.humidity * 0.00005 + rainHere * 0.00055 + this.stormDark * 0.00012;
+    const fogD = 0.000045 + env.humidity * 0.00003 + rainHere * 0.00055 + this.stormDark * 0.00012;
     pu.uFog.value.set(fogD, 1 / 850);
     pu.uFogColor.value.copy(this.sky.fogColor).multiplyScalar(1 - this.stormDark * 0.35);
     pu.uFogSunColor.value.copy(this.sky.fogSunColor).multiplyScalar(1 - this.stormDark);
@@ -489,7 +493,7 @@ class Game {
     vu.uLightColor.value.copy(lightCol).multiplyScalar((useSun ? sunI : moonI) * 3.4);
     vu.uAmbTop.value.copy(this.hemi.color).multiplyScalar(this.hemi.intensity * 0.55);
     vu.uAmbBot.value.copy(this.hemi.groundColor).multiplyScalar(this.hemi.intensity * 0.45);
-    if (!this.time.isDay && this.town.power) vu.uAmbBot.value.add(_c.setRGB(0.012, 0.007, 0.003));
+    if (!this.time.isDay && this.town.power) vu.uAmbBot.value.add(_c.setRGB(0.006, 0.0036, 0.0016));
     vu.uFlash.value.set(this.lightning.flashPos.x, this.lightning.flashPos.y, this.lightning.flashPos.z, flash);
     vu.uCloudBase.value = WORLD.cloudBase;
     vu.uCoverage.value = st.coverage;
@@ -499,11 +503,11 @@ class Game {
     vu.uUpdraft.value.copy(st.updraft);
     vu.uStormDir.value.copy(st.dir);
     vu.uGrowth.value = st.growth;
-    vu.uStormTop.value = 8200;
+    vu.uStormTop.value = 10500;
     vu.uTowerR.value = st.towerR;
     vu.uBaseR.value = st.baseR;
     vu.uAnvil.value = st.anvil;
-    vu.uAnvilLen.value = 14000;
+    vu.uAnvilLen.value = 17000;
     vu.uMesoAngle.value = st.mesoAngle;
     vu.uMeso.value = st.meso;
     const wallR = t && t.stage === 'tornado' ? Math.max(820, (t.visual.rt + t.visual.flare) * 2.2) : 820;
@@ -534,6 +538,13 @@ class Game {
     this.rain.update(this.elapsed, rainHere, _v, this.envLight);
     this.specks.update(this.elapsed, t, this.envLight);
     this.pflash.update(this.damage.flashes);
+    const pf = this.damage.flashes[0];
+    if (pf) {
+      const flick = 0.5 + 0.5 * Math.sin(pf.t * 60) * Math.sin(pf.t * 23);
+      this.powerLight.position.copy(pf.pos);
+      this.powerLight.color.copy(pf.color);
+      this.powerLight.intensity = flick * (1 - pf.t / pf.life) * pf.strength * 9000;
+    } else this.powerLight.intensity = 0;
     this.terrain.material.userData.uniforms.uWet.value = this.wet;
     this.terrain.flushScour();
 

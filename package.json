@@ -1,0 +1,10 @@
+{
+  "name": "supercelula",
+  "version": "1.0.0",
+  "description": "Simulador de tornados 3D no navegador: supercélulas, nuvem funil, formatos de tornado e classificação Fujita pelos danos.",
+  "private": true,
+  "scripts": {
+    "start": "node server.js 8080"
+  },
+  "license": "MIT"
+}

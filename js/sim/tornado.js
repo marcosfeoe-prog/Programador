@@ -27,6 +27,8 @@ function catmull(p0, p1, p2, p3, t, out) {
 }
 
 let tornadoCounter = 0;
+// Decaimento do vento tangencial fora do raio de vento máximo (vórtice de Rankine modificado)
+const DECAY = 0.78;
 
 export class Tornado {
   constructor(opts) {
@@ -251,12 +253,12 @@ export class Tornado {
   // Largura onde o vento passa de ~33 m/s (F1)
   damageWidth() {
     if (this.vmax < 33) return this.rCore * 2;
-    return 2 * this.rCore * Math.pow(this.vmax / 33, 1 / 0.62);
+    return 2 * this.rCore * Math.pow(this.vmax / 33, 1 / DECAY);
   }
 
   influenceRadius() {
     if (this.vmax < 20) return this.rCore * 2;
-    return Math.min(1500, this.rCore * Math.pow(this.vmax / 20, 1 / 0.62) + 40);
+    return Math.min(1200, this.rCore * Math.pow(this.vmax / 20, 1 / DECAY) + 40);
   }
 
   // Vento do tornado (inclui translação) num ponto do mundo.
@@ -273,7 +275,7 @@ export class Tornado {
     const R = this.rCore;
     const V = this.vmax * this.groundContact;
     const rr = r / R;
-    let vt = rr < 1 ? V * rr : V * Math.pow(1 / rr, 0.62);
+    let vt = rr < 1 ? V * rr : V * Math.pow(1 / rr, DECAY);
     const hf = 0.72 + 0.28 * smoothstep(0, 40, hRel);
     vt *= hf;
     const inflowShape = rr * Math.exp(1 - rr);

@@ -26,7 +26,7 @@ const DBZ = [
 ];
 
 function dbzColor(v) {
-  if (v < 5) return null;
+  if (!(v >= 5)) return null;
   let c = DBZ[0][1];
   for (const [t, col] of DBZ) if (v >= t) c = col;
   return c;
@@ -58,7 +58,7 @@ export class Radar {
   reflectivity(storm, x, z, t) {
     let v = 0;
     if (storm.alpha > 0.05 && storm.rain > 0.02) {
-      const n = perlin.fbm2(x / 1400 + t * 0.01, z / 1400, 3) * 0.5 + 0.5;
+      const n = perlin.fbm2(x / 1400 + storm.mesoAngle * 0.3, z / 1400, 3) * 0.5 + 0.5;
       const dr = Math.hypot(x - storm.rainPos.x, z - storm.rainPos.y);
       const shaft = smoothstep(2600, 500, dr + (n - 0.5) * 900);
       const core = smoothstep(1100, 0, dr);
@@ -75,7 +75,8 @@ export class Radar {
       const uz = z - storm.updraft.y;
       const along = ux * storm.dir.x + uz * storm.dir.y;
       const side = Math.abs(-ux * storm.dir.y + uz * storm.dir.x);
-      const anv = storm.anvil * smoothstep(2400 + along * 0.45, 1200 + along * 0.3, side) * smoothstep(-800, 400, along) * smoothstep(12000, 6000, along);
+      const aw = 2600 + Math.max(along, 0) * 0.35;
+      const anv = storm.anvil * smoothstep(aw, aw * 0.6, side) * smoothstep(-2500, 0, along) * smoothstep(15000, 8000, along);
       v = Math.max(v, anv * (8 + 10 * n));
       v *= storm.rain * 0.4 + 0.6;
       v *= storm.alpha;

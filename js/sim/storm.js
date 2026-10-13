@@ -42,7 +42,7 @@ export class StormSystem {
     this.wallDrop = 0;
     this.rain = 0;
     this.coverage = 0.28;
-    this.towerR = 2200;
+    this.towerR = 3000;
     this.baseR = 4200;
     this.top = 8500;
     this.tornado = null;
@@ -181,13 +181,13 @@ export class StormSystem {
       case 'cumulus':
         this.alpha = Math.min(1, this.alpha + dt / 15);
         this.growth = lerp(this.growth, 0.24, k(0.06));
-        tgtCov = 0.4;
+        tgtCov = 0.3;
         if (this.phaseT > DUR.cumulus) this.setPhase('congestus');
         break;
       case 'congestus':
         this.alpha = 1;
         this.growth = lerp(this.growth, 0.55, k(0.06));
-        tgtCov = 0.45;
+        tgtCov = 0.33;
         if (this.phaseT > DUR.congestus) {
           this.setPhase('cumulonimbus');
           this.emit('thunder-start');
@@ -197,7 +197,7 @@ export class StormSystem {
         this.growth = lerp(this.growth, 0.85, k(0.06));
         this.anvil = lerp(this.anvil, 0.75, k(0.05));
         this.rain = lerp(this.rain, 0.65, k(0.05));
-        tgtCov = 0.5;
+        tgtCov = 0.35;
         if (this.phaseT > DUR.cumulonimbus) {
           this.setPhase('supercell');
           this.warning = 'severe';
@@ -209,13 +209,13 @@ export class StormSystem {
         this.anvil = lerp(this.anvil, 1, k(0.05));
         this.rain = lerp(this.rain, 1, k(0.05));
         this.meso = lerp(this.meso, 1, k(0.05));
-        tgtCov = 0.55;
+        tgtCov = 0.36;
         if (this.phaseT > DUR.supercell) this.setPhase('wallcloud');
         break;
       case 'wallcloud':
         this.meso = lerp(this.meso, 1, k(0.1));
         this.wallDrop = lerp(this.wallDrop, 1, k(0.07));
-        tgtCov = 0.55;
+        tgtCov = 0.36;
         if (this.phaseT > DUR.wallcloud) {
           if (this.tornadic && this.funnelTries < this.maxTries) this.startFunnel();
           else {
@@ -225,7 +225,7 @@ export class StormSystem {
         break;
       case 'funnel':
         this.wallDrop = lerp(this.wallDrop, 1, k(0.1));
-        tgtCov = 0.55;
+        tgtCov = 0.36;
         if (this.tornado) {
           if (this.tornado.stage === 'tornado') {
             this.setPhase('tornado');
@@ -239,7 +239,7 @@ export class StormSystem {
         }
         break;
       case 'tornado':
-        tgtCov = 0.55;
+        tgtCov = 0.36;
         if (this.tornado && this.tornado.stage === 'dead') {
           this.lastTornado = this.tornado;
           this.emit('tornado-end', { tornado: this.tornado });
@@ -260,7 +260,7 @@ export class StormSystem {
         this.growth = lerp(this.growth, 0.35, k(0.02));
         this.rain = Math.max(0, this.rain - dt * 0.012);
         if (this.phaseT > DUR.dissipating * 0.6) this.alpha = Math.max(0, this.alpha - dt / 30);
-        tgtCov = 0.45;
+        tgtCov = 0.4;
         if (this.phaseT > DUR.dissipating) {
           this.warning = 'none';
           this.emit('warning', { level: 'none' });
@@ -339,7 +339,7 @@ export class StormSystem {
     const along = ux * this.dir.x + uz * this.dir.y;
     const side = Math.abs(-ux * this.dir.y + uz * this.dir.x);
     const w = this.towerR * 1.1 + Math.max(along, 0) * 0.45;
-    const anv = this.anvil * smoothstep(w, w * 0.6, side) * smoothstep(-this.towerR * 1.3, -this.towerR * 0.6, along) * smoothstep(14000, 8400, along);
+    const anv = this.anvil * smoothstep(w, w * 0.6, side) * smoothstep(-this.towerR * 1.3, -this.towerR * 0.6, along) * smoothstep(17000, 10000, along);
     return clamp(Math.max(core, anv * 0.85), 0, 1) * this.alpha;
   }
 

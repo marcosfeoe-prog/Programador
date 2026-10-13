@@ -38,24 +38,32 @@ float distAt(vec2 uv) {
   return length(pv.xyz / pv.w);
 }
 
-// Upsampling bilateral: evita halos das nuvens em volta de objetos próximos
+// Upsampling bilateral 3x3: evita halos das nuvens em volta de objetos próximos
+uniform float uBilateral;
 vec4 volUpsample(vec2 uv, float dist) {
+  if (uBilateral < 0.5) return texture(tVol, uv);
   vec2 p = uv * uVolSize - 0.5;
-  vec2 i = floor(p);
-  vec2 f = p - i;
+  vec2 c = floor(p + 0.5);
   vec4 acc = vec4(0.0);
   float ws = 0.0;
-  for (int k = 0; k < 4; k++) {
-    vec2 o = vec2(float(k % 2), float(k / 2));
-    vec2 tc = (i + o + 0.5) / uVolSize;
-    float d = distAt(tc);
-    float wb = (o.x > 0.5 ? f.x : 1.0 - f.x) * (o.y > 0.5 ? f.y : 1.0 - f.y) + 1e-3;
-    float rel = abs(log(max(d, 0.1)) - log(max(dist, 0.1)));
-    float w = wb / (1.0 + rel * rel * 40.0);
-    acc += texture(tVol, tc) * w;
-    ws += w;
+  float wd = 0.0;
+  float ld = log(max(dist, 0.1));
+  for (int j = -1; j <= 1; j++) {
+    for (int i = -1; i <= 1; i++) {
+      vec2 o = c + vec2(float(i), float(j));
+      vec2 tc = (o + 0.5) / uVolSize;
+      vec2 dd = abs(o - p);
+      float wb = max(0.0, 1.5 - dd.x) * max(0.0, 1.5 - dd.y);
+      float rel = abs(log(max(distAt(tc), 0.1)) - ld);
+      float w = 1.0 / (1.0 + rel * rel * 60.0);
+      acc += texture(tVol, tc) * wb * w;
+      ws += wb * w;
+      wd = max(wd, w);
+    }
   }
-  return acc / ws;
+  // nenhum vizinho com profundidade parecida: objeto próximo na frente das nuvens
+  if (wd < 0.08) return vec4(0.0, 0.0, 0.0, 1.0);
+  return acc / max(ws, 1e-5);
 }
 
 vec3 aces(vec3 x) {
@@ -83,12 +91,12 @@ void main() {
 
   col *= uExposure;
   col = aces(col);
-  // Gradação de cor
+  // Gradação de cor (contraste em espaço gama, para não esmagar as sombras)
   float l = dot(col, vec3(0.2126, 0.7152, 0.0722));
   col = mix(vec3(l), col, uSaturation);
-  col = (col - 0.5) * uContrast + 0.5;
   col *= uTint;
-  col = max(col, 0.0);
+  col = pow(max(col, 0.0), vec3(1.0 / 2.2));
+  col = clamp((col - 0.45) * uContrast + 0.45, 0.0, 1.0);
   // Vinheta
   vec2 q = vUv - 0.5;
   float vig = 1.0 - dot(q, q) * uVignette;
@@ -96,8 +104,6 @@ void main() {
   // Dano (bordas vermelhas)
   float edge = smoothstep(0.15, 0.55, length(q));
   col = mix(col, vec3(0.45, 0.02, 0.0), edge * uDamage * 0.75);
-  // sRGB
-  col = pow(col, vec3(1.0 / 2.2));
   // Granulação de filme
   col += (hash(vUv * 1000.0 + fract(uTime) * 100.0) - 0.5) * uGrain;
   // Barras cinematográficas
@@ -193,6 +199,7 @@ export class PostProcessing {
       uLetterbox: { value: 0 },
       uUnderwater: { value: 0 },
       uVolSize: { value: new THREE.Vector2(1, 1) },
+      uBilateral: { value: quality.fxaa ? 1 : 0 },
       uFogColor: { value: new THREE.Color() },
       uFogSunColor: { value: new THREE.Color() },
       uFogSunDir: { value: new THREE.Vector3(0, 1, 0) },

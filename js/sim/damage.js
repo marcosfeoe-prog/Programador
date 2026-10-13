@@ -157,6 +157,7 @@ export class DamageSystem {
     const dod = di.dods[dodIndex];
     const f = dod.f;
     const entry = { f, di: di.name, d: dod.d, x, z, time: t.stageTime, extra };
+    t.diCount = (t.diCount || 0) + 1;
     t.damageLog.push(entry);
     if (t.damageLog.length > 400) t.damageLog.shift();
     this.recentDamage += 1;
@@ -164,7 +165,8 @@ export class DamageSystem {
       t.rating = f;
       t.ratingInfo = entry;
       this.emit({ type: 'rating', f, entry, tornado: t });
-    } else if (f >= 2 && this.rng.chance(0.35)) {
+    } else if (f >= 2 && !diKey.startsWith('tree') && diKey !== 'pole' && performance.now() - (this.lastNotice || 0) > 2500) {
+      this.lastNotice = performance.now();
       this.emit({ type: 'damage', entry });
     }
   }
@@ -291,7 +293,7 @@ export class DamageSystem {
     this.scourTimer -= 0.1;
     if (this.scourTimer <= 0 && t.vmax > 66) {
       this.scourTimer = 0.2;
-      const r = t.rCore * Math.pow(t.vmax / 66, 1 / 0.62);
+      const r = t.rCore * Math.pow(t.vmax / 66, 1 / 0.78);
       this.terrain.paintScour(tx, tz, r, (t.vmax - 66) / 50);
     }
   }
