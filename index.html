@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d0f12" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="description" content="Simulador 3D de tornados: formação de supercélulas, nuvem funil, classificação Fujita por danos, ciclo de dia e noite." />
+  <title>Supercélula — Simulador de Tornados 3D</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three/three.module.min.js" } }
+  </script>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div id="top-left" class="panel">
+      <div id="clock"><span id="clock-icon">☀</span><span id="clock-time">10:30</span><span id="clock-day">Dia 1</span></div>
+      <div id="clock-sub">Noite em 7:30</div>
+      <div id="time-scale"></div>
+    </div>
+
+    <div id="phase" class="panel">
+      <div id="phase-name">Tempo bom</div>
+      <div id="phase-steps"></div>
+      <div id="phase-sub"></div>
+    </div>
+
+    <div id="alert" class="hidden"></div>
+
+    <div id="right-col">
+      <div id="radar-wrap" class="panel">
+        <canvas id="radar" width="240" height="240"></canvas>
+        <div id="radar-label">Radar — Refletividade (R)</div>
+      </div>
+      <div id="tornado-card" class="panel hidden">
+        <div class="tc-head">
+          <div id="tc-badge" class="badge">F?</div>
+          <div>
+            <div id="tc-title">Tornado</div>
+            <div id="tc-rating-sub">Sem danos registrados</div>
+          </div>
+        </div>
+        <div class="tc-grid">
+          <span>Formato</span><b id="tc-shape">—</b>
+          <span>Distância</span><b id="tc-dist">—</b>
+          <span>Direção</span><b id="tc-dir">—</b>
+          <span>Deslocamento</span><b id="tc-move">—</b>
+          <span>Largura dos danos</span><b id="tc-width">—</b>
+          <span>Trajetória</span><b id="tc-path">—</b>
+        </div>
+      </div>
+    </div>
+
+    <div id="bottom-left" class="panel">
+      <div class="row"><span>Saúde</span><div class="bar"><div id="health-bar"></div></div></div>
+      <div class="row small"><span>Vento</span><b id="wind-val">0 km/h</b></div>
+      <div class="row small"><span>Pressão</span><b id="pres-val">1008 hPa</b></div>
+      <div class="row small"><span>Chuva</span><b id="rain-val">—</b></div>
+      <div class="row small"><span>Câmera</span><b id="cam-val">A pé</b></div>
+    </div>
+
+    <div id="feed"></div>
+    <div id="prompt" class="hidden"></div>
+    <div id="crosshair"></div>
+    <div id="info-panel" class="panel hidden"></div>
+    <div id="fps" class="hidden"></div>
+  </div>
+
+  <div id="death" class="hidden">
+    <div>
+      <h2>Você foi atingido pelo tornado</h2>
+      <p>Retornando ao ponto seguro…</p>
+    </div>
+  </div>
+
+  <div id="report" class="hidden">
+    <div class="report-box">
+      <h2>Levantamento de danos</h2>
+      <div id="report-body"></div>
+      <button id="report-close" class="btn primary">Fechar</button>
+    </div>
+  </div>
+
+  <!-- Controles de toque -->
+  <div id="touch">
+    <div class="joy-zone"></div>
+    <div class="look-zone"></div>
+    <div class="joy-base"><div class="joy-knob"></div></div>
+    <div class="tbtns">
+      <button data-act="jump" class="tbtn big">⤒</button>
+      <button data-act="sprint" class="tbtn">Correr</button>
+      <button data-act="interact" class="tbtn">Veículo</button>
+      <button data-act="camera" class="tbtn">Câmera</button>
+      <button data-act="down" class="tbtn">Descer</button>
+    </div>
+    <div class="ttop">
+      <button data-act="radar" class="tbtn small">Radar</button>
+      <button data-act="info" class="tbtn small">Atmos.</button>
+      <button data-act="menu" class="tbtn small">☰</button>
+    </div>
+  </div>
+
+  <!-- Menu -->
+  <div id="menu">
+    <div class="menu-box">
+      <h1>SUPERCÉLULA</h1>
+      <div class="subtitle">Simulador de tornados 3D</div>
+      <div id="menu-main">
+        <button id="btn-play" class="btn primary" disabled>Carregando…</button>
+        <button id="btn-settings" class="btn">Configurações</button>
+        <button id="btn-sandbox" class="btn">Laboratório da tempestade</button>
+        <button id="btn-help" class="btn">Controles e guia</button>
+      </div>
+      <div id="menu-settings" class="hidden">
+        <label>Qualidade gráfica
+          <select id="set-quality">
+            <option value="low">Baixa (celulares)</option>
+            <option value="medium">Média</option>
+            <option value="high">Alta</option>
+            <option value="ultra">Ultra</option>
+          </select>
+        </label>
+        <label>Risco atmosférico
+          <select id="set-risk">
+            <option value="baixo">Baixo</option>
+            <option value="moderado">Moderado</option>
+            <option value="alto">Alto</option>
+            <option value="extremo">Extremo</option>
+          </select>
+        </label>
+        <label>Sensibilidade <input id="set-sens" type="range" min="0.2" max="3" step="0.1" /></label>
+        <label>Volume <input id="set-vol" type="range" min="0" max="1" step="0.05" /></label>
+        <label class="check"><input id="set-invert" type="checkbox" /> Inverter eixo Y</label>
+        <label class="check"><input id="set-fps" type="checkbox" /> Mostrar FPS</label>
+        <div class="note">Mudar a qualidade reinicia o jogo.</div>
+        <button class="btn back">Voltar</button>
+      </div>
+      <div id="menu-sandbox" class="hidden">
+        <p class="note">Controle o sistema de tempestades. As tempestades também se formam sozinhas (mais à tarde).</p>
+        <button id="sb-force" class="btn">Iniciar supercélula agora [T]</button>
+        <button id="sb-skip" class="btn">Avançar fase [N]</button>
+        <label>Formato do próximo tornado
+          <select id="sb-shape">
+            <option value="">Natural (definido pela atmosfera)</option>
+            <option value="rope">Corda</option>
+            <option value="cone">Cone</option>
+            <option value="wedge">Cunha</option>
+            <option value="multi">Multivórtice</option>
+          </select>
+        </label>
+        <label>Velocidade do tempo
+          <select id="sb-speed">
+            <option value="1">1× (dia de 10 min)</option>
+            <option value="2">2×</option>
+            <option value="5">5×</option>
+            <option value="10">10×</option>
+          </select>
+        </label>
+        <label class="check"><input id="sb-auto" type="checkbox" checked /> Tempestades automáticas</label>
+        <button id="sb-day" class="btn">Ir para 13:00</button>
+        <button id="sb-night" class="btn">Ir para 20:00</button>
+        <button class="btn back">Voltar</button>
+      </div>
+      <div id="menu-help" class="hidden">
+        <div class="help">
+          <h3>Controles (PC)</h3>
+          <p><b>WASD</b> mover · <b>Mouse</b> olhar · <b>Shift</b> correr · <b>Espaço</b> pular/freio · <b>E</b> entrar/sair da picape · <b>C</b> câmera (1ª pessoa, livre, cinematográfica) · <b>R</b> modo do radar · <b>M</b> tamanho do radar · <b>I</b> dados atmosféricos · <b>H</b> esconder HUD · <b>T</b> iniciar tempestade · <b>N</b> avançar fase · <b>[ ]</b> velocidade do tempo · <b>F</b> tela cheia · <b>Esc</b> menu</p>
+          <h3>Celular</h3>
+          <p>Joystick à esquerda para mover, arraste à direita para olhar. Botões para pular, correr, veículo e câmera.</p>
+          <h3>Como funciona</h3>
+          <p>O ar quente e úmido forma <b>cúmulos</b>, que crescem em <b>torres</b> e viram um <b>cumulonimbus</b>. Com cisalhamento do vento, a corrente ascendente gira (<b>mesociclone</b>) e a tempestade vira uma <b>supercélula</b>. Uma <b>nuvem parede</b> baixa e giratória aparece sob a base. Dela pode descer uma <b>nuvem funil</b> — se ela tocar o solo, é um <b>tornado</b>.</p>
+          <p>Formatos: <b>corda</b>, <b>cone</b>, <b>cunha</b> e <b>multivórtice</b>. A classificação <b>F0–F5</b> é dada <b>somente pelos danos</b> encontrados (casas, árvores, veículos, postes…). Um tornado violento que só passa por campos vazios pode ficar com classificação baixa.</p>
+          <p>O dia dura 10 minutos e a noite outros 10.</p>
+        </div>
+        <button class="btn back">Voltar</button>
+      </div>
+      <div id="loading">
+        <div class="lbar"><div id="load-bar"></div></div>
+        <div id="load-text">Iniciando…</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="rotate" class="hidden"><div>Gire o aparelho para a horizontal ↻</div></div>
+  <div id="error" class="hidden"></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
