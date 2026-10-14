@@ -195,7 +195,7 @@ const GENERATORS = {
       const stripe = su < 0.5 ? 1 : 0.975;
       const mv = (v * 34) % 1;
       const dd = Math.abs(su - 0.5) * 2;
-      const diamond = Math.abs(dd - Math.abs(mv - 0.5) * 2) < 0.07 ? 0.955 : 1;
+      const diamond = Math.abs(dd - Math.abs(mv - 0.5) * 2) < 0.07 ? 0.972 : 1;
       const dot = Math.hypot(su - 0.5, mv - 0.5) < 0.06 ? 0.96 : 1;
       // emendas das tiras de papel
       const seam = Math.abs(((u * 2 + 0.25) % 1) - 0.5) > 0.497 ? 0.93 : 1;
@@ -220,7 +220,7 @@ const GENERATORS = {
       o[0] = r * (1 - dirt * 0.35);
       o[1] = g * (1 - dirt * 0.4);
       o[2] = b * (1 - dirt * 0.45);
-      hf[i] = fib[i] * 0.15 + mid[i] * 0.3 + (seam < 1 ? -0.8 : 0) + (diamond < 1 ? -0.25 : 0);
+      hf[i] = fib[i] * 0.15 + mid[i] * 0.3 + (seam < 1 ? -0.8 : 0) + (diamond < 1 ? -0.1 : 0);
     });
     // escorridos de água do teto
     const ctx = base.getContext('2d');

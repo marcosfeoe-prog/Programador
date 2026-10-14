@@ -35,7 +35,7 @@ export class Items {
   litMat(params, light) {
     const m = new THREE.MeshStandardMaterial(params);
     if (light !== undefined) {
-      const k = clamp(light, 0, 2) * 0.55;
+      const k = 0.08 + clamp(light, 0, 2) * 0.6;
       m.emissive = m.color.clone().multiplyScalar(k);
       if (params.map) m.emissiveMap = params.map;
     }
@@ -56,6 +56,7 @@ export class Items {
       cap.position.y = 0.232;
       g.add(body, label, cap);
       g.position.set(it.x, y, it.z);
+      g.scale.setScalar(1.35);
       g.rotation.y = (it.x * 7.3 + it.z) % 6.28;
       it.mesh = g;
     } else if (it.type === 'note') {
