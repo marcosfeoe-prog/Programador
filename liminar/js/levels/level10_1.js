@@ -459,7 +459,8 @@ export class Level10_1 extends OutdoorLevel {
     const old = r.getRenderTarget();
     const autoShadow = r.shadowMap.autoUpdate;
     r.shadowMap.autoUpdate = false;
-    this.water.visible = false;
+    // o capim instanciado quase não aparece no reflexo e é a malha mais pesada
+    this.water.visible = this.grass.visible = false;
     this.clipPlane.constant = 0.02;
     r.setRenderTarget(this.mirrorRT);
     r.clear();
@@ -467,7 +468,7 @@ export class Level10_1 extends OutdoorLevel {
     r.setRenderTarget(old);
     this.clipPlane.constant = 1e6;
     r.shadowMap.autoUpdate = autoShadow;
-    this.water.visible = true;
+    this.water.visible = this.grass.visible = true;
   }
 
   // ------------------------------------------------------------ píer, bancos e placas
@@ -513,7 +514,8 @@ export class Level10_1 extends OutdoorLevel {
       const wl = Math.max(0.22, g + 0.05);
       if (wl > bot) wood.cylinder(p.x, (bot + wl) / 2, p.z, 0.12, wl - bot, [0.11, 0.11, 0.1], null, { sides: 7, caps: false });
       wood.cylinder(p.x, (wl + top) / 2, p.z, 0.115, top - wl, grey(0.62), null, { sides: 7 });
-      this.staticCol.push([p.x - 0.13, p.x + 0.13, p.z - 0.13, p.z + 0.13]);
+      // 5º campo: estaca abaixo do deck (não atrapalha quem anda em cima dele)
+      this.staticCol.push([p.x - 0.13, p.x + 0.13, p.z - 0.13, p.z + 0.13, top < DECK_Y]);
     };
     for (let u = 2.2; u < PIER_L; u += 2.8) {
       for (const v of [-0.95, 0.95]) post(u, v, DECK_Y - 0.06);
@@ -861,12 +863,22 @@ export class Level10_1 extends OutdoorLevel {
   collide(p, r) {
     super.collide(p, r);
     if (this.boarding) return p;
+    const wasDeck = this.wasOnDeck;
     for (const b of this.staticCol) {
+      // as estacas abaixo do deck não atrapalham quem anda em cima dele
+      if (wasDeck && b[4]) continue;
       if (Math.abs((b[0] + b[1]) / 2 - p.x) < 4 && Math.abs((b[2] + b[3]) / 2 - p.z) < 4) pushCircle(p, r, b[0], b[1], b[2], b[3]);
     }
+    let l = this.pierLocal(p.x, p.z);
+    // a borda do deck é alta demais para subir de dentro d'água ou da lama:
+    // só se sobe no píer pelo começo, onde ele quase encosta na trilha
+    if (!wasDeck && this.onDeck(l.u, l.v) && DECK_Y - groundH(p.x, p.z) > 0.45) {
+      const w = this.pierWorld(l.u, (l.v < 0 ? -1 : 1) * (PIER_W / 2 + 0.06));
+      p.x = w.x;
+      p.z = w.z;
+      l = this.pierLocal(p.x, p.z);
+    }
     const s = shoreDist(p.x, p.z);
-    const l = this.pierLocal(p.x, p.z);
-    const wasDeck = this.wasOnDeck;
     this.wasOnDeck = this.onDeck(l.u, l.v);
     // em cima do deck sempre é válido; saindo dele sobre o fundo, volta para o deck
     if (s >= DEEP || this.wasOnDeck) return p;
