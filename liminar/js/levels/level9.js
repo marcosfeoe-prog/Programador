@@ -687,6 +687,12 @@ export class Level9 extends OutdoorLevel {
     return { x: this.door.cx, y: FLOOR + 1.2, z: this.door.cz, sound: 'tvstatic', gain: 0.55 };
   }
 
+  // Os itens (pilhas, bilhetes) ganham materiais próprios em Items.spawn: libera junto com o bloco.
+  disposeChunk(ch) {
+    for (const it of ch.items) if (it.mesh) it.mesh.traverse((o) => o.material && o.material.dispose());
+    super.disposeChunk(ch);
+  }
+
   dispose() {
     super.dispose();
     // bloco interrompido no meio da montagem das malhas (ainda não registrado)

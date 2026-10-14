@@ -754,6 +754,10 @@ function porch(hc, B, ch, h, fv, F, trim) {
       // laterais
       for (const y of [F + 0.12, F + 0.88]) hc.box(B.trim, pu + s * (p.w / 2 - 0.12), y, fv + p.d / 2, 0.07, 0.06, p.d - 0.2, trim);
       for (let t = fv + 0.2; t < vo - 0.2; t += 0.16) hc.box(B.trim, pu + s * (p.w / 2 - 0.12), F + 0.5, t, 0.035, 0.76, 0.035, trim);
+      // a grade não se atravessa (só pela escada, no meio)
+      ch.colliders.push(localBox(hc, cu - len / 2, cu + len / 2, vo - 0.16, vo - 0.08));
+      const su = pu + s * (p.w / 2 - 0.12);
+      ch.colliders.push(localBox(hc, su - 0.04, su + 0.04, fv + 0.05, vo - 0.08));
     }
   }
 }
