@@ -203,7 +203,10 @@ canvas#game {
   font-weight: bold;
   font-size: clamp(14px, 2.6vw, 26px);
   color: #f4f4f4;
-  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.6), -1px 0 rgba(255, 0, 0, 0.35), 1px 0 rgba(0, 120, 255, 0.35);
+  text-shadow:
+    2px 2px 0 rgba(0, 0, 0, 0.6),
+    -1px 0 rgba(255, 0, 0, 0.35),
+    1px 0 rgba(0, 120, 255, 0.35);
 }
 #cam-ui > div {
   position: absolute;
@@ -223,6 +226,14 @@ canvas#game {
 #cam-br {
   right: calc(4% + var(--safe-r));
   bottom: 7%;
+}
+/* no celular o carimbo de hora sobe para não ficar sob os botões */
+#cam-ui.touch #cam-br {
+  bottom: auto;
+  top: calc(15% + 1.6em);
+}
+#cam-ui.touch #cam-tl {
+  top: 22%;
 }
 #cam-ui.digicam {
   color: #ff9a2e;
@@ -401,6 +412,13 @@ canvas#game {
 .joy-base.on {
   display: block;
 }
+/* dica do joystick em repouso */
+.joy-base.idle {
+  display: block;
+  opacity: 0.35;
+  left: calc(36px + var(--safe-l));
+  bottom: calc(28px + var(--safe-b));
+}
 .joy-base.run {
   border-color: rgba(232, 207, 114, 0.7);
 }
@@ -496,7 +514,9 @@ h1 {
   font-size: clamp(30px, 7vw, 54px);
   letter-spacing: 12px;
   color: var(--accent);
-  text-shadow: 2px 0 rgba(255, 0, 0, 0.35), -2px 0 rgba(0, 140, 255, 0.35);
+  text-shadow:
+    2px 0 rgba(255, 0, 0, 0.35),
+    -2px 0 rgba(0, 140, 255, 0.35);
 }
 .subtitle {
   font-family: var(--mono);
@@ -696,6 +716,10 @@ input[type='checkbox'] {
 
 /* Telas baixas (celular na horizontal) */
 @media (max-height: 500px) {
+  .menu-box.sub h1,
+  .menu-box.sub .subtitle {
+    display: none;
+  }
   .menu-box {
     padding: 12px 16px;
   }

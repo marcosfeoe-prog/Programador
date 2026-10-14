@@ -31,6 +31,7 @@ export class HUD {
   show(on) {
     this.el.classList.toggle('hidden', !on);
     $('touch').classList.toggle('play', on);
+    if (!on) this.camUI.classList.add('hidden');
   }
 
   setLevel(info) {
@@ -93,8 +94,7 @@ export class HUD {
       ui.classList.add('hidden');
       return;
     }
-    ui.classList.remove('hidden');
-    ui.className = filter;
+    ui.className = filter + (this.game.settings.mobile ? ' touch' : '');
     const pad = (n, l = 2) => String(Math.floor(n)).padStart(l, '0');
     const s = t + 37;
     const hms = `${pad(s / 3600)}:${pad((s / 60) % 60)}:${pad(s % 60)}`;
@@ -267,6 +267,7 @@ export class Menu {
 
   open(id) {
     for (const p of this.panels) $(p).classList.toggle('hidden', p !== id);
+    this.root.querySelector('.menu-box').classList.toggle('sub', id !== 'm-main');
     if (id === 'm-filters') this.buildFilters();
     if (id === 'm-levels') this.buildLevels();
   }

@@ -161,8 +161,11 @@ class Game {
     if (!this.settings.mobile) return;
     const el = document.documentElement;
     try {
-      const p = el.requestFullscreen ? el.requestFullscreen({ navigationUI: 'hide' }) : el.webkitRequestFullscreen && el.webkitRequestFullscreen();
-      if (p && p.then) p.then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {})).catch(() => {});
+      const p = el.requestFullscreen
+        ? el.requestFullscreen({ navigationUI: 'hide' })
+        : el.webkitRequestFullscreen && el.webkitRequestFullscreen();
+      if (p && p.then)
+        p.then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {})).catch(() => {});
     } catch (e) {
       /* sem tela cheia */
     }
@@ -204,6 +207,12 @@ class Game {
       throw e;
     }
     this.level = level;
+    if (params.has('pos') && params.has('autostart')) {
+      const [x, z] = params.get('pos').split(',').map(Number);
+      level.spawn.x = x;
+      level.spawn.z = z;
+    }
+    if (params.has('yaw')) level.spawn.yaw = Number(params.get('yaw'));
     this.hud.cardProgress(0.25, 'Construindo o espaço…');
     try {
       await level.preload(level.spawn.x, level.spawn.z, (f) => this.hud.cardProgress(0.25 + f * 0.7));
@@ -213,12 +222,6 @@ class Game {
       throw e;
     }
     this.applyLook(level.look);
-    if (params.has('pos')) {
-      const [x, z] = params.get('pos').split(',').map(Number);
-      level.spawn.x = x;
-      level.spawn.z = z;
-    }
-    if (params.has('yaw')) level.spawn.yaw = Number(params.get('yaw'));
     this.player.reset(level.spawn, level.groundY ? level.groundY(level.spawn.x, level.spawn.z) : 0);
     if (params.has('pitch')) this.player.pitch = Number(params.get('pitch'));
     this.player.flashOn = !!level.look.flashlight;
@@ -389,10 +392,13 @@ class Game {
       this.glitch = 1;
       this.vibrate(120);
     }, delay * 1000);
-    setTimeout(() => {
-      const next = this.levelIdx + 1;
-      if (next < LEVELS.length) this.loadLevel(next);
-    }, delay * 1000 + 1700);
+    setTimeout(
+      () => {
+        const next = this.levelIdx + 1;
+        if (next < LEVELS.length) this.loadLevel(next);
+      },
+      delay * 1000 + 1700,
+    );
   }
 
   finish() {

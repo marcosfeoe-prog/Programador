@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { OutdoorLevel, makeSky } from './outdoor.js';
 import { GeoBuilder } from '../materials.js';
 import { getTex, textCanvasTex, signTex } from '../textures.js';
-import { hash3, fbm, mulberry32, clamp } from '../util.js';
+import { fbm, mulberry32, clamp } from '../util.js';
 
 const fl = (v) => v.toFixed(3);
 const P = 80; // passo dos quarteirões
@@ -120,10 +120,28 @@ export class Level11 extends OutdoorLevel {
     const roof = getTex('roof', S);
     this.roofMat = new THREE.MeshStandardMaterial({ map: roof.map, roughness: 0.95 });
     const sw = getTex('sidewalk', S);
-    this.walkMat = new THREE.MeshStandardMaterial({ map: sw.map, normalMap: Q.normalMaps ? sw.normalMap : null, roughness: 0.9, vertexColors: true });
+    this.walkMat = new THREE.MeshStandardMaterial({
+      map: sw.map,
+      normalMap: Q.normalMaps ? sw.normalMap : null,
+      roughness: 0.9,
+      vertexColors: true,
+    });
     const gr = getTex('grime', S);
-    this.miscMat = new THREE.MeshStandardMaterial({ map: gr.map, vertexColors: true, roughness: 0.6, metalness: 0.2, envMap: env, envMapIntensity: 0.6 });
-    this.carMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.32, metalness: 0.55, envMap: env, envMapIntensity: 1.3 });
+    this.miscMat = new THREE.MeshStandardMaterial({
+      map: gr.map,
+      vertexColors: true,
+      roughness: 0.6,
+      metalness: 0.2,
+      envMap: env,
+      envMapIntensity: 0.6,
+    });
+    this.carMat = new THREE.MeshStandardMaterial({
+      vertexColors: true,
+      roughness: 0.32,
+      metalness: 0.55,
+      envMap: env,
+      envMapIntensity: 1.3,
+    });
     this.lampMat = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uI: { value: [5, 0, 0, 0, 0, 0, 0] } }]),
       vertexShader: /* glsl */ `
@@ -172,7 +190,7 @@ export class Level11 extends OutdoorLevel {
       polygonOffsetFactor: -2,
     });
     this.foliageGeo = new THREE.IcosahedronGeometry(1, 1);
-    this.hoodGeo = new THREE.SphereGeometry(0.62, 18, 10, Math.PI * 0.18, Math.PI * 1.64, 0, Math.PI * 0.62);
+    this.hoodGeo = new THREE.SphereGeometry(0.66, 20, 12, Math.PI * 0.36, Math.PI * 1.28, 0, Math.PI * 0.74);
     this.makeGround();
     this.route();
     this.signal = 0;
@@ -200,12 +218,21 @@ export class Level11 extends OutdoorLevel {
     const g = new THREE.PlaneGeometry(size, size, 1, 1);
     g.rotateX(-Math.PI / 2);
     const as = getTex('asphalt', Q.tex);
-    const mat = new THREE.MeshStandardMaterial({ map: as.map, normalMap: Q.normalMaps ? as.normalMap : null, roughness: 0.85, envMap: this.env, envMapIntensity: 0.5 });
+    const mat = new THREE.MeshStandardMaterial({
+      map: as.map,
+      normalMap: Q.normalMaps ? as.normalMap : null,
+      roughness: 0.85,
+      envMap: this.env,
+      envMapIntensity: 0.5,
+    });
     mat.onBeforeCompile = (sh) => {
       sh.vertexShader = sh.vertexShader
         .replace('#include <common>', '#include <common>\nvarying vec3 vWPos;')
         .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvWPos = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;')
-        .replace('#include <uv_vertex>', '#include <uv_vertex>\n#ifdef USE_MAP\nvMapUv = ( modelMatrix * vec4( position, 1.0 ) ).xz * 0.25;\n#endif\n#ifdef USE_NORMALMAP\nvNormalMapUv = ( modelMatrix * vec4( position, 1.0 ) ).xz * 0.25;\n#endif');
+        .replace(
+          '#include <uv_vertex>',
+          '#include <uv_vertex>\n#ifdef USE_MAP\nvMapUv = ( modelMatrix * vec4( position, 1.0 ) ).xz * 0.25;\n#endif\n#ifdef USE_NORMALMAP\nvNormalMapUv = ( modelMatrix * vec4( position, 1.0 ) ).xz * 0.25;\n#endif',
+        );
       sh.fragmentShader = sh.fragmentShader
         .replace('#include <common>', '#include <common>\nvarying vec3 vWPos;\n' + MARKINGS_GLSL)
         .replace(
@@ -319,7 +346,11 @@ export class Level11 extends OutdoorLevel {
       this.blockBox(fac[style], bx0, bx1, bz0, bz1, y0, y0 + h, uo, vo);
       const top = y0 + h;
       // cobertura com platibanda
-      roofs.box((bx0 + bx1) / 2, top + 0.01, (bz0 + bz1) / 2, bx1 - bx0, 0.02, bz1 - bz0, [1, 1, 1], null, { uvScale: 4, ao: 0, skip: 'ny' });
+      roofs.box((bx0 + bx1) / 2, top + 0.01, (bz0 + bz1) / 2, bx1 - bx0, 0.02, bz1 - bz0, [1, 1, 1], null, {
+        uvScale: 4,
+        ao: 0,
+        skip: 'ny',
+      });
       const pc = style === 2 ? [0.5, 0.26, 0.2] : [0.55, 0.54, 0.52];
       misc.box((bx0 + bx1) / 2, top + 0.5, bz0 + 0.15, bx1 - bx0, 1, 0.3, pc, null, { ao: 0 });
       misc.box((bx0 + bx1) / 2, top + 0.5, bz1 - 0.15, bx1 - bx0, 1, 0.3, pc, null, { ao: 0 });
@@ -340,7 +371,13 @@ export class Level11 extends OutdoorLevel {
         if (style === 2 && rnd() < 0.6) {
           const cx = bx0 + w * 0.7;
           const cz = bz0 + dd * 0.3;
-          for (const o of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) misc.box(cx + o[0] * 1.1, top + 1.2, cz + o[1] * 1.1, 0.15, 2.4, 0.15, [0.3, 0.25, 0.2], null, { ao: 0 });
+          for (const o of [
+            [-1, -1],
+            [1, -1],
+            [-1, 1],
+            [1, 1],
+          ])
+            misc.box(cx + o[0] * 1.1, top + 1.2, cz + o[1] * 1.1, 0.15, 2.4, 0.15, [0.3, 0.25, 0.2], null, { ao: 0 });
           misc.cylinder(cx, top + 3.6, cz, 1.6, 2.6, [0.45, 0.33, 0.24], null, { sides: 14 });
         }
         break;
@@ -365,7 +402,18 @@ export class Level11 extends OutdoorLevel {
     const W = [1, 1, 1];
     const cols = [W, W, W, W];
     const face = (ax, az, bx, bz, n, len) => {
-      gb.quad([[ax, y0, az], [bx, y0, bz], [bx, y1, bz], [ax, y1, az]], n, [uo, v0, uo + len / U, v0, uo + len / U, v1, uo, v1], null, cols);
+      gb.quad(
+        [
+          [ax, y0, az],
+          [bx, y0, bz],
+          [bx, y1, bz],
+          [ax, y1, az],
+        ],
+        n,
+        [uo, v0, uo + len / U, v0, uo + len / U, v1, uo, v1],
+        null,
+        cols,
+      );
     };
     face(x0, z1, x1, z1, [0, 0, 1], x1 - x0);
     face(x1, z0, x0, z0, [0, 0, -1], x1 - x0);
@@ -423,7 +471,12 @@ export class Level11 extends OutdoorLevel {
         cars.cylinder(cx, 0.34, cz, 0.34, 0.24, [0.04, 0.04, 0.04], null, { axis: Math.abs(ux) > 0.5 ? 'z' : 'x', sides: 10 });
       }
     }
-    return [x - Math.abs(ux) * 2.2 - Math.abs(uz) * 0.95, x + Math.abs(ux) * 2.2 + Math.abs(uz) * 0.95, z - Math.abs(uz) * 2.2 - Math.abs(ux) * 0.95, z + Math.abs(uz) * 2.2 + Math.abs(ux) * 0.95];
+    return [
+      x - Math.abs(ux) * 2.2 - Math.abs(uz) * 0.95,
+      x + Math.abs(ux) * 2.2 + Math.abs(uz) * 0.95,
+      z - Math.abs(uz) * 2.2 - Math.abs(ux) * 0.95,
+      z + Math.abs(uz) * 2.2 + Math.abs(ux) * 0.95,
+    ];
   }
 
   // Postes, semáforos, árvores, lixeiras e carros estacionados ao longo do quarteirão.
@@ -444,7 +497,11 @@ export class Level11 extends OutdoorLevel {
         const z = s.az + s.dz * t;
         misc.cylinder(x, CURB + 4, z, 0.09, 8, [0.22, 0.23, 0.24], null, { sides: 8 });
         misc.box(x + s.nx * 0.9, CURB + 7.9, z + s.nz * 0.9, s.nx ? 1.8 : 0.1, 0.1, s.nz ? 1.8 : 0.1, [0.22, 0.23, 0.24], null, { ao: 0 });
-        lamps.box(x + s.nx * 1.7, CURB + 7.8, z + s.nz * 1.7, 0.5, 0.08, 0.3, warm, null, { ao: 0, rot: s.nx ? 0 : Math.PI / 2, skip: 'py' });
+        lamps.box(x + s.nx * 1.7, CURB + 7.8, z + s.nz * 1.7, 0.5, 0.08, 0.3, warm, null, {
+          ao: 0,
+          rot: s.nx ? 0 : Math.PI / 2,
+          skip: 'py',
+        });
         misc.box(x + s.nx * 1.7, CURB + 7.89, z + s.nz * 1.7, s.nx ? 0.6 : 0.36, 0.1, s.nx ? 0.36 : 0.6, [0.2, 0.2, 0.21], null, { ao: 0 });
         ch.colliders.push([x - 0.15, x + 0.15, z - 0.15, z + 0.15]);
         // poça de luz no chão
@@ -483,7 +540,9 @@ export class Level11 extends OutdoorLevel {
         const bx = x - s.nx * 1.4;
         const bz = z - s.nz * 1.4;
         misc.box(bx, CURB + 0.45, bz, s.nx ? 0.5 : 1.8, 0.08, s.nx ? 1.8 : 0.5, [0.4, 0.3, 0.2], null, { ao: 0 });
-        misc.box(bx - s.nx * 0.22, CURB + 0.75, bz - s.nz * 0.22, s.nx ? 0.06 : 1.8, 0.5, s.nx ? 1.8 : 0.06, [0.4, 0.3, 0.2], null, { ao: 0 });
+        misc.box(bx - s.nx * 0.22, CURB + 0.75, bz - s.nz * 0.22, s.nx ? 0.06 : 1.8, 0.5, s.nx ? 1.8 : 0.06, [0.4, 0.3, 0.2], null, {
+          ao: 0,
+        });
         misc.box(bx, CURB + 0.22, bz, s.nx ? 0.4 : 1.6, 0.44, s.nx ? 1.6 : 0.4, [0.15, 0.15, 0.16], null, { ao: 0 });
       }
       // carros estacionados junto ao meio-fio
@@ -533,15 +592,21 @@ export class Level11 extends OutdoorLevel {
     return this.exitChunk && i === this.exitChunk[0] && j === this.exitChunk[1];
   }
 
-  // Orelhão (telefone público brasileiro).
+  // Orelhão (telefone público brasileiro): concha laranja aberta para a frente.
   payphone(misc, ch) {
     const e = this.exit;
-    const x = e.x;
-    const z = e.z;
-    misc.cylinder(x, CURB + 1.1, z, 0.06, 2.2, [0.55, 0.55, 0.55], null, { sides: 8 });
-    const m = new THREE.Matrix4().makeRotationY(e.face).scale(new THREE.Vector3(1, 1.15, 1)).setPosition(x, CURB + 1.55, z);
+    const [ox, oz] = e.dir;
+    const hx = e.x - ox * 0.2;
+    const hz = e.z - oz * 0.2;
+    // poste atrás da concha
+    misc.cylinder(e.x - ox * 0.78, CURB + 1.25, e.z - oz * 0.78, 0.06, 2.5, [0.5, 0.5, 0.5], null, { sides: 8 });
+    misc.box(e.x - ox * 0.7, CURB + 2.35, e.z - oz * 0.7, 0.1, 0.1, 0.1, [0.4, 0.4, 0.4], null, { ao: 0 });
+    const m = new THREE.Matrix4()
+      .makeRotationY(e.face)
+      .scale(new THREE.Vector3(1, 1.2, 1))
+      .setPosition(hx, CURB + 1.62, hz);
     const hood = this.hoodGeo.clone().toNonIndexed();
-    misc.addGeometry(hood, m, [0.95, 0.5, 0.08]);
+    misc.addGeometry(hood, m, [0.95, 0.48, 0.06]);
     // parte interna (faces invertidas para ser vista por dentro)
     const inner = hood.clone();
     const p = inner.attributes.position;
@@ -554,14 +619,14 @@ export class Level11 extends OutdoorLevel {
     }
     const nn = inner.attributes.normal;
     for (let k = 0; k < nn.count; k++) nn.setXYZ(k, -nn.getX(k), -nn.getY(k), -nn.getZ(k));
-    const m2 = m.clone().multiply(new THREE.Matrix4().makeScale(0.97, 0.97, 0.97));
-    misc.addGeometry(inner, m2, [0.85, 0.45, 0.1]);
+    misc.addGeometry(inner, m.clone().multiply(new THREE.Matrix4().makeScale(0.97, 0.97, 0.97)), [0.8, 0.42, 0.08]);
     hood.dispose();
     inner.dispose();
-    const [ox, oz] = e.dir;
-    misc.box(x - ox * 0.3, CURB + 1.5, z - oz * 0.3, 0.36, 0.5, 0.2, [0.3, 0.32, 0.34], null, { rot: e.face, ao: 0 });
-    misc.box(x - ox * 0.16, CURB + 1.55, z - oz * 0.16, 0.26, 0.08, 0.08, [0.1, 0.1, 0.1], null, { rot: e.face, ao: 0 });
-    ch.colliders.push([x - 0.4, x + 0.4, z - 0.4, z + 0.4]);
+    // aparelho preso ao fundo da concha
+    misc.box(e.x - ox * 0.62, CURB + 1.42, e.z - oz * 0.62, 0.3, 0.46, 0.3, [0.32, 0.34, 0.36], null, { rot: e.face, ao: 0 });
+    misc.box(e.x - ox * 0.46, CURB + 1.5, e.z - oz * 0.46, 0.22, 0.07, 0.07, [0.08, 0.08, 0.08], null, { rot: e.face, ao: 0 });
+    misc.box(e.x - ox * 0.47, CURB + 1.32, e.z - oz * 0.47, 0.12, 0.14, 0.02, [0.7, 0.7, 0.66], null, { rot: e.face, ao: 0 });
+    ch.colliders.push([e.x - ox * 0.6 - 0.3, e.x - ox * 0.6 + 0.3, e.z - oz * 0.6 - 0.3, e.z - oz * 0.6 + 0.3]);
   }
 
   route() {
@@ -578,17 +643,23 @@ export class Level11 extends OutdoorLevel {
     this.spawn = { x: SW - 2, z: SW - 2, yaw: Math.atan2(-(x - SW), -(z - SW)) };
     // placa "TELEFONE" acima do orelhão
     const t = signTex('TELEFONE PÚBLICO', '#0f2c6b', '#f2f2f2', 256, 48);
-    const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.17), new THREE.MeshBasicMaterial({ map: t, color: new THREE.Color(1.6, 1.6, 1.6), side: THREE.DoubleSide }));
-    sign.position.set(x, CURB + 2.48, z);
+    const sign = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.9, 0.17),
+      new THREE.MeshBasicMaterial({ map: t, color: new THREE.Color(1.6, 1.6, 1.6), side: THREE.DoubleSide }),
+    );
+    sign.position.set(x - dir[0] * 0.2, CURB + 2.52, z - dir[1] * 0.2);
     sign.rotation.y = Math.atan2(dir[0], dir[1]);
     this.dynamic.add(sign);
-    this.ringLight = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 6), new THREE.MeshBasicMaterial({ color: new THREE.Color(4, 0.4, 0.2) }));
-    this.ringLight.position.set(x - dir[0] * 0.18, CURB + 1.68, z - dir[1] * 0.18);
+    this.ringLight = new THREE.Mesh(
+      new THREE.SphereGeometry(0.035, 8, 6),
+      new THREE.MeshBasicMaterial({ color: new THREE.Color(4, 0.4, 0.2) }),
+    );
+    this.ringLight.position.set(x - dir[0] * 0.46, CURB + 1.72, z - dir[1] * 0.46);
     this.dynamic.add(this.ringLight);
   }
 
   groundY(x, z) {
-    const q = (v) => Math.abs((((v + P / 2) % P) + P) % P - P / 2);
+    const q = (v) => Math.abs(((((v + P / 2) % P) + P) % P) - P / 2);
     return q(x) > SW - 4 && q(z) > SW - 4 ? CURB : 0;
   }
 
@@ -621,7 +692,7 @@ export class Level11 extends OutdoorLevel {
     u[5] = ewY ? I : 0;
     u[6] = ewG ? I : 0;
     // luz do orelhão pisca enquanto toca
-    const ring = (this.game.time % 6) < 2.8;
+    const ring = this.game.time % 6 < 2.8;
     this.ringLight.visible = ring && Math.sin(this.game.time * 20) > 0;
   }
 

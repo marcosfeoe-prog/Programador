@@ -19,7 +19,7 @@ export class Level4 extends GridLevel {
       seed: (game.seed ^ 0x4444) >>> 0,
       lightRadius: 9,
       lightEmitPow: 1,
-      bounce: 0.55,
+      bounce: 0.45,
       ambient: 0.03,
       wallUV: [1.2, 2.7],
       floorUV: 1,
@@ -82,7 +82,7 @@ export class Level4 extends GridLevel {
       void: new THREE.MeshBasicMaterial({ map: voidTex, color: new THREE.Color(0.55, 0.55, 0.55), fog: true }),
     };
     this.look = {
-      exposure: 0.84,
+      exposure: 0.88,
       tint: [0.98, 1.0, 1.03],
       sat: 0.85,
       contrast: 1.02,
@@ -132,7 +132,7 @@ export class Level4 extends GridLevel {
       ax,
       len: 1.2,
       wid: 0.6,
-      I: 7.5,
+      I: 4.6,
       group,
     };
   }
@@ -172,8 +172,30 @@ export class Level4 extends GridLevel {
         const z = iz * c;
         const x0 = ix * c + a0;
         const x1 = ix * c + a1;
-        G.void.quad([[x0, y0, z + hT], [x1, y0, z + hT], [x1, y1, z + hT], [x0, y1, z + hT]], [0, 0, 1], uv, null, null);
-        G.void.quad([[x1, y0, z - hT], [x0, y0, z - hT], [x0, y1, z - hT], [x1, y1, z - hT]], [0, 0, -1], uv, null, null);
+        G.void.quad(
+          [
+            [x0, y0, z + hT],
+            [x1, y0, z + hT],
+            [x1, y1, z + hT],
+            [x0, y1, z + hT],
+          ],
+          [0, 0, 1],
+          uv,
+          null,
+          null,
+        );
+        G.void.quad(
+          [
+            [x1, y0, z - hT],
+            [x0, y0, z - hT],
+            [x0, y1, z - hT],
+            [x1, y1, z - hT],
+          ],
+          [0, 0, -1],
+          uv,
+          null,
+          null,
+        );
         for (const s of [-1, 1]) {
           G.extra.box((x0 + x1) / 2, y0 - 0.03, z + s * (hT + 0.02), x1 - x0 + 0.1, 0.06, 0.05, [0.85, 0.85, 0.83], G.lm, { ao: 0 });
           G.extra.box((x0 + x1) / 2, y1 + 0.02, z + s * hT, x1 - x0 + 0.1, 0.04, 0.02, [0.85, 0.85, 0.83], G.lm, { ao: 0 });
@@ -182,8 +204,30 @@ export class Level4 extends GridLevel {
         const x = ix * c;
         const z0 = iz * c + a0;
         const z1 = iz * c + a1;
-        G.void.quad([[x - hT, y0, z0], [x - hT, y0, z1], [x - hT, y1, z1], [x - hT, y1, z0]], [-1, 0, 0], uv, null, null);
-        G.void.quad([[x + hT, y0, z1], [x + hT, y0, z0], [x + hT, y1, z0], [x + hT, y1, z1]], [1, 0, 0], uv, null, null);
+        G.void.quad(
+          [
+            [x - hT, y0, z0],
+            [x - hT, y0, z1],
+            [x - hT, y1, z1],
+            [x - hT, y1, z0],
+          ],
+          [-1, 0, 0],
+          uv,
+          null,
+          null,
+        );
+        G.void.quad(
+          [
+            [x + hT, y0, z1],
+            [x + hT, y0, z0],
+            [x + hT, y1, z0],
+            [x + hT, y1, z1],
+          ],
+          [1, 0, 0],
+          uv,
+          null,
+          null,
+        );
         for (const s of [-1, 1]) {
           G.extra.box(x + s * (hT + 0.02), y0 - 0.03, (z0 + z1) / 2, 0.05, 0.06, z1 - z0 + 0.1, [0.85, 0.85, 0.83], G.lm, { ao: 0 });
           G.extra.box(x + s * hT, y1 + 0.02, (z0 + z1) / 2, 0.02, 0.04, z1 - z0 + 0.1, [0.85, 0.85, 0.83], G.lm, { ao: 0 });
@@ -260,12 +304,15 @@ export class Level4 extends GridLevel {
         // gaveteiro
         G.prop.box(x + ux * 0.45, 0.33, z + uz * 0.45, 0.4, 0.62, d - 0.1, grey, G.lm, { rot });
         // monitor antigo de tubo
-        if (r * 7 % 1 < 0.7) {
+        if ((r * 7) % 1 < 0.7) {
           const mx = x - Math.sin(rot) * 0.12;
           const mz = z - Math.cos(rot) * 0.12;
           G.prop.box(mx, 0.93, mz, 0.4, 0.34, 0.36, [0.78, 0.76, 0.7], G.lm, { rot, ao: 0 });
           G.prop.box(mx, 0.76, mz, 0.18, 0.04, 0.18, [0.7, 0.68, 0.62], G.lm, { rot, ao: 0 });
-          G.prop.box(x + Math.sin(rot) * 0.15, 0.755, z + Math.cos(rot) * 0.15, 0.45, 0.025, 0.16, [0.75, 0.73, 0.68], G.lm, { rot, ao: 0 });
+          G.prop.box(x + Math.sin(rot) * 0.15, 0.755, z + Math.cos(rot) * 0.15, 0.45, 0.025, 0.16, [0.75, 0.73, 0.68], G.lm, {
+            rot,
+            ao: 0,
+          });
         }
         // cadeira de escritório
         const cx = x + Math.sin(rot) * 0.65;
@@ -320,7 +367,10 @@ export class Level4 extends GridLevel {
       draw: (G) => {
         G.prop.box(x, 0.66, z, 0.47, 1.32, 0.6, [0.5, 0.52, 0.5], G.lm, { rot });
         for (let i = 0; i < 4; i++) {
-          G.prop.box(x + Math.sin(rot) * 0.31, 0.2 + i * 0.32, z + Math.cos(rot) * 0.31, 0.12, 0.025, 0.02, [0.7, 0.7, 0.7], G.lm, { rot, ao: 0 });
+          G.prop.box(x + Math.sin(rot) * 0.31, 0.2 + i * 0.32, z + Math.cos(rot) * 0.31, 0.12, 0.025, 0.02, [0.7, 0.7, 0.7], G.lm, {
+            rot,
+            ao: 0,
+          });
         }
       },
     });
@@ -334,7 +384,10 @@ export class Level4 extends GridLevel {
         G.prop.cylinder(x, 0.22, z, 0.2, 0.44, [0.42, 0.3, 0.22], G.lm, { sides: 10, r2: 0.24 });
         for (let i = 0; i < 6; i++) {
           const a = i * 1.05;
-          G.prop.box(x + Math.cos(a) * 0.12, 0.7 + (i % 3) * 0.12, z + Math.sin(a) * 0.12, 0.05, 0.55, 0.16, [0.36, 0.33, 0.18], G.lm, { rot: a, ao: 0 });
+          G.prop.box(x + Math.cos(a) * 0.12, 0.7 + (i % 3) * 0.12, z + Math.sin(a) * 0.12, 0.05, 0.55, 0.16, [0.36, 0.33, 0.18], G.lm, {
+            rot: a,
+            ao: 0,
+          });
         }
       },
     });
@@ -344,15 +397,18 @@ export class Level4 extends GridLevel {
     const e = this.exit;
     const pz = e.z + e.nz * 0.3;
     if (!(e.x >= ch.x0 && e.x < ch.x0 + this.S && pz >= ch.z0 && pz < ch.z0 + this.S)) return;
-    // portas do elevador em aço escovado
+    // portas do elevador em aço escovado, com batente escuro e fresta central
     const nz = e.nz;
-    const steel = [0.62, 0.63, 0.64];
+    const steel = [0.36, 0.37, 0.39];
+    const frame = [0.22, 0.22, 0.24];
     G.extra.box(e.x - 0.42, 1.08, e.z + nz * 0.02, 0.82, 2.16, 0.04, steel, G.lm, { uvScale: 0.3 });
     G.extra.box(e.x + 0.42, 1.08, e.z + nz * 0.02, 0.82, 2.16, 0.04, steel, G.lm, { uvScale: 0.3 });
-    G.extra.box(e.x - 0.9, 1.15, e.z + nz * 0.05, 0.14, 2.3, 0.1, [0.5, 0.5, 0.52], G.lm, {});
-    G.extra.box(e.x + 0.9, 1.15, e.z + nz * 0.05, 0.14, 2.3, 0.1, [0.5, 0.5, 0.52], G.lm, {});
-    G.extra.box(e.x, 2.3, e.z + nz * 0.05, 1.94, 0.14, 0.1, [0.5, 0.5, 0.52], G.lm, { ao: 0 });
-    G.extra.box(e.x + 1.18, 1.15, e.z + nz * 0.015, 0.12, 0.26, 0.03, [0.55, 0.55, 0.57], G.lm, { ao: 0 });
+    G.extra.box(e.x, 1.08, e.z + nz * 0.025, 0.018, 2.16, 0.04, [0.03, 0.03, 0.03], G.lm, { ao: 0 });
+    G.extra.box(e.x - 0.92, 1.18, e.z + nz * 0.05, 0.16, 2.36, 0.1, frame, G.lm, {});
+    G.extra.box(e.x + 0.92, 1.18, e.z + nz * 0.05, 0.16, 2.36, 0.1, frame, G.lm, {});
+    G.extra.box(e.x, 2.3, e.z + nz * 0.05, 2.0, 0.16, 0.1, frame, G.lm, { ao: 0 });
+    G.extra.box(e.x, 0.01, e.z + nz * 0.25, 2.0, 0.02, 0.5, [0.3, 0.3, 0.31], G.lm, {});
+    G.extra.box(e.x + 1.18, 1.15, e.z + nz * 0.015, 0.12, 0.26, 0.03, [0.3, 0.3, 0.32], G.lm, { ao: 0 });
   }
 
   route() {
@@ -388,7 +444,10 @@ export class Level4 extends GridLevel {
       cx.textBaseline = 'middle';
       cx.fillText('▲ 4', w / 2, h / 2 + 2);
     });
-    const ind = new THREE.Mesh(new THREE.PlaneGeometry(0.36, 0.13), new THREE.MeshBasicMaterial({ map: indTex, color: new THREE.Color(2.2, 2.2, 2.2) }));
+    const ind = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.36, 0.13),
+      new THREE.MeshBasicMaterial({ map: indTex, color: new THREE.Color(2.2, 2.2, 2.2) }),
+    );
     ind.position.set(this.exit.x, 2.48, this.exit.z + nz * 0.01);
     ind.rotation.y = btn.rotation.y;
     this.dynamic.add(btn, ind);

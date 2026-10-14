@@ -5,7 +5,6 @@ import { bottleLabelTex, noteTex, smilerTex } from './textures.js';
 import { NOTES } from './notes.js';
 import { clamp, damp } from './util.js';
 
-const _v = new THREE.Vector3();
 const _f = new THREE.Vector3();
 
 // ------------------------------------------------------------ itens
@@ -197,7 +196,10 @@ export class Smilers {
       const dz = s.z - player.pos.z;
       const d = Math.hypot(dx, dz);
       // iluminado pela lanterna?
-      const dot = (-dx * player.flashDir.x - dz * player.flashDir.z) / Math.max(d, 0.01) / Math.max(Math.hypot(player.flashDir.x, player.flashDir.z), 0.01);
+      const dot =
+        (-dx * player.flashDir.x - dz * player.flashDir.z) /
+        Math.max(d, 0.01) /
+        Math.max(Math.hypot(player.flashDir.x, player.flashDir.z), 0.01);
       const inBeam = player.flashLevel > 0.5 && d < 17 && -dot > Math.cos(0.5) && level.los(player.pos.x, player.pos.z, s.x, s.z, 1.5);
       const lightHere = dark(s.x, s.z);
       s.lit = inBeam ? s.lit + dt : Math.max(0, s.lit - dt * 0.5);

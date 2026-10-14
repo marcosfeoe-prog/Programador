@@ -127,3 +127,13 @@ js/ui/                HUD, radar e menu
 js/audio.js           áudio procedural (Web Audio)
 vendor/three/         three.js r170 (licença MIT)
 ```
+
+---
+
+# Liminar — Espaços Liminares 3D (pasta `liminar/`)
+
+Segundo jogo do repositório: exploração em primeira pessoa pelos **Níveis 0, 1, 4,
+10 e 11** dos "Backrooms", com 11 **filtros** (VHS, filme antigo, CRT, visão
+noturna, câmera térmica…), qualidade gráfica **Baixa, Média, Alta e Ultra** e
+controles feitos para **celular**. Com o servidor rodando (`npm start`), abra
+`http://localhost:8080/liminar/`. Detalhes em [`liminar/README.md`](liminar/README.md).

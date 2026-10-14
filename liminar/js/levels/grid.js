@@ -5,7 +5,7 @@
 // portas projetam sombra; depois vem a luz rebatida (borrão largo) e a
 // oclusão de contato junto às paredes.
 import * as THREE from 'three';
-import { GeoBuilder, litMaterial, panelMaterial } from '../materials.js';
+import { GeoBuilder, litMaterial } from '../materials.js';
 import { clamp, hash3 } from '../util.js';
 
 export const EH = 0; // aresta horizontal (ao longo de x), entre (ix, iz-1) e (ix, iz)
@@ -823,10 +823,11 @@ export class GridLevel {
     const tx = Math.floor((x + 2) / S);
     const fz = Math.floor((z - 2) / S);
     const tz = Math.floor((z + 2) / S);
-    for (let a = fz; a <= tz; a++) for (let b = fx; b <= tx; b++) {
-      const ch = this.chunks.get(this.chunkKey(b, a));
-      if (ch) out.push(ch);
-    }
+    for (let a = fz; a <= tz; a++)
+      for (let b = fx; b <= tx; b++) {
+        const ch = this.chunks.get(this.chunkKey(b, a));
+        if (ch) out.push(ch);
+      }
     return out;
   }
 

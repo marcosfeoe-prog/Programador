@@ -244,7 +244,7 @@ void main() {
   }
 #elif FILTER == 4
   {
-    vec3 h = hdrAt( uv ) * 7.0;
+    vec3 h = hdrAt( uv ) * 2.6;
     float l = luma( aces( h ) );
     l = pow( l, 0.8 );
     vec3 g = vec3( 0.12, 1.0, 0.25 ) * l + vec3( 0.0, 0.03, 0.0 );
@@ -430,7 +430,10 @@ export class Post {
   }
 
   setFilter(id) {
-    const i = Math.max(0, FILTERS.findIndex((f) => f.id === id));
+    const i = Math.max(
+      0,
+      FILTERS.findIndex((f) => f.id === id),
+    );
     this.filterIndex = i;
     this.compMat.defines.FILTER = i;
     this.compMat.needsUpdate = true;

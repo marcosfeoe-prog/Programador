@@ -2,7 +2,7 @@
 // fluorescentes em salas irregulares que nunca terminam.
 // Saída: uma parede que falha ("fenda"); atravessá-la leva ao Nível 1.
 import * as THREE from 'three';
-import { GridLevel, W, EH, EV } from './grid.js';
+import { GridLevel, W, EH } from './grid.js';
 import { getTex, indoorEnvTex } from '../textures.js';
 import { panelMaterial } from '../materials.js';
 import { fbm, hash3, mulberry32, TAU } from '../util.js';
@@ -48,7 +48,15 @@ export class Level0 extends GridLevel {
         envMap: env,
         envIntensity: 0.6,
       },
-      wall: { map: wp.map, normalMap: wp.normalMap, normalScale: 0.5, roughness: 0.82, vertexColors: true, envMap: env, envIntensity: 0.25 },
+      wall: {
+        map: wp.map,
+        normalMap: wp.normalMap,
+        normalScale: 0.5,
+        roughness: 0.82,
+        vertexColors: true,
+        envMap: env,
+        envIntensity: 0.25,
+      },
       ceil: { map: ce.map, normalMap: ce.normalMap, roughness: 0.95, lmIntensity: 0.4, vertexColors: true },
       prop: { map: gr.map, normalMap: gr.normalMap, vertexColors: true, roughness: 0.6, envMap: env, envIntensity: 0.4 },
     };
@@ -101,12 +109,12 @@ export class Level0 extends GridLevel {
 
   pillar(ix, iz) {
     if (this.region(ix, iz) < 0.2) return 0;
-    if ((ix & 1) || (iz & 1)) return 0;
+    if (ix & 1 || iz & 1) return 0;
     return 0.46;
   }
 
   genLight(cx, cz) {
-    if ((cx & 1) || (cz & 1)) return null;
+    if (cx & 1 || cz & 1) return null;
     const c = this.cell;
     const h = this.hashCell(cx, cz, 3);
     const dim = fbm(cx * 0.04 + 30, cz * 0.04, 2, this.seed + 1);

@@ -1,173 +1,198 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b0a07" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="description" content="Jogo 3D de espaços liminares: Níveis 0, 1, 4, 10 e 11, com filtros e qualidade gráfica ajustável. Feito para celular." />
-  <title>Liminar — Espaços Liminares 3D</title>
-  <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="icon" href="icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="css/style.css" />
-  <script type="importmap">
-    { "imports": { "three": "../vendor/three/three.module.min.js" } }
-  </script>
-</head>
-<body>
-  <canvas id="game"></canvas>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b0a07" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta
+      name="description"
+      content="Jogo 3D de espaços liminares: Níveis 0, 1, 4, 10 e 11, com filtros e qualidade gráfica ajustável. Feito para celular."
+    />
+    <title>Liminar — Espaços Liminares 3D</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/style.css" />
+    <script type="importmap">
+      { "imports": { "three": "../vendor/three/three.module.min.js" } }
+    </script>
+  </head>
+  <body>
+    <canvas id="game"></canvas>
 
-  <!-- Sobreposições dos filtros (VHS, câmera digital, CCTV) -->
-  <div id="cam-ui" class="hidden">
-    <div id="cam-tl"></div>
-    <div id="cam-tr"></div>
-    <div id="cam-bl"></div>
-    <div id="cam-br"></div>
-  </div>
-
-  <!-- HUD -->
-  <div id="hud" class="hidden">
-    <div id="hud-tl">
-      <div id="lvl-tag">NÍVEL 0</div>
-      <div id="lvl-name">O Saguão</div>
-      <div class="bars">
-        <div class="bar-row"><span>SANIDADE</span><div class="bar"><div id="san-bar"></div></div></div>
-        <div class="bar-row" id="sta-row"><span>FÔLEGO</span><div class="bar thin"><div id="sta-bar"></div></div></div>
-      </div>
+    <!-- Sobreposições dos filtros (VHS, câmera digital, CCTV) -->
+    <div id="cam-ui" class="hidden">
+      <div id="cam-tl"></div>
+      <div id="cam-tr"></div>
+      <div id="cam-bl"></div>
+      <div id="cam-br"></div>
     </div>
-    <div id="objective"></div>
-    <div id="nav"><div id="nav-arrow">➤</div><div id="nav-dist"></div></div>
-    <div id="crosshair"></div>
-    <div id="prompt" class="hidden"></div>
-    <div id="msg"></div>
-    <div id="fps" class="hidden"></div>
-  </div>
 
-  <div id="note" class="hidden">
-    <div class="paper">
-      <div id="note-text"></div>
-      <button id="note-close" class="btn small">Fechar</button>
-    </div>
-  </div>
-
-  <div id="scare" class="hidden"></div>
-
-  <div id="card" class="hidden">
-    <div class="card-in">
-      <div id="card-tag">NÍVEL 0</div>
-      <div id="card-name">O Saguão</div>
-      <div id="card-danger"></div>
-      <div id="card-obj"></div>
-      <div class="lbar"><div id="card-bar"></div></div>
-      <div id="card-load">Gerando…</div>
-    </div>
-  </div>
-
-  <div id="ending" class="hidden">
-    <div class="end-in">
-      <h2>Você atendeu.</h2>
-      <p id="end-text"></p>
-      <p class="dim" id="end-stats"></p>
-      <button id="end-menu" class="btn primary">Voltar ao menu</button>
-    </div>
-  </div>
-
-  <!-- Controles de toque -->
-  <div id="touch">
-    <div class="joy-zone"></div>
-    <div class="look-zone"></div>
-    <div class="joy-base"><div class="joy-knob"></div></div>
-    <div class="tbtns">
-      <button data-act="interact" class="tbtn big" id="btn-use">USAR</button>
-      <button data-act="flashlight" class="tbtn" id="btn-flash">🔦</button>
-      <button data-act="sprint" class="tbtn" id="btn-run">CORRER</button>
-    </div>
-    <div class="ttop">
-      <button data-act="nav" class="tbtn small">🧭</button>
-      <button data-act="filter" class="tbtn small" id="btn-filter">FILTRO</button>
-      <button data-act="menu" class="tbtn small">☰</button>
-    </div>
-  </div>
-
-  <!-- Menu principal / pausa -->
-  <div id="menu">
-    <div class="menu-box">
-      <h1 id="menu-title">LIMINAR</h1>
-      <div class="subtitle" id="menu-sub">espaços liminares · 5 níveis</div>
-
-      <div id="m-main" class="panel">
-        <button id="b-play" class="btn primary" disabled>Carregando…</button>
-        <button id="b-new" class="btn hidden">Novo jogo (Nível 0)</button>
-        <button id="b-levels" class="btn">Níveis</button>
-        <button id="b-filters" class="btn">Filtros</button>
-        <button id="b-settings" class="btn">Configurações</button>
-        <button id="b-help" class="btn">Como jogar</button>
-        <button id="b-restart" class="btn hidden">Reiniciar nível</button>
-        <button id="b-quit" class="btn hidden">Menu principal</button>
-      </div>
-
-      <div id="m-levels" class="panel hidden">
-        <div id="level-list"></div>
-        <button class="btn back">Voltar</button>
-      </div>
-
-      <div id="m-filters" class="panel hidden">
-        <div id="filter-list"></div>
-        <label>Intensidade do filtro <input id="s-fstr" type="range" min="0" max="1" step="0.05" /></label>
-        <label>Granulação <input id="s-grain" type="range" min="0" max="1" step="0.05" /></label>
-        <label>Vinheta <input id="s-vig" type="range" min="0" max="1" step="0.05" /></label>
-        <button class="btn back">Voltar</button>
-      </div>
-
-      <div id="m-settings" class="panel hidden">
-        <label>Qualidade gráfica
-          <select id="s-quality">
-            <option value="low">Baixa — celulares simples</option>
-            <option value="medium">Média — celulares bons</option>
-            <option value="high">Alta — PC / celulares top</option>
-            <option value="ultra">Ultra — PC com placa de vídeo</option>
-          </select>
-        </label>
-        <div class="note" id="q-desc"></div>
-        <label class="check"><input id="s-dyn" type="checkbox" /> Resolução dinâmica (mantém o FPS)</label>
-        <label>Campo de visão <input id="s-fov" type="range" min="60" max="100" step="1" /></label>
-        <label>Sensibilidade <input id="s-sens" type="range" min="0.2" max="3" step="0.05" /></label>
-        <label>Volume <input id="s-vol" type="range" min="0" max="1" step="0.05" /></label>
-        <label class="check"><input id="s-bob" type="checkbox" /> Balanço da câmera</label>
-        <label class="check"><input id="s-nav" type="checkbox" /> Bússola de intuição (aponta a saída)</label>
-        <label class="check"><input id="s-inv" type="checkbox" /> Inverter eixo Y</label>
-        <label class="check"><input id="s-fps" type="checkbox" /> Mostrar FPS</label>
-        <button class="btn back">Voltar</button>
-      </div>
-
-      <div id="m-help" class="panel hidden">
-        <div class="help">
-          <h3>Objetivo</h3>
-          <p>Você caiu nos <b>Bastidores</b>. Cada nível tem uma saída escondida — encontre-a para avançar: <b>Nível 0 → 1 → 4 → 10 → 11</b>. Ouça com atenção: toda saída faz um som.</p>
-          <h3>Sanidade</h3>
-          <p>A sanidade cai com o tempo, no escuro e perto de entidades. Beba <b>Água de Amêndoa</b> e água dos bebedouros para recuperar. Com pouca sanidade a imagem distorce e você ouve sussurros.</p>
-          <h3>Nível 1</h3>
-          <p>Os <b>Sorridentes</b> vivem no escuro. Aponte a <b>lanterna</b> para eles até que recuem.</p>
-          <h3>Celular</h3>
-          <p>Joystick à esquerda (empurre até o fim para correr), arraste à direita para olhar. Botões: <b>USAR</b>, lanterna, correr, bússola, filtro e menu. Jogue na horizontal.</p>
-          <h3>PC</h3>
-          <p><b>WASD</b> mover · <b>Mouse</b> olhar · <b>Shift</b> correr · <b>E</b> usar · <b>F</b> lanterna · <b>V</b> trocar filtro · <b>N</b> bússola · <b>H</b> esconder HUD · <b>G</b> tela cheia · <b>Esc</b> pausa</p>
+    <!-- HUD -->
+    <div id="hud" class="hidden">
+      <div id="hud-tl">
+        <div id="lvl-tag">NÍVEL 0</div>
+        <div id="lvl-name">O Saguão</div>
+        <div class="bars">
+          <div class="bar-row">
+            <span>SANIDADE</span>
+            <div class="bar"><div id="san-bar"></div></div>
+          </div>
+          <div class="bar-row" id="sta-row">
+            <span>FÔLEGO</span>
+            <div class="bar thin"><div id="sta-bar"></div></div>
+          </div>
         </div>
-        <button class="btn back">Voltar</button>
       </div>
+      <div id="objective"></div>
+      <div id="nav">
+        <div id="nav-arrow">➤</div>
+        <div id="nav-dist"></div>
+      </div>
+      <div id="crosshair"></div>
+      <div id="prompt" class="hidden"></div>
+      <div id="msg"></div>
+      <div id="fps" class="hidden"></div>
+    </div>
 
-      <div id="loading">
-        <div class="lbar"><div id="load-bar"></div></div>
-        <div id="load-text">Iniciando…</div>
+    <div id="note" class="hidden">
+      <div class="paper">
+        <div id="note-text"></div>
+        <button id="note-close" class="btn small">Fechar</button>
       </div>
     </div>
-  </div>
 
-  <div id="rotate" class="hidden"><div>↻ Gire o celular para a horizontal</div></div>
-  <div id="error" class="hidden"></div>
+    <div id="scare" class="hidden"></div>
 
-  <script type="module" src="js/main.js"></script>
-</body>
+    <div id="card" class="hidden">
+      <div class="card-in">
+        <div id="card-tag">NÍVEL 0</div>
+        <div id="card-name">O Saguão</div>
+        <div id="card-danger"></div>
+        <div id="card-obj"></div>
+        <div class="lbar"><div id="card-bar"></div></div>
+        <div id="card-load">Gerando…</div>
+      </div>
+    </div>
+
+    <div id="ending" class="hidden">
+      <div class="end-in">
+        <h2>Você atendeu.</h2>
+        <p id="end-text"></p>
+        <p class="dim" id="end-stats"></p>
+        <button id="end-menu" class="btn primary">Voltar ao menu</button>
+      </div>
+    </div>
+
+    <!-- Controles de toque -->
+    <div id="touch">
+      <div class="joy-zone"></div>
+      <div class="look-zone"></div>
+      <div class="joy-base"><div class="joy-knob"></div></div>
+      <div class="tbtns">
+        <button data-act="interact" class="tbtn big" id="btn-use">USAR</button>
+        <button data-act="flashlight" class="tbtn" id="btn-flash">🔦</button>
+        <button data-act="sprint" class="tbtn" id="btn-run">CORRER</button>
+      </div>
+      <div class="ttop">
+        <button data-act="nav" class="tbtn small">🧭</button>
+        <button data-act="filter" class="tbtn small" id="btn-filter">FILTRO</button>
+        <button data-act="menu" class="tbtn small">☰</button>
+      </div>
+    </div>
+
+    <!-- Menu principal / pausa -->
+    <div id="menu">
+      <div class="menu-box">
+        <h1 id="menu-title">LIMINAR</h1>
+        <div class="subtitle" id="menu-sub">espaços liminares · 5 níveis</div>
+
+        <div id="m-main" class="panel">
+          <button id="b-play" class="btn primary" disabled>Carregando…</button>
+          <button id="b-new" class="btn hidden">Novo jogo (Nível 0)</button>
+          <button id="b-levels" class="btn">Níveis</button>
+          <button id="b-filters" class="btn">Filtros</button>
+          <button id="b-settings" class="btn">Configurações</button>
+          <button id="b-help" class="btn">Como jogar</button>
+          <button id="b-restart" class="btn hidden">Reiniciar nível</button>
+          <button id="b-quit" class="btn hidden">Menu principal</button>
+        </div>
+
+        <div id="m-levels" class="panel hidden">
+          <div id="level-list"></div>
+          <button class="btn back">Voltar</button>
+        </div>
+
+        <div id="m-filters" class="panel hidden">
+          <div id="filter-list"></div>
+          <label>Intensidade do filtro <input id="s-fstr" type="range" min="0" max="1" step="0.05" /></label>
+          <label>Granulação <input id="s-grain" type="range" min="0" max="1" step="0.05" /></label>
+          <label>Vinheta <input id="s-vig" type="range" min="0" max="1" step="0.05" /></label>
+          <button class="btn back">Voltar</button>
+        </div>
+
+        <div id="m-settings" class="panel hidden">
+          <label
+            >Qualidade gráfica
+            <select id="s-quality">
+              <option value="low">Baixa — celulares simples</option>
+              <option value="medium">Média — celulares bons</option>
+              <option value="high">Alta — PC / celulares top</option>
+              <option value="ultra">Ultra — PC com placa de vídeo</option>
+            </select>
+          </label>
+          <div class="note" id="q-desc"></div>
+          <label class="check"><input id="s-dyn" type="checkbox" /> Resolução dinâmica (mantém o FPS)</label>
+          <label>Campo de visão <input id="s-fov" type="range" min="60" max="100" step="1" /></label>
+          <label>Sensibilidade <input id="s-sens" type="range" min="0.2" max="3" step="0.05" /></label>
+          <label>Volume <input id="s-vol" type="range" min="0" max="1" step="0.05" /></label>
+          <label class="check"><input id="s-bob" type="checkbox" /> Balanço da câmera</label>
+          <label class="check"><input id="s-nav" type="checkbox" /> Bússola de intuição (aponta a saída)</label>
+          <label class="check"><input id="s-inv" type="checkbox" /> Inverter eixo Y</label>
+          <label class="check"><input id="s-fps" type="checkbox" /> Mostrar FPS</label>
+          <button class="btn back">Voltar</button>
+        </div>
+
+        <div id="m-help" class="panel hidden">
+          <div class="help">
+            <h3>Objetivo</h3>
+            <p>
+              Você caiu nos <b>Bastidores</b>. Cada nível tem uma saída escondida — encontre-a para avançar:
+              <b>Nível 0 → 1 → 4 → 10 → 11</b>. Ouça com atenção: toda saída faz um som.
+            </p>
+            <h3>Sanidade</h3>
+            <p>
+              A sanidade cai com o tempo, no escuro e perto de entidades. Beba <b>Água de Amêndoa</b> e água dos bebedouros para recuperar.
+              Com pouca sanidade a imagem distorce e você ouve sussurros.
+            </p>
+            <h3>Nível 1</h3>
+            <p>Os <b>Sorridentes</b> vivem no escuro. Aponte a <b>lanterna</b> para eles até que recuem.</p>
+            <h3>Celular</h3>
+            <p>
+              Joystick à esquerda (empurre até o fim para correr), arraste à direita para olhar. Botões: <b>USAR</b>, lanterna, correr,
+              bússola, filtro e menu. Jogue na horizontal.
+            </p>
+            <h3>PC</h3>
+            <p>
+              <b>WASD</b> mover · <b>Mouse</b> olhar · <b>Shift</b> correr · <b>E</b> usar · <b>F</b> lanterna · <b>V</b> trocar filtro ·
+              <b>N</b> bússola · <b>H</b> esconder HUD · <b>G</b> tela cheia · <b>Esc</b> pausa
+            </p>
+          </div>
+          <button class="btn back">Voltar</button>
+        </div>
+
+        <div id="loading">
+          <div class="lbar"><div id="load-bar"></div></div>
+          <div id="load-text">Iniciando…</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="rotate" class="hidden"><div>↻ Gire o celular para a horizontal</div></div>
+    <div id="error" class="hidden"></div>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
 </html>

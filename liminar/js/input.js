@@ -139,6 +139,7 @@ export class Input {
     const joyBase = root.querySelector('.joy-base');
     const joyKnob = root.querySelector('.joy-knob');
     const lookZone = root.querySelector('.look-zone');
+    joyBase.classList.add('idle');
     let joyId = null;
     let jx0 = 0;
     let jy0 = 0;
@@ -152,8 +153,10 @@ export class Input {
         joyId = t.identifier;
         jx0 = t.clientX;
         jy0 = t.clientY;
+        joyBase.classList.remove('idle');
         joyBase.style.left = jx0 - 64 + 'px';
         joyBase.style.top = jy0 - 64 + 'px';
+        joyBase.style.bottom = 'auto';
         joyBase.classList.add('on');
         joyKnob.style.transform = 'translate(0px,0px)';
       },
@@ -184,6 +187,9 @@ export class Input {
         joyId = null;
         this.joy.x = this.joy.y = 0;
         joyBase.classList.remove('on', 'run');
+        joyBase.style.left = joyBase.style.top = joyBase.style.bottom = '';
+        joyKnob.style.transform = 'translate(0px,0px)';
+        joyBase.classList.add('idle');
       }
     };
     joyZone.addEventListener('touchmove', joyMove, { passive: false });

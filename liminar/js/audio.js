@@ -249,7 +249,9 @@ export class AudioEngine {
       B.breath = this.buf(normalize(a, 0.5));
     }
     // queda e volta da energia
-    B.powerDown = this.buf(normalize(mix(env(sine(sec(1.6), 120, 25), 0.005, 0.6), scale(env(sine(sec(0.4), 55, 30), 0.002, 0.12), 1.4)), 0.8));
+    B.powerDown = this.buf(
+      normalize(mix(env(sine(sec(1.6), 120, 25), 0.005, 0.6), scale(env(sine(sec(0.4), 55, 30), 0.002, 0.12), 1.4)), 0.8),
+    );
     B.powerUp = this.buf(normalize(mix(scale(env(sine(sec(0.3), 60, 40), 0.002, 0.08), 1.2), env(sine(sec(1.2), 40, 120), 0.4, 0.5)), 0.6));
     // sino do elevador
     {
@@ -377,7 +379,7 @@ export class AudioEngine {
       const a = new Float32Array(n);
       for (let i = 0; i < n; i++) {
         const t = i / SR;
-        const on = (t < 1.2 || (t > 1.6 && t < 2.8)) ? 1 : 0;
+        const on = t < 1.2 || (t > 1.6 && t < 2.8) ? 1 : 0;
         if (!on) continue;
         const tr = Math.sin(2 * Math.PI * 20 * t) > 0 ? 1 : 0.4;
         a[i] = (Math.sin(2 * Math.PI * 820 * t) + Math.sin(2 * Math.PI * 1040 * t) * 0.8 + Math.sin(2 * Math.PI * 2480 * t) * 0.2) * tr;
@@ -407,7 +409,7 @@ export class AudioEngine {
       for (let i = 0; i < n; i++) {
         const t = i / n;
         ph += (2 * Math.PI * (520 - t * 160)) / SR;
-        o[i] = (((ph / Math.PI) % 2) - 1) + (Math.random() * 2 - 1) * 0.6;
+        o[i] = ((ph / Math.PI) % 2) - 1 + (Math.random() * 2 - 1) * 0.6;
       }
       B.crow = this.buf(normalize(env(biquad(o, 'bp', 1300, 2.5), 0.02, 0.15), 0.6));
     }
@@ -662,7 +664,8 @@ export class AudioEngine {
       const k = this.kind;
       if (k === 'level0') {
         if (Math.random() < 0.35) {
-          for (let i = 0; i < 3 + Math.floor(Math.random() * 4); i++) this.play(this.B.step.carpet, { gain: 0.08, rate: 0.85, wet: 1.2, pan, when: i * 0.55 });
+          for (let i = 0; i < 3 + Math.floor(Math.random() * 4); i++)
+            this.play(this.B.step.carpet, { gain: 0.08, rate: 0.85, wet: 1.2, pan, when: i * 0.55 });
         } else this.play('crackle', { gain: 0.05, pan, wet: 1, rate: 0.7 });
       } else if (k === 'level1') {
         const r = Math.random();
@@ -679,7 +682,13 @@ export class AudioEngine {
         if (this.wind) this.wind.gain.gain.setTargetAtTime(0.08 + Math.random() * 0.1, t, 2);
       }
       // alucinações
-      if (st.sanity < 35 && Math.random() < 0.6) this.play('whisper', { gain: 0.12 + (35 - st.sanity) * 0.006, pan: Math.random() * 2 - 1, wet: 0.8, rate: 0.8 + Math.random() * 0.4 });
+      if (st.sanity < 35 && Math.random() < 0.6)
+        this.play('whisper', {
+          gain: 0.12 + (35 - st.sanity) * 0.006,
+          pan: Math.random() * 2 - 1,
+          wet: 0.8,
+          rate: 0.8 + Math.random() * 0.4,
+        });
     }
     // batimento cardíaco
     if (st.sanity < 30 || st.fear > 0.3) {

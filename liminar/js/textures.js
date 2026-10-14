@@ -3,12 +3,10 @@
 import * as THREE from 'three';
 import { mulberry32, clamp } from './util.js';
 
-let renderer = null;
 let maxAniso = 1;
 const cache = new Map();
 
 export function initTextures(r) {
-  renderer = r;
   maxAniso = Math.min(8, r.capabilities.getMaxAnisotropy());
 }
 
@@ -292,7 +290,7 @@ const GENERATORS = {
     const cv = paintRGB(W, H, (x, y, i, o) => {
       const u = x / W;
       const v = y / H;
-      const fr = Math.min(u, 1 - u) * 0.6 / 1.2;
+      const fr = (Math.min(u, 1 - u) * 0.6) / 1.2;
       const fr2 = Math.min(v, 1 - v);
       const frame = Math.min(fr * 2, fr2) < 0.025;
       const px = (x * 0.9) % 6;
@@ -964,7 +962,7 @@ export function indoorEnvTex(base, light, rows = 6) {
   c.fillRect(0, 0, W, H);
   c.fillStyle = light;
   for (let r = 0; r < rows; r++) {
-    const y = 4 + r * (H * 0.42 / rows) * (1 + r * 0.2);
+    const y = 4 + r * ((H * 0.42) / rows) * (1 + r * 0.2);
     const n = 8 + r * 2;
     for (let i = 0; i < n; i++) {
       const x = (i + 0.5) * (W / n);

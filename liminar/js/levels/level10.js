@@ -32,7 +32,7 @@ float roadDist( vec2 p ) {
 `;
 
 function roadDist(x, z) {
-  const m = (v) => Math.abs((((v + P / 2) % P) + P) % P - P / 2);
+  const m = (v) => Math.abs(((((v + P / 2) % P) + P) % P) - P / 2);
   return Math.min(m(x), m(z));
 }
 
@@ -88,7 +88,12 @@ export class Level10 extends OutdoorLevel {
     const S = Q.tex;
     const pl = getTex('planks', S);
     const gr = getTex('grime', S);
-    this.woodMat = new THREE.MeshStandardMaterial({ map: pl.map, normalMap: Q.normalMaps ? pl.normalMap : null, vertexColors: true, roughness: 0.92 });
+    this.woodMat = new THREE.MeshStandardMaterial({
+      map: pl.map,
+      normalMap: Q.normalMaps ? pl.normalMap : null,
+      vertexColors: true,
+      roughness: 0.92,
+    });
     this.miscMat = new THREE.MeshStandardMaterial({ map: gr.map, vertexColors: true, roughness: 0.85 });
     this.wireMat = new THREE.LineBasicMaterial({ color: 0x1a1a1a, fog: true });
     this.route();
@@ -124,7 +129,10 @@ export class Level10 extends OutdoorLevel {
         )
         .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvWPos = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;');
       sh.fragmentShader = sh.fragmentShader
-        .replace('#include <common>', '#include <common>\nvarying vec3 vWPos;\nuniform sampler2D uPath;\nuniform float uWheatR;\n' + TERRAIN_GLSL)
+        .replace(
+          '#include <common>',
+          '#include <common>\nvarying vec3 vWPos;\nuniform sampler2D uPath;\nuniform float uWheatR;\n' + TERRAIN_GLSL,
+        )
         .replace(
           '#include <map_fragment>',
           `vec2 w = vWPos.xz;
@@ -363,7 +371,10 @@ export class Level10 extends OutdoorLevel {
         const a = k * 1.3 + h(13) * 6;
         const by = y + 2.6 + k * 0.45;
         const L = 1.8 - k * 0.2;
-        wood.box(x + Math.cos(a) * L * 0.45, by + 0.4, z + Math.sin(a) * L * 0.45, L, 0.1, 0.1, [0.3, 0.26, 0.22], null, { rot: -a, ao: 0 });
+        wood.box(x + Math.cos(a) * L * 0.45, by + 0.4, z + Math.sin(a) * L * 0.45, L, 0.1, 0.1, [0.3, 0.26, 0.22], null, {
+          rot: -a,
+          ao: 0,
+        });
       }
       ch.colliders.push([x - 0.25, x + 0.25, z - 0.25, z + 0.25]);
     }
@@ -426,10 +437,16 @@ export class Level10 extends OutdoorLevel {
       const last = wood.pos.length / 3;
       // inclina as águas: gira os 24 vértices recém-criados em torno do eixo longitudinal
       const pivot = new THREE.Vector3(pos[0], ry, pos[1]);
-      const q = new THREE.Quaternion().setFromAxisAngle(rot ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 0, 1), -s * ang * (rot ? -1 : 1));
+      const q = new THREE.Quaternion().setFromAxisAngle(
+        rot ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 0, 1),
+        -s * ang * (rot ? -1 : 1),
+      );
       const v = new THREE.Vector3();
       for (let k = last - 24; k < last; k++) {
-        v.set(wood.pos[k * 3], wood.pos[k * 3 + 1], wood.pos[k * 3 + 2]).sub(pivot).applyQuaternion(q).add(pivot);
+        v.set(wood.pos[k * 3], wood.pos[k * 3 + 1], wood.pos[k * 3 + 2])
+          .sub(pivot)
+          .applyQuaternion(q)
+          .add(pivot);
         wood.pos[k * 3] = v.x;
         wood.pos[k * 3 + 1] = v.y;
         wood.pos[k * 3 + 2] = v.z;

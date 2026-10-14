@@ -172,7 +172,13 @@ export class Level1 extends GridLevel {
     if (hash3(ch.cx, ch.cz, this.seed + 31) < 0.35) {
       const x = cx0 + Math.floor(hash3(ch.cx, ch.cz, this.seed + 32) * N);
       const z = cz0 + Math.floor(hash3(ch.cx, ch.cz, this.seed + 33) * N);
-      ch.items.push({ type: 'note', key: `1:${ch.cx}:${ch.cz}:n`, x: x * c + c / 2 - 0.5, z: z * c + c / 2 + 0.4, rot: hash3(x, z, 5) * TAU });
+      ch.items.push({
+        type: 'note',
+        key: `1:${ch.cx}:${ch.cz}:n`,
+        x: x * c + c / 2 - 0.5,
+        z: z * c + c / 2 + 0.4,
+        rot: hash3(x, z, 5) * TAU,
+      });
     }
   }
 
@@ -193,7 +199,11 @@ export class Level1 extends GridLevel {
           for (let i = 0; i < n; i++) {
             const s = 1.1 - i * 0.12;
             const k = 0.9 + ((i * 7) % 3) * 0.06;
-            G.prop.box(x + (i % 2) * 0.06, s / 2 + i * 1.02, z, s, s, s, [wood[0] * k, wood[1] * k, wood[2] * k], G.lm, { rot: rot + i * 0.2, uvScale: 0.5, floorY: 0 });
+            G.prop.box(x + (i % 2) * 0.06, s / 2 + i * 1.02, z, s, s, s, [wood[0] * k, wood[1] * k, wood[2] * k], G.lm, {
+              rot: rot + i * 0.2,
+              uvScale: 0.5,
+              floorY: 0,
+            });
           }
         },
       });
