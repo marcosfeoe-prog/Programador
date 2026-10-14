@@ -7,6 +7,7 @@ import { SKY_GLSL } from './outdoor.js';
 import { mulberry32, clamp } from '../util.js';
 
 const { makeCanvas, toTex, noiseField, whiteNoise, paintRGB, normalMap } = TEX;
+const gf = (v) => Number(v).toFixed(3); // número → literal float GLSL
 
 // ------------------------------------------------------------------ texturas
 // Revestimento de madeira (lap siding): 8 tábuas sobrepostas por ladrilho, em cinza
@@ -100,7 +101,8 @@ registerTexture('l9Window', (S) => {
     let mull = false;
     const gu = (u - fr) / (1 - 2 * fr);
     const gv = (v - fr) / (1 - 2 * fr);
-    if (kind === 0) mull = Math.abs(gu - 1 / 3) < 0.012 || Math.abs(gu - 2 / 3) < 0.012 || Math.abs((gv * 6) % 1) < 0.03 || Math.abs((gv * 6) % 1) > 0.97;
+    if (kind === 0)
+      mull = Math.abs(gu - 1 / 3) < 0.012 || Math.abs(gu - 2 / 3) < 0.012 || Math.abs((gv * 6) % 1) < 0.03 || Math.abs((gv * 6) % 1) > 0.97;
     if (kind === 1 || kind === 3) mull = Math.abs(gv - 0.5) < 0.025;
     if (kind === 2) mull = Math.abs(gu - 0.5) < 0.018 || Math.abs(gv - 0.5) < 0.018;
     if (Math.abs(gv - 0.5) < 0.03 && kind !== 2) mull = true;
@@ -351,7 +353,11 @@ export function injectLamps(mat, U, opts = {}) {
         vec3 l9S = vec3( 0.0 );
         l9Lights( vL9W, l9N, l9V, ${shin}, l9D, l9S );
         reflectedLight.directDiffuse += diffuseColor.rgb * l9D;
-        reflectedLight.directSpecular += l9S * ( ${spec} );
+        #ifdef LAMBERT
+          reflectedLight.directDiffuse += l9S * ( ${spec} ) * 0.6;
+        #else
+          reflectedLight.directSpecular += l9S * ( ${spec} );
+        #endif
       }`,
     );
   });
@@ -386,7 +392,15 @@ export function baseMat(Q, o) {
 export function makeGroundMat(Q, U, P, RW, env) {
   const as = getTex('asphalt', Q.tex);
   const nz = getTex('l9Noise', Q.tex).map;
-  const mat = baseMat(Q, { map: as.map, normalMap: as.normalMap, normalScale: 0.6, roughness: 0.6, envMap: env, envIntensity: 0.8, vertexColors: false });
+  const mat = baseMat(Q, {
+    map: as.map,
+    normalMap: as.normalMap,
+    normalScale: 0.6,
+    roughness: 0.6,
+    envMap: env,
+    envIntensity: 0.8,
+    vertexColors: false,
+  });
   const uni = { uNoise: { value: nz } };
   patchMat(mat, 'l9ground', (sh) => {
     Object.assign(sh.uniforms, uni);
@@ -416,9 +430,9 @@ export function makeGroundMat(Q, U, P, RW, env) {
           vec2 w = vL9W.xz;
           vec4 nA = texture2D( uNoise, w * 0.021 );
           vec4 nB = texture2D( uNoise, w * 0.083 + 0.31 );
-          vec2 q = mod( w + ${P / 2}.0, ${P}.0 ) - ${P / 2}.0;
+          vec2 q = mod( w + ${gf(P / 2)}, ${gf(P)} ) - ${gf(P / 2)};
           vec2 a = abs( q );
-          float curb = ( a.x < ${RW}.0 && a.y < ${RW}.0 ) ? length( vec2( ${RW}.0 ) - a ) : ${RW}.0 - min( a.x, a.y );
+          float curb = ( a.x < ${gf(RW)} && a.y < ${gf(RW)} ) ? length( vec2( ${gf(RW)} ) - a ) : ${gf(RW)} - min( a.x, a.y );
           float gutter = smoothstep( 0.9, 0.05, curb );
           l9Pud = smoothstep( 0.6, 0.66, nA.r + nB.g * 0.22 + gutter * 0.2 );
           l9Wet = clamp( 0.45 + gutter * 0.4 + nB.b * 0.25, 0.0, 1.0 );
@@ -476,8 +490,11 @@ export function makeGroundMat(Q, U, P, RW, env) {
           float fade = 1.0 - dh / 32.0;
           refl += lc.rgb * s * fade * fade * mix( 0.5, 2.5, l9Pud );
         }
-        reflectedLight.directSpecular += refl * fres * 0.06 * ( 0.35 + l9Wet );
-        ${Q.lambert ? 'reflectedLight.indirectSpecular += vec3( 0.012, 0.018, 0.024 ) * fres * l9Pud;' : ''}
+        #ifdef LAMBERT
+          reflectedLight.directDiffuse += refl * fres * 0.05 * ( 0.35 + l9Wet ) + vec3( 0.006, 0.009, 0.012 ) * fres * l9Pud;
+        #else
+          reflectedLight.directSpecular += refl * fres * 0.06 * ( 0.35 + l9Wet );
+        #endif
       }`,
     );
   });
@@ -509,7 +526,7 @@ export function makeYardMat(Q, U, P, RW, STRIP, LOT) {
           vec2 w = vL9W.xz;
           vec3 wn = normalize( ( vec4( vNormal, 0.0 ) * viewMatrix ).xyz );
           vec4 nA = texture2D( uNoise, w * 0.03 );
-          vec2 q = mod( w + ${P / 2}.0, ${P}.0 ) - ${P / 2}.0;
+          vec2 q = mod( w + ${gf(P / 2)}, ${gf(P)} ) - ${gf(P / 2)};
           vec2 a = abs( q );
           float dm = min( a.x, a.y );
           vec3 grassC = texture2D( map, w * 0.5 ).rgb * ( 0.75 + nA.r * 0.5 );
@@ -520,18 +537,18 @@ export function makeYardMat(Q, U, P, RW, STRIP, LOT) {
             c = texture2D( uSide, vec2( w.x + w.y, vL9W.y ) * 0.33 ).rgb * 0.95;
             l9Wet = 0.5;
           } else {
-            bool corner = a.x < ${LOT}.0 && a.y < ${LOT}.0;
-            bool walk = corner || ( dm > ${RW + STRIP} && dm < ${LOT}.0 );
+            bool corner = a.x < ${gf(LOT)} && a.y < ${gf(LOT)};
+            bool walk = corner || ( dm > ${gf(RW + STRIP)} && dm < ${gf(LOT)} );
             if ( walk ) {
               // placas alinhadas com a calçada
-              vec2 su = a.x < a.y ? vec2( ( a.x - ${RW + STRIP} ), w.y ) : vec2( w.x, ( a.y - ${RW + STRIP} ) );
+              vec2 su = a.x < a.y ? vec2( ( a.x - ${gf(RW + STRIP)} ), w.y ) : vec2( w.x, ( a.y - ${gf(RW + STRIP)} ) );
               c = texture2D( uSide, su / 3.0 ).rgb * ( 0.8 + nA.b * 0.3 );
               c = mix( c, c * vec3( 0.75, 0.8, 0.7 ), smoothstep( 0.6, 0.75, nA.a ) * 0.5 );
               l9Wet = 0.35 + nA.g * 0.3;
             } else {
               c = grassC;
               // terra nas bordas da grama
-              float edge = min( abs( dm - ${RW + STRIP} ), abs( dm - ${LOT}.0 ) );
+              float edge = min( abs( dm - ${gf(RW + STRIP)} ), abs( dm - ${gf(LOT)} ) );
               c = mix( c, vec3( 0.07, 0.055, 0.04 ), smoothstep( 0.12, 0.0, edge ) * 0.6 );
               l9Wet = 0.08;
             }
@@ -549,7 +566,17 @@ export function makeYardMat(Q, U, P, RW, STRIP, LOT) {
 export function makeWindowMat(Q, U, env) {
   const t = getTex('l9Window', Q.tex);
   const mat = baseMat(Q, { map: t.map, emissiveMap: t.emissiveMap, roughness: 0.15, envMap: env, envIntensity: 1.2 });
-  const uni = { uWin: { value: [new THREE.Color(0, 0, 0), new THREE.Color(1.9, 1.1, 0.5), new THREE.Color(0.5, 0.7, 1.4), new THREE.Color(1.6, 0.9, 0.42), new THREE.Color(0.5, 0.7, 1.4)] } };
+  const uni = {
+    uWin: {
+      value: [
+        new THREE.Color(0, 0, 0),
+        new THREE.Color(1.9, 1.1, 0.5),
+        new THREE.Color(0.5, 0.7, 1.4),
+        new THREE.Color(1.6, 0.9, 0.42),
+        new THREE.Color(0.5, 0.7, 1.4),
+      ],
+    },
+  };
   patchMat(mat, 'l9win', (sh) => {
     Object.assign(sh.uniforms, uni);
     sh.vertexShader = sh.vertexShader
@@ -623,6 +650,9 @@ export function makeHaloMat(fogDensity) {
     uniforms: { uI: { value: [6, 6, 6, 6, 0, 4, 0, 0] }, uFogD: { value: fogDensity }, uK: { value: 1 } },
     vertexShader: /* glsl */ `
       attribute float aGroup;
+      #ifndef USE_UV1
+        attribute vec2 uv1;
+      #endif
       varying vec3 vCol;
       varying float vG;
       varying vec2 vUv;

@@ -11,10 +11,6 @@ const { makeCanvas, toTex, noiseField, whiteNoise, paintRGB, normalMap, canvasHe
 export const WALL_H = 3.6; // altura coberta pelas texturas de parede (m)
 export const WALL_W = 1.3; // largura de um ladrilho de parede (m)
 
-const sst = (a, b, x) => {
-  const t = clamp((x - a) / (b - a), 0, 1);
-  return t * t * (3 - 2 * t);
-};
 const fract = (x) => x - Math.floor(x);
 
 // Painel almofadado: devolve null fora do retângulo, senão a altura (0..1) e o
@@ -232,7 +228,7 @@ function drawAtlas(A) {
     c.font = `bold ${Math.round(s * 0.5)}px Georgia, serif`;
     c.textAlign = 'center';
     c.textBaseline = 'middle';
-    c.fillText('RECEPÇÃO', x + s * 2, y + s * 0.53);
+    c.fillText('RECEPÇÃO', x + s * 2, y + s * 0.53, s * 3.6);
     prop(col, row, 4, 1, 0.35, 0.55);
   }
   // placa esmaltada CALDEIRAS
@@ -248,9 +244,9 @@ function drawAtlas(A) {
     c.font = `bold ${Math.round(s * 0.42)}px Arial, Helvetica, sans-serif`;
     c.textAlign = 'center';
     c.textBaseline = 'middle';
-    c.fillText('SALA DAS CALDEIRAS', x + s * 2, y + s * 0.4);
+    c.fillText('SALA DAS CALDEIRAS', x + s * 2, y + s * 0.4, s * 3.7);
     c.font = `bold ${Math.round(s * 0.2)}px Arial, Helvetica, sans-serif`;
-    c.fillText('PERIGO · ALTA PRESSÃO', x + s * 2, y + s * 0.76);
+    c.fillText('PERIGO · ALTA PRESSÃO', x + s * 2, y + s * 0.76, s * 3.7);
     prop(col, row, 4, 1, 0.3, 0);
   }
   // manômetro

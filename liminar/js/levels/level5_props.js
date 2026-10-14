@@ -50,7 +50,15 @@ export const B = {
   oct: () => base('oct', () => new THREE.OctahedronGeometry(1)),
   ico: () => base('ico', () => new THREE.IcosahedronGeometry(1, 0)),
   torus: (t = 0.12) => base('tor' + t, () => new THREE.TorusGeometry(1, t, 5, 18)),
-  lathe: (name, pts, n = 14) => base('lathe:' + name, () => new THREE.LatheGeometry(pts.map((p) => new THREE.Vector2(p[0], p[1])), n)),
+  lathe: (name, pts, n = 14) =>
+    base(
+      'lathe:' + name,
+      () =>
+        new THREE.LatheGeometry(
+          pts.map((p) => new THREE.Vector2(p[0], p[1])),
+          n,
+        ),
+    ),
   palm: () => base('palm', palmGeo),
   flowers: () => base('flowers', flowerGeo),
   horn: () => base('horn', hornGeo),
@@ -302,7 +310,12 @@ function flowerGeo() {
       const ez = Math.sin(a) * 0.22;
       const px = -Math.sin(a) * 0.06;
       const pz = Math.cos(a) * 0.06;
-      tri([x - px, y, z - pz], [x + px, y, z + pz], [x + ex + px * 0.3, y - 0.12, z + ez + pz * 0.3], [x + ex - px * 0.3, y - 0.12, z + ez - pz * 0.3]);
+      tri(
+        [x - px, y, z - pz],
+        [x + px, y, z + pz],
+        [x + ex + px * 0.3, y - 0.12, z + ez + pz * 0.3],
+        [x + ex - px * 0.3, y - 0.12, z + ez - pz * 0.3],
+      );
     }
   });
   return g;
@@ -401,8 +414,10 @@ export function sofa(K, x, z, rot, len, col) {
   }
   // botões do capitonê
   const bt = tint(col, 0.55);
-  for (let i = 0; i < 7; i++) for (let j = 0; j < 2; j++) K.box(g, f, (i / 6 - 0.5) * (len - 0.5), 0.62 + j * 0.15, -d / 2 + 0.245, 0.03, 0.03, 0.01, bt, { ao: 0 });
-  for (const sx of [-1, 1]) for (const sz of [-1, 1]) K.box(K.G.prop, f, sx * (len / 2 - 0.1), 0.06, sz * (d / 2 - 0.1), 0.07, 0.12, 0.07, COL.dark);
+  for (let i = 0; i < 7; i++)
+    for (let j = 0; j < 2; j++) K.box(g, f, (i / 6 - 0.5) * (len - 0.5), 0.62 + j * 0.15, -d / 2 + 0.245, 0.03, 0.03, 0.01, bt, { ao: 0 });
+  for (const sx of [-1, 1])
+    for (const sz of [-1, 1]) K.box(K.G.prop, f, sx * (len / 2 - 0.1), 0.06, sz * (d / 2 - 0.1), 0.07, 0.12, 0.07, COL.dark);
   return f.aabb(len / 2, d / 2);
 }
 
@@ -697,7 +712,14 @@ export function chandelier(K, x, z, H, group, s = 1) {
   K.lit(B.sph(8, 6), f, 0, y - 0.18 * s, 0, 0.32, group, { sx: 0.12 * s, sy: 0.1 * s, sz: 0.12 * s });
   // poça de luz no teto
   K.hquad(K.G.glow, x - 2.4 * s, x + 2.4 * s, z - 2.4 * s, z + 2.4 * s, H - 0.012, false, [0, 0, 1, 1], [0.55, 0.42, 0.28], group);
-  K.mesh(K.G.glow, B.sph(10, 8), f, 0, y + 0.05, 0, { sx: 0.75 * s, sy: 0.5 * s, sz: 0.75 * s, col: [0.08, 0.06, 0.04], uv: [0.5, 0.5], group });
+  K.mesh(K.G.glow, B.sph(10, 8), f, 0, y + 0.05, 0, {
+    sx: 0.75 * s,
+    sy: 0.5 * s,
+    sz: 0.75 * s,
+    col: [0.08, 0.06, 0.04],
+    uv: [0.5, 0.5],
+    group,
+  });
 }
 
 // Arandela de parede com cúpula de tecido (frame: +z para fora da parede).
@@ -881,14 +903,18 @@ export function boiler(K, f, len, R) {
   K.mesh(g, B.cyl(18), f, 0, cy, 0, { rx: HP, sx: R, sy: len, sz: R, col: COL.insul });
   for (let i = 0; i <= 5; i++) {
     const lz = (i / 5 - 0.5) * (len - 0.2);
-    K.amesh(B.cyl(18), f, 0, cy, lz, ATL.IRON, { rx: HP, sx: R + 0.025, sy: 0.07, sz: R + 0.025 });
+    K.amesh(B.cyl(18), f, 0, cy, lz, ATL.IRON, { rx: HP, sx: R + 0.025, sy: 0.07, sz: R + 0.025, col: [1.6, 1.6, 1.6] });
   }
   // tampo frontal de ferro com escotilha, manômetros e porta da fornalha
-  K.amesh(B.cyl(18), f, 0, cy, len / 2 + 0.04, ATL.IRON, { rx: HP, sx: R * 1.03, sy: 0.1, sz: R * 1.03 });
+  K.amesh(B.cyl(18), f, 0, cy, len / 2 + 0.04, ATL.IRON, { rx: HP, sx: R * 1.03, sy: 0.1, sz: R * 1.03, col: [1.9, 1.85, 1.75] });
   K.amesh(B.cyl(12), f, 0, cy + 0.35, len / 2 + 0.12, ATL.IRON, { rx: HP, sx: 0.28, sy: 0.08, sz: 0.28, col: [0.8, 0.8, 0.8] });
   for (let i = 0; i < 8; i++) {
     const a = (i / 8) * TAU;
-    K.amesh(B.sph(4, 3), f, Math.cos(a) * 0.24, cy + 0.35 + Math.sin(a) * 0.24, len / 2 + 0.165, ATL.BRASS, { sx: 0.02, sy: 0.02, sz: 0.02 });
+    K.amesh(B.sph(4, 3), f, Math.cos(a) * 0.24, cy + 0.35 + Math.sin(a) * 0.24, len / 2 + 0.165, ATL.BRASS, {
+      sx: 0.02,
+      sy: 0.02,
+      sz: 0.02,
+    });
   }
   K.abox(f, 0, 0.72, len / 2 + 0.12, 0.7, 0.5, 0.08, [0.7, 0.7, 0.7], ATL.IRON);
   K.abox(f, 0.25, 0.72, len / 2 + 0.17, 0.08, 0.05, 0.05, WHITE, ATL.BRASS, { ao: 0 });
@@ -945,6 +971,7 @@ export function workbench(K, f, lx) {
   K.abox(f, lx + 0.6, 0.93, 0.45, 0.3, 0.03, 0.04, [0.7, 0.7, 0.7], ATL.IRON, { rot: -0.3 });
   // painel de ferramentas
   K.box(w, f, lx, 1.65, 0.02, 1.9, 0.9, 0.03, [0.38, 0.32, 0.22]);
-  for (let i = 0; i < 6; i++) K.abox(f, lx - 0.75 + i * 0.3, 1.6 + (i % 2) * 0.1, 0.05, 0.05, 0.4 - (i % 3) * 0.08, 0.02, [0.7, 0.7, 0.7], ATL.IRON);
+  for (let i = 0; i < 6; i++)
+    K.abox(f, lx - 0.75 + i * 0.3, 1.6 + (i % 2) * 0.1, 0.05, 0.05, 0.4 - (i % 3) * 0.08, 0.02, [0.7, 0.7, 0.7], ATL.IRON);
   return f.aabb(1.0, 0.36, lx, 0.35);
 }

@@ -78,7 +78,6 @@ const CARS = [
 ];
 const CONCRETE = [0.55, 0.54, 0.51];
 const BARK = [0.16, 0.13, 0.1];
-const METAL = [0.16, 0.17, 0.18];
 const FENCE = [0.3, 0.22, 0.15];
 const MAILBOX = [
   [0.04, 0.04, 0.04],
@@ -200,7 +199,13 @@ function planRow(L, i, j, r, fr, rnd, f) {
     // casas idênticas lado a lado (relatos da wiki)
     if (k > 0 && !lots[k - 1].house.twin && !lots[k - 1].special && rnd() < 0.08) {
       const ph = lots[k - 1].house;
-      h = { ...ph, twin: true, porch: ph.porch && { ...ph.porch }, garage: ph.garage && { ...ph.garage }, drive: ph.drive && { ...ph.drive } };
+      h = {
+        ...ph,
+        twin: true,
+        porch: ph.porch && { ...ph.porch },
+        garage: ph.garage && { ...ph.garage },
+        drive: ph.drive && { ...ph.drive },
+      };
       lots[k - 1].house.twin = true;
     } else h = genHouse(rnd, lw);
     const lot = { a0, a1: a0 + lw, w: lw, house: h, back: rnd() < 0.5, street: rnd() < 0.3 ? rnd() : -1 };
@@ -394,10 +399,21 @@ class HouseCtx {
     gb.box(x, y, z, su, sy, sv, col, null, { ao: 0, ...opt, rot: this.fr.rot });
   }
   face(gb, pl, col, o = {}) {
-    face(gb, pl.map((q) => this.p(...q)), col, { ...o, out: o.out ? this.dir(...o.out) : null });
+    face(
+      gb,
+      pl.map((q) => this.p(...q)),
+      col,
+      { ...o, out: o.out ? this.dir(...o.out) : null },
+    );
   }
   slab(gb, pl, thick, col, o = {}) {
-    slab(gb, pl.map((q) => this.p(...q)), thick, col, { ...o, out: o.out ? this.dir(...o.out) : null });
+    slab(
+      gb,
+      pl.map((q) => this.p(...q)),
+      thick,
+      col,
+      { ...o, out: o.out ? this.dir(...o.out) : null },
+    );
   }
   cyl(gb, u, y, v, r, h, col, opt = {}) {
     const [x, z] = this.w(u, v);
@@ -431,7 +447,7 @@ export function houseNumber(L, fr, along) {
   const g = L.goalInfo;
   if (g && fr.road === g.road && fr.roadIdx === g.roadIdx) {
     const same = fr.V[0] === g.V[0] && fr.V[1] === g.V[1];
-    const n = (same ? 23 : 24) + 2 * Math.round((along - g.along) / 14);
+    const n = (same ? g.number : g.number + 1) + 2 * Math.round((along - g.along) / 14);
     return ((((n - 1) % 400) + 400) % 400) + 1;
   }
   const base = 101 + (fr.V[0] + fr.V[1] > 0 ? 1 : 0) + ((fr.roadIdx * 37) % 50) * 2;
@@ -532,7 +548,9 @@ export function buildLot(L, B, ch, row, lot, ri, li) {
   const digits = String(num).split('');
   const dw = isGoal ? 0.16 : 0.11;
   const nu0 = h.doorU - plSide * 0.95 - ((digits.length - 1) * dw) / 2;
-  digits.forEach((dg, k) => hc.plate(B.sign, nu0 + k * dw, F + 1.75, fv + 0.07, 0, 1, dw, dw * 1.45, atlas.digit(Number(dg)), [0.95, 0.85, 0.6]));
+  digits.forEach((dg, k) =>
+    hc.plate(B.sign, nu0 + k * dw, F + 1.75, fv + 0.07, 0, 1, dw, dw * 1.45, atlas.digit(Number(dg)), [0.95, 0.85, 0.6]),
+  );
   if (h.porch) porch(hc, B, ch, h, fv, F, trim);
   else {
     // degraus até a porta
@@ -591,30 +609,52 @@ function roofOn(hc, B, cu, cv, w, d, wallTop, pitch, type, roofC, wallC, trim, F
         under,
       });
       const endOut = alongU ? [s, 1, 0] : [0, 1, s];
-      hc.slab(B.roof, [L3(s * (A / 2 + o), yE, -run - o), L3(s * (A / 2 + o), yE, run + o), L3(s * r, yR, 0), L3(s * r, yR, 0)], th, roofC, {
-        out: endOut,
-        us: vs,
-        under,
-      });
+      hc.slab(
+        B.roof,
+        [L3(s * (A / 2 + o), yE, -run - o), L3(s * (A / 2 + o), yE, run + o), L3(s * r, yR, 0), L3(s * r, yR, 0)],
+        th,
+        roofC,
+        {
+          out: endOut,
+          us: vs,
+          under,
+        },
+      );
     }
   } else {
     for (const s of [-1, 1]) {
-      hc.slab(B.roof, [L3(-A / 2 - o, yE, s * (run + o)), L3(A / 2 + o, yE, s * (run + o)), L3(A / 2 + o, yR, 0), L3(-A / 2 - o, yR, 0)], th, roofC, {
-        out: outDir(s),
-        us: vs,
-        under,
-      });
+      hc.slab(
+        B.roof,
+        [L3(-A / 2 - o, yE, s * (run + o)), L3(A / 2 + o, yE, s * (run + o)), L3(A / 2 + o, yR, 0), L3(-A / 2 - o, yR, 0)],
+        th,
+        roofC,
+        {
+          out: outDir(s),
+          us: vs,
+          under,
+        },
+      );
       // empena (triângulo de parede) e tábuas de beiral inclinadas
       const endOut = alongU ? [s, 0, 0] : [0, 0, s];
-      hc.face(B.wall, [L3((s * A) / 2, wallTop, -run), L3((s * A) / 2, wallTop, run), L3((s * A) / 2, yR - 0.12, 0), L3((s * A) / 2, yR - 0.12, 0)], wallC, {
-        out: endOut,
-        us: 1.44,
-        v0: (wallTop - F) / 1.44,
-      });
+      hc.face(
+        B.wall,
+        [L3((s * A) / 2, wallTop, -run), L3((s * A) / 2, wallTop, run), L3((s * A) / 2, yR - 0.12, 0), L3((s * A) / 2, yR - 0.12, 0)],
+        wallC,
+        {
+          out: endOut,
+          us: 1.44,
+          v0: (wallTop - F) / 1.44,
+        },
+      );
       for (const t of [-1, 1]) {
         hc.slab(
           B.trim,
-          [L3(s * (A / 2 + o), yE - 0.2, t * (run + o)), L3(s * (A / 2 + o), yR - 0.2, 0), L3(s * (A / 2 + o), yR + 0.01, 0), L3(s * (A / 2 + o), yE + 0.01, t * (run + o))],
+          [
+            L3(s * (A / 2 + o), yE - 0.2, t * (run + o)),
+            L3(s * (A / 2 + o), yR - 0.2, 0),
+            L3(s * (A / 2 + o), yR + 0.01, 0),
+            L3(s * (A / 2 + o), yE + 0.01, t * (run + o)),
+          ],
           0.05,
           trim,
           { out: endOut },
@@ -689,11 +729,22 @@ function porch(hc, B, ch, h, fv, F, trim) {
     ch.colliders.push(localBox(hc, pu + c - 0.1, pu + c + 0.1, vo - 0.22, vo - 0.02));
   }
   hc.box(B.trim, pu, yLow - 0.1, vo - 0.12, p.w + 0.1, 0.2, 0.17, trim);
-  hc.slab(B.roof, [[pu - p.w / 2 - 0.2, yTop, fv], [pu + p.w / 2 + 0.2, yTop, fv], [pu + p.w / 2 + 0.2, yLow, vo + 0.25], [pu - p.w / 2 - 0.2, yLow, vo + 0.25]], 0.1, h.roofC, {
-    out: [0, 1, 0],
-    us: 1.12,
-    under: trim,
-  });
+  hc.slab(
+    B.roof,
+    [
+      [pu - p.w / 2 - 0.2, yTop, fv],
+      [pu + p.w / 2 + 0.2, yTop, fv],
+      [pu + p.w / 2 + 0.2, yLow, vo + 0.25],
+      [pu - p.w / 2 - 0.2, yLow, vo + 0.25],
+    ],
+    0.1,
+    h.roofC,
+    {
+      out: [0, 1, 0],
+      us: 1.12,
+      under: trim,
+    },
+  );
   if (p.rail) {
     for (const s of [-1, 1]) {
       const len = p.w / 2 - 0.85;
@@ -728,7 +779,6 @@ function garage(hc, B, ch, h, F, trim) {
 
 // Jardim: árvores, arbustos, cerca, entrada de carros, carro, galpão, cerca dos fundos.
 function yard(L, hc, B, ch, lot, h, rnd) {
-  const fr = hc.fr;
   const lc = (lot.a0 + lot.a1) / 2;
   // frente do lote em coordenadas da casa: v = bc - b
   const vOf = (b) => hc.bc - b;
@@ -795,7 +845,8 @@ function yard(L, hc, B, ch, lot, h, rnd) {
       if ((gap || u + 0.16 > u1) && segStart !== null) {
         const end = gap ? u - 0.16 : u;
         if (end > segStart) {
-          for (const y of [CURB + 0.3, CURB + 0.75]) hc.box(B.trim, (segStart + end) / 2, y, vf - 0.03, end - segStart, 0.06, 0.03, [0.8, 0.8, 0.76]);
+          for (const y of [CURB + 0.3, CURB + 0.75])
+            hc.box(B.trim, (segStart + end) / 2, y, vf - 0.03, end - segStart, 0.06, 0.03, [0.8, 0.8, 0.76]);
           ch.colliders.push(localBox(hc, segStart, end, vf - 0.08, vf + 0.05));
         }
         segStart = null;
@@ -958,7 +1009,11 @@ export function curbCar(B, ch, x, z, alongX, rnd) {
   B.trim.box(x - ux * 0.25, 1.12, z - uz * 0.25, 1.6, 0.52, 2.3, glass, null, { rot, ao: 0 });
   B.trim.box(x - ux * 0.25, 1.4, z - uz * 0.25, 1.52, 0.05, 2.15, col, null, { rot, ao: 0 });
   for (const s of [-0.82, 0.82])
-    for (const t of [-1.38, 1.38]) B.trim.cylinder(x + ux * t + uz * s, 0.33, z + uz * t + ux * s, 0.33, 0.24, [0.03, 0.03, 0.03], null, { axis: alongX ? 'z' : 'x', sides: 10 });
+    for (const t of [-1.38, 1.38])
+      B.trim.cylinder(x + ux * t + uz * s, 0.33, z + uz * t + ux * s, 0.33, 0.24, [0.03, 0.03, 0.03], null, {
+        axis: alongX ? 'z' : 'x',
+        sides: 10,
+      });
   const b = [x - (alongX ? 2.25 : 0.95), x + (alongX ? 2.25 : 0.95), z - (alongX ? 0.95 : 2.25), z + (alongX ? 0.95 : 2.25)];
   ch.colliders.push(b);
   ch.walls.push(b);
