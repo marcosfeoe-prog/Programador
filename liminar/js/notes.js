@@ -1,6 +1,6 @@
 // Bilhetes encontrados pelo caminho, por nível.
 export const NOTES = {
-  0: [
+  '0': [
     'Dia 3? Não sei mais. As luzes nunca desligam. O zumbido entra nos dentes.',
     'Se você está lendo isto, não corra. Correr não leva a lugar nenhum aqui. Escute.',
     'Contei 214 salas iguais. Na 215ª encontrei minha própria marca de giz. Eu não tinha desenhado aquela seta.',
@@ -8,32 +8,68 @@ export const NOTES = {
     'Algumas paredes tremem quando você não está olhando direto pra elas. Uma delas me deixou passar.',
     'Achei uma garrafa de água de amêndoa embaixo da mesa que não existe mais. O gosto acalma a cabeça.',
   ],
-  1: [
+  '1': [
     'Aqui pelo menos dá pra respirar. Caixas com comida, baterias, fitas. Quem deixou?',
     'NÃO FIQUE NO ESCURO. Eles sorriem. Só os dentes. Só os olhos. A lanterna afasta.',
     'As lâmpadas apagam em blocos. Quando o zumbido para, conte até dez e corra para a luz.',
     'A porta com a placa verde. Ela sempre está mais longe do que parece.',
     'Grupo M.E.G. — posto avançado abandonado. Suprimentos levados. Boa sorte.',
   ],
-  4: [
+  '4': [
     'Escritório vazio. Os bebedouros funcionam. A água é limpa. Ninguém trabalha aqui há décadas.',
     'Os computadores estão desligados, mas as cadeiras ainda estão quentes.',
     'As janelas dão para o nada. Não encoste a testa no vidro.',
     'O elevador sobe. Não sei para onde. Ouvi o sino dele três vezes hoje.',
     'Memorando interno: favor não deixar as portas abertas após o expediente. O expediente nunca termina.',
   ],
-  10: [
+  '10': [
     'Trigo até onde a vista alcança. O céu não muda. Não há sol, só a luz cinza.',
     'Os postes acompanham as estradas. Os fios zumbem, mas não levam energia a lugar nenhum.',
     'Vi alguém parado no meio do campo. Quando cheguei perto, só havia trigo amassado.',
     'Uma porta. Só a porta, de pé no meio da plantação. Ela range quando venta.',
     'O celeiro está vazio. O feno está fresco. Quem colheu?',
   ],
-  11: [
+  '11': [
     'Uma cidade inteira e ninguém nas ruas. As luzes das janelas acendem sozinhas.',
     'Os semáforos continuam mudando de cor para carros que não existem.',
     'Ouvi um telefone tocando entre os prédios. Um orelhão. Não tive coragem de atender.',
     'Este lugar é seguro. Seguro demais. Parece que está esperando alguém.',
     'Se você atender o telefone, diga que eu ainda estou procurando a saída.',
+  ],
+  '5': [
+    'Hotel Overlook? Não. Este não tem nome na fachada. Mas a recepção ainda tem as chaves penduradas, todas com o mesmo número.',
+    'As manchas no carpete somem sozinhas. Derrubei café de propósito. Cinco minutos depois, nada.',
+    'A vitrola do salão toca a mesma música desde que cheguei. Não tem fio. Não tem disco.',
+    'As caldeiras precisam ser desligadas antes de abrir o quarto. Senão o hotel não deixa você sair. Não me pergunte como sei.',
+    'Ouvi uma festa do outro lado da parede. Bati. A música parou. Alguém bateu de volta.',
+    'Se um hóspede de terno parar no fim do corredor, não olhe muito tempo para ele.',
+  ],
+  '9': [
+    'Todas as casas estão trancadas, menos uma. Cada noite é uma diferente. O endereço aparece na caixa de correio com a bandeira levantada.',
+    'Os Cães não enxergam bem. Eles ouvem. Ande devagar.',
+    'A pilha da lanterna dura pouco aqui. Achei várias nas varandas, como se alguém deixasse para nós.',
+    'Já vi a mesma casa duas vezes, em ruas diferentes. Com a mesma pessoa na janela.',
+    'Os postes que funcionam são os únicos lugares onde eles não entram.',
+  ],
+  '10.1': [
+    'O lago apareceu no meio do trigo. A água não reflete o céu.',
+    'Não entre na água. Ela é rasa na margem e depois não tem fundo.',
+    'Contei onze formas boiando perto do píer. Ninguém se mexe. Ninguém nunca se mexe.',
+    'Malt Town fica a trinta e dois quilômetros daqui. O barco é a única forma de sair sem andar tudo isso.',
+    'O silêncio aqui é diferente. Até o vento parece ter medo de fazer barulho.',
+  ],
+  '15': [
+    'Corredores brancos, limpos demais. As luzes acendem quando você chega perto e apagam quando você vai embora.',
+    'As máquinas atrás do vidro nunca param. Algumas são do tamanho de um laptop, outras não cabem no meu campo de visão.',
+    'Um cartão de acesso abre as salas de máquinas. Achei um preso num painel, ainda funcionando.',
+    'Três terminais. Quando os três estiverem verdes, a comporta abre. Pelo menos foi o que a voz no alto-falante disse.',
+    'Não há ninguém aqui. Nunca houve. Então quem limpa o chão?',
+  ],
+  '23': [
+    'As árvores viraram pedra, mas continuam crescendo. Dá para ouvir as raízes se apertando.',
+    'A Base Seedling fica num tronco oco. A luz da janela é a única coisa quente neste lugar.',
+    'A gravidade aqui é estranha. Parece que o chão me puxa para todos os lados ao mesmo tempo.',
+    'O musgo brilha um pouco quando ninguém está olhando.',
+    'Se você chegou até aqui, descanse. Este é o último lugar que eu conheço.',
   ],
 };

@@ -14,10 +14,27 @@ import { clamp, damp, yieldFrame } from './util.js';
 import { Level0 } from './levels/level0.js';
 import { Level1 } from './levels/level1.js';
 import { Level4 } from './levels/level4.js';
+import { Level5 } from './levels/level5.js';
+import { Level9 } from './levels/level9.js';
 import { Level10 } from './levels/level10.js';
+import { Level10_1 } from './levels/level10_1.js';
 import { Level11 } from './levels/level11.js';
+import { Level15 } from './levels/level15.js';
+import { Level23 } from './levels/level23.js';
 
-const LEVEL_CLASSES = [Level0, Level1, Level4, Level10, Level11];
+// Classe de cada nível, pela chave definida em LEVELS (config.js).
+const LEVEL_CLASSES = {
+  0: Level0,
+  1: Level1,
+  4: Level4,
+  5: Level5,
+  9: Level9,
+  10: Level10,
+  '10.1': Level10_1,
+  11: Level11,
+  15: Level15,
+  23: Level23,
+};
 const params = new URLSearchParams(location.search);
 
 function showError(msg) {
@@ -60,6 +77,8 @@ class Game {
     this.fadeTarget = 1;
     this.glitch = 0;
     this.transitioning = false;
+    this.objectives = [];
+    this.battery = 1;
     this.st = { sanity: 100, stamina: 1, light: 1, power: 1, fear: 0, growl: null, nav: null };
     this.navOn = true;
     this.cctvT = 0;
@@ -102,6 +121,7 @@ class Game {
     this.input = new Input(this.canvas, s);
     this.audio = new AudioEngine();
     this.audio.volume = s.volume;
+    this.audio.lowCost = s.mobile;
     this.hud = new HUD(this);
     this.hud.showFps(s.showFps);
     this.items = new Items(this);
@@ -200,7 +220,7 @@ class Game {
     await yieldFrame();
     let level;
     try {
-      level = new LEVEL_CLASSES[idx](this);
+      level = new LEVEL_CLASSES[info.key](this);
     } catch (e) {
       console.error(e);
       showError('Erro ao gerar o nível: ' + e.message);
@@ -226,6 +246,10 @@ class Game {
     if (params.has('pitch')) this.player.pitch = Number(params.get('pitch'));
     this.player.flashOn = !!level.look.flashlight;
     this.player.flashLevel = this.player.flashOn ? 1 : 0;
+    this.battery = 1;
+    this.sanityDrainExtra = 0;
+    this.objectives = (level.objectives || []).map((o) => ({ ...o, done: !!o.done }));
+    this.hud.setObjectives(this.objectives, !!level.look.battery);
     this.player.frozen = false;
     if (level.look.smilers) this.smilers = new Smilers(this);
     if (level.look.watcher) this.watcher = new Watcher(this, level.look.watcher);
@@ -247,7 +271,8 @@ class Game {
     await new Promise((r) => setTimeout(r, params.has('autostart') ? 50 : 900));
     this.hud.cardHide();
     this.hud.show(true);
-    this.hud.objective(info.objective + '  ' + info.hint, 12);
+    const first = this.currentObjective();
+    this.hud.objective((first ? first.text : info.objective) + '  ' + info.hint, 12);
     this.fade = params.has('autostart') ? 0 : 1;
     this.fadeTarget = 0;
     this.glitch = params.has('autostart') ? 0 : 0.6;
@@ -351,14 +376,52 @@ class Game {
     if (this.settings.mobile && navigator.vibrate) navigator.vibrate(ms);
   }
 
-  caught() {
-    this.hud.scare(this.smilerURL);
+  // Uma entidade alcançou o jogador. opts: { image, text, sanity }
+  caught(opts = {}) {
+    this.hud.scare(opts.image || this.smilerURL);
     this.audio.scare();
     this.vibrate([200, 60, 300]);
     this.damage = 1;
     this.glitch = 1;
-    this.addSanity(-45);
-    this.hud.message('Ele te pegou. Fique na luz.');
+    this.addSanity(-(opts.sanity !== undefined ? opts.sanity : 45));
+    this.hud.message(opts.text || 'Ele te pegou. Fique na luz.');
+  }
+
+  // ------------------------------------------------------------ objetivos
+  currentObjective() {
+    return (this.objectives || []).find((o) => !o.done) || null;
+  }
+
+  objectiveDone(id) {
+    const o = (this.objectives || []).find((q) => q.id === id);
+    return !!(o && o.done);
+  }
+
+  // Todos os objetivos concluídos (opcionalmente ignorando alguns ids).
+  allObjectivesDone(except = []) {
+    return (this.objectives || []).every((o) => o.done || except.includes(o.id));
+  }
+
+  // Marca um objetivo como concluído. Retorna false se já estava.
+  completeObjective(id, msg) {
+    const o = (this.objectives || []).find((q) => q.id === id);
+    if (!o || o.done) return false;
+    o.done = true;
+    this.audio.objective();
+    this.hud.setObjectives(this.objectives, !!(this.level && this.level.look.battery));
+    const next = this.currentObjective();
+    this.hud.message(msg || 'Concluído: ' + o.text, 4);
+    if (next) setTimeout(() => this.running && this.hud.objective(next.text, 7), 1800);
+    if (this.level && this.level.onObjective) this.level.onObjective(id);
+    return true;
+  }
+
+  // Atualiza o texto de um objetivo (ex.: contador "2/3").
+  setObjectiveText(id, text) {
+    const o = (this.objectives || []).find((q) => q.id === id);
+    if (!o) return;
+    o.text = text;
+    this.hud.setObjectives(this.objectives, !!(this.level && this.level.look.battery));
   }
 
   collapse() {
@@ -376,6 +439,7 @@ class Game {
       this.fadeTarget = 0;
       this.transitioning = false;
       if (this.smilers) this.smilers.reset();
+      if (L.onCollapse) L.onCollapse();
       this.hud.message('Você acordou de novo no mesmo lugar.', 4);
     }, 2600);
   }
@@ -401,7 +465,8 @@ class Game {
     );
   }
 
-  finish() {
+  // Final do jogo. opts: { title, text }
+  finish(opts = {}) {
     if (this.transitioning) return;
     this.transitioning = true;
     this.player.frozen = true;
@@ -417,7 +482,9 @@ class Game {
       this.running = false;
       this.hud.show(false);
       this.hud.ending(
-        'A linha chia. Uma voz cansada, parecida com a sua, diz: “Você ainda está aí? Fique onde está. Estamos indo te buscar.” Depois, só o zumbido das lâmpadas.',
+        opts.title || 'Você chegou.',
+        opts.text ||
+          'Uma voz cansada, parecida com a sua, diz: “Você ainda está aí? Fique onde está. Estamos indo te buscar.” Depois, só o silêncio.',
         `Tempo: ~${mins} min · Bilhetes lidos: ${this.notesRead}`,
         () => {
           this.post.u.uFadeColor.value.setRGB(0, 0, 0);
@@ -456,7 +523,10 @@ class Game {
       this.pause();
       return;
     }
-    if (inp.pressed('flashlight')) P.toggleFlash();
+    if (inp.pressed('flashlight')) {
+      if (!P.flashOn && L.look.battery && this.battery <= 0) this.hud.message('A lanterna está sem pilha.', 2);
+      else P.toggleFlash();
+    }
     if (inp.pressed('filter')) {
       const i = FILTERS.findIndex((f) => f.id === s.filter);
       s.filter = FILTERS[(i + 1) % FILTERS.length].id;
@@ -475,11 +545,20 @@ class Game {
       else document.documentElement.requestFullscreen && document.documentElement.requestFullscreen().catch(() => {});
     }
 
-    P.update(dt, inp, L, s);
-    L.update(dt, P);
     const st = this.st;
     st.growl = null;
     st.fear = 0;
+    P.update(dt, inp, L, s);
+    L.update(dt, P);
+    // bateria da lanterna (níveis com look.battery = consumo por segundo)
+    if (L.look.battery && P.flashOn) {
+      this.battery = Math.max(0, this.battery - L.look.battery * dt);
+      if (this.battery <= 0) {
+        P.flashOn = false;
+        this.hud.message('A pilha da lanterna acabou.', 3);
+        this.audio.click();
+      }
+    }
     if (this.smilers) this.smilers.update(dt, P, L, st);
     if (this.watcher) this.watcher.update(dt, P, L);
 
@@ -499,7 +578,7 @@ class Game {
     // sanidade
     const light = L.lightLevel ? L.lightLevel(P.pos.x, P.pos.z) * this.power : 1;
     const darkK = L.indoor ? 1 + Math.max(0, 0.45 - light) * 2.2 : 1;
-    const drain = (L.look.sanityDrain || 0.1) * darkK + this.sanityDrainExtra;
+    const drain = (L.look.sanityDrain || 0.1) * darkK + this.sanityDrainExtra + (L.sanityExtra || 0);
     if (!this.transitioning) this.sanity -= drain * dt;
     if (this.sanity <= 0) {
       this.sanity = 0;
@@ -508,9 +587,10 @@ class Game {
 
     // bússola de intuição
     st.nav = null;
-    if (s.navHelp && L.exit) {
-      const dx = L.exit.x - P.pos.x;
-      const dz = L.exit.z - P.pos.z;
+    const target = L.navTarget ? L.navTarget() : L.exit;
+    if (s.navHelp && target) {
+      const dx = target.x - P.pos.x;
+      const dz = target.z - P.pos.z;
       const fx = -Math.sin(P.yaw);
       const fz = -Math.cos(P.yaw);
       const rx = Math.cos(P.yaw);
@@ -522,6 +602,7 @@ class Game {
     st.stamina = P.stamina;
     st.light = light;
     st.power = this.power;
+    st.battery = L.look.battery ? this.battery : null;
     this.audio.update(dt, this.camera, st);
     this.hud.update(dt, st);
   }

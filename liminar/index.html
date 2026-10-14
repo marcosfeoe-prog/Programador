@@ -44,7 +44,12 @@
             <span>FÔLEGO</span>
             <div class="bar thin"><div id="sta-bar"></div></div>
           </div>
+          <div class="bar-row hidden" id="bat-row">
+            <span>PILHA</span>
+            <div class="bar thin"><div id="bat-bar"></div></div>
+          </div>
         </div>
+        <div id="objlist" class="hidden"></div>
       </div>
       <div id="objective"></div>
       <div id="nav">
@@ -79,7 +84,7 @@
 
     <div id="ending" class="hidden">
       <div class="end-in">
-        <h2>Você atendeu.</h2>
+        <h2 id="end-title">Você chegou.</h2>
         <p id="end-text"></p>
         <p class="dim" id="end-stats"></p>
         <button id="end-menu" class="btn primary">Voltar ao menu</button>
@@ -107,7 +112,7 @@
     <div id="menu">
       <div class="menu-box">
         <h1 id="menu-title">LIMINAR</h1>
-        <div class="subtitle" id="menu-sub">espaços liminares · 5 níveis</div>
+        <div class="subtitle" id="menu-sub">espaços liminares · 10 níveis</div>
 
         <div id="m-main" class="panel">
           <button id="b-play" class="btn primary" disabled>Carregando…</button>

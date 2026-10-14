@@ -199,6 +199,11 @@ export class OutdoorLevel {
   *buildChunk(i, j) {
     const ch = { i, j, x0: i * this.P, z0: j * this.P, meshes: [], colliders: [], clears: [], items: [] };
     yield* this.genChunk(ch);
+    // itens coletáveis definidos pelo nível (pilhas, bilhetes, água…)
+    for (const it of ch.items) {
+      if (this.taken.has(it.key)) continue;
+      this.game.items.spawn(it, this.dynamic);
+    }
     this.chunks.set(this.chunkKey(i, j), ch);
     if (this.onChunkBuilt) this.onChunkBuilt(ch);
   }

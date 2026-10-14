@@ -974,3 +974,12 @@ export function indoorEnvTex(base, light, rows = 6) {
   t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
+
+// ------------------------------------------------------------ extensão pelos níveis
+// Os níveis podem registrar geradores próprios (usados via getTex, com cache por
+// tamanho) e reutilizar os mesmos utilitários de pintura procedural.
+export function registerTexture(name, gen) {
+  if (!GENERATORS[name]) GENERATORS[name] = gen;
+}
+
+export const TEX = { makeCanvas, toTex, noiseField, whiteNoise, paintRGB, normalMap, canvasHeight, crack, wrapDraw };

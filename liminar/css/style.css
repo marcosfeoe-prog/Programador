@@ -749,3 +749,28 @@ input[type='checkbox'] {
     grid-template-columns: 1fr;
   }
 }
+
+/* checklist de objetivos e pilha da lanterna */
+#objlist {
+  margin-top: 8px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--fg);
+}
+#objlist .obj {
+  opacity: 0.9;
+}
+#objlist .obj.done {
+  color: var(--dim);
+  text-decoration: line-through;
+  opacity: 0.65;
+}
+#bat-bar {
+  height: 100%;
+  width: 100%;
+  background: #d8c96a;
+}
+#bat-bar.low {
+  background: var(--danger);
+  animation: pulse 0.9s infinite;
+}

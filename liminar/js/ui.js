@@ -34,6 +34,20 @@ export class HUD {
     if (!on) this.camUI.classList.add('hidden');
   }
 
+  // Lista de objetivos (checklist) e barra de bateria da lanterna.
+  setObjectives(list, battery) {
+    const el = $('objlist');
+    el.innerHTML = '';
+    for (const o of list || []) {
+      const d = document.createElement('div');
+      d.className = 'obj' + (o.done ? ' done' : '');
+      d.textContent = (o.done ? '☑ ' : '☐ ') + o.text;
+      el.appendChild(d);
+    }
+    el.classList.toggle('hidden', !list || !list.length);
+    $('bat-row').classList.toggle('hidden', !battery);
+  }
+
   setLevel(info) {
     $('lvl-tag').textContent = info.tag.toUpperCase();
     $('lvl-name').textContent = info.name;
@@ -131,6 +145,11 @@ export class HUD {
     sb.classList.toggle('low', st.sanity < 25);
     $('sta-bar').style.width = st.stamina * 100 + '%';
     $('sta-row').style.opacity = st.stamina < 0.99 ? 1 : 0;
+    if (st.battery !== null && st.battery !== undefined) {
+      const bb = $('bat-bar');
+      bb.style.width = Math.round(st.battery * 100) + '%';
+      bb.classList.toggle('low', st.battery < 0.2);
+    }
     const nav = $('nav');
     if (st.nav) {
       nav.classList.add('on');
@@ -170,7 +189,8 @@ export class HUD {
     setTimeout(() => c.classList.add('hidden'), 1100);
   }
 
-  ending(text, stats, onClose) {
+  ending(title, text, stats, onClose) {
+    $('end-title').textContent = title;
     $('end-text').textContent = text;
     $('end-stats').textContent = stats;
     $('ending').classList.remove('hidden');
@@ -293,7 +313,7 @@ export class Menu {
       play.textContent = 'Continuar';
     } else {
       $('menu-title').textContent = 'LIMINAR';
-      $('menu-sub').textContent = 'espaços liminares · 5 níveis';
+      $('menu-sub').textContent = 'espaços liminares · 10 níveis';
       play.textContent = r > 0 ? `Continuar — ${LEVELS[r].tag}` : 'Entrar nos Bastidores';
     }
     $('b-new').classList.toggle('hidden', ingame || r === 0);

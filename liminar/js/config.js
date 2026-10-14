@@ -118,9 +118,11 @@ export const FILTERS = [
   { id: 'cctv', label: 'Câmera de segurança', desc: 'Olho de peixe, poucos quadros por segundo e carimbo de hora.' },
 ];
 
-// Os cinco níveis. `num` é o número canônico do nível.
+// Os níveis, na ordem em que são visitados. `key` identifica a classe do nível
+// e os bilhetes; `num` é o número canônico (10.1 é um subnível do 10).
 export const LEVELS = [
   {
+    key: '0',
     num: 0,
     name: 'O Saguão',
     tag: 'Nível 0',
@@ -130,6 +132,7 @@ export const LEVELS = [
     hint: 'Siga o chiado elétrico mais forte que o zumbido.',
   },
   {
+    key: '1',
     num: 1,
     name: 'Zona Habitável',
     tag: 'Nível 1',
@@ -139,6 +142,7 @@ export const LEVELS = [
     hint: 'Ilumine os Sorridentes com a lanterna para afastá-los.',
   },
   {
+    key: '4',
     num: 4,
     name: 'Escritório Abandonado',
     tag: 'Nível 4',
@@ -148,6 +152,27 @@ export const LEVELS = [
     hint: 'O elevador apita de tempos em tempos.',
   },
   {
+    key: '5',
+    num: 5,
+    name: 'O Hotel do Terror',
+    tag: 'Nível 5',
+    danger: 'Classe 2 · Instável · Um hóspede vaga pelos corredores',
+    desc: 'Um hotel infinito dos anos 1930, impecavelmente limpo. Jazz toca baixinho em vitrolas que ninguém liga.',
+    objective: 'Pegue a chave na recepção, desligue as caldeiras e abra o quarto marcado.',
+    hint: 'Siga o jazz até o Salão Principal.',
+  },
+  {
+    key: '9',
+    num: 9,
+    name: 'Os Subúrbios',
+    tag: 'Nível 9',
+    danger: 'Classe 5 · Inseguro · Infestado de entidades',
+    desc: 'Um bairro infinito à meia-noite. Casas diferentes umas das outras, postes falhando e algo correndo pelas ruas.',
+    objective: 'Ache o endereço na caixa de correio, junte pilhas e entre na casa certa.',
+    hint: 'Não corra perto dos Cães. Fique sob a luz dos postes.',
+  },
+  {
+    key: '10',
     num: 10,
     name: 'A Plantação',
     tag: 'Nível 10',
@@ -157,6 +182,18 @@ export const LEVELS = [
     hint: 'Ela range com o vento.',
   },
   {
+    key: '10.1',
+    num: 10.1,
+    sub: true,
+    name: 'Lago dos Cadáveres',
+    tag: 'Subnível 10.1',
+    danger: 'Classe 5 · Perigos ambientais · Sem entidades',
+    desc: 'Um lago artificial escuro no meio do Nível 10. A água é gelada, funda e cheia de coisas que não se movem.',
+    objective: 'Contorne a margem até o píer e pegue o barco.',
+    hint: 'Não entre na água funda.',
+  },
+  {
+    key: '11',
     num: 11,
     name: 'Cidade Sem Fim',
     tag: 'Nível 11',
@@ -165,7 +202,30 @@ export const LEVELS = [
     objective: 'Um telefone público está tocando. Atenda.',
     hint: 'Escute o toque entre os prédios.',
   },
+  {
+    key: '15',
+    num: 15,
+    name: 'Os Salões Futuristas',
+    tag: 'Nível 15',
+    danger: 'Classe 0 · Seguro · Sem entidades',
+    desc: 'Corredores futuristas brancos, trechos totalmente escuros e salas de máquinas atrás de vidro grosso.',
+    objective: 'Ache o cartão de acesso, religue os três terminais e abra a comporta.',
+    hint: 'Os motores ficam mais altos perto das salas de máquinas.',
+  },
+  {
+    key: '23',
+    num: 23,
+    name: 'O Jardim Petrificado',
+    tag: 'Nível 23',
+    danger: 'Classe 4 · Coberto de vegetação · Sem entidades',
+    desc: 'Um superorganismo do tamanho de um planetoide: árvores petrificadas entrelaçadas, musgo e névoa.',
+    objective: 'Atravesse as raízes até a Base Seedling.',
+    hint: 'Procure a luz quente do abrigo.',
+  },
 ];
+
+// Ordem dos níveis da versão 1 (para migrar o progresso salvo).
+const V1_ORDER = ['0', '1', '4', '10', '11'];
 
 const KEY = 'liminar-settings-v1';
 
@@ -186,6 +246,7 @@ export function defaultSettings() {
     showFps: false,
     dynamicRes: mobile,
     reached: 0,
+    v2: true,
     mobile,
   };
 }
@@ -194,7 +255,15 @@ export function loadSettings() {
   const s = defaultSettings();
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) Object.assign(s, JSON.parse(raw));
+    if (raw) {
+      const saved = JSON.parse(raw);
+      // progresso salvo na v1 era um índice na lista antiga de 5 níveis
+      if (!saved.v2 && typeof saved.reached === 'number') {
+        const k = V1_ORDER[saved.reached] || '0';
+        saved.reached = Math.max(0, LEVELS.findIndex((l) => l.key === k));
+      }
+      Object.assign(s, saved);
+    }
   } catch (e) {
     /* armazenamento indisponível */
   }
@@ -213,6 +282,7 @@ export function loadSettings() {
 export function saveSettings(s) {
   try {
     const { mobile, ...rest } = s;
+    rest.v2 = true;
     localStorage.setItem(KEY, JSON.stringify(rest));
   } catch (e) {
     /* armazenamento indisponível */

@@ -699,7 +699,14 @@ export class Level11 extends OutdoorLevel {
   interactable(player) {
     const e = this.exit;
     if (Math.hypot(player.pos.x - e.x, player.pos.z - e.z) < 1.6) {
-      return { label: 'Atender o telefone', action: () => this.game.finish() };
+      return {
+        label: 'Atender o telefone',
+        action: () => {
+          this.game.audio.stopAll();
+          this.game.hud.message('Uma voz chiada: “Você ainda está aí? Siga pelos corredores brancos.”', 5);
+          this.game.reachExit('phone', 2.4);
+        },
+      };
     }
     return null;
   }

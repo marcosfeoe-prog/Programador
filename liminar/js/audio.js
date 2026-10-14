@@ -91,6 +91,90 @@ function normalize(a, peak = 0.9) {
   return a;
 }
 
+// Utilitários de síntese, exportados para os níveis criarem sons próprios
+// (com audio.addBuffer). Todos trabalham em Float32Array mono a 44,1 kHz.
+export const DSP = { SR, biquad, noise, env, mix, sine, scale, normalize };
+
+// Jazz de vitrola gerado na hora: ii-V-I com baixo andante, piano, escovinhas,
+// prato de condução, uma melodia abafada e o chiado/estalos de disco antigo.
+function makeJazz() {
+  const bpm = 116;
+  const beat = 60 / bpm;
+  const bars = 8;
+  const n = Math.floor(bars * 4 * beat * SR);
+  const out = new Float32Array(n);
+  const swing = (b) => (b % 1 === 0.5 ? b + 0.17 : b); // colcheias suingadas
+  const midi = (m) => 440 * Math.pow(2, (m - 69) / 12);
+  // Dm7 G7 Cmaj7 A7 | Dm7 G7 Em7 A7
+  const chords = [
+    [50, [62, 65, 69, 72]],
+    [43, [59, 62, 65, 69]],
+    [48, [60, 64, 67, 71]],
+    [45, [61, 64, 67, 70]],
+    [50, [62, 65, 69, 72]],
+    [43, [59, 62, 65, 69]],
+    [52, [62, 64, 67, 71]],
+    [45, [61, 64, 67, 70]],
+  ];
+  const tone = (t0, f, dur, amp, harm, decay, vib = 0) => {
+    const i0 = Math.floor(t0 * SR);
+    const len = Math.min(Math.floor(dur * SR), n - i0);
+    let ph = 0;
+    for (let i = 0; i < len; i++) {
+      const t = i / SR;
+      const fv = f * (1 + vib * Math.sin(t * 2 * Math.PI * 5.2) * Math.min(1, t * 3));
+      ph += (2 * Math.PI * fv) / SR;
+      let v = 0;
+      for (let h = 0; h < harm.length; h++) v += Math.sin(ph * (h + 1)) * harm[h];
+      const e = Math.min(1, t / 0.006) * Math.exp(-t / decay) * (t > dur - 0.03 ? (dur - t) / 0.03 : 1);
+      out[(i0 + i) % n] += v * e * amp;
+    }
+  };
+  const noiseHit = (t0, dur, amp, f, q, attack) => {
+    const i0 = Math.floor(t0 * SR);
+    const len = Math.floor(dur * SR);
+    const a = biquad(noise(len), 'bp', f, q);
+    for (let i = 0; i < len; i++) {
+      const t = i / SR;
+      const e = Math.min(1, t / attack) * Math.exp(-t / (dur * 0.35));
+      out[(i0 + i) % n] += a[i] * e * amp;
+    }
+  };
+  let seed = 7;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  for (let b = 0; b < bars; b++) {
+    const [root, voicing] = chords[b];
+    const tb = b * 4 * beat;
+    // baixo andante: fundamental, terça/quinta e nota de aproximação
+    const next = chords[(b + 1) % bars][0];
+    const walk = [root, root + (rnd() < 0.5 ? 3 : 4), root + 7, next + (rnd() < 0.5 ? 1 : -1)];
+    walk.forEach((m, k) => tone(tb + k * beat, midi(m - 12), beat * 0.95, 0.5, [1, 0.35, 0.12], 0.35));
+    // piano: no 2 e no "e" do 4
+    for (const at of [1, 3.5]) {
+      for (const m of voicing) tone(tb + swing(at) * beat, midi(m), beat * 1.2, 0.09, [1, 0.45, 0.2, 0.08], 0.5);
+    }
+    // escovinhas no 2 e 4, prato de condução suingado
+    for (const at of [1, 3]) noiseHit(tb + at * beat, beat * 0.9, 0.12, 3500, 0.5, 0.06);
+    for (const at of [0, 1, 1.5, 2, 3, 3.5]) noiseHit(tb + swing(at) * beat, 0.35, at % 1 ? 0.05 : 0.08, 7000, 1.5, 0.002);
+    // melodia abafada em colcheias (notas do acorde, com pausas)
+    for (let k = 0; k < 8; k++) {
+      if (rnd() < 0.42) continue;
+      const m = voicing[Math.floor(rnd() * voicing.length)] + 12;
+      tone(tb + swing(k / 2) * beat, midi(m), beat * (rnd() < 0.3 ? 0.9 : 0.45), 0.07, [1, 0.6, 0.35, 0.2, 0.1], 0.6, 0.006);
+    }
+  }
+  // som de disco antigo: faixa estreita, chiado e estalos
+  let v = biquad(biquad(out, 'hp', 280), 'lp', 3200);
+  const hiss = biquad(noise(n), 'bp', 4000, 0.4);
+  for (let i = 0; i < n; i++) {
+    v[i] = Math.tanh(v[i] * 1.6) + hiss[i] * 0.012;
+    if (Math.random() < 0.00012) v[i] += (Math.random() - 0.5) * 0.9;
+  }
+  const f = Math.floor(0.05 * SR);
+  for (let i = 0; i < f; i++) v[n - f + i] = v[n - f + i] * (1 - i / f) + v[i] * (i / f);
+  return normalize(v, 0.8);
+}
+
 // ------------------------------------------------------------ motor
 export class AudioEngine {
   constructor() {
@@ -102,6 +186,7 @@ export class AudioEngine {
     this.heartT = 0;
     this.shotT = 3;
     this.emitter = null;
+    this.positionals = [];
   }
 
   init() {
@@ -227,7 +312,175 @@ export class AudioEngine {
         const th = env(sine(n, 100, 60), 0.002, 0.04);
         return mix(cl, gr, scale(th, 0.6));
       }),
+      wood: steps(() => {
+        const n = sec(0.3);
+        const knock = env(biquad(noise(n), 'bp', 420 + Math.random() * 120, 3), 0.002, 0.05);
+        const body = env(sine(n, 140 + Math.random() * 30, 95), 0.002, 0.07);
+        const cr = env(biquad(noise(n), 'bp', 2400, 4, 0.15), 0.04, 0.05);
+        return mix(scale(knock, 1.3), scale(body, 0.7), cr);
+      }),
+      tile: steps(() => {
+        const n = sec(0.3);
+        const cl = env(biquad(noise(n), 'hp', 3500), 0.0005, 0.008);
+        const ring = env(sine(n, 2100 + Math.random() * 400), 0.001, 0.03);
+        const th = env(sine(n, 130, 80), 0.002, 0.03);
+        return mix(cl, scale(ring, 0.15), scale(th, 0.5));
+      }),
+      metal: steps(() => {
+        const n = sec(0.45);
+        const cl = env(biquad(noise(n), 'bp', 2600, 2), 0.001, 0.02);
+        const r1 = env(sine(n, 610 + Math.random() * 80), 0.001, 0.12);
+        const r2 = env(sine(n, 1430 + Math.random() * 90), 0.001, 0.07);
+        return mix(cl, scale(r1, 0.25), scale(r2, 0.12));
+      }),
+      mud: steps(() => {
+        const n = sec(0.4);
+        const a = noise(n);
+        const o = new Float32Array(n);
+        let lp = 0;
+        for (let i = 0; i < n; i++) {
+          const t = i / n;
+          const k = 0.02 + 0.2 * Math.sin(Math.PI * t);
+          lp += (a[i] - lp) * k;
+          o[i] = lp;
+        }
+        return mix(env(o, 0.02, 0.12), scale(env(sine(n, 60, 40), 0.004, 0.06), 0.6));
+      }),
     };
+    // sino de objetivo concluído
+    {
+      const n = sec(1.6);
+      const a = mix(env(sine(n, 659.3), 0.002, 0.5), scale(env(sine(n, 1318.5), 0.002, 0.25), 0.3));
+      const b = mix(env(sine(n, 987.8), 0.002, 0.6), scale(env(sine(n, 1975.5), 0.002, 0.25), 0.3));
+      const o = new Float32Array(n + sec(0.16));
+      for (let i = 0; i < n; i++) {
+        o[i] += a[i];
+        o[i + sec(0.16)] += b[i];
+      }
+      B.objective = this.buf(normalize(o, 0.5));
+    }
+    // batidas numa porta de madeira
+    {
+      const n = sec(1.4);
+      const o = new Float32Array(n);
+      for (const at of [0, 0.32, 0.58]) {
+        const m = sec(0.2);
+        const k = env(biquad(noise(m), 'bp', 380, 2.5), 0.001, 0.04);
+        const b = env(sine(m, 120, 90), 0.001, 0.05);
+        for (let i = 0; i < m; i++) o[sec(at) + i] += k[i] * 1.5 + b[i];
+      }
+      B.knock = this.buf(normalize(o, 0.8));
+    }
+    // grilos (laço de 4 s)
+    {
+      const n = sec(4);
+      const o = new Float32Array(n);
+      for (let c = 0; c < 5; c++) {
+        const f = 3900 + c * 260 + Math.random() * 100;
+        const period = 0.55 + Math.random() * 0.5;
+        const off = Math.random() * period;
+        const g = 0.4 + Math.random() * 0.6;
+        for (let i = 0; i < n; i++) {
+          const t = i / SR;
+          const ph = (t + off) % period;
+          // 3 pulsos rápidos por chilro
+          const pulse = ph < 0.12 ? Math.max(0, Math.sin((ph / 0.04) * Math.PI)) : 0;
+          o[i] += Math.sin(2 * Math.PI * f * t) * pulse * g;
+        }
+      }
+      B.crickets = this.buf(normalize(o, 0.5));
+    }
+    // latido distante
+    {
+      const n = sec(0.9);
+      const o = new Float32Array(n);
+      for (const at of [0, 0.35]) {
+        const m = sec(0.22);
+        let ph = 0;
+        for (let i = 0; i < m; i++) {
+          const t = i / m;
+          ph += (2 * Math.PI * (520 - t * 260)) / SR;
+          const v = Math.sign(Math.sin(ph)) * 0.6 + (Math.random() * 2 - 1) * 0.5;
+          o[sec(at) + i] += v * Math.sin(Math.PI * t);
+        }
+      }
+      B.bark = this.buf(normalize(biquad(o, 'bp', 900, 1.2), 0.7));
+    }
+    // motores e máquinas (laço de 4 s)
+    {
+      const n = sec(4);
+      const o = new Float32Array(n);
+      for (const [f, a] of [
+        [50, 1],
+        [100, 0.6],
+        [150, 0.35],
+        [225, 0.15],
+        [400, 0.08],
+      ]) {
+        const ph = Math.random() * 6.28;
+        for (let i = 0; i < n; i++) {
+          const t = i / SR;
+          o[i] += Math.sin(ph + 2 * Math.PI * f * t) * a * (0.85 + 0.15 * Math.sin(2 * Math.PI * 0.5 * t));
+        }
+      }
+      const vent = biquad(noise(n), 'bp', 600, 0.5, 0.35);
+      B.machine = this.buf(normalize(mix(o, vent), 0.6));
+    }
+    // bipe eletrônico
+    B.beep = this.buf(normalize(env(sine(sec(0.25), 1760), 0.002, 0.06), 0.5));
+    // alarme lento da comporta (laço de 2 s)
+    {
+      const n = sec(2);
+      const o = new Float32Array(n);
+      for (let i = 0; i < sec(0.5); i++) {
+        const t = i / SR;
+        o[i] = (Math.sin(2 * Math.PI * 880 * t) + Math.sin(2 * Math.PI * 660 * t) * 0.5) * Math.sin((Math.PI * i) / sec(0.5));
+      }
+      B.alarm = this.buf(normalize(o, 0.5));
+    }
+    // água batendo na margem (laço de 6 s)
+    {
+      const n = sec(6);
+      const a = biquad(noise(n), 'lp', 700);
+      for (let i = 0; i < n; i++) {
+        const t = i / SR;
+        const w = Math.pow(Math.max(0, Math.sin(t * 2.1) * Math.sin(t * 0.7 + 1)), 2);
+        a[i] *= 0.15 + w;
+      }
+      const f = sec(0.3);
+      for (let i = 0; i < f; i++) a[n - f + i] = a[n - f + i] * (1 - i / f) + a[i] * (i / f);
+      B.water = this.buf(normalize(a, 0.6));
+    }
+    // fogueira / lareira (laço de 4 s)
+    {
+      const n = sec(4);
+      const a = biquad(noise(n), 'lp', 500, 0.7, 0.4);
+      for (let i = 0; i < n; i++) if (Math.random() < 0.0009) for (let k = 0; k < 160 && i + k < n; k++) a[i + k] += (Math.random() - 0.5) * Math.exp(-k / 30) * 2;
+      B.fire = this.buf(normalize(biquad(a, 'hp', 80), 0.6));
+    }
+    // TV chiando atrás de uma porta (laço de 3 s)
+    {
+      const n = sec(3);
+      const a = biquad(noise(n), 'bp', 1800, 0.4);
+      const v = new Float32Array(n);
+      for (let i = 0; i < n; i++) {
+        const t = i / SR;
+        v[i] = a[i] * 0.6 + Math.sin(2 * Math.PI * 180 * t) * Math.max(0, Math.sin(t * 7)) * 0.2;
+      }
+      B.tvstatic = this.buf(normalize(biquad(v, 'lp', 2500), 0.5));
+    }
+    // gemido grave de madeira/pedra
+    {
+      const n = sec(3);
+      const o = new Float32Array(n);
+      let ph = 0;
+      for (let i = 0; i < n; i++) {
+        const t = i / n;
+        ph += (2 * Math.PI * (70 + Math.sin(t * 9) * 12 - t * 25)) / SR;
+        o[i] = (Math.sin(ph) + Math.sin(ph * 2.01) * 0.4) * Math.sin(Math.PI * t) * (0.7 + 0.3 * Math.random());
+      }
+      B.groan = this.buf(normalize(biquad(o, 'lp', 600), 0.6));
+    }
     // estalo de lâmpada
     {
       const n = sec(0.35);
@@ -519,9 +772,68 @@ export class AudioEngine {
     return L;
   }
 
+  // Registra um som próprio (Float32Array mono gerado com DSP).
+  addBuffer(name, data) {
+    if (!this.ready) return;
+    this.B[name] = this.buf(data);
+  }
+
+  // Constrói o jazz de vitrola sob demanda (só o Nível 5 usa).
+  ensureJazz() {
+    if (this.ready && !this.B.jazz) this.B.jazz = this.buf(makeJazz());
+  }
+
+  // Fonte posicional em laço (ou única) num ponto do mundo. Devolve um controle
+  // com setPos/setGain/stop; é parado automaticamente na troca de nível.
+  positional(name, x, y, z, { gain = 1, ref = 3, rolloff = 1.2, loop = true, rate = 1, wet = 0.4, offset = 0 } = {}) {
+    const dummy = { setPos() {}, setGain() {}, stop() {} };
+    if (!this.ready || !this.B[name]) return dummy;
+    const ctx = this.ctx;
+    const p = ctx.createPanner();
+    p.panningModel = this.lowCost ? 'equalpower' : 'HRTF';
+    p.distanceModel = 'inverse';
+    p.refDistance = ref;
+    p.rolloffFactor = rolloff;
+    p.maxDistance = 10000;
+    this.setPos(p, x, y, z);
+    const g = ctx.createGain();
+    g.gain.value = 0;
+    g.gain.setTargetAtTime(gain, ctx.currentTime, 0.4);
+    const s = ctx.createBufferSource();
+    s.buffer = this.B[name];
+    s.loop = loop;
+    s.playbackRate.value = rate;
+    s.connect(g).connect(p);
+    p.connect(this.dry);
+    if (wet) {
+      const w = ctx.createGain();
+      w.gain.value = wet;
+      p.connect(w).connect(this.wet);
+    }
+    s.start(ctx.currentTime, loop ? offset % s.buffer.duration : 0);
+    const h = {
+      src: s,
+      gain: g,
+      setPos: (a, b, c) => this.setPos(p, a, b, c),
+      setGain: (v, tc = 0.2) => g.gain.setTargetAtTime(v, ctx.currentTime, tc),
+      stop: () => {
+        try {
+          g.gain.setTargetAtTime(0, ctx.currentTime, 0.2);
+          s.stop(ctx.currentTime + 1);
+        } catch (e) {
+          /* já parado */
+        }
+      },
+    };
+    if (loop) this.positionals.push(h);
+    return h;
+  }
+
   stopAll() {
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
+    for (const h of this.positionals || []) h.stop();
+    this.positionals = [];
     for (const L of this.loops) {
       L.gain.gain.setTargetAtTime(0, t, 0.3);
       L.src.stop(t + 1.5);
@@ -545,7 +857,8 @@ export class AudioEngine {
     this.kind = look.ambience;
     this.setReverb(look.reverb || 1.5);
     const k = this.kind;
-    this.wet.gain.value = k === 'level10' ? 0.08 : k === 'level11' ? 0.2 : k === 'level1' ? 0.55 : 0.35;
+    const wets = { level10: 0.08, level11: 0.2, level1: 0.55, level9: 0.12, level10_1: 0.18, level23: 0.3, level15: 0.45, level5: 0.4 };
+    this.wet.gain.value = wets[k] !== undefined ? wets[k] : 0.35;
     this.hum = null;
     if (k === 'level0') {
       this.hum = this.loop('hum', 0.16, { wet: 0.1 });
@@ -564,6 +877,21 @@ export class AudioEngine {
     } else if (k === 'level11') {
       this.loop('brown', 0.13, { lp: 260 });
       this.wind = this.loop('wind', 0.12, { rate: 0.8 });
+    } else if (k === 'level5') {
+      this.loop('brown', 0.06, { lp: 380 });
+      this.hum = this.loop('hum', 0.02, { rate: 0.5, lp: 600 });
+    } else if (k === 'level9') {
+      this.loop('crickets', 0.12, { wet: 0.05 });
+      this.wind = this.loop('wind', 0.1, { rate: 0.7 });
+    } else if (k === 'level15') {
+      this.machineL = this.loop('machine', 0.12, { lp: 900, wet: 0.5 });
+      this.loop('white', 0.015, { lp: 3000 });
+    } else if (k === 'level23') {
+      this.wind = this.loop('wind', 0.18, { rate: 0.55, lp: 2200 });
+      this.loop('brown', 0.05, { lp: 200 });
+    } else if (k === 'level10_1') {
+      this.loop('water', 0.22, { wet: 0.1 });
+      this.wind = this.loop('wind', 0.09, { rate: 0.6, lp: 900 });
     }
     this.setEmitter(emitter);
   }
@@ -581,8 +909,11 @@ export class AudioEngine {
     this.setPos(p, e.x, e.y, e.z);
     const g = ctx.createGain();
     g.gain.value = 0;
-    const gainBy = { rift: 0.9, radio: 0.7, elevator: 0.0, creak: 0.0, phone: 1.0 };
-    const loopBuf = { rift: 'rift', radio: 'radio', elevator: 'hum', creak: 'wind', phone: 'phone' }[e.sound];
+    const gainBy = { rift: 0.9, radio: 0.7, elevator: 0.0, creak: 0.0, phone: 1.0, knock: 0.0, alarm: 0.0 };
+    const loopBuf =
+      { rift: 'rift', radio: 'radio', elevator: 'hum', creak: 'wind', phone: 'phone', knock: 'brown', alarm: 'machine' }[e.sound] ||
+      (this.B[e.sound] ? e.sound : 'hum');
+    if (e.sound === 'jazz') this.ensureJazz();
     const s = ctx.createBufferSource();
     s.buffer = this.B[loopBuf];
     s.loop = true;
@@ -592,7 +923,7 @@ export class AudioEngine {
     const w = ctx.createGain();
     w.gain.value = 0.6;
     p.connect(w).connect(this.wet);
-    g.gain.setTargetAtTime(gainBy[e.sound] ?? 0.6, ctx.currentTime, 1);
+    g.gain.setTargetAtTime(e.gain !== undefined ? e.gain : gainBy[e.sound] ?? 0.6, ctx.currentTime, 1);
     s.start();
     this.emitter = { src: s, gain: g, panner: p, kind: e.sound, t: 4 };
   }
@@ -653,6 +984,12 @@ export class AudioEngine {
         } else if (em.kind === 'creak') {
           this.emitterShot('creak', 1.6);
           em.t = 3 + Math.random() * 5;
+        } else if (em.kind === 'knock') {
+          this.emitterShot('knock', 1.5);
+          em.t = 6 + Math.random() * 6;
+        } else if (em.kind === 'alarm') {
+          this.emitterShot('alarm', 1.2);
+          em.t = 2.5;
         } else em.t = 999;
       }
     }
@@ -680,6 +1017,26 @@ export class AudioEngine {
       } else if (k === 'level11') {
         if (Math.random() < 0.18) this.play('siren', { gain: 0.06, pan, wet: 1.2 });
         if (this.wind) this.wind.gain.gain.setTargetAtTime(0.08 + Math.random() * 0.1, t, 2);
+      } else if (k === 'level5') {
+        const r = Math.random();
+        if (r < 0.35) this.play('knock', { gain: 0.1, rate: 0.9 + Math.random() * 0.2, pan, wet: 1.4 });
+        else if (r < 0.7) this.play('whisper', { gain: 0.08, rate: 1.3 + Math.random() * 0.4, pan, wet: 1.6 });
+        else if (r < 0.85) this.play(this.B.step.wood, { gain: 0.06, rate: 0.85, pan, wet: 1.4 });
+      } else if (k === 'level9') {
+        if (Math.random() < 0.45) this.play('bark', { gain: 0.07 + Math.random() * 0.08, rate: 0.85 + Math.random() * 0.3, pan, wet: 0.9 });
+        if (this.wind) this.wind.gain.gain.setTargetAtTime(0.05 + Math.random() * 0.1, t, 2);
+      } else if (k === 'level15') {
+        const r = Math.random();
+        if (r < 0.4) this.play('beep', { gain: 0.06, rate: 0.8 + Math.random() * 0.5, pan, wet: 1.2 });
+        else if (r < 0.7) this.play('door', { gain: 0.06, rate: 0.4, pan, wet: 1.6 });
+      } else if (k === 'level23') {
+        const r = Math.random();
+        if (r < 0.45) this.play('groan', { gain: 0.12 + Math.random() * 0.1, rate: 0.7 + Math.random() * 0.5, pan, wet: 1.2 });
+        else if (r < 0.75) this.play('drip', { gain: 0.15, rate: 0.6 + Math.random() * 0.5, pan, wet: 1.4 });
+        if (this.wind) this.wind.gain.gain.setTargetAtTime(0.1 + Math.random() * 0.15, t, 2.5);
+      } else if (k === 'level10_1') {
+        if (Math.random() < 0.3) this.play('drip', { gain: 0.12, rate: 0.35, pan, wet: 0.6 });
+        if (this.wind) this.wind.gain.gain.setTargetAtTime(0.04 + Math.random() * 0.08, t, 3);
       }
       // alucinações
       if (st.sanity < 35 && Math.random() < 0.6)
@@ -761,6 +1118,9 @@ export class AudioEngine {
   }
   transition() {
     this.play('transition', { gain: 0.8, wet: 0.6 });
+  }
+  objective() {
+    this.play('objective', { gain: 0.5, wet: 0.3 });
   }
   hiss() {
     this.play('crackle', { gain: 0.3, rate: 0.5, wet: 0.6 });

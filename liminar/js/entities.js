@@ -27,6 +27,9 @@ export class Items {
     this.labelGeo = new THREE.CylinderGeometry(0.0375, 0.0375, 0.07, 14, 1, true);
     this.capGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.02, 10);
     this.noteGeo = new THREE.PlaneGeometry(0.21, 0.27);
+    this.batteryGeo = new THREE.CylinderGeometry(0.017, 0.017, 0.2, 12);
+    this.batteryBandGeo = new THREE.CylinderGeometry(0.0175, 0.0175, 0.13, 12);
+    this.batteryGeo.translate(0, 0.0, 0);
     this.labelTex = bottleLabelTex();
     this.noteTex = noteTex();
     this.noteIdx = 0;
@@ -47,7 +50,24 @@ export class Items {
     this.list.push(it);
     if (it.noMesh) return;
     const y = it.y || 0;
-    if (it.type === 'water') {
+    if (it.makeMesh) {
+      // item genérico: o nível fornece a malha (já posicionada)
+      it.mesh = it.makeMesh(it, this);
+    } else if (it.type === 'battery') {
+      const g = new THREE.Group();
+      const body = new THREE.Mesh(this.batteryGeo, this.litMat({ color: 0x1d1d1f, roughness: 0.4, metalness: 0.3 }, it.light));
+      const band = new THREE.Mesh(this.batteryBandGeo, this.litMat({ color: 0xd8a018, roughness: 0.35, metalness: 0.4 }, it.light));
+      band.position.y = 0.035;
+      const tip = new THREE.Mesh(this.capGeo, this.litMat({ color: 0xc8c8c8, roughness: 0.3, metalness: 0.8 }, it.light));
+      tip.scale.set(0.5, 0.5, 0.5);
+      tip.position.y = 0.105;
+      g.add(body, band, tip);
+      g.rotation.z = Math.PI / 2;
+      g.rotation.y = (it.x * 3.1 + it.z) % 6.28;
+      g.position.set(it.x, y + 0.017, it.z);
+      g.scale.setScalar(1.6);
+      it.mesh = g;
+    } else if (it.type === 'water') {
       const g = new THREE.Group();
       const body = new THREE.Mesh(this.bottleGeo, this.litMat({ color: 0xe9e1cf, roughness: 0.15, metalness: 0 }, it.light));
       const label = new THREE.Mesh(this.labelGeo, this.litMat({ map: this.labelTex, roughness: 0.6 }, it.light));
@@ -98,6 +118,8 @@ export class Items {
   }
 
   label(it) {
+    if (it.label) return it.label;
+    if (it.type === 'battery') return 'Pegar a pilha';
     if (it.type === 'water') return 'Beber Água de Amêndoa';
     if (it.type === 'note') return 'Ler o bilhete';
     if (it.type === 'cooler') return 'Beber água do bebedouro';
@@ -106,7 +128,19 @@ export class Items {
 
   use(it) {
     const g = this.game;
-    if (it.type === 'water') {
+    if (it.onUse) {
+      // item genérico: o nível decide o efeito; some, a menos que `keep`
+      it.onUse(g, it);
+      if (!it.keep) this.remove(it);
+      return;
+    }
+    if (it.type === 'battery') {
+      g.battery = Math.min(1, g.battery + 0.4);
+      g.audio.click();
+      g.hud.message('Pilha nova na lanterna. (+Bateria)');
+      if (g.level.onBattery) g.level.onBattery(it);
+      this.remove(it);
+    } else if (it.type === 'water') {
       g.addSanity(38);
       g.audio.drink();
       g.hud.message('Água de Amêndoa: a mente clareia. (+Sanidade)');
@@ -118,7 +152,7 @@ export class Items {
       it.used = true;
       g.level.taken.add(it.key);
     } else if (it.type === 'note') {
-      const list = NOTES[g.levelInfo.num] || NOTES[0];
+      const list = (g.level && g.level.notes) || NOTES[g.levelInfo.key] || NOTES['0'];
       const text = list[g.notesRead % list.length];
       g.notesRead++;
       g.audio.paper();
