@@ -15,6 +15,7 @@ const types = {
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
   '.md': 'text/markdown; charset=utf-8',
+  '.webmanifest': 'application/manifest+json',
 };
 
 http

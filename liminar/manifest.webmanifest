@@ -1,0 +1,10 @@
+{
+  "name": "Liminar — Espaços Liminares 3D",
+  "short_name": "Liminar",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0b0a07",
+  "theme_color": "#0b0a07",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

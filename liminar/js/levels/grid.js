@@ -290,7 +290,10 @@ export class GridLevel {
         for (const mm of mats) mm.dispose();
       }
     }
-    for (const it of ch.items) if (it.mesh) this.dynamic.remove(it.mesh);
+    for (const it of ch.items) {
+      it.dead = true;
+      if (it.mesh) this.dynamic.remove(it.mesh);
+    }
     if (ch.lmTex) ch.lmTex.dispose();
     if (ch.onDispose) ch.onDispose();
     this.chunks.delete(this.chunkKey(ch.cx, ch.cz));
@@ -452,6 +455,8 @@ export class GridLevel {
     const gGlass = new GeoBuilder();
     const gExtra = new GeoBuilder();
     const G = { wall: gWall, floor: gFloor, ceil: gCeil, panel: gPanel, prop: gProp, glass: gGlass, extra: gExtra, lm };
+    const layers = this.sharedLayers || {};
+    for (const name in layers) G[name] = new GeoBuilder();
     for (let z = cz0; z < cz0 + N; z++) {
       for (let x = cx0; x < cx0 + N; x++) {
         this.buildEdge(G, EH, x, z);
@@ -487,6 +492,10 @@ export class GridLevel {
     add(gExtra, litMaterial(this.Q, { ...(M.extra || M.prop), lightMap: tex }));
     const pm = add(gPanel, this.panelMat, true);
     if (pm) pm.castShadow = pm.receiveShadow = false;
+    for (const name in layers) {
+      const lm2 = add(G[name], layers[name], true);
+      if (lm2) lm2.castShadow = false;
+    }
     if (this.glassMat) {
       const gm = add(gGlass, this.glassMat, true);
       if (gm) {

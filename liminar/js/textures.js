@@ -204,18 +204,18 @@ const GENERATORS = {
       let k = stripe * diamond * dot * seam;
       k *= 1 + low[i] * 0.07 + mid[i] * 0.025 + fib[i] * 0.025;
       // manchas de umidade perto do chão e do teto
-      const edge = Math.max(Math.pow(1 - v, 9), Math.pow(v, 5) * 0.6);
-      const st = clamp((stain[i] + edge * 1.4 - 0.55) * 4, 0, 1);
+      const edge = Math.max(Math.pow(v, 7) * 0.9, Math.pow(1 - v, 16) * 0.45);
+      const st = clamp((stain[i] + edge * 1.3 - 0.6) * 2.2, 0, 1);
       // sujeira no rodapé
       const dirt = Math.pow(clamp((v - 0.94) / 0.06, 0, 1), 1.5);
       let r = 0.79 * k;
       let g = 0.71 * k;
       let b = 0.39 * k;
-      r = r * (1 - st * 0.22) + st * 0.05;
-      g = g * (1 - st * 0.27) + st * 0.03;
-      b = b * (1 - st * 0.33);
+      r = r * (1 - st * 0.13) + st * 0.02;
+      g = g * (1 - st * 0.17) + st * 0.01;
+      b = b * (1 - st * 0.22);
       // borda da mancha mais escura (anel de água)
-      const ring = clamp(1 - Math.abs(stain[i] + edge * 1.4 - 0.55) * 22, 0, 1) * 0.12;
+      const ring = clamp(1 - Math.abs(stain[i] + edge * 1.3 - 0.6) * 18, 0, 1) * st * 0.05;
       r -= ring;
       g -= ring * 1.1;
       b -= ring * 1.2;
@@ -253,9 +253,9 @@ const GENERATORS = {
       const s = clamp((stain[i] - 0.18) * 5, 0, 1);
       const ring = clamp(1 - Math.abs(stain[i] - 0.18) * 30, 0, 1);
       k *= 1 - s * 0.28 - ring * 0.08;
-      o[0] = 0.6 * k;
-      o[1] = 0.52 * k;
-      o[2] = 0.3 * k * (1 - s * 0.15);
+      o[0] = 0.56 * k;
+      o[1] = 0.48 * k;
+      o[2] = 0.27 * k * (1 - s * 0.15);
       hf[i] = f * 0.6 + mid[i] * 0.2;
     });
     return { map: toTex(cv), normalMap: normalMap(hf, S, S, 2.2) };
@@ -323,8 +323,8 @@ const GENERATORS = {
       const hv = (v * 4 + 0.5) % 1;
       const hole = Math.hypot(hu - 0.5, (hv - 0.5) * 0.5) < 0.018;
       const st = clamp(streak[i] * 1.6 - 0.25 + (v - 0.5) * 0.3, 0, 1);
-      let k = 0.52 + low[i] * 0.07 + mid[i] * 0.03 + fine[i] * 0.03;
-      k *= 1 - st * 0.18;
+      let k = 0.42 + low[i] * 0.07 + mid[i] * 0.03 + fine[i] * 0.03;
+      k *= 1 - st * 0.22;
       if (joint) k *= 0.82;
       if (hole) k *= 0.45;
       const bug = fine[i] > 0.985 ? 0.6 : 1;
@@ -347,7 +347,7 @@ const GENERATORS = {
       const u = x / S;
       const v = y / S;
       const joint = Math.min(u, 1 - u, v, 1 - v) < 0.003;
-      let k = 0.47 + low[i] * 0.08 + mid[i] * 0.04 + fine[i] * 0.025;
+      let k = 0.36 + low[i] * 0.08 + mid[i] * 0.04 + fine[i] * 0.025;
       if (joint) k *= 0.6;
       o[0] = k;
       o[1] = k * 0.99;
@@ -356,7 +356,7 @@ const GENERATORS = {
     });
     const ctx = cv.getContext('2d');
     const rnd = mulberry32(55);
-    for (let i = 0; i < 5; i++) crack(ctx, rnd, rnd() * S, rnd() * S, 18 + rnd() * 30, Math.max(1, S / 400), 'rgba(30,30,28,0.55)');
+    for (let i = 0; i < 5; i++) crack(ctx, rnd, rnd() * S, rnd() * S, 18 + rnd() * 30, Math.max(1, S / 400), 'rgba(30,30,28,0.3)');
     const rough = paintRGB(S, S, (x, y, i, o) => {
       const r = clamp(0.62 + pol[i] * 0.45, 0.25, 0.95);
       o[0] = o[1] = o[2] = r;
@@ -395,7 +395,7 @@ const GENERATORS = {
       const tv = (v * 2) % 1;
       const seam = Math.min(tu, 1 - tu, tv, 1 - tv) < 0.006;
       const rib = 0.5 + 0.5 * Math.sin((dir ? x : y) * 1.9);
-      let k = 1 + low[i] * 0.06 + (loop[i] * 0.5 + loop2[i] * 0.5) * 0.12 + rib * 0.04 + (dir ? 0.03 : -0.03);
+      let k = 1 + low[i] * 0.07 + (loop[i] * 0.5 + loop2[i] * 0.5) * 0.12 + rib * 0.025 + (dir ? 0.012 : -0.012);
       if (seam) k *= 0.8;
       const fleck = loop[i] > 0.96 ? 1.25 : loop[i] < -0.97 ? 0.7 : 1;
       o[0] = 0.33 * k * fleck;
@@ -427,7 +427,7 @@ const GENERATORS = {
         return;
       }
       const sc = clamp((scuff[i] - 0.45) * 3, 0, 1) * clamp((v - 0.75) * 4, 0, 1);
-      const k = (0.86 + low[i] * 0.025 + fine[i] * 0.012) * (1 - sc * 0.15);
+      const k = (0.78 + low[i] * 0.025 + fine[i] * 0.012) * (1 - sc * 0.15);
       o[0] = k;
       o[1] = k * 0.985;
       o[2] = k * 0.95;

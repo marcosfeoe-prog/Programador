@@ -46,11 +46,13 @@ function patchLightmap(shader, mat) {
 #endif`,
     );
   }
-  fs = fs.replace(
+  // os #include só são expandidos depois, então substituímos o trecho inteiro
+  const maps = THREE.ShaderChunk.lights_fragment_maps.replace(
     'vec3 lightMapIrradiance = lightMapTexel.rgb * lightMapIntensity;',
     `vec3 lmv = lightMapTexel.rgb * lightMapTexel.rgb * 4.0;
     vec3 lightMapIrradiance = uLightColor * dot( lmv, uLMScale ) * lightMapIntensity * PI;`,
   );
+  fs = fs.replace('#include <lights_fragment_maps>', maps);
   shader.fragmentShader = fs;
 }
 
@@ -263,7 +265,8 @@ export class GeoBuilder {
       }
       const u0 = i / n;
       const u1 = (i + 1) / n;
-      this.quad([p1, p0, p3, p2], nn, [u1, 0, u0, 0, u0, 1, u1, 1], lm, opt.cols || [color, color, color, color], opt.group || 0);
+      const uvq = opt.uvConst ? [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5] : [u1, 0, u0, 0, u0, h, u1, h];
+      this.quad([p1, p0, p3, p2], nn, uvq, lm, opt.cols || [color, color, color, color], opt.group || 0);
       if (opt.caps !== false) {
         const top = map(0, h / 2, 0);
         const tn = mapn(0, 1, 0);
