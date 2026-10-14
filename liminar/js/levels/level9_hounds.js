@@ -359,8 +359,12 @@ export class Hounds {
       if (h.state === 'chase' && d2 < 1.05 && !pSafe && !g.transitioning) {
         if (!this.face) this.face = houndFaceURL();
         g.caught({ image: this.face, text: 'Um Cão te alcançou. Não corra perto deles e fique sob os postes acesos.', sanity: 40 });
-        h.state = 'flee';
-        h.timer = 3.5;
+        // todos recuam (justo: dois Cães não pegam o jogador em sequência)
+        for (const o of this.pool) {
+          if (!o.active) continue;
+          o.state = 'flee';
+          o.timer = o === h ? 3.5 : 2.5;
+        }
         this.cool = 14;
       }
       this.animate(h, dt, player, d2);

@@ -270,18 +270,23 @@ export class Level9 extends OutdoorLevel {
       ch.lights.push({ x: pl.x, y: pl.y, z: pl.z, col: [1.0, 0.52, 0.2], I: pl.goal ? 9 : 6, R: pl.goal ? 11 : 9, cone: 0, state: 0 });
     this.placeItems(ch, lots, rnd);
     yield;
+    // malhas em três etapas (a montagem das geometrias custa vários ms num celular)
+    this._bch = ch;
     const M = this.mats;
     const add = (gb, mat, o) => (gb.empty ? null : this.addMesh(ch, gb.build(), mat, o));
     add(B.yard, M.yard, { cast: false });
     add(B.wall, M.wall);
+    yield;
     add(B.roof, M.roof);
     add(B.trim, M.trim);
+    yield;
     add(B.fol, M.fol);
     add(B.win, M.win.mat, { cast: false });
     add(B.sign, M.sign, { cast: false });
     add(B.lamp, M.lamp, { cast: false, receive: false });
     const halo = add(B.halo, M.halo, { cast: false, receive: false });
     if (halo) halo.renderOrder = 2;
+    this._bch = null;
   }
 
   // Postes: coluna, braço, luminária "cabeça de cobra", lente e halo (cone na neblina + brilho).
@@ -684,6 +689,10 @@ export class Level9 extends OutdoorLevel {
 
   dispose() {
     super.dispose();
+    // bloco interrompido no meio da montagem das malhas (ainda não registrado)
+    if (this._bch) for (const m of this._bch.meshes) m.geometry.dispose();
+    this._bch = null;
+    this.building = null;
     this.hounds.dispose();
     this.ground.geometry.dispose();
     this.groundMat.dispose();

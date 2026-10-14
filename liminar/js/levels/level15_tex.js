@@ -123,7 +123,7 @@ registerTexture('l15Digits', () => {
     const sc = document.createElement('canvas');
     sc.width = sw;
     sc.height = sh;
-    const s = sc.getContext('2d');
+    const s = sc.getContext('2d', { willReadFrequently: true });
     for (let d = 0; d < 10; d++) {
       s.clearRect(0, 0, sw, sh);
       s.fillStyle = '#fff';
@@ -217,6 +217,48 @@ registerTexture('l15Misc', () => {
   return { screenOff: screen(false), screenOn: screen(true), card, sign };
 });
 
+// Placas retroiluminadas (atlas com 4 linhas de texto).
+export const SIGN = { MACHINES: 0, RESTRICTED: 1, HATCH: 2, SERVICE: 3 };
+registerTexture('l15Signs', () => {
+  const rows = ['SALA DE MÁQUINAS', 'ACESSO RESTRITO', 'COMPORTA 15', 'MANUTENÇÃO'];
+  const map = textCanvasTex(512, 256, (c, w) => {
+    for (let r = 0; r < 4; r++) {
+      const y = r * 64;
+      c.fillStyle = '#0c0f11';
+      c.fillRect(0, y, w, 64);
+      c.strokeStyle = '#39424a';
+      c.lineWidth = 3;
+      c.strokeRect(4, y + 4, w - 8, 56);
+      c.fillStyle = r === SIGN.RESTRICTED ? '#ff5a40' : r === SIGN.HATCH ? '#ffbf2e' : '#dfeeff';
+      c.font = 'bold 34px Arial, Helvetica, sans-serif';
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.fillText(rows[r], w / 2, y + 34);
+    }
+  });
+  return { map };
+});
+
+// Fundo da comporta aberta: um túnel que some no escuro.
+registerTexture('l15Void', () => {
+  const map = textCanvasTex(128, 128, (c, w, h) => {
+    const g = c.createRadialGradient(w / 2, h / 2, 2, w / 2, h / 2, w / 2);
+    g.addColorStop(0, '#000000');
+    g.addColorStop(0.55, '#020304');
+    g.addColorStop(0.85, '#14181b');
+    g.addColorStop(1, '#3a4045');
+    c.fillStyle = g;
+    c.fillRect(0, 0, w, h);
+    c.strokeStyle = 'rgba(120,130,140,0.25)';
+    for (let i = 1; i < 6; i++) {
+      c.beginPath();
+      c.arc(w / 2, h / 2, w / 2 - i * i * 1.6, 0, Math.PI * 2);
+      c.stroke();
+    }
+  });
+  return { map };
+});
+
 // ------------------------------------------------------------ materiais
 // LEDs de status: cor nos vértices; aGroup > 0 pisca (parte inteira = ritmo,
 // fração = fase), aGroup = 0 fica aceso.
@@ -256,6 +298,47 @@ export function ledMaterial() {
   });
 }
 
+// Lentes das luminárias e fendas de luz: como panelMaterial, mas multiplicado
+// pela cor do vértice (fendas mais fracas e frias que as faixas do teto).
+export function lensMaterial(map, color) {
+  return new THREE.ShaderMaterial({
+    uniforms: THREE.UniformsUtils.merge([
+      THREE.UniformsLib.fog,
+      { map: { value: map }, uColor: { value: new THREE.Color(color) }, uGroupI: { value: new THREE.Vector4(1, 1, 1, 0) } },
+    ]),
+    vertexShader: /* glsl */ `
+      attribute float aGroup;
+      varying vec2 vUv;
+      varying float vGroup;
+      varying vec3 vCol;
+      #include <fog_pars_vertex>
+      void main() {
+        vUv = uv;
+        vGroup = aGroup;
+        vCol = color;
+        vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+        gl_Position = projectionMatrix * mvPosition;
+        #include <fog_vertex>
+      }`,
+    fragmentShader: /* glsl */ `
+      uniform sampler2D map;
+      uniform vec3 uColor;
+      uniform vec4 uGroupI;
+      varying vec2 vUv;
+      varying float vGroup;
+      varying vec3 vCol;
+      #include <fog_pars_fragment>
+      void main() {
+        float gi = vGroup < 0.5 ? uGroupI.x : vGroup < 1.5 ? uGroupI.y : vGroup < 2.5 ? uGroupI.z : uGroupI.w;
+        vec3 t = texture2D( map, vUv ).rgb * vCol;
+        gl_FragColor = vec4( t * uColor * gi + t * 0.05, 1.0 );
+        #include <fog_fragment>
+      }`,
+    vertexColors: true,
+    fog: true,
+  });
+}
+
 // Reflexo das faixas de luz no piso polido: faixa aditiva que acompanha o
 // grupo da luminária (apaga junto com ela). Divide o uniforme uGroupI do painel.
 export function glossMaterial(groupUniform) {
@@ -265,10 +348,12 @@ export function glossMaterial(groupUniform) {
       attribute float aGroup;
       varying vec2 vUv;
       varying float vGroup;
+      varying vec3 vWorld;
       #include <fog_pars_vertex>
       void main() {
         vUv = uv;
         vGroup = aGroup;
+        vWorld = ( modelMatrix * vec4( position, 1.0 ) ).xyz;
         vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
         gl_Position = projectionMatrix * mvPosition;
         #include <fog_vertex>
@@ -278,11 +363,15 @@ export function glossMaterial(groupUniform) {
       uniform vec4 uGroupI;
       varying vec2 vUv;
       varying float vGroup;
+      varying vec3 vWorld;
       #include <fog_pars_fragment>
       void main() {
         float gi = vGroup < 0.5 ? uGroupI.x : vGroup < 1.5 ? uGroupI.y : vGroup < 2.5 ? uGroupI.z : uGroupI.w;
         float a = ( vUv.x - 0.5 ) * 4.2;
         float k = exp( -a * a ) * 0.045 + exp( -a * a * 18.0 ) * 0.05;
+        // Fresnel: o reflexo cresce quando se olha rasante ao piso
+        vec3 V = normalize( cameraPosition - vWorld );
+        k *= 0.3 + 0.7 * pow( 1.0 - clamp( V.y, 0.0, 1.0 ), 2.0 );
         vec3 c = uColor * gi * k;
         #ifdef USE_FOG
           c *= 1.0 - smoothstep( fogNear, fogFar, vFogDepth );

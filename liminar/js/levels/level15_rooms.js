@@ -190,11 +190,21 @@ function turbine(L, ch, blk, cx, cz, X0, X1, Z0, Z1) {
       const rr = R + 0.75;
       for (let i = 0; i < 32; i++) {
         const a = ((i + 0.5) / 32) * Math.PI * 2;
-        G.extra.box(cx + Math.cos(a) * rr, 0.02, cz + Math.sin(a) * rr, 0.16, 0.004, (2 * Math.PI * rr) / 32 - 0.01, i % 2 ? YELLOW : BLACK, lm, {
-          rot: -a,
-          skip: ONLY_TOP,
-          ao: 0,
-        });
+        G.extra.box(
+          cx + Math.cos(a) * rr,
+          0.02,
+          cz + Math.sin(a) * rr,
+          0.16,
+          0.004,
+          (2 * Math.PI * rr) / 32 - 0.01,
+          i % 2 ? YELLOW : BLACK,
+          lm,
+          {
+            rot: -a,
+            skip: ONLY_TOP,
+            ao: 0,
+          },
+        );
       }
       // dutos até as paredes cegas, no alto
       for (let s = 0; s < 4; s++) {
@@ -219,7 +229,17 @@ function turbine(L, ch, blk, cx, cz, X0, X1, Z0, Z1) {
             const o = (q - 1) * 0.08;
             const h = hash3(p * 7 + q, r, blk.bx * 13 + blk.bz);
             const col = h < 0.12 ? LED.a : h < 0.18 ? LED.r : LED.g;
-            led(G, cx + nx * (R + 0.005) + tx * o, 1.55 + r * 0.075, cz + nz * (R + 0.005) + tz * o, nx, nz, 0.035, col, h < 0.5 ? 1 + h * 2 : 0);
+            led(
+              G,
+              cx + nx * (R + 0.005) + tx * o,
+              1.55 + r * 0.075,
+              cz + nz * (R + 0.005) + tz * o,
+              nx,
+              nz,
+              0.035,
+              col,
+              h < 0.5 ? 1 + h * 2 : 0,
+            );
           }
         }
       }
@@ -233,11 +253,14 @@ function turbine(L, ch, blk, cx, cz, X0, X1, Z0, Z1) {
       gb.cylinder(cx, 1.78, cz, R + 0.08, 0.14, STEEL, lm, { sides: 28 });
       for (let i = 0; i < 12; i++) {
         const a = (i / 12) * Math.PI * 2;
-        gb.box(cx + Math.cos(a) * (R + 0.22), 1.78, cz + Math.sin(a) * (R + 0.22), 0.3, 0.42, 0.035, [0.7, 0.72, 0.74], lm, { rot: -a + 0.5, ao: 0 });
+        gb.box(cx + Math.cos(a) * (R + 0.22), 1.78, cz + Math.sin(a) * (R + 0.22), 0.3, 0.42, 0.035, [0.7, 0.72, 0.74], lm, {
+          rot: -a + 0.5,
+          ao: 0,
+        });
       }
     },
   });
-  ch.machine = { x: cx, z: cz, gain: 0.75, rate: 0.55 };
+  ch.machines.push({ x: cx, z: cz, gain: 0.75, rate: 0.55, blk });
 }
 
 // Dois geradores deitados com rotores expostos e uma bomba de pistões.
@@ -320,7 +343,7 @@ function generators(L, ch, blk, cx, cz) {
       gb.box(px, 2.14, cz, 0.9, 0.1, 0.22, DARK, lm, { ao: 0 });
     },
   });
-  ch.machine = { x: cx, z: cz, gain: 0.6, rate: 0.95 };
+  ch.machines.push({ x: cx, z: cz, gain: 0.6, rate: 0.95, blk });
 }
 
 // Fileiras de servidores, um laptop esquecido e um exaustor no teto.
@@ -400,7 +423,7 @@ function servers(L, ch, blk, cx, cz) {
       }
     },
   });
-  ch.machine = { x: cx, z: cz, gain: 0.32, rate: 1.55 };
+  ch.machines.push({ x: cx, z: cz, gain: 0.32, rate: 1.55, blk });
 }
 
 // Terminal de controle: pedestal fixo; tela e lâmpada são montadas pelo nível.
@@ -505,14 +528,27 @@ export function fillHatch(L, ch, h) {
       for (let i = 0; i < 28; i++) {
         const a = ((i + 0.5) / 28) * Math.PI * 2;
         const rr = R + 0.32;
-        G.extra.box(fx - 0.065, h.y + Math.sin(a) * rr, h.z + Math.cos(a) * rr, 0.012, (2 * Math.PI * rr) / 28 - 0.01, 0.16, i % 2 ? YELLOW : BLACK, lm, {
-          ao: 0,
-        });
+        G.extra.box(
+          fx - 0.065,
+          h.y + Math.sin(a) * rr,
+          h.z + Math.cos(a) * rr,
+          0.012,
+          (2 * Math.PI * rr) / 28 - 0.01,
+          0.16,
+          i % 2 ? YELLOW : BLACK,
+          lm,
+          {
+            ao: 0,
+          },
+        );
       }
       // parafusos
       for (let i = 0; i < 16; i++) {
         const a = (i / 16) * Math.PI * 2;
-        G.extra.cylinder(fx - 0.2, h.y + Math.sin(a) * (R + 0.07), h.z + Math.cos(a) * (R + 0.07), 0.03, 0.06, DARK, lm, { axis: 'x', sides: 6 });
+        G.extra.cylinder(fx - 0.2, h.y + Math.sin(a) * (R + 0.07), h.z + Math.cos(a) * (R + 0.07), 0.03, 0.06, DARK, lm, {
+          axis: 'x',
+          sides: 6,
+        });
       }
       // dobradiças
       for (const y of [h.y - 0.6, h.y + 0.6]) G.extra.box(fx - 0.18, y, h.z + R + 0.05, 0.2, 0.22, 0.18, DARK, lm, { ao: 0 });

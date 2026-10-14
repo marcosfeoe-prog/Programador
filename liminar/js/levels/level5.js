@@ -46,6 +46,7 @@ const PX = 8; // período das colunas de corredores (em células)
 const PZ = 6; // período das fileiras de corredores
 const md = (a, n) => ((a % n) + n) % n;
 const HP = Math.PI / 2;
+const _fw = new THREE.Vector3();
 const DIRS = [
   [1, 0],
   [-1, 0],
@@ -111,6 +112,7 @@ export class Level5 extends GridLevel {
       })),
     );
     this.makeLamps();
+    this.keyMats = [];
     this.t = 0;
     this.recT = 80;
     this.partyT = 40;
@@ -414,8 +416,13 @@ export class Level5 extends GridLevel {
       conc: { map: con.map, normalMap: con.normalMap, vertexColors: true, roughness: 0.9, color: 0xb8b4ac },
       rug: { map: rug.map, normalMap: rug.normalMap, vertexColors: true, roughness: 0.98 },
     };
-    this.panelMat = panelMaterial(rampTex(), 0xffd6a0);
-    this.glowMat = glowMaterial(glowTex(), new THREE.Color(0.11, 0.11, 0.11), this.panelMat.uniforms.uGroupI);
+    this.rampTex = rampTex();
+    this.glowTex = glowTex();
+    this.panelMat = panelMaterial(this.rampTex, 0xffd6a0);
+    this.glowMat = glowMaterial(this.glowTex, new THREE.Color(0.11, 0.11, 0.11), this.panelMat.uniforms.uGroupI);
+    // UniformsUtils.merge clona as texturas (e o clone nunca seria liberado): usa as originais
+    this.panelMat.uniforms.map.value = this.rampTex;
+    this.glowMat.uniforms.map.value = this.glowTex;
     this.sharedLayers = { glow: this.glowMat };
     this.placeholders = [];
     for (const name in this.lmLayers) {
@@ -705,14 +712,24 @@ export class Level5 extends GridLevel {
         const g = new THREE.Group();
         const brass = items.litMat({ color: 0xc09a48, roughness: 0.3, metalness: 0.7 }, it.light);
         const red = items.litMat({ color: 0x8a1c14, roughness: 0.6 }, it.light);
-        const ring = new THREE.Mesh(new THREE.TorusGeometry(0.022, 0.005, 6, 16), brass);
+        this.keyMats.push(brass, red);
+        if (!this.keyGeos) {
+          this.keyGeos = [
+            new THREE.TorusGeometry(0.022, 0.005, 6, 16),
+            new THREE.BoxGeometry(0.075, 0.006, 0.008),
+            new THREE.BoxGeometry(0.014, 0.005, 0.022),
+            new THREE.CylinderGeometry(0.03, 0.03, 0.008, 6),
+          ];
+        }
+        const [gRing, gShaft, gBit, gFob] = this.keyGeos;
+        const ring = new THREE.Mesh(gRing, brass);
         ring.rotation.x = HP;
         ring.position.set(-0.05, 0.004, 0);
-        const shaft = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.006, 0.008), brass);
+        const shaft = new THREE.Mesh(gShaft, brass);
         shaft.position.set(0.01, 0.004, 0);
-        const bit = new THREE.Mesh(new THREE.BoxGeometry(0.014, 0.005, 0.022), brass);
+        const bit = new THREE.Mesh(gBit, brass);
         bit.position.set(0.04, 0.004, 0.012);
-        const fob = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.008, 6), red);
+        const fob = new THREE.Mesh(gFob, red);
         fob.scale.set(1.5, 1, 0.8);
         fob.position.set(-0.11, 0.004, 0.01);
         g.add(ring, shaft, bit, fob);
@@ -844,8 +861,7 @@ export class Level5 extends GridLevel {
     const d = Math.hypot(dx, dz);
     if (d > r) return false;
     if (d < 0.7) return true;
-    const f = new THREE.Vector3();
-    p.forward(f);
+    const f = p.forward(_fw);
     return (dx * f.x + dz * f.z) / (d * (Math.hypot(f.x, f.z) || 1)) > 0.45;
   }
 
@@ -1050,7 +1066,8 @@ export class Level5 extends GridLevel {
     const walls = this.hallWalls(ix, iz);
     if (!walls.length) return;
     const w = walls[Math.floor(Math.random() * walls.length)];
-    this.game.audio.positional('l5party', w.wx - w.nx * 1.4, 1.5, w.wz - w.nz * 1.4, {
+    if (this.partySnd) this.partySnd.stop();
+    this.partySnd = this.game.audio.positional('l5party', w.wx - w.nx * 1.4, 1.5, w.wz - w.nz * 1.4, {
       loop: false,
       gain: 0.55,
       ref: 2,
@@ -1109,7 +1126,8 @@ export class Level5 extends GridLevel {
     }
     // O Hóspede: só nos corredores, depois de pegar a chave
     const allowed = here === HALL && g.objectiveDone('key') && this.t > 35 && !d.opening;
-    const st = this.guest.update(dt, player, allowed);
+    if (g.transitioning && this.guest.state) this.guest.hide();
+    const st = g.transitioning ? null : this.guest.update(dt, player, allowed);
     if (st) {
       const near = clamp(1 - st.d / 13, 0, 1);
       g.st.fear = Math.max(g.st.fear, clamp(1 - st.d / 16, 0, 1));
@@ -1137,5 +1155,10 @@ export class Level5 extends GridLevel {
     for (const m of this.placeholders) m.dispose();
     this.panelMat.dispose();
     this.glowMat.dispose();
+    this.rampTex.dispose();
+    this.glowTex.dispose();
+    if (this.partySnd) this.partySnd.stop();
+    if (this.keyGeos) for (const k of this.keyGeos) k.dispose();
+    for (const m of this.keyMats) m.dispose();
   }
 }

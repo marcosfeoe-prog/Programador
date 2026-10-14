@@ -66,6 +66,7 @@ export class Steam {
       transparent: true,
       depthWrite: false,
     });
+    this.mat.uniforms.map.value = this.tex; // merge() clonou a textura; usa a original (liberada no dispose)
     this.points = new THREE.Points(geo, this.mat);
     this.points.frustumCulled = false;
     this.points.renderOrder = 3;

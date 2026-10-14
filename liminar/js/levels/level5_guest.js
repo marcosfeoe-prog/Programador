@@ -167,10 +167,11 @@ export class Guest {
         if (d >= 12 && L.los(P.pos.x, P.pos.z, wx, wz, 1.6)) best = { x: wx, z: wz, d };
       }
       if (best) {
-        // prefere surgir fora do campo de visão (o jogador o descobre ao virar)
+        // surge fora do campo de visão (o jogador o descobre ao virar); dentro
+        // dele, só bem longe, onde a névoa esconde o aparecimento
         const dot = ((best.x - P.pos.x) * _f.x + (best.z - P.pos.z) * _f.z) / (best.d * fl);
         best.w = dot < 0.3 ? 2 : 1;
-        cands.push(best);
+        if (best.w === 2 || best.d >= 20) cands.push(best);
       }
     }
     if (!cands.length) return false;
