@@ -211,6 +211,7 @@ export class GeoBuilder {
       ['ny', [-hx, -hy, -hz], [hx, -hy, -hz], [hx, -hy, hz], [-hx, -hy, hz], [0, -1, 0], sx, sz],
     ];
     const bottomY = cy - hy;
+    const floorY = opt.floorY !== undefined ? opt.floorY : bottomY;
     for (const f of faces) {
       if (skip.includes(f[0])) continue;
       const pts = [tr(...f[1]), tr(...f[2]), tr(...f[3]), tr(...f[4])];
@@ -226,7 +227,7 @@ export class GeoBuilder {
       // oclusão de contato perto do chão em faces verticais
       const cols = pts.map((q) => {
         let k = 1;
-        if (n[1] === 0) k = 1 - ao * Math.exp(-(q[1] - (opt.floorY || 0)) / 0.35) * (bottomY - (opt.floorY || 0) < 0.05 ? 1 : 0.3);
+        if (n[1] === 0) k = 1 - ao * Math.exp(-Math.max(0, q[1] - floorY) / 0.35) * (bottomY - floorY < 0.05 ? 1 : 0.3);
         if (n[1] < 0) k = 0.55;
         return [color[0] * k, color[1] * k, color[2] * k];
       });
@@ -278,6 +279,29 @@ export class GeoBuilder {
         this.quad([top, p2, p3, top], tn, [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], lmt, [color, color, color, color], opt.group || 0);
       }
     }
+  }
+
+  // Acrescenta uma BufferGeometry qualquer (transformada por `m`) com cor única.
+  addGeometry(geo, m, color, group = 0) {
+    const p = geo.attributes.position;
+    const nn = geo.attributes.normal;
+    const uv = geo.attributes.uv;
+    const nm = new THREE.Matrix3().getNormalMatrix(m);
+    const v = new THREE.Vector3();
+    const base = this.n;
+    for (let i = 0; i < p.count; i++) {
+      v.fromBufferAttribute(p, i).applyMatrix4(m);
+      this.pos.push(v.x, v.y, v.z);
+      v.fromBufferAttribute(nn, i).applyMatrix3(nm).normalize();
+      this.nor.push(v.x, v.y, v.z);
+      this.uv.push(uv ? uv.getX(i) : 0, uv ? uv.getY(i) : 0);
+      this.uv1.push(0, 0);
+      this.col.push(color[0], color[1], color[2]);
+      this.grp.push(group);
+      this.n++;
+    }
+    if (geo.index) for (let i = 0; i < geo.index.count; i++) this.idx.push(base + geo.index.getX(i));
+    else for (let i = 0; i < p.count; i++) this.idx.push(base + i);
   }
 
   build() {

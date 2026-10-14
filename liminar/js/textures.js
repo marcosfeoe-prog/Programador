@@ -496,13 +496,13 @@ const GENERATORS = {
       const x0 = W * (0.04 + 0.92 * rnd());
       const top = H * (0.02 + rnd() * 0.16);
       const lean = (rnd() - 0.5) * W * 0.08;
-      const shade = 0.75 + rnd() * 0.3;
+      const shade = 0.82 + rnd() * 0.22;
       const stemW = (1.6 + rnd() * 1.4) * sc;
       // caule
       const g = ctx.createLinearGradient(0, H, 0, top);
-      g.addColorStop(0, `rgb(${92 * shade},${88 * shade},${44 * shade})`);
-      g.addColorStop(0.45, `rgb(${170 * shade},${146 * shade},${78 * shade})`);
-      g.addColorStop(1, `rgb(${214 * shade},${182 * shade},${104 * shade})`);
+      g.addColorStop(0, `rgb(${140 * shade},${122 * shade},${70 * shade})`);
+      g.addColorStop(0.45, `rgb(${198 * shade},${170 * shade},${100 * shade})`);
+      g.addColorStop(1, `rgb(${226 * shade},${196 * shade},${122 * shade})`);
       ctx.strokeStyle = g;
       ctx.lineWidth = stemW;
       ctx.beginPath();
@@ -513,7 +513,7 @@ const GENERATORS = {
       for (let k = 0; k < 2; k++) {
         const ly = H * (0.55 + rnd() * 0.35);
         const dir = rnd() < 0.5 ? -1 : 1;
-        ctx.strokeStyle = `rgba(${150 * shade},${132 * shade},${70 * shade},0.95)`;
+        ctx.strokeStyle = `rgba(${182 * shade},${158 * shade},${92 * shade},0.95)`;
         ctx.lineWidth = stemW * 1.3;
         ctx.beginPath();
         ctx.moveTo(x0 + lean * 0.2, ly);
@@ -670,8 +670,8 @@ function facade(S, style, seed) {
   const r = rgh.getContext('2d');
   e.fillStyle = '#000';
   e.fillRect(0, 0, S, S);
-  const bays = 4;
-  const floors = 4;
+  const bays = 8;
+  const floors = 8;
   const bw = S / bays;
   const fh = S / floors;
   const litColor = () => {
@@ -701,7 +701,7 @@ function facade(S, style, seed) {
         c.fillRect(x, y, w, h);
         r.fillStyle = 'rgb(20,20,20)';
         r.fillRect(x, y, w, h);
-        if (rnd() < 0.3) {
+        if (rnd() < 0.16) {
           const [R, G, B] = litColor();
           e.fillStyle = `rgb(${R * 0.8},${G * 0.8},${B * 0.8})`;
           e.fillRect(x, y, w, h);
@@ -733,7 +733,7 @@ function facade(S, style, seed) {
         const x = (b * S) / (bays * 2);
         c.fillStyle = '#5a5751';
         c.fillRect(x, y, S * 0.006, h);
-        if (rnd() < 0.25) {
+        if (rnd() < 0.14) {
           const [R, G, B] = litColor();
           e.fillStyle = `rgb(${R * 0.75},${G * 0.75},${B * 0.75})`;
           e.fillRect(x + S * 0.006, y, S / (bays * 2) - S * 0.006, h);
@@ -753,7 +753,7 @@ function facade(S, style, seed) {
     // tijolo aparente com janelas recortadas
     const low = noiseField(S, S, 3, 3, 4, seed + 1);
     const fine = whiteNoise(S * S, seed + 2);
-    const rows = 64;
+    const rows = 128;
     const bh = S / rows;
     const img = c.createImageData(S, S);
     for (let y = 0; y < S; y++) {
@@ -803,7 +803,7 @@ function facade(S, style, seed) {
         c.fillRect(x + w / 2 - S * 0.003, y, S * 0.006, h);
         r.fillStyle = 'rgb(18,18,18)';
         r.fillRect(x, y, w, h);
-        if (rnd() < 0.35) {
+        if (rnd() < 0.2) {
           const [R, G, B] = litColor();
           e.fillStyle = `rgb(${R * 0.7},${G * 0.55},${B * 0.4})`;
           e.fillRect(x, y, w, h);

@@ -205,7 +205,13 @@ class Game {
     }
     this.level = level;
     this.hud.cardProgress(0.25, 'Construindo o espaço…');
-    await level.preload(level.spawn.x, level.spawn.z, (f) => this.hud.cardProgress(0.25 + f * 0.7));
+    try {
+      await level.preload(level.spawn.x, level.spawn.z, (f) => this.hud.cardProgress(0.25 + f * 0.7));
+    } catch (e) {
+      console.error(e);
+      showError('Erro ao construir o nível: ' + e.message);
+      throw e;
+    }
     this.applyLook(level.look);
     if (params.has('pos')) {
       const [x, z] = params.get('pos').split(',').map(Number);
