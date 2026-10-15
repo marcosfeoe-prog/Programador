@@ -96,6 +96,8 @@ export class Level5 extends GridLevel {
       sanityDrain: 0.06,
     };
     this.objectives = [
+      { id: 'note', text: 'Leia o bilhete em cima do balcão da recepção' },
+      { id: 'd333', text: 'Encontre a porta 333 (siga a seta)' },
       { id: 'key', text: 'Pegue a chave na recepção do Salão Principal' },
       { id: 'valves', text: 'Desligue as válvulas da Sala das Caldeiras (0/3)' },
       { id: 'room', text: `Abra o Quarto ${this.roomNum}` },
@@ -630,7 +632,7 @@ export class Level5 extends GridLevel {
     }
     // a chave da recepção
     const kp = this.keyPos;
-    if (inside(kp.x, kp.z)) ch.items.push(this.keyItem());
+    if (inside(kp.x, kp.z)) ch.items.push(this.keyItem(), this.noteItem());
     this.hallProps(ch, cx0, cz0);
   }
 
@@ -706,6 +708,27 @@ export class Level5 extends GridLevel {
   }
 
   // Item da chave (latão, etiqueta vermelha com o número).
+  // Bilhete no balcão, ao lado da chave: aponta o caminho até a porta 333.
+  noteItem() {
+    const kp = this.keyPos;
+    return {
+      type: 'note',
+      key: '5:bilhete333',
+      x: kp.x - 0.6,
+      z: kp.z + 0.05,
+      y: kp.y,
+      rot: -0.3,
+      label: 'Ler o bilhete no balcão',
+      onUse: (game) => {
+        game.audio.paper();
+        game.hud.showNote(
+          'Para o próximo hóspede: antes de pegar essa chave, vá até a porta 333. É a única que abre por dentro deste lado do hotel. Lá tem uma carta com tudo o que eu descobri — o Hóspede, as caldeiras, a 595 e as outras portas. A 333 tem uma luz amarela fraca saindo por baixo. Siga os corredores. — M.',
+        );
+        game.completeObjective('note', 'A porta 333. Siga a seta: ela aponta para lá.');
+      },
+    };
+  }
+
   keyItem() {
     const kp = this.keyPos;
     return {
@@ -916,6 +939,10 @@ export class Level5 extends GridLevel {
     g.fadeTarget = 0;
     g.player.frozen = false;
     this.moving = false;
+    if (sd.num === '333') {
+      g.completeObjective('note');
+      g.completeObjective('d333', 'Quarto 333. Vazio, a não ser por uma mesa. Em cima dela, uma carta.');
+    }
     const msg = {
       333: 'Quarto 333. Vazio, a não ser por uma mesa. Em cima dela, uma carta.',
       472: 'Atrás da 472, uma escada desce para o subsolo. Lá embaixo, outro hotel: paredes verdes, carpete azul, corredores compridos demais.',
@@ -1105,6 +1132,11 @@ export class Level5 extends GridLevel {
   navTarget() {
     if (this.area) return this.area.navTarget();
     const cur = this.game.currentObjective();
+    if (cur && cur.id === 'note') return { x: this.keyPos.x - 0.6, z: this.keyPos.z + 0.05 };
+    if (cur && cur.id === 'd333') {
+      const sd = this.secretDoors.find((d) => d.num === '333');
+      if (sd) return { x: sd.sl.fx + sd.sl.nx * 0.6, z: sd.sl.fz + sd.sl.nz * 0.6 };
+    }
     if (!cur || cur.id === 'room') return this.exit;
     if (cur.id === 'key') return this.keyPos;
     const p = this.game.player.pos;
