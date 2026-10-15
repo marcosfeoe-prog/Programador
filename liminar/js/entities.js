@@ -223,7 +223,7 @@ export class Smilers {
     this.timer -= dt;
     const active = this.pool.filter((s) => s.active);
     const here = dark(player.pos.x, player.pos.z);
-    if (this.timer <= 0 && active.length < (g.power < 0.5 ? 2 : 1)) {
+    if (this.timer <= 0 && active.length < (level.smilerMax || (g.power < 0.5 ? 2 : 1))) {
       this.timer = 6 + Math.random() * 10;
       if (here < 0.45 || g.power < 0.5) this.trySpawn(player, level, dark);
     }
@@ -248,6 +248,11 @@ export class Smilers {
         s.flee = 1;
         g.audio.hiss();
       }
+      // alguns níveis: lanterna apagada e olhar para o chão fazem ele sumir
+      if (!s.flee && level.smilerHide && level.smilerHide(player, d)) {
+        s.hideT = (s.hideT || 0) + dt;
+        if (s.hideT > 1.6) s.flee = 1;
+      } else s.hideT = 0;
       if (s.flee) {
         // recua e some
         const k = 2.4 * dt;
@@ -256,7 +261,7 @@ export class Smilers {
         s.alpha = damp(s.alpha, 0, 3, dt);
         if (s.alpha < 0.03) this.despawn(s);
       } else {
-        const sp = (g.power < 0.5 ? 2.3 : 1.25) * (inBeam ? 0.15 : 1);
+        const sp = (g.power < 0.5 ? 2.3 : 1.25) * (inBeam ? 0.15 : 1) * (s.hideT > 0 ? 0.1 : 1);
         const nx = s.x - (dx / d) * sp * dt;
         const nz = s.z - (dz / d) * sp * dt;
         // não entra em áreas iluminadas

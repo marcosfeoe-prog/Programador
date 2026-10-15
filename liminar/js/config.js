@@ -121,7 +121,7 @@ export const FILTERS = [
 // Os níveis, na ordem em que são visitados. `key` identifica a classe do nível
 // e os bilhetes; `num` é o número canônico (10.1 é um subnível do 10).
 // Ordem em que os níveis são visitados (as chaves de LEVELS; secretos e partes ficam de fora).
-export const ORDER = ['0', '1', '2', '3', '4', '5', '8', '9', '10', '10.1', '11', '12', '15', '23', '37', '88'];
+export const ORDER = ['0', '1', '2', '3', '4', '5', '8', '9', '10', '10.1', '11', '12', '15', '23', '34', '35', '37', '88'];
 
 // Posição de um nível na ordem (partes contam como o nível principal; secretos, como o pai).
 export function orderPos(info) {
@@ -348,6 +348,26 @@ export const LEVELS = [
     desc: 'Um subúrbio sem fim coberto de neve, numa noite que não acaba. As casas iluminadas são quentes por dentro.',
     objective: 'Encontre a casa iluminada coberta de neve.',
     hint: 'O frio lá fora derruba a sanidade. Descanse dentro das casas acesas.',
+  },
+  {
+    key: '34',
+    num: 34,
+    name: 'Sistema de Esgoto',
+    tag: 'Nível 34',
+    danger: 'Classe 4 · Inseguro · Muitas entidades',
+    desc: 'Túneis de esgoto sem fim, tijolo em cima e pedra embaixo, água amarelada no chão. Sorridentes, Cães de caça, Ratos da Morte… e boatos de um Ladrão de Pele.',
+    objective: 'Encontre a Sala de Junção e mergulhe até o fundo.',
+    hint: 'Viu um Sorridente? Apague a lanterna e olhe para o chão. Não beba a água daqui.',
+  },
+  {
+    key: '35',
+    num: 35,
+    name: 'Um Estacionamento Vazio',
+    tag: 'Nível 35',
+    danger: 'Classe 2 · Inseguro · Poucas entidades',
+    desc: 'Uma garagem enorme de concreto com seis andares, luz quente e brilhos verdes e azuis, cercada por um abismo escuro. Algo grande vive nos cantos escuros.',
+    objective: 'Suba até o terraço e saia pela escada.',
+    hint: 'NÃO CORRA. A criatura só persegue quem corre.',
   },
 ];
 

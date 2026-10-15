@@ -22,7 +22,7 @@ em tela cheia e na horizontal).
 
 ## Os níveis (V2)
 
-Ordem: **0 → 1 → 2 → 3 → 4 → 5 → 8 → 9 → 10 → 10.1 → 11 → 12 → 15 → 23 → 37 → 88**, mais dois subníveis secretos (**0.1** e **9.5**). Todos podem ser escolhidos no menu **Níveis** (os secretos só aparecem depois de descobertos).
+Ordem: **0 → 1 → 2 → 3 → 4 → 5 → 8 → 9 → 10 → 10.1 → 11 → 12 → 15 → 23 → 34 → 35 → 37 → 88**, mais dois subníveis secretos (**0.1** e **9.5**). Todos podem ser escolhidos no menu **Níveis** (os secretos só aparecem depois de descobertos).
 
 | Nível | Nome | Como é | Objetivo / saída |
 |---|---|---|---|
@@ -42,6 +42,8 @@ Ordem: **0 → 1 → 2 → 3 → 4 → 5 → 8 → 9 → 10 → 10.1 → 11 → 
 | **12** | Matrix | Três áreas. (1) Salinha branca com mesa, cadeira e uma porta "trancada"; do outro lado, corredores brancos intermináveis — filtros de gravação (VHS, câmera, CCTV) falham aqui. (2) Rua deserta sob uma **lua vermelha** enorme e brilho vermelho intenso. (3) O Branco: uma **cena** mostra o boneco do jogador pela primeira vez; depois, só branco infinito, até que surge uma **porta com erros**. Sem entidades. | Abra a porta → passagem no chão → porta branca aberta → espere a porta com erros |
 | **15** | Os Salões Futuristas | Corredores brancos, trechos totalmente escuros, salas de máquinas atrás de vidro grosso. Sem entidades. | Cartão de acesso → religue 3 terminais → abra a comporta |
 | **23** | O Jardim Petrificado | Árvores petrificadas entrelaçadas, musgo, névoa e feixes de luz. Sem entidades. | Chegue à Base Seedling e descanse no catre |
+| **34** | Sistema de Esgoto | Túneis de esgoto sem fim, **tijolo em cima e pedra embaixo**, água amarelada parada (anda-se mais devagar), quase sem luz e com pilha na lanterna. Um dos níveis mais perigosos: **Sorridentes** (apague a lanterna e olhe para o chão para ele sumir), **Cães de caça**, bandos de **Ratos da Morte** e a silhueta de um suposto **Ladrão de Pele**. Áreas diferentes: esgoto comum, trechos **decaídos** (paredes desmoronando), trechos onde as paredes **mudam de cor** e trechos **sem teto**, sob um **céu esverdeado**. A Água de Amêndoa daqui está **contaminada**. | Ache a **Sala de Junção** (dois túneis se cruzam em volta de um poço) → mergulhe até o fundo |
+| **35** | Um Estacionamento Vazio | Garagem enorme de concreto com **seis andares** (P1–P5 e o terraço), ligados por rampas. Luz fraca e quente, com **luzes verdes e azuis** brilhando baixinho; muros no perímetro e um **abismo escuro** além deles. Carros raros — entrar num deles tem **efeitos variados**. Uma única entidade: uma **criatura enorme e rara** que surge nos cantos escuros e **só persegue quem corre** (e é muito rápida). | Suba as rampas até o terraço → ao chegar perto da saída, o terraço **se enche de carros** sem motorista, que aceleram se você passar na frente → escada de saída |
 | **37** | Sublimidade | Labirinto de piscinas de azulejos brancos com água morna verde-azulada: salas claras (claraboias), salas no escuro, colunas, poços fundos. Começa com uma **cena do jogador acordando**. **Verão** (a cada 5 min, 3 min de luz de pôr do sol) e **Roxo Iminente** (raro, brilho roxo hipnótico). Área secreta dos **mercenários**: loja onde se compra com o tempo sobrevivido (kit de primeiros socorros, pilha de longa duração, tênis silencioso, amuleto de azulejo, rádio de ondas curtas). Pacífico, sem entidades. | Três saídas: escada para o subsolo (**88**), porta de manutenção (**15**), porta futurista (**0.1**) |
 | **88** | Lago Silencioso | Lago imóvel e gelado no fundo de um vale de floresta escura, com reflexo espelhado de verdade. Perto da água **todo som é abafado**; dentro dela, sussurros sobem pelo corpo. **Ciclo de dia e noite**: o dia é escuro, a noite quase cega. A **Criatura** (só à noite) persegue quem ela vê — só a **cabana com a porta fechada** salva. A **Sombra** observa de longe entre as árvores e some quando você chega perto. No acampamento abandonado há uma **carta com uma foto em branco** que recupera a sanidade sozinha enquanto estiver na mochila. | Encontre a passagem subterrânea e entre na caverna (final do jogo) |
 
@@ -171,6 +173,8 @@ liminar/
   js/levels/level3*.js    Estação Elétrica (dois andares, o Cão, salão dos robôs)
   js/levels/level8.js     Sistema de Cavernas (base da M.E.G., mina escondida)
   js/levels/level9_5.js   Rochester Blues (nevasca, carta, cama)
+  js/levels/level34*.js   Sistema de Esgoto (áreas, céu verde, Ratos da Morte)
+  js/levels/level35*.js   Estacionamento (andares, rampas, criatura, carros)
   js/levels/wake.js       cena de despertar reutilizável
   js/inventory.js     mochila: itens, ícones e efeitos
   js/player.js        movimento, colisão, balanço, passos e lanterna
@@ -181,5 +185,5 @@ liminar/
   js/notes.js         textos dos bilhetes
 ```
 
-Parâmetros úteis para testes: `?level=0..19&autostart` (10 = subnível 0.1, 11 = Nível 88, 12–14 = áreas do Nível 12, 15 = Nível 37, 16 = Nível 2, 17 = Nível 3, 18 = Nível 8, 19 = subnível 9.5) (entra direto no nível),
+Parâmetros úteis para testes: `?level=0..21&autostart` (10 = subnível 0.1, 11 = Nível 88, 12–14 = áreas do Nível 12, 15 = Nível 37, 16 = Nível 2, 17 = Nível 3, 18 = Nível 8, 19 = subnível 9.5, 20 = Nível 34, 21 = Nível 35) (entra direto no nível),
 `?q=ultra`, `?filter=vhs`, `?seed=7`, `?touch` (força os controles de toque).

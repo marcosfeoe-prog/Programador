@@ -111,6 +111,19 @@ export const NOTES = {
     'Disseram que tem uma mina antiga no sudoeste, atrás de umas tábuas pregadas.',
     'No fundo da mina tem uma porta de madeira. Do outro lado cheira a asfalto molhado.',
   ],
+  '34': [
+    'Se vir um sorriso no escuro: apague a lanterna e olhe para baixo. Se você acha que ele sumiu, é porque sumiu mesmo.',
+    'Não bebam a Água de Amêndoa daqui. Está contaminada. Tragam de outro nível.',
+    'Os ratos andam em bando. Quando um guincha, todos vêm. Não deixe eles te alcançarem.',
+    'Uma mulher jura que viu um Ladrão de Pele no túnel leste. Ninguém acreditou. Eu acredito.',
+    'Na Sala de Junção dois túneis se cruzam em volta de um poço. Nade até o fundo. Do outro lado tem um estacionamento.',
+  ],
+  '35': [
+    'NÃO CORRA. Eu repito: não corra. Ele só vem se você correr.',
+    'Vi aquilo agachado no canto mais escuro do andar 3. Alto como um poste. Fiquei andando devagar e ele só ficou olhando.',
+    'As portas das escadas dos andares dão para concreto. Só a do terraço é de verdade.',
+    'Quando você chega perto da saída, os carros aparecem. Todos. Com o motor ligado.',
+  ],
   '9.5': [
     'A neve não para. Nunca parou. As casas acesas são as únicas quentes.',
     'Tem três pessoas sentadas numa sala com velas. Elas não querem sair.',

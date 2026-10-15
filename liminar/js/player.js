@@ -109,6 +109,7 @@ export class Player {
     this.pos.y = damp(this.pos.y, gy, 14, dt);
     const moved = Math.hypot(this.pos.x - _p.x, this.pos.z - _p.z);
     this.speed = moved / Math.max(dt, 1e-4);
+    this.sprinting = sprint && this.speed > 2.8;
 
     // balanço da cabeça e passos
     const stride = sprint ? 1.0 : 0.78;
