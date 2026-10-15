@@ -175,6 +175,73 @@ function makeJazz() {
   return normalize(v, 0.8);
 }
 
+// Trilhas ambientes por nível: acordes (MIDI), brilho do filtro e volume.
+const PADS = {
+  level0: { chords: [[57, 64, 69, 72], [55, 62, 67, 71], [53, 60, 65, 69], [55, 62, 65, 71]], cut: 1400, gain: 0.05, detune: 0.004 },
+  level0_1: { chords: [[60, 67, 71, 76], [57, 64, 69, 72], [65, 69, 72, 76], [62, 67, 71, 74]], cut: 2600, gain: 0.07, detune: 0.003, sparkle: true },
+  level1: { chords: [[50, 57, 62, 65], [49, 56, 61, 64], [47, 54, 59, 62], [48, 55, 60, 63]], cut: 900, gain: 0.06, detune: 0.006 },
+  level4: { chords: [[60, 64, 67, 71], [57, 60, 64, 67], [62, 65, 69, 72], [59, 62, 67, 71]], cut: 1800, gain: 0.04, detune: 0.003 },
+  level5: { chords: [[56, 60, 63, 67], [55, 58, 62, 65]], cut: 1000, gain: 0.025, detune: 0.008 },
+  level9: { chords: [[52, 59, 64, 67], [51, 58, 63, 66], [50, 57, 62, 65], [49, 56, 61, 64]], cut: 1100, gain: 0.05, detune: 0.007 },
+  level10: { chords: [[62, 69, 74, 78], [60, 67, 72, 76], [59, 66, 71, 74], [57, 64, 69, 73]], cut: 1600, gain: 0.05, detune: 0.004 },
+  level10_1: { chords: [[45, 52, 57, 60], [44, 51, 56, 59], [43, 50, 55, 58], [44, 51, 56, 60]], cut: 800, gain: 0.06, detune: 0.006 },
+  level11: { chords: [[61, 65, 68, 72], [58, 61, 65, 68], [63, 66, 70, 73], [56, 60, 63, 67]], cut: 2000, gain: 0.05, detune: 0.004 },
+  level15: { chords: [[64, 71, 76, 79], [62, 69, 74, 77], [60, 67, 72, 76], [62, 69, 74, 78]], cut: 2400, gain: 0.04, detune: 0.002, sparkle: true },
+  level23: { chords: [[50, 57, 64, 69], [48, 55, 62, 67], [53, 60, 67, 72], [52, 59, 64, 71]], cut: 1500, gain: 0.06, detune: 0.005 },
+};
+
+// Sintetiza um laço de pad: dentes de serra desafinados, filtro passa-baixa
+// com movimento lento e envelopes longos que se sobrepõem.
+function makePad(spec) {
+  const chordLen = 8;
+  const n = Math.floor(spec.chords.length * chordLen * SR);
+  const out = new Float32Array(n);
+  const midi = (m) => 440 * Math.pow(2, (m - 69) / 12);
+  spec.chords.forEach((ch, ci) => {
+    const t0 = ci * chordLen;
+    for (const m of ch) {
+      for (const dv of [-1, 1]) {
+        const f = midi(m) * (1 + dv * spec.detune);
+        let ph = Math.random();
+        const len = Math.floor((chordLen + 3) * SR);
+        const i0 = Math.floor(t0 * SR);
+        for (let i = 0; i < len; i++) {
+          const t = i / SR;
+          ph += f / SR;
+          const saw = (ph % 1) * 2 - 1;
+          const e = Math.min(1, t / 2.5) * Math.min(1, Math.max(0, (chordLen + 3 - t) / 3));
+          out[(i0 + i) % n] += saw * e * 0.06;
+        }
+      }
+    }
+  });
+  // passa-baixa com corte oscilando devagar
+  let y = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / SR;
+    const fc = spec.cut * (0.7 + 0.3 * Math.sin(t * 0.21));
+    const a = 1 - Math.exp((-2 * Math.PI * fc) / SR);
+    y += (out[i] - y) * a;
+    out[i] = y;
+  }
+  if (spec.sparkle) {
+    // notas agudas esparsas tipo sino
+    let seed = 3;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    for (let k = 0; k < spec.chords.length * 3; k++) {
+      const ch = spec.chords[Math.floor(rnd() * spec.chords.length)];
+      const f = midi(ch[Math.floor(rnd() * ch.length)] + 12);
+      const i0 = Math.floor(rnd() * n);
+      const len = Math.floor(2.5 * SR);
+      for (let i = 0; i < len; i++) {
+        const t = i / SR;
+        out[(i0 + i) % n] += Math.sin(2 * Math.PI * f * t) * Math.exp(-t / 0.8) * 0.05;
+      }
+    }
+  }
+  return normalize(out, 0.7);
+}
+
 // ------------------------------------------------------------ motor
 export class AudioEngine {
   constructor() {
@@ -199,10 +266,41 @@ export class AudioEngine {
     const ctx = (this.ctx = new AC());
     this.master = ctx.createGain();
     this.master.gain.value = this.volume;
+    // Equalização: alto-falante de celular quase não reproduz graves, então
+    // corta o subgrave (economiza potência) e realça médios/agudos.
+    const mob = !!this.lowCost;
+    const low = ctx.createBiquadFilter();
+    low.type = 'lowshelf';
+    low.frequency.value = 110;
+    low.gain.value = mob ? -8 : -2;
+    const pres = ctx.createBiquadFilter();
+    pres.type = 'peaking';
+    pres.frequency.value = 2200;
+    pres.Q.value = 0.8;
+    pres.gain.value = mob ? 6 : 3;
+    const air = ctx.createBiquadFilter();
+    air.type = 'highshelf';
+    air.frequency.value = 6000;
+    air.gain.value = mob ? 3 : 1.5;
     const comp = ctx.createDynamicsCompressor();
-    comp.threshold.value = -16;
-    comp.ratio.value = 4;
-    this.master.connect(comp).connect(ctx.destination);
+    comp.threshold.value = -22;
+    comp.knee.value = 10;
+    comp.ratio.value = 5;
+    comp.attack.value = 0.005;
+    comp.release.value = 0.2;
+    // ganho de compensação + limitador final (evita distorção)
+    const makeup = ctx.createGain();
+    makeup.gain.value = mob ? 2.6 : 2.0;
+    const lim = ctx.createDynamicsCompressor();
+    lim.threshold.value = -1.5;
+    lim.knee.value = 0;
+    lim.ratio.value = 20;
+    lim.attack.value = 0.002;
+    lim.release.value = 0.1;
+    this.master.connect(low).connect(pres).connect(air).connect(comp).connect(makeup).connect(lim).connect(ctx.destination);
+    this.music = ctx.createGain();
+    this.music.gain.value = 1;
+    this.music.connect(this.master);
     this.dry = ctx.createGain();
     this.dry.connect(this.master);
     this.reverb = ctx.createConvolver();
@@ -245,8 +343,10 @@ export class AudioEngine {
         [600, 0.16],
         [840, 0.1],
         [1080, 0.06],
-        [1920, 0.035],
-        [3120, 0.02],
+        [1920, 0.12],
+        [2400, 0.09],
+        [3120, 0.07],
+        [4080, 0.04],
       ];
       for (const [f, amp] of harm) {
         const ph = Math.random() * 6.28;
@@ -489,6 +589,7 @@ export class AudioEngine {
       for (let i = 0; i < n; i++) if (Math.floor(i / sec(0.03)) % 3 === 1) a[i] *= 0.05;
       B.crackle = this.buf(normalize(env(biquad(a, 'bp', 2500, 0.5), 0.002, 0.15), 0.7));
     }
+    B.stepTick = [0, 1, 2].map(() => this.buf(normalize(env(biquad(noise(sec(0.06)), 'bp', 2000 + Math.random() * 1500, 1.4), 0.001, 0.018), 0.8)));
     B.click = this.buf(normalize(env(biquad(noise(sec(0.05)), 'bp', 3500, 3), 0.0005, 0.006), 0.6));
     // respiração ofegante
     {
@@ -744,6 +845,7 @@ export class AudioEngine {
 
   loop(name, gain, { rate = 1, lp = 0, wet = 0.2 } = {}) {
     const ctx = this.ctx;
+    gain *= 1.7;
     const s = ctx.createBufferSource();
     s.buffer = this.B[name];
     s.loop = true;
@@ -776,6 +878,35 @@ export class AudioEngine {
   addBuffer(name, data) {
     if (!this.ready) return;
     this.B[name] = this.buf(data);
+  }
+
+  // Trilha ambiente: acordes lentos em registro médio (audível no celular),
+  // gerada por nível e tocada em laço bem baixo.
+  startPad(kind) {
+    if (!this.ready) return;
+    const spec = PADS[kind];
+    if (!spec) return;
+    const name = 'pad_' + kind;
+    if (!this.B[name]) this.B[name] = this.buf(makePad(spec));
+    const ctx = this.ctx;
+    const s = ctx.createBufferSource();
+    s.buffer = this.B[name];
+    s.loop = true;
+    const g = ctx.createGain();
+    g.gain.value = 0;
+    g.gain.setTargetAtTime(spec.gain, ctx.currentTime + 1.5, 3);
+    s.connect(g).connect(this.music);
+    const w = ctx.createGain();
+    w.gain.value = 0.5;
+    g.connect(w).connect(this.wet);
+    s.start();
+    this.loops.push({ src: s, gain: g, base: spec.gain });
+  }
+
+  // Som de teste (botão nas configurações).
+  test() {
+    this.play('ding', { gain: 0.8, wet: 0.2 });
+    this.play('objective', { gain: 0.6, when: 0.9 });
   }
 
   // Constrói o jazz de vitrola sob demanda (só o Nível 5 usa).
@@ -893,6 +1024,7 @@ export class AudioEngine {
       this.loop('water', 0.22, { wet: 0.1 });
       this.wind = this.loop('wind', 0.09, { rate: 0.6, lp: 900 });
     }
+    this.startPad(k);
     this.setEmitter(emitter);
   }
 
@@ -1080,7 +1212,10 @@ export class AudioEngine {
   footstep(surface, k) {
     if (!this.ready) return;
     const b = this.B.step[surface] || this.B.step.carpet;
-    this.play(b, { gain: 0.32 * k, rate: 0.9 + Math.random() * 0.2, wet: surface === 'grass' || surface === 'dirt' ? 0.05 : 0.35 });
+    const out = surface === 'grass' || surface === 'dirt' || surface === 'mud';
+    this.play(b, { gain: 0.5 * k, rate: 0.9 + Math.random() * 0.2, wet: out ? 0.05 : 0.35 });
+    const tick = { carpet: 0.08, grass: 0.06, mud: 0.06, dirt: 0.12 }[surface] ?? 0.16;
+    this.play(this.B.stepTick, { gain: tick * k, rate: 0.85 + Math.random() * 0.3, wet: out ? 0 : 0.2 });
   }
 
   crackle(v) {

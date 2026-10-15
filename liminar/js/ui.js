@@ -81,6 +81,75 @@ export class HUD {
     $('btn-use').classList.add('ready');
   }
 
+  // Caixa de diálogo com personagens. choices: [{ text, fn }]
+  dialog(name, text, choices = [], portrait = '') {
+    const box = $('dialog');
+    $('dlg-name').textContent = name;
+    $('dlg-face').style.backgroundImage = portrait ? `url(${portrait})` : 'none';
+    const t = $('dlg-text');
+    t.textContent = '';
+    clearInterval(this.typeT);
+    let k = 0;
+    this.typeFull = () => {
+      clearInterval(this.typeT);
+      t.textContent = text;
+    };
+    // efeito de máquina de escrever
+    this.typeT = setInterval(() => {
+      k += 2;
+      t.textContent = text.slice(0, k);
+      if (k >= text.length) clearInterval(this.typeT);
+    }, 22);
+    const ch = $('dlg-choices');
+    ch.innerHTML = '';
+    const list = choices.length ? choices : [{ text: 'Até mais.', fn: null }];
+    this.dlgChoices = list;
+    list.forEach((c, i) => {
+      const b = document.createElement('button');
+      b.className = 'btn dlg-opt';
+      b.innerHTML = `<b>${i + 1}</b> ${c.text}`;
+      const pick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.pickChoice(i);
+      };
+      b.addEventListener('click', pick);
+      b.addEventListener('touchend', pick, { passive: false });
+      ch.appendChild(b);
+    });
+    box.classList.remove('hidden');
+    if (!this.dialogOpen) {
+      this.dialogOpen = true;
+      this.game.input.reset();
+      this.game.input.unlock();
+    }
+  }
+
+  pickChoice(i) {
+    const c = this.dlgChoices && this.dlgChoices[i];
+    if (!c || this.picking) return;
+    this.picking = true;
+    setTimeout(() => (this.picking = false), 150);
+    this.game.audio.click();
+    if (c.fn) c.fn();
+    else this.closeDialog();
+  }
+
+  closeDialog() {
+    clearInterval(this.typeT);
+    $('dialog').classList.add('hidden');
+    this.dialogOpen = false;
+    this.game.input.reset();
+    if (!this.game.settings.mobile) this.game.input.lock();
+  }
+
+  // Teclas 1–3 escolhem; E/Espaço completa o texto ou fecha.
+  dialogKeys(input) {
+    for (let i = 0; i < 4; i++) if (input.pressed('opt' + (i + 1))) return this.pickChoice(i);
+    if (input.pressed('menu')) return this.closeDialog();
+    if (input.pressed('interact')) this.typeFull && this.typeFull();
+  }
+
   showNote(text) {
     $('note-text').textContent = '“' + text + '”';
     $('note').classList.remove('hidden');
@@ -216,6 +285,11 @@ export class Menu {
     $('b-settings').onclick = () => this.open('m-settings');
     $('b-help').onclick = () => this.open('m-help');
     $('b-restart').onclick = () => cb.restart();
+    $('b-testsound').onclick = () => cb.testSound();
+    // clique sonoro nos botões do menu
+    this.root.addEventListener('click', (e) => {
+      if (e.target.closest('button, .fopt, .lcard') && cb.uiClick) cb.uiClick();
+    });
     $('b-quit').onclick = () => cb.quit();
     for (const b of this.root.querySelectorAll('.back')) b.onclick = () => this.open('m-main');
     this.buildLevels();
@@ -227,10 +301,20 @@ export class Menu {
     const list = $('level-list');
     list.innerHTML = '';
     list.className = 'panel';
+    // ordem de exibição: cada secreto aparece logo após o nível pai (se descoberto)
+    const order = [];
     LEVELS.forEach((L, i) => {
+      if (L.secret) return;
+      order.push(i);
+      LEVELS.forEach((S, j) => {
+        if (S.secret && S.parent === L.key && this.s.secretFound) order.push(j);
+      });
+    });
+    order.forEach((i) => {
+      const L = LEVELS[i];
       const b = document.createElement('button');
-      b.className = 'lcard';
-      const seen = i <= (this.s.reached || 0) ? ' · visitado' : '';
+      b.className = 'lcard' + (L.secret ? ' secret' : '');
+      const seen = L.secret ? ' · secreto' : i <= (this.s.reached || 0) ? ' · visitado' : '';
       b.innerHTML = `<div class="ln">${L.num}</div><div class="lt">${L.name}</div><div class="ld">${L.desc}</div><div class="lk">${L.danger}${seen}</div>`;
       b.onclick = () => this.cb.play(i);
       list.appendChild(b);

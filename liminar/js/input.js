@@ -19,6 +19,10 @@ const KEYMAP = {
   KeyN: 'nav',
   KeyQ: 'leanL',
   KeyG: 'fullscreen',
+  Digit1: 'opt1',
+  Digit2: 'opt2',
+  Digit3: 'opt3',
+  Digit4: 'opt4',
   Escape: 'menu',
   KeyP: 'menu',
 };

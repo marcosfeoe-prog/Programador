@@ -94,6 +94,11 @@ class Game {
       restart: () => this.loadLevel(this.levelIdx),
       quit: () => this.quitToMenu(),
       changed: (k) => this.settingChanged(k),
+      testSound: () => {
+        this.audio.init();
+        this.audio.test();
+      },
+      uiClick: () => this.audio.ready && this.audio.click(),
     });
     this.menu.progress(0.1, 'Iniciando o WebGL…');
     await yieldFrame();
@@ -130,6 +135,13 @@ class Game {
     this.resize();
     window.addEventListener('resize', () => this.resize());
     window.addEventListener('orientationchange', () => setTimeout(() => this.resize(), 300));
+    // Destrava o áudio no primeiro toque/tecla (exigência dos navegadores
+    // móveis) e retoma o contexto se o sistema o suspender.
+    const unlock = () => {
+      if (!this.audio.ctx) this.audio.init();
+      else if (this.audio.ctx.state !== 'running' && !this.paused) this.audio.ctx.resume();
+    };
+    for (const ev of ['pointerdown', 'touchend', 'keydown']) window.addEventListener(ev, unlock, { passive: true });
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && this.running && !this.paused) this.pause();
     });
@@ -262,7 +274,12 @@ class Game {
     }
     this.post.render(this.scene, this.camera);
     this.hud.cardProgress(1, 'Pronto.');
-    if (this.settings.reached < idx) {
+    if (info.secret) {
+      if (!this.settings.secretFound) {
+        this.settings.secretFound = true;
+        saveSettings(this.settings);
+      }
+    } else if (this.settings.reached < idx) {
       this.settings.reached = idx;
       saveSettings(this.settings);
     }
@@ -459,11 +476,35 @@ class Game {
     }, delay * 1000);
     setTimeout(
       () => {
-        const next = this.levelIdx + 1;
-        if (next < LEVELS.length) this.loadLevel(next);
+        const next = this.nextLevelIndex();
+        if (next >= 0) this.loadLevel(next);
       },
       delay * 1000 + 1700,
     );
+  }
+
+  // Próximo nível da sequência (pula os secretos; um secreto volta ao seu destino).
+  nextLevelIndex() {
+    const cur = LEVELS[this.levelIdx];
+    if (cur.secret) return LEVELS.findIndex((l) => l.key === cur.returnTo);
+    for (let i = this.levelIdx + 1; i < LEVELS.length; i++) if (!LEVELS[i].secret) return i;
+    return -1;
+  }
+
+  // Entra num nível específico pela chave (portas secretas).
+  enterLevel(key, kind = 'door', delay = 0.6) {
+    const idx = LEVELS.findIndex((l) => l.key === key);
+    if (idx < 0 || this.transitioning) return;
+    this.transitioning = true;
+    this.player.frozen = true;
+    this.input.enabled = false;
+    if (kind === 'door') this.audio.door();
+    setTimeout(() => {
+      this.audio.transition();
+      this.fadeTarget = 1;
+      this.glitch = 0.5;
+    }, delay * 1000);
+    setTimeout(() => this.loadLevel(idx), delay * 1000 + 1700);
   }
 
   // Final do jogo. opts: { title, text }
@@ -476,7 +517,7 @@ class Game {
     this.post.u.uFadeColor.value.setRGB(1, 1, 1);
     this.fadeTarget = 1;
     this.audio.stopAll();
-    this.settings.reached = LEVELS.length - 1;
+    this.settings.reached = LEVELS.findIndex((l) => l.key === '23');
     saveSettings(this.settings);
     const mins = Math.round((performance.now() - this.startStats.t0) / 60000);
     setTimeout(() => {
@@ -507,7 +548,8 @@ class Game {
       return;
     }
     if (!this.running || !this.level) return;
-    if (!this.paused && !this.hud.noteOpen) this.update(dt);
+    if (this.hud.dialogOpen) this.hud.dialogKeys(this.input);
+    else if (!this.paused && !this.hud.noteOpen) this.update(dt);
     else if (this.hud.noteOpen && (this.input.pressed('interact') || this.input.pressed('menu'))) this.hud.closeNote();
     this.render(dt);
     this.measure(dt);
@@ -580,7 +622,7 @@ class Game {
     const light = L.lightLevel ? L.lightLevel(P.pos.x, P.pos.z) * this.power : 1;
     const darkK = L.indoor ? 1 + Math.max(0, 0.45 - light) * 2.2 : 1;
     const drain = (L.look.sanityDrain || 0.1) * darkK + this.sanityDrainExtra + (L.sanityExtra || 0);
-    if (!this.transitioning) this.sanity -= drain * dt;
+    if (!this.transitioning) this.sanity = Math.min(100, this.sanity - drain * dt);
     if (this.sanity <= 0) {
       this.sanity = 0;
       this.collapse();

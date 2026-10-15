@@ -222,6 +222,22 @@ export const LEVELS = [
     objective: 'Atravesse as raízes até a Base Seedling.',
     hint: 'Procure a luz quente do abrigo.',
   },
+  // Subnível secreto: fica no fim da lista para não mudar os índices salvos.
+  // Só aparece no menu depois de descoberto; ao sair, volta para `returnTo`.
+  {
+    key: '0.1',
+    num: 0.1,
+    sub: true,
+    secret: true,
+    parent: '0',
+    returnTo: '1',
+    name: 'Estação Zênite',
+    tag: 'Subnível 0.1',
+    danger: 'Classe 0 · Seguro · Habitado',
+    desc: 'Uma usina elétrica flutuando no espaço, escondida atrás de uma porta de madeira no Nível 0. Há gente aqui.',
+    objective: 'Fale com a supervisora no Átrio.',
+    hint: 'Converse com todos. Olhe pelas janelas.',
+  },
 ];
 
 // Ordem dos níveis da versão 1 (para migrar o progresso salvo).
@@ -239,7 +255,7 @@ export function defaultSettings() {
     vignette: 0.6,
     sensitivity: 1,
     invertY: false,
-    volume: 0.8,
+    volume: 1,
     fov: mobile ? 78 : 74,
     headBob: true,
     navHelp: true,
