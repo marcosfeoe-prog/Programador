@@ -7,16 +7,85 @@ import { clamp, lerp, smoothstep, RNG } from '../util/math.js';
 export const SHAPES = {
   rope: { name: 'Corda', desc: 'Funil fino e sinuoso' },
   cone: { name: 'Cone', desc: 'Funil largo em cima, estreito embaixo' },
-  wedge: { name: 'Cunha', desc: 'Funil mais largo do que alto' },
+  cylinder: { name: 'Cilindro', desc: 'Funil de largura quase constante (chaminé)' },
+  vshape: { name: 'Forma em V', desc: 'Topo muito largo afinando até um ponto estreito no chão' },
+  wedge: { name: 'Cunha', desc: 'Funil mais largo do que alto — pode crescer sem limite' },
   multi: { name: 'Multivórtice', desc: 'Vários vórtices de sucção girando em torno do centro' },
+};
+
+// Aparência (cor) do tornado
+export const COLORS = {
+  gray: { name: 'Cinza', idx: 0 },
+  white: { name: 'Branco', idx: 1 },
+  dust: { name: 'Envolto de poeira', idx: 2 },
+  dark: { name: 'Cinza denso e escuro', idx: 3 },
+  rain: { name: 'Envolto pela chuva', idx: 4 },
 };
 
 const SHAPE_PARAMS = {
   rope: { rCore: [14, 32], rb: 0.45, rt: 1.6, expo: 1.0, flare: 35, sinu: 45, dens: 1.0, debris: 3.2 },
   cone: { rCore: [45, 120], rb: 0.5, rt: 2.4, expo: 1.0, flare: 60, sinu: 8, dens: 0.95, debris: 2.6 },
-  wedge: { rCore: [210, 360], rb: 1.25, rt: 1.45, expo: 2.2, flare: 60, sinu: 0, dens: 1.0, debris: 1.45 },
+  cylinder: { rCore: [60, 170], rb: 1.0, rt: 1.15, expo: 1.0, flare: 45, sinu: 4, dens: 1.0, debris: 2.0 },
+  vshape: { rCore: [60, 160], rb: 0.32, rt: 4.4, expo: 0.72, flare: 40, sinu: 6, dens: 0.95, debris: 2.4 },
+  wedge: { rCore: [480, 720], rb: 1.15, rt: 1.3, expo: 2.2, flare: 60, sinu: 0, dens: 1.0, debris: 1.3 },
   multi: { rCore: [110, 220], rb: 0.95, rt: 1.6, expo: 1.4, flare: 60, sinu: 5, dens: 0.35, debris: 1.9 },
 };
+
+// Vento máximo (m/s) por formato: [mín, máx, expoente] — expoente alto torna os
+// valores altos raros. Cunhas e multivórtices passam de 250 km/h (F3+), F5 é raro.
+const SHAPE_WIND = {
+  rope: [22, 50, 1.4],
+  cone: [30, 80, 1.7],
+  vshape: [32, 84, 1.7],
+  cylinder: [40, 96, 1.7],
+  wedge: [70, 128, 4.2],
+  multi: [70, 125, 4.5],
+};
+
+export function pickShape(rng, stp) {
+  const w = { rope: 26, cone: 26, cylinder: 14, vshape: 12, wedge: 9 + 2 * stp, multi: 7 + 1.5 * stp };
+  let tot = 0;
+  for (const k in w) tot += w[k];
+  let x = rng.next() * tot;
+  for (const k in w) {
+    x -= w[k];
+    if (x <= 0) return k;
+  }
+  return 'cone';
+}
+
+export function pickColor(rng, shape) {
+  const big = shape === 'wedge' || shape === 'multi';
+  const w = {
+    gray: 40,
+    white: shape === 'rope' || shape === 'cone' || shape === 'vshape' ? 18 : 6,
+    dust: 14,
+    dark: big || shape === 'cylinder' ? 20 : 8,
+    rain: big ? 20 : 8,
+  };
+  let tot = 0;
+  for (const k in w) tot += w[k];
+  let x = rng.next() * tot;
+  for (const k in w) {
+    x -= w[k];
+    if (x <= 0) return k;
+  }
+  return 'gray';
+}
+
+function windForShape(rng, shape, stp) {
+  const [lo, hi, k] = SHAPE_WIND[shape];
+  const nudge = clamp(0.9 + (stp || 2) * 0.03, 0.9, 1.08);
+  return clamp((lo + (hi - lo) * Math.pow(rng.next(), k)) * nudge, lo, 142);
+}
+
+// Duração natural: a maioria fica entre 2 e 5 minutos.
+function naturalLife(rng) {
+  const x = rng.next();
+  if (x < 0.15) return rng.float(60, 120);
+  if (x < 0.9) return rng.float(120, 300);
+  return rng.float(300, 420);
+}
 
 function catmull(p0, p1, p2, p3, t, out) {
   const t2 = t * t;
@@ -47,32 +116,17 @@ export class Tornado {
     this.funnelHold = rng.float(3, 7);
     this.retracting = false;
 
-    // formato
+    // formato, intensidade, aparência e duração
+    this.shape = opts.shape || pickShape(rng, opts.stp);
+    this.potential = opts.potential ?? windForShape(rng, this.shape, opts.stp); // oculto ao jogador
+    this.color = opts.color || pickColor(rng, this.shape);
     const V = this.potential;
-    const w = {
-      rope: V < 50 ? 3 : V > 90 ? 0.4 : 1,
-      cone: V < 85 ? 3 : 1.4,
-      wedge: V < 60 ? 0.3 : V < 100 ? 2 : 3,
-      multi: V < 60 ? 0.3 : V < 95 ? 1.5 : 2.2,
-    };
-    if (opts.shape) this.shape = opts.shape;
-    else {
-      let tot = 0;
-      for (const k in w) tot += w[k];
-      let x = rng.next() * tot;
-      this.shape = 'cone';
-      for (const k in w) {
-        x -= w[k];
-        if (x <= 0) {
-          this.shape = k;
-          break;
-        }
-      }
-    }
     this.initialShape = this.shape;
     const sp = SHAPE_PARAMS[this.shape];
-    this.rCoreMature = rng.float(sp.rCore[0], sp.rCore[1]) * (0.8 + 0.4 * clamp((V - 40) / 90, 0, 1));
-    this.life = 80 + V * 1.35 + rng.float(0, 60);
+    this.rCoreMature = rng.float(sp.rCore[0], sp.rCore[1]) * (this.shape === 'wedge' ? 1 : 0.8 + 0.4 * clamp((V - 40) / 90, 0, 1));
+    this.life = opts.durationMin ? opts.durationMin * 60 : naturalLife(rng);
+    // Cunhas continuam crescendo enquanto estão no solo (sem limite)
+    this.growthPerMin = this.shape === 'wedge' ? rng.float(0.08, 0.55) : 0;
     this.subCount = this.shape === 'multi' ? rng.int(3, 5) : 0;
     this.sinuPhase = rng.float(0, 10);
     this.leftTurn = rng.float(0.35, 0.9);
@@ -164,17 +218,25 @@ export class Tornado {
       }
     } else if (this.stage === 'tornado') {
       const f = clamp(this.stageTime / this.life, 0, 1);
-      let I = 0.3 + 0.7 * smoothstep(0, 0.18, f);
-      I *= 1 + 0.07 * Math.sin(this.stageTime * 0.37 + 1.3) + 0.05 * Math.sin(this.stageTime * 0.91);
-      I *= 1 - 0.5 * smoothstep(0.6, 0.85, f);
-      I *= 1 - 0.75 * smoothstep(0.86, 1.0, f);
+      const L = this.life;
+      const st = this.stageTime;
+      const left = Math.max(0, L - st); // segundos restantes
+      // fases em segundos (funciona de 1 min a 3 h)
+      const up = smoothstep(0, Math.min(30, L * 0.18), st);
+      let I = 0.3 + 0.7 * up;
+      I *= 1 + 0.07 * Math.sin(st * 0.37 + 1.3) + 0.05 * Math.sin(st * 0.91) + 0.08 * Math.sin(st / 95 + 0.7);
+      I *= 1 - 0.5 * smoothstep(Math.min(100, L * 0.4), Math.min(50, L * 0.15), left);
+      I *= 1 - 0.75 * smoothstep(Math.min(25, L * 0.14), 0, left);
       this.intensity = I;
-      this.ropeT = smoothstep(0.7, 0.9, f);
-      const lift = smoothstep(0.955, 1.0, f);
-      this.groundContact = 1 - smoothstep(0.94, 0.975, f);
+      this.ropeT = smoothstep(Math.min(65, L * 0.3), Math.min(25, L * 0.1), left);
+      const lift = smoothstep(Math.min(8, L * 0.045), 0, left);
+      this.groundContact = 1 - smoothstep(Math.min(14, L * 0.06), Math.min(5, L * 0.025), left);
       this.vmax = (18 + (this.potential - 18) * Math.min(I, 1.1)) * (1 - lift);
-      const rc = this.rCoreMature * (0.45 + 0.55 * smoothstep(0, 0.25, f));
+      let rc = this.rCoreMature * (0.45 + 0.55 * smoothstep(0, Math.min(60, L * 0.25), st));
+      if (this.growthPerMin) rc *= 1 + this.growthPerMin * (st / 60);
       this.rCore = lerp(rc, 14, this.ropeT);
+      this.decay = lerp(0.78, 3.0, smoothstep(150, 1500, this.rCore));
+      this.endF = 1 - clamp(left / Math.min(100, L * 0.4), 0, 1); // 0 até o enfraquecimento final
 
       // Parâmetros visuais (com transição para corda)
       const rope = SHAPE_PARAMS.rope;
@@ -184,8 +246,8 @@ export class Tornado {
       v.flare = lerp(sp.flare, rope.flare, this.ropeT);
       v.dens = lerp(sp.dens, 1.0, this.ropeT) * (0.8 + 0.2 * I);
       v.funnelBottom = groundY + this.H * lift;
-      v.ropeBreak = smoothstep(0.82, 0.98, f) * 0.8;
-      v.multiW = this.shape === 'multi' ? (1 - this.ropeT) * smoothstep(0.05, 0.25, f) : 0;
+      v.ropeBreak = smoothstep(Math.min(30, L * 0.18), 0, left) * 0.8;
+      v.multiW = this.shape === 'multi' ? (1 - this.ropeT) * up : 0;
       v.orbit = this.rCore * 0.78;
       v.subR = Math.max(9, this.rCore * 0.16);
       const debrisAmt = this.groundContact * smoothstep(20, 45, this.vmax) * clamp(0.35 + this.vmax / 110, 0, 1.3) * (ctx.surfaceDebris ?? 1);
@@ -196,17 +258,17 @@ export class Tornado {
       this.shapesSeen.add(this.displayShape);
 
       // Movimento: acompanha a tempestade, desvia à esquerda no fim (oclusão)
-      const turn = this.leftTurn * smoothstep(0.6, 0.95, f);
+      const turn = this.leftTurn * smoothstep(0.2, 0.9, this.endF);
       const sv = ctx.stormVel;
       const c = Math.cos(-turn);
       const s = Math.sin(-turn);
       const tx = sv.x * c - sv.y * s;
       const tz = sv.x * s + sv.y * c;
-      const slow = lerp(1, 0.55, smoothstep(0.65, 1, f));
+      const slow = lerp(1, 0.55, smoothstep(0.3, 1, this.endF));
       this.wander.x += (rng.float(-1, 1) * 3 - this.wander.x) * dt * 0.3;
       this.wander.y += (rng.float(-1, 1) * 3 - this.wander.y) * dt * 0.3;
       // Mantém-se sob o mesociclone enquanto maduro
-      const pull = (1 - smoothstep(0.55, 0.8, f)) * 0.04;
+      const pull = (1 - smoothstep(0.05, 0.5, this.endF)) * 0.04;
       this.vel.x = lerp(this.vel.x, tx * slow + this.wander.x + (ctx.wallPos.x - this.pos.x) * pull, 1 - Math.exp(-dt));
       this.vel.y = lerp(this.vel.y, tz * slow + this.wander.y + (ctx.wallPos.y - this.pos.z) * pull, 1 - Math.exp(-dt));
       const ox = this.pos.x;
@@ -253,12 +315,12 @@ export class Tornado {
   // Largura onde o vento passa de ~33 m/s (F1)
   damageWidth() {
     if (this.vmax < 33) return this.rCore * 2;
-    return 2 * this.rCore * Math.pow(this.vmax / 33, 1 / DECAY);
+    return 2 * this.rCore * Math.pow(this.vmax / 33, 1 / (this.decay || DECAY));
   }
 
   influenceRadius() {
     if (this.vmax < 20) return this.rCore * 2;
-    return Math.min(1200, this.rCore * Math.pow(this.vmax / 20, 1 / DECAY) + 40);
+    return Math.min(9000, this.rCore * Math.pow(this.vmax / 20, 1 / (this.decay || DECAY)) + 40);
   }
 
   // Vento do tornado (inclui translação) num ponto do mundo.
@@ -275,7 +337,7 @@ export class Tornado {
     const R = this.rCore;
     const V = this.vmax * this.groundContact;
     const rr = r / R;
-    let vt = rr < 1 ? V * rr : V * Math.pow(1 / rr, DECAY);
+    let vt = rr < 1 ? V * rr : V * Math.pow(1 / rr, this.decay || DECAY);
     const hf = 0.72 + 0.28 * smoothstep(0, 40, hRel);
     vt *= hf;
     const inflowShape = rr * Math.exp(1 - rr);

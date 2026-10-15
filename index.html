@@ -48,6 +48,8 @@
         </div>
         <div class="tc-grid">
           <span>Formato</span><b id="tc-shape">—</b>
+          <span>Aparência</span><b id="tc-color">—</b>
+          <span>Tempo no solo</span><b id="tc-time">—</b>
           <span>Distância</span><b id="tc-dist">—</b>
           <span>Direção</span><b id="tc-dir">—</b>
           <span>Deslocamento</span><b id="tc-move">—</b>
@@ -114,7 +116,7 @@
       <div id="menu-main">
         <button id="btn-play" class="btn primary" disabled>Carregando…</button>
         <button id="btn-settings" class="btn">Configurações</button>
-        <button id="btn-sandbox" class="btn">Laboratório da tempestade</button>
+        <button id="btn-sandbox" class="btn">Laboratório de tornados</button>
         <button id="btn-help" class="btn">Controles e guia</button>
       </div>
       <div id="menu-settings" class="hidden">
@@ -142,16 +144,41 @@
         <button class="btn back">Voltar</button>
       </div>
       <div id="menu-sandbox" class="hidden">
-        <p class="note">Controle o sistema de tempestades. As tempestades também se formam sozinhas (mais à tarde).</p>
+        <p class="note"><b>Laboratório de tornados</b> — controle o sistema de tempestades. As escolhas valem para os próximos tornados. As tempestades também se formam sozinhas (mais à tarde).</p>
         <button id="sb-force" class="btn">Iniciar supercélula agora [T]</button>
         <button id="sb-skip" class="btn">Avançar fase [N]</button>
-        <label>Formato do próximo tornado
+        <label>Formato dos tornados
           <select id="sb-shape">
             <option value="">Natural (definido pela atmosfera)</option>
             <option value="rope">Corda</option>
             <option value="cone">Cone</option>
-            <option value="wedge">Cunha</option>
+            <option value="cylinder">Cilindro</option>
+            <option value="vshape">Forma em V</option>
+            <option value="wedge">Cunha (1 km ou mais — pode crescer sem limite)</option>
             <option value="multi">Multivórtice</option>
+          </select>
+        </label>
+        <label>Aparência do tornado
+          <select id="sb-color">
+            <option value="">Natural (aleatória)</option>
+            <option value="gray">Cinza (padrão)</option>
+            <option value="white">Branco</option>
+            <option value="dust">Envolto de poeira</option>
+            <option value="dark">Cinza denso e escuro</option>
+            <option value="rain">Envolto pela chuva</option>
+          </select>
+        </label>
+        <label>Duração dos tornados
+          <select id="sb-duration">
+            <option value="">Natural (geralmente 2 a 5 min)</option>
+            <option value="1">1 min</option>
+            <option value="2">2 min</option>
+            <option value="5">5 min</option>
+            <option value="10">10 min</option>
+            <option value="30">30 min</option>
+            <option value="60">60 min</option>
+            <option value="120">120 min</option>
+            <option value="180">180 min</option>
           </select>
         </label>
         <label>Velocidade do tempo

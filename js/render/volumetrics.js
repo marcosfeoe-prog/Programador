@@ -105,6 +105,7 @@ vec2 tornado(vec3 p, bool cheap, out float dist) {
   float outerR = R * (uTorM.x > 0.5 ? 1.7 : 1.45);
   float debR = uTorD.x;
   if (uTorP.w > 0.01 && h < uTorD.y * 3.5) outerR = max(outerR, debR);
+  if (uTorX.y > 1.5 && uTorX.y < 2.5 && h < H * 0.75) outerR = max(outerR, R * 2.0 + 20.0); // bainha de poeira
   dist = d - outerR;
   if (h < -10.0 || h > H + 80.0) { dist = max(dist, abs(h - H * 0.5) - H * 0.5); return vec2(0.0); }
   if (dist > 0.0) return vec2(0.0);
@@ -154,6 +155,7 @@ vec2 tornado(vec3 p, bool cheap, out float dist) {
     cond0 = max(pc * (1.0 - 0.75 * uTorM.w), sub * uTorM.w);
   }
   float cond = uTorM.x > 0.5 ? cond0 : body * uTorP.x;
+  if (uTorX.y > 2.5 && uTorX.y < 3.5) cond *= 1.5;
 
   float deb = 0.0;
   if (uTorP.w > 0.001) {
@@ -167,8 +169,33 @@ vec2 tornado(vec3 p, bool cheap, out float dist) {
     deb += subDust * uTorP.w * uTorM.w * (0.6 + nd * 0.8);
     // Detritos sobem ao longo do funil
     deb += uTorP.w * 0.25 * smoothstep(R * 1.25, R * 0.6, d) * exp(-max(h, 0.0) / (uTorD.y * 4.0)) * nd;
+    if (uTorX.y > 0.5 && uTorX.y < 1.5) deb *= 0.45; // branco: pouca poeira visível
+  }
+  // Aparência "envolto de poeira": bainha marrom envolvendo a metade de baixo do funil
+  if (uTorX.y > 1.5 && uTorX.y < 2.5 && uTorD.w > 0.5) {
+    float ns = texture(tNoise, vec3(rot(uTorP.z * 1.2) * rel / max(R * 2.5, 30.0), h / max(H * 0.5, 50.0) - uTime * 0.08).xzy).r;
+    float sheath = smoothstep(R * 2.0 + 20.0, R * 0.9, d + (ns - 0.5) * R * 0.9) * smoothstep(H * 0.75, H * 0.15, h);
+    deb += sheath * (0.35 + 0.6 * ns) * (0.5 + 0.5 * min(uTorP.w, 1.0)) * 0.9;
   }
   return vec2(cond, deb);
+}
+
+// Aparência "envolto pela chuva": cortina de chuva girando em volta do tornado
+float tornadoRain(vec3 p) {
+  if (uTorD.w < 0.5 || uTorX.y < 3.5) return 0.0;
+  float H = max(uTorTop - uTorBase.y, 10.0);
+  float h = p.y - uTorBase.y;
+  if (h < -10.0 || h > H + 150.0) return 0.0;
+  vec2 rel = p.xz - (uTorBase.xz + torAxis(clamp(h / H, 0.0, 1.0)));
+  float d = length(rel);
+  float R = torRadius(clamp(h / H, 0.0, 1.0));
+  float inner = R * 1.1 + 15.0;
+  float outer = R * 3.6 + 250.0;
+  if (d > outer) return 0.0;
+  vec2 q = rot(uTorP.z * 0.35) * rel;
+  float nr = texture(tNoise, vec3(q.x / 420.0, h / 900.0 + uTime * 0.05, q.y / 420.0)).a;
+  float ring = smoothstep(inner, inner + 120.0, d) * smoothstep(outer, outer * 0.6, d);
+  return ring * (0.4 + 0.9 * nr) * 2.6;
 }
 
 // ---------------------------------------------------------------- Nuvens
@@ -418,7 +445,7 @@ void main() {
     if (box(ro, rd, vec3(c.x - ext, -20.0, c.z - ext), vec3(c.x + ext, uStormTop + 900.0, c.z + ext), s0, s1)) { tA0 = min(tA0, s0); tA1 = max(tA1, s1); }
   }
   if (uTorD.w > 0.5) {
-    float ext = uTorR.y + uTorR.w + uTorD.x + 400.0;
+    float ext = max(uTorR.y + uTorR.w + uTorD.x, uTorR.y * 3.6 + 250.0) + 400.0;
     vec3 c = vec3(uTorBase.x, 0.0, uTorBase.z);
     if (box(ro, rd, vec3(c.x - ext, -20.0, c.z - ext), vec3(c.x + ext, uTorTop + 100.0, c.z + ext), s0, s1)) { tA0 = min(tA0, s0); tA1 = max(tA1, s1); }
   }
@@ -452,7 +479,7 @@ void main() {
       float dT;
       vec2 td = tornado(p, false, dT);
       float sC = cd.x * K_CLOUD;
-      float sP = cd.y * K_PRECIP;
+      float sP = (cd.y + tornadoRain(p)) * K_PRECIP;
       float sT = td.x * K_COND;
       float sD = td.y * K_DEBRIS;
       float sigma = sC + sP + sT + sD;
@@ -467,6 +494,10 @@ void main() {
         vec3 amb = mix(uAmbBot, uAmbTop * under, 0.45 + 0.55 * hgt);
         float hT = p.y - uTorBase.y;
         vec3 condAlb = mix(uDebrisCol * 1.6, vec3(0.9), smoothstep(uTorD.y * 0.5, uTorD.y * 4.0, hT) * 0.6 + 0.4 * (1.0 - min(uTorP.w, 1.0)));
+        if (uTorX.y > 0.5 && uTorX.y < 1.5) condAlb = vec3(1.75);             // branco
+        else if (uTorX.y > 1.5 && uTorX.y < 2.5) condAlb = mix(condAlb, uDebrisCol * 1.8, 0.55); // poeira
+        else if (uTorX.y > 2.5 && uTorX.y < 3.5) condAlb = vec3(0.26, 0.26, 0.27);  // cinza escuro
+        else if (uTorX.y > 3.5) condAlb *= 0.75;                               // chuva
         vec3 alb = (sC * vec3(1.0) + sP * vec3(0.62, 0.65, 0.7) + sT * condAlb + sD * uDebrisCol) / sigma;
         float ph = (sP > sC + sT) ? phaseP : phase;
         float powder = 1.0 - exp(-sigma * 60.0);

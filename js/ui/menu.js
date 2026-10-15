@@ -66,6 +66,8 @@ export class Menu {
     tap($('sb-skip'), () => hooks.skipPhase());
     $('sb-shape').addEventListener('change', (e) => hooks.shape(e.target.value || null));
     $('sb-speed').addEventListener('change', (e) => hooks.speed(parseFloat(e.target.value)));
+    $('sb-color').addEventListener('change', (e) => hooks.color(e.target.value || null));
+    $('sb-duration').addEventListener('change', (e) => hooks.duration(e.target.value ? parseFloat(e.target.value) : null));
     $('sb-auto').addEventListener('change', (e) => hooks.auto(e.target.checked));
     tap($('sb-day'), () => hooks.setHour(13));
     tap($('sb-night'), () => hooks.setHour(20));

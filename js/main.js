@@ -16,7 +16,7 @@ import { Forest } from './world/forest.js';
 import { Grass } from './world/grass.js';
 import { TimeOfDay } from './sim/time.js';
 import { StormSystem } from './sim/storm.js';
-import { SHAPES } from './sim/tornado.js';
+import { SHAPES, COLORS } from './sim/tornado.js';
 import { Physics } from './sim/physics.js';
 import { DamageSystem } from './sim/damage.js';
 import { Player } from './player.js';
@@ -68,6 +68,13 @@ class Game {
       },
       skipPhase: () => this.storm.skipPhase(),
       shape: (s) => (this.storm.forcedShape = s),
+      color: (c) => (this.storm.forcedColor = c),
+      duration: (m) => {
+        this.storm.durationMin = m;
+        // também vale para um tornado que já está no solo
+        const t = this.storm.tornado;
+        if (m && t && t.stage === 'tornado') t.life = Math.max(t.stageTime + 30, m * 60);
+      },
       speed: (v) => (this.time.scale = v),
       auto: (v) => (this.autoStorms = v),
       setHour: (h) => {
@@ -566,6 +573,7 @@ class Game {
       vu.uTorM.value.set(t.subCount, v.orbit, v.subR, v.multiW);
       vu.uTorD.value.set(v.debrisR, v.debrisH, v.ropeBreak, 1);
       vu.uTorX.value.x = t.stage === 'funnel' ? 1 : 0.15;
+      vu.uTorX.value.y = t.stage === 'tornado' ? COLORS[t.color].idx : 0;
       vu.uDebrisCol.value.copy(this.damage.surface.color);
     } else vu.uTorD.value.w = 0;
 

@@ -228,7 +228,12 @@ export class DamageSystem {
 
     // ---- árvores
     const F = this.forest;
+    // cunhas gigantes: avalia as árvores em rodízio para não pesar
+    this.tick = (this.tick || 0) + 1;
+    const stride = Math.max(1, Math.ceil((R * R) / (700 * 700)));
+    const phase = this.tick % stride;
     F.query(tx, tz, R, (i) => {
+      if (stride > 1 && i % stride !== phase) return;
       const st = F.state[i];
       const di = DI['tree' + F.type[i]];
       if (st >= di.dods.length) return;
@@ -328,6 +333,7 @@ export class DamageSystem {
       sync: (b) => pools.setTransform(h, b.pos, b.quat),
     });
     body.handle = h;
+    body.onCull = () => pools.hide(h);
     this.physics.add(body);
     return body;
   }
@@ -341,6 +347,11 @@ export class DamageSystem {
 
   spawnChips(pos, n, color, wind, size = [0.2, 0.8], thick = 0.04, rest = false) {
     const r = this.rng;
+    if (this.chipBudgetT !== this.tick) {
+      this.chipBudgetT = this.tick;
+      this.chipsOver = this.physics.overBudget;
+    }
+    if (this.chipsOver) n = Math.min(n, 1);
     for (let i = 0; i < n; i++) {
       if (this.pools.available('chips') <= 0) return;
       const sx = r.float(size[0], size[1]);
