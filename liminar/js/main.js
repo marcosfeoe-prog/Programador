@@ -272,7 +272,8 @@ class Game {
     this.hud.cardHide();
     this.hud.show(true);
     const first = this.currentObjective();
-    this.hud.objective((first ? first.text : info.objective) + '  ' + info.hint, 12);
+    const ot = (first ? first.text : info.objective).replace(/[.!?]?$/, '.');
+    this.hud.objective(ot + ' ' + info.hint, 12);
     this.fade = params.has('autostart') ? 0 : 1;
     this.fadeTarget = 0;
     this.glitch = params.has('autostart') ? 0 : 0.6;

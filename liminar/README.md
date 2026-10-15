@@ -20,19 +20,24 @@ qualquer servidor estático (GitHub Pages, Netlify…) ou acesse o IP do computa
 na mesma rede. No celular dá para "Adicionar à tela inicial" (há manifesto PWA,
 em tela cheia e na horizontal).
 
-## Os cinco níveis
+## Os dez níveis (V2)
 
-| Nível | Nome | Como é | Saída |
+Ordem: **0 → 1 → 4 → 5 → 9 → 10 → 10.1 → 11 → 15 → 23**. Todos podem ser escolhidos no menu **Níveis**.
+
+| Nível | Nome | Como é | Objetivo / saída |
 |---|---|---|---|
-| **0** | O Saguão | Papel de parede amarelo, carpete úmido, forro e luminárias fluorescentes zumbindo. Salas irregulares, corredores longos e salões com pilares. | Uma parede que falha — atravesse a fenda |
-| **1** | Zona Habitável | Armazém de concreto colossal: pilares, caixotes, estantes, canos, piso molhado e luminárias penduradas. Zonas sem luz e quedas de energia. Os **Sorridentes** vivem no escuro. | Porta de metal com placa verde de SAÍDA |
-| **4** | Escritório Abandonado | Carpete em placas, paredes de gesso, divisórias de vidro, mesas, baias, cadeiras, bebedouros e janelas que dão para o vazio. | O elevador (chame-o) |
-| **10** | A Plantação | Trigo infinito balançando ao vento sob céu nublado, estradas de terra, postes com fios, cercas, celeiros, fardos de feno e espantalhos. | Uma porta solitária de pé no meio do trigo |
-| **11** | Cidade Sem Fim | Metrópole deserta ao entardecer: prédios de vidro, concreto e tijolo com janelas acesas, faixas pintadas, postes, semáforos funcionando e carros abandonados. | Um orelhão tocando — atenda para o final |
+| **0** | O Saguão | Papel de parede amarelo, carpete úmido, lâmpadas fluorescentes zumbindo. | Atravesse a parede que falha |
+| **1** | Zona Habitável | Armazém de concreto, quedas de energia; **Sorridentes** no escuro. | Porta de SAÍDA verde |
+| **4** | Escritório Abandonado | Divisórias de vidro, mesas, bebedouros, janelas para o vazio. | Chame o elevador |
+| **5** | O Hotel do Terror | Hotel dos anos 1930: Salão Principal com lustres e colunas, corredores com quartos numerados, Sala das Caldeiras, jazz de vitrola. **O Hóspede** só anda quando você não olha. | Pegue a chave na recepção → feche as 3 válvulas → abra o quarto |
+| **9** | Os Subúrbios | Bairro infinito à meia-noite, casas diferentes, postes falhando, lanterna com **pilha**. **Cães** que ouvem você correr; a luz dos postes é segura. | Caixa de correio com bandeira → 3 pilhas → entre na casa certa |
+| **10** | A Plantação | Trigo infinito, céu nublado, postes, celeiros. | Porta solitária no trigo |
+| **10.1** | Lago dos Cadáveres | Lago escuro quase em preto e branco, árvores secas, juncos; água rasa drena sanidade, a funda não deixa passar. Sem entidades. | Siga a margem até o píer → entre no barco |
+| **11** | Cidade Sem Fim | Metrópole deserta ao entardecer, semáforos funcionando. | Atenda o orelhão |
+| **15** | Os Salões Futuristas | Corredores brancos, trechos totalmente escuros, salas de máquinas atrás de vidro grosso. Sem entidades. | Cartão de acesso → religue 3 terminais → abra a comporta |
+| **23** | O Jardim Petrificado | Árvores petrificadas entrelaçadas, musgo, névoa e feixes de luz. Sem entidades. | Chegue à Base Seedling (final do jogo) |
 
-Os mundos são **infinitos**: são gerados em blocos ao redor do jogador e
-descartados quando ficam longe. Cada partida usa uma semente diferente (é possível
-fixar com `?seed=123`). A rota até a saída é sempre garantida.
+Os objetivos aparecem como checklist no HUD e a bússola aponta para o próximo passo.
 
 ### Sobrevivência
 - **Sanidade** cai com o tempo, mais rápido no escuro e perto de entidades. Com

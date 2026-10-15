@@ -159,7 +159,7 @@ export const LEVELS = [
     danger: 'Classe 2 · Instável · Um hóspede vaga pelos corredores',
     desc: 'Um hotel infinito dos anos 1930, impecavelmente limpo. Jazz toca baixinho em vitrolas que ninguém liga.',
     objective: 'Pegue a chave na recepção, desligue as caldeiras e abra o quarto marcado.',
-    hint: 'Siga o jazz até o Salão Principal.',
+    hint: 'O Hóspede só anda quando você não está olhando.',
   },
   {
     key: '9',
