@@ -36,6 +36,7 @@ import {
 import { salonDecor, boilerDecor, archFill, DRY } from './level5_rooms.js';
 import { Guest } from './level5_guest.js';
 import { Steam, makePartyBuffer, makeSteamBuffer } from './level5_fx.js';
+import { Room333, Under472, Quartz666 } from './level5_secret.js';
 
 const ARCH = 8; // vão largo com arco (portas duplas do salão)
 const BLOCK = 0; // miolo dos quarteirões de quartos (inacessível)
@@ -112,6 +113,9 @@ export class Level5 extends GridLevel {
       })),
     );
     this.makeLamps();
+    this.pickSecretDoors();
+    this.areas = {};
+    this.area = null;
     this.keyMats = [];
     this.t = 0;
     this.recT = 80;
@@ -124,7 +128,8 @@ export class Level5 extends GridLevel {
     const c = this.cell;
     const hT = this.T / 2;
     const rnd = mulberry32(this.seed * 3 + 11);
-    this.roomNum = String(510 + Math.floor(rnd() * 88));
+    rnd();
+    this.roomNum = '595'; // a saída é sempre o Quarto 595
     // Salão Principal: células x ∈ [-4, 4], z ∈ [-3, 3]
     this.salon = { x0: -4, x1: 4, z0: -3, z1: 3, X0: -4 * c + hT, X1: 5 * c - hT, Z0: -3 * c + hT, Z1: 4 * c - hT, CX: c / 2 };
     const CX = c / 2;
@@ -336,6 +341,8 @@ export class Level5 extends GridLevel {
   }
 
   roomNumber(kind, ix, iz) {
+    const sp = this.secretDoors && this.secretDoors.find((d) => d.kind === kind && d.ex === ix && d.ez === iz);
+    if (sp) return sp.num;
     let n = 500 + md(ix * 37 + iz * 53 + kind * 11, 100);
     if (String(n) === this.roomNum) n++;
     return String(n);
@@ -840,6 +847,144 @@ export class Level5 extends GridLevel {
     return pivot;
   }
 
+  // ------------------------------------------------------------ portas secretas
+  // Três portas de corredor que abrem: 333, 472 e 666 (a uma distância
+  // crescente do Salão Principal).
+  pickSecretDoors() {
+    const rnd = mulberry32(this.seed * 7 + 333);
+    const c = this.cell;
+    const all = [];
+    for (let iz = -18; iz <= 18; iz++)
+      for (let ix = -30; ix <= 30; ix++) {
+        if (this.cellKind(ix, iz) !== HALL) continue;
+        for (const w of this.hallWalls(ix, iz)) {
+          const info = this.wallInfo(w.kind, w.ex, w.ez);
+          if (!info || info.type !== 'door' || this.isTargetEdge(w.kind, w.ex, w.ez)) continue;
+          const d = Math.hypot(info.sl.fx - c / 2, info.sl.fz);
+          all.push({ kind: w.kind, ex: w.ex, ez: w.ez, sl: info.sl, d });
+        }
+      }
+    const pick = (lo, hi, avoid) => {
+      const c2 = all.filter((q) => q.d >= lo && q.d <= hi && avoid.every((a) => Math.hypot(a.sl.fx - q.sl.fx, a.sl.fz - q.sl.fz) > 14));
+      return c2[Math.floor(rnd() * c2.length)];
+    };
+    const out = [];
+    for (const [num, lo, hi] of [
+      ['333', 14, 24],
+      ['472', 22, 36],
+      ['666', 32, 50],
+    ]) {
+      const q = pick(lo, hi, out) || pick(10, 60, out);
+      if (q) out.push({ ...q, num });
+    }
+    this.secretDoors = out;
+    // fresta de luz colorida sob cada porta
+    this.secretGlowGeo = new THREE.PlaneGeometry(0.9, 0.42);
+    this.secretGlow = out.map((sd) => {
+      const col = { 333: [1.6, 1.0, 0.45], 472: [0.35, 0.6, 1.6], 666: [1.8, 0.15, 0.08] }[sd.num];
+      const m = new THREE.Mesh(this.secretGlowGeo, new THREE.MeshBasicMaterial({ color: new THREE.Color(...col), transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false }));
+      const s = sd.sl;
+      m.rotation.set(-Math.PI / 2, 0, Math.atan2(s.nx, s.nz));
+      m.position.set(s.fx + s.nx * 0.2, 0.014, s.fz + s.nz * 0.2);
+      this.dynamic.add(m);
+      return m;
+    });
+  }
+
+  async enterArea(sd) {
+    const g = this.game;
+    if (this.moving || g.transitioning) return;
+    this.moving = true;
+    g.player.frozen = true;
+    g.fadeTarget = 1;
+    g.audio.door();
+    await new Promise((r) => setTimeout(r, 850));
+    if (g.level !== this) return;
+    const K = { 333: Room333, 472: Under472, 666: Quartz666 }[sd.num];
+    if (!this.areas[sd.num]) this.areas[sd.num] = new K(this);
+    const A = this.areas[sd.num];
+    const s = sd.sl;
+    this.returnPos = { x: s.fx + s.nx * 0.9, z: s.fz + s.nz * 0.9, yaw: Math.atan2(-s.nx, -s.nz) };
+    this.guest.hide();
+    g.power = 1;
+    this.area = A;
+    A.show(true);
+    if (A.enter) A.enter();
+    g.player.pos.set(A.entry.x, 0, A.entry.z);
+    g.player.yaw = A.entry.yaw;
+    g.player.vel.set(0, 0, 0);
+    g.fadeTarget = 0;
+    g.player.frozen = false;
+    this.moving = false;
+    const msg = {
+      333: 'Quarto 333. Vazio, a não ser por uma mesa. Em cima dela, uma carta.',
+      472: 'Atrás da 472, uma escada desce para o subsolo. Lá embaixo, outro hotel: paredes verdes, carpete azul, corredores compridos demais.',
+      666: 'Azulejo e quartzo, no escuro. O ar vibra. A lanterna acende sozinha. Não acredite no que ouvir.',
+    }[sd.num];
+    g.hud.message(msg, 6);
+  }
+
+  async leaveArea() {
+    const g = this.game;
+    if (this.moving || !this.area) return;
+    this.moving = true;
+    g.player.frozen = true;
+    g.fadeTarget = 1;
+    g.audio.door();
+    await new Promise((r) => setTimeout(r, 850));
+    if (g.level !== this) return;
+    const A = this.area;
+    if (A.leave) A.leave();
+    A.show(false);
+    this.area = null;
+    this.sanityExtra = 0;
+    const R = this.returnPos;
+    g.player.pos.set(R.x, 0, R.z);
+    g.player.yaw = R.yaw;
+    g.player.vel.set(0, 0, 0);
+    g.fadeTarget = 0;
+    g.player.frozen = false;
+    this.moving = false;
+    g.hud.message('De volta ao corredor do hotel. O jazz continua.', 3);
+  }
+
+  update(dt, player) {
+    if (this.area) {
+      this.t += dt;
+      this.area.update(dt, player);
+      return;
+    }
+    super.update(dt, player);
+    // dicas ao passar perto das portas que abrem
+    const p = player.pos;
+    for (const sd of this.secretDoors) {
+      if (sd.told || Math.hypot(p.x - sd.sl.fx, p.z - sd.sl.fz) > 4) continue;
+      sd.told = true;
+      const m = {
+        333: 'A porta 333 está destrancada. Por baixo dela, uma luz amarela fraca.',
+        472: 'Ar frio sai por baixo da porta 472. Cheiro de porão.',
+        666: 'A porta 666 está quente ao toque. Por baixo, uma luz vermelha pulsa.',
+      }[sd.num];
+      this.game.hud.message(m, 4);
+    }
+    for (const [i, m] of this.secretGlow.entries()) if (this.secretDoors[i].num === '666') m.material.opacity = 0.45 + Math.sin(this.t * 3) * 0.25;
+  }
+
+  collide(p, r) {
+    if (this.area) return this.area.collide(p, r);
+    return super.collide(p, r);
+  }
+
+  lightLevel(x, z) {
+    if (this.area) return this.area.lightLevel(x, z);
+    return super.lightLevel(x, z);
+  }
+
+  los(x0, z0, x1, z1, y) {
+    if (this.area) return this.area.los(x0, z0, x1, z1);
+    return super.los(x0, z0, x1, z1, y);
+  }
+
   // Lâmpadas indicadoras (vermelho → verde) sobre as válvulas e na porta.
   makeLamps() {
     this.lampGeo = new THREE.SphereGeometry(0.045, 10, 8);
@@ -868,6 +1013,12 @@ export class Level5 extends GridLevel {
 
   interactable(player) {
     const g = this.game;
+    if (this.moving) return null;
+    if (this.area) return this.area.interactable(player);
+    for (const sd of this.secretDoors) {
+      const s = sd.sl;
+      if (this.near(player, s.fx + s.nx * 0.3, s.fz + s.nz * 0.3, 1.25)) return { label: `Abrir o Quarto ${sd.num}`, action: () => this.enterArea(sd) };
+    }
     for (const v of this.valves) {
       if (v.done || v.turning) continue;
       if (this.near(player, v.wx + v.nx * 0.2, v.wz + v.nz * 0.2, 1.45))
@@ -952,6 +1103,7 @@ export class Level5 extends GridLevel {
   }
 
   navTarget() {
+    if (this.area) return this.area.navTarget();
     const cur = this.game.currentObjective();
     if (!cur || cur.id === 'room') return this.exit;
     if (cur.id === 'key') return this.keyPos;
@@ -975,6 +1127,7 @@ export class Level5 extends GridLevel {
   }
 
   surfaceAt(x, z) {
+    if (this.area) return this.area.surface;
     const c = this.cell;
     const ix = Math.floor(x / c);
     const iz = Math.floor(z / c);
@@ -991,6 +1144,12 @@ export class Level5 extends GridLevel {
   }
 
   onCollapse() {
+    if (this.area) {
+      if (this.area.leave) this.area.leave();
+      this.area.show(false);
+      this.area = null;
+      this.sanityExtra = 0;
+    }
     this.guest.reset();
     this.game.power = 1;
   }
@@ -1148,6 +1307,9 @@ export class Level5 extends GridLevel {
   }
 
   dispose() {
+    for (const k in this.areas) this.areas[k].dispose();
+    for (const m of this.secretGlow) m.material.dispose();
+    this.secretGlowGeo.dispose();
     super.dispose();
     this.guest.dispose();
     this.steam.dispose();

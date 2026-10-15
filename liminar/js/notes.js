@@ -50,6 +50,8 @@ export const NOTES = {
     'As caldeiras precisam ser desligadas antes de abrir o quarto. Senão o hotel não deixa você sair. Não me pergunte como sei.',
     'Ouvi uma festa do outro lado da parede. Bati. A música parou. Alguém bateu de volta.',
     'Se um hóspede de terno parar no fim do corredor, não olhe muito tempo para ele.',
+    'Quase todas as portas são falsas. Mas a 333, a 472 e a 666 abrem. Por baixo de cada uma sai uma luz de cor diferente.',
+    'Desci pela 472. Lá embaixo o carpete é azul e o jazz vem do teto, devagar, como se estivesse debaixo d’água.',
   ],
   '9': [
     'Todas as casas estão trancadas, menos uma. Cada noite é uma diferente. O endereço aparece na caixa de correio com a bandeira levantada.',

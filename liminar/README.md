@@ -26,13 +26,13 @@ Ordem: **0 → 1 → 2 → 3 → 4 → 5 → 8 → 9 → 10 → 10.1 → 11 → 
 
 | Nível | Nome | Como é | Objetivo / saída |
 |---|---|---|---|
-| **0** | O Saguão | Papel de parede amarelo, carpete úmido, lâmpadas fluorescentes zumbindo. | Atravesse a parede que falha |
+| **0** | O Saguão | Papel de parede amarelo, carpete úmido, lâmpadas fluorescentes zumbindo. Bem maior (a saída fica a ~140 m). Áreas secretas atrás de frestas e portas: **As Armadilhas** (carpete podre e encharcado, luzes morrendo, **buracos no chão** — alguns escondidos — que derrubam você direto no Nível 1), **Sala Manila** (toda acesa, segura, a sanidade se recupera) e **Salas Escuras** (todas as lâmpadas apagadas). | Atravesse a parede que falha |
 | **0.1** *(secreto)* | Estação Zênite | Usina elétrica no espaço, o maior nível do jogo: Átrio com claraboia e holograma, Mirante com janela gigante para o gigante anelado Orfeu, Refeitório e alojamentos, passarela de vidro, Sala dos Geradores com três bobinas de Tesla e turbinas, Sala de Controle e Hangar com nave. **Moradores para conversar** (Ada, Vega, Lúcio, Iara, Bento, o Viajante e o robô Z-7). Sem entidades; a sanidade se recupera. | Ache no Nível 0 o **rastro vermelho** que leva a uma **porta de madeira** → fale com a Ada → 3 fusíveis → Vega → recalibre as 3 bobinas → Lúcio → elevador (leva ao Nível 1) |
-| **1** | Zona Habitável | Armazém de concreto, quedas de energia; **Sorridentes** no escuro. | Porta de SAÍDA verde |
+| **1** | Zona Habitável | Armazém de concreto, quedas de energia; **Sorridentes** no escuro. Bem maior (a saída fica a ~150 m). Área secreta **Manutenção 1**, atrás de uma porta com placa amarela num canto escuro: ala técnica vazia com racks de servidores piscando, mesa de controle (o **terminal** indica a distância e a direção da saída) e um **gerador de reserva** que acaba com as quedas de energia. | Porta de SAÍDA verde |
 | **2** | Salões de Utilidades | Túneis de manutenção estreitos de concreto sujo, cheios de canos, fios e máquinas paradas; lâmpadas nuas que apagam em trechos. **Canos com faixa vermelha queimam**: ficar perto deles derruba a sanidade. Começa com uma **cena de despertar**. Sem entidades hostis: só o **Jeffrey**, um papagaio que fala e dá dicas sobre os Níveis 2 e 3. | Ache a **chave dourada** → abra a porta de manutenção trancada |
 | **3** | Estação Elétrica | Corredores apertados de tijolos de cores desencontradas, cabos, caixas elétricas e zumbido; **dois andares**. O **Cão** (como o do Nível 9) não é rápido, mas persegue de muito longe pelo labirinto. Área secreta: um **portão enorme** trancado; a **chave branca** abre e uma **cena** mostra o salão de robótica onde os **robôs** dominam o nível. Cena de despertar no início. | Chave branca → portão → computador (**ENTER**) → 2º andar → porta de saída |
 | **4** | Escritório Abandonado | Divisórias de vidro, mesas, bebedouros, janelas para o vazio. | Chame o elevador |
-| **5** | O Hotel do Terror | Hotel dos anos 1930: Salão Principal com lustres e colunas, corredores com quartos numerados, Sala das Caldeiras, jazz de vitrola. **O Hóspede** só anda quando você não olha. | Pegue a chave na recepção → feche as 3 válvulas → abra o quarto |
+| **5** | O Hotel do Terror | Hotel dos anos 1930: Salão Principal com lustres e colunas, corredores com quartos numerados, Sala das Caldeiras, jazz de vitrola. **O Hóspede** só anda quando você não olha. Três portas além da saída se abrem: **333** (quarto vazio com uma carta sobre os segredos do hotel), **472** (escada para o **subsolo**: outro hotel, mais velho, de paredes verdes e carpete azul, com corredores compridos e o livro de registros) e **666** (labirinto escuro de **azulejo e quartzo** com alucinações e barulhos — no fundo está o **radar de entidades**). | Pegue a chave na recepção → feche as 3 válvulas → abra o **Quarto 595** |
 | **8** | Sistema de Cavernas | Rede enorme de cavernas de calcário no breu total: túneis tortos, salões altos, estalactites, poças geladas. **Só a lanterna** mostra o caminho; sem ela a sanidade despenca. A **M.E.G.** montou uma base de pesquisa iluminada numa das câmaras, com quatro tripulantes para conversar (e dar dicas). | Ache a base → arranque as **tábuas** do túnel escondido → **área de mineração** (trilhos, vagonete, vigas, minério brilhante) → **porta de madeira** (leva ao Nível 9) |
 | **9** | Os Subúrbios | Bairro infinito à meia-noite, casas diferentes, postes falhando, lanterna com **pilha**. **Cães** que ouvem você correr; a luz dos postes é segura. | Caixa de correio com bandeira → 3 pilhas → entre na casa certa |
 | **9.5** *(secreto)* | Rochester Blues | Subnível do 9, entrado por uma **casa brilhante coberta de neve** que só existe ali. Bairro enorme sob uma **nevasca interminável**; o frio lá fora derruba a sanidade, as casas acesas aquecem. Começa com uma **cena de despertar**. Três andarilhos sem nome conversam numa sala de velas. | Ache a casa com a luz da varanda acesa → leia a **carta longa** inteira → **durma na cama** → acorde no Nível 10 |
@@ -54,6 +54,8 @@ Os objetivos aparecem como checklist no HUD e a bússola aponta para o próximo 
   pouca sanidade a imagem distorce, a cor some, o coração dispara e há sussurros.
   Se chegar a zero, você "acorda" de novo no início do nível.
 - **Água de Amêndoa** (garrafas espalhadas) e **bebedouros** recuperam sanidade.
+- **Radar de entidades** (achado atrás da porta 666 do Nível 5): mostra no canto da tela, em
+  qualquer nível, as entidades por perto e bipa mais rápido quando estão perto. Usar liga/desliga.
 - **Mochila (inventário)**: botão 🎒 ou tecla **I**. Água de Amêndoa fica guardada para
   beber quando quiser; itens de missão (chave, cartão, fusíveis…) aparecem ali, e a
   carta do Nível 88 age sozinha enquanto estiver com você.
@@ -173,6 +175,9 @@ liminar/
   js/levels/level3*.js    Estação Elétrica (dois andares, o Cão, salão dos robôs)
   js/levels/level8.js     Sistema de Cavernas (base da M.E.G., mina escondida)
   js/levels/level9_5.js   Rochester Blues (nevasca, carta, cama)
+  js/levels/level5_secret.js  Portas 333, 472 e 666 do Nível 5
+  js/levels/area.js       Áreas fechadas com luz assada (usadas no Nível 5)
+  js/radar.js             Radar de entidades
   js/levels/level34*.js   Sistema de Esgoto (áreas, céu verde, Ratos da Morte)
   js/levels/level35*.js   Estacionamento (andares, rampas, criatura, carros)
   js/levels/wake.js       cena de despertar reutilizável

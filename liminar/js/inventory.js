@@ -139,6 +139,35 @@ function icon(kind) {
     c.moveTo(66, 34);
     c.lineTo(80, 10);
     c.stroke();
+  } else if (kind === 'radar') {
+    glow('rgba(80,255,140,0.3)');
+    c.fillStyle = '#2a3a30';
+    c.fillRect(20, 22, 56, 56);
+    c.fillStyle = '#062012';
+    c.beginPath();
+    c.arc(48, 50, 22, 0, TAU);
+    c.fill();
+    c.strokeStyle = '#3cff8c';
+    c.lineWidth = 1.5;
+    for (const r of [8, 15, 22]) {
+      c.beginPath();
+      c.arc(48, 50, r, 0, TAU);
+      c.stroke();
+    }
+    c.beginPath();
+    c.moveTo(48, 50);
+    c.lineTo(66, 38);
+    c.stroke();
+    c.fillStyle = '#ff4030';
+    c.beginPath();
+    c.arc(38, 40, 3, 0, TAU);
+    c.fill();
+    c.strokeStyle = '#888';
+    c.lineWidth = 3;
+    c.beginPath();
+    c.moveTo(68, 22);
+    c.lineTo(76, 8);
+    c.stroke();
   } else if (kind === 'fusivel') {
     glow('rgba(100,220,255,0.35)');
     c.fillStyle = '#b8c0c8';
@@ -285,6 +314,18 @@ export const ITEM_DEFS = {
     price: 6,
     passive: (g) => {
       g.drainMul *= 0.6;
+    },
+  },
+  radar: {
+    name: 'Radar de entidades',
+    desc: 'Achado nos corredores de quartzo atrás da porta 666 do Nível 5. Mostra no canto da tela as entidades por perto. Usar liga ou desliga.',
+    action: 'Ligar/desligar',
+    scope: 'game',
+    use: (g) => {
+      g.radarOff = !g.radarOff;
+      g.audio.play('beep', { gain: 0.3, rate: g.radarOff ? 0.7 : 1.3 });
+      g.hud.message(g.radarOff ? 'Radar desligado.' : 'Radar ligado. Os pontos vermelhos são entidades.', 3);
+      return false;
     },
   },
   radio: {

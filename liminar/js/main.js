@@ -24,6 +24,7 @@ import { Level12 } from './levels/level12.js';
 import { Level12Street } from './levels/level12_street.js';
 import { Level12White } from './levels/level12_white.js';
 import { Inventory } from './inventory.js';
+import { Radar } from './radar.js';
 import { Level0 } from './levels/level0.js';
 import { Level1 } from './levels/level1.js';
 import { Level4 } from './levels/level4.js';
@@ -700,6 +701,8 @@ class Game {
     st.battery = L.look.battery ? this.battery : null;
     this.audio.update(dt, this.camera, st);
     this.hud.update(dt, st);
+    if (!this.radar) this.radar = new Radar(this);
+    this.radar.update(dt);
   }
 
   render(dt) {
