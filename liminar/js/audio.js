@@ -187,6 +187,7 @@ const PADS = {
   level10_1: { chords: [[45, 52, 57, 60], [44, 51, 56, 59], [43, 50, 55, 58], [44, 51, 56, 60]], cut: 800, gain: 0.06, detune: 0.006 },
   level11: { chords: [[61, 65, 68, 72], [58, 61, 65, 68], [63, 66, 70, 73], [56, 60, 63, 67]], cut: 2000, gain: 0.05, detune: 0.004 },
   level15: { chords: [[64, 71, 76, 79], [62, 69, 74, 77], [60, 67, 72, 76], [62, 69, 74, 78]], cut: 2400, gain: 0.04, detune: 0.002, sparkle: true },
+  level88: { chords: [[38, 45, 50, 53], [36, 43, 48, 51], [37, 44, 49, 52], [36, 43, 50, 53]], cut: 600, gain: 0.05, detune: 0.008 },
   level23: { chords: [[50, 57, 64, 69], [48, 55, 62, 67], [53, 60, 67, 72], [52, 59, 64, 71]], cut: 1500, gain: 0.06, detune: 0.005 },
 };
 
@@ -306,7 +307,13 @@ export class AudioEngine {
     lim.ratio.value = 20;
     lim.attack.value = 0.002;
     lim.release.value = 0.1;
-    this.master.connect(low).connect(pres).connect(air).connect(comp).connect(makeup).connect(lim).connect(ctx.destination);
+    // "silêncio" do Nível 88: abafa tudo perto do lago
+    this.muff = ctx.createBiquadFilter();
+    this.muff.type = 'lowpass';
+    this.muff.frequency.value = 20000;
+    this.muff.Q.value = 0.5;
+    this.muffK = 0;
+    this.master.connect(this.muff).connect(low).connect(pres).connect(air).connect(comp).connect(makeup).connect(lim).connect(ctx.destination);
     this.music = ctx.createGain();
     this.music.gain.value = 1;
     this.music.connect(this.master);
@@ -327,7 +334,18 @@ export class AudioEngine {
 
   setVolume(v) {
     this.volume = v;
-    if (this.master) this.master.gain.setTargetAtTime(v, this.ctx.currentTime, 0.05);
+    if (this.master) this.master.gain.setTargetAtTime(v * (1 - 0.6 * (this.muffK || 0)), this.ctx.currentTime, 0.05);
+  }
+
+  // Abafamento (0 = normal, 1 = quase mudo): passa-baixa + volume.
+  setMuffle(k) {
+    if (!this.ctx || !this.muff) return;
+    k = Math.max(0, Math.min(1, k));
+    if (Math.abs(k - this.muffK) < 0.01) return;
+    this.muffK = k;
+    const t = this.ctx.currentTime;
+    this.muff.frequency.setTargetAtTime(20000 * Math.pow(500 / 20000, k), t, 0.15);
+    this.master.gain.setTargetAtTime(this.volume * (1 - 0.6 * k), t, 0.15);
   }
 
   buf(data, channels = 1) {
@@ -1011,9 +1029,11 @@ export class AudioEngine {
     if (!this.ready) return;
     this.stopAll();
     this.kind = look.ambience;
+    this.setMuffle(0);
+    this.windK = 1;
     this.setReverb(look.reverb || 1.5);
     const k = this.kind;
-    const wets = { level0_1: 0.4, level10: 0.08, level11: 0.2, level1: 0.55, level9: 0.12, level10_1: 0.18, level23: 0.3, level15: 0.45, level5: 0.4 };
+    const wets = { level88: 0.12, level0_1: 0.4, level10: 0.08, level11: 0.2, level1: 0.55, level9: 0.12, level10_1: 0.18, level23: 0.3, level15: 0.45, level5: 0.4 };
     this.wet.gain.value = wets[k] !== undefined ? wets[k] : 0.35;
     this.hum = null;
     if (k === 'level0') {
@@ -1045,6 +1065,10 @@ export class AudioEngine {
     } else if (k === 'level23') {
       this.wind = this.loop('wind', 0.18, { rate: 0.55, lp: 2200 });
       this.loop('brown', 0.05, { lp: 200 });
+    } else if (k === 'level88') {
+      // floresta morta: vento alto nas copas, quase nenhum outro som
+      this.wind = this.loop('wind', 0.12, { rate: 0.5, lp: 800, wet: 0.1 });
+      this.loop('brown', 0.04, { lp: 160 });
     } else if (k === 'level0_1') {
       // usina: zumbido elétrico limpo, ventilação e o grave das turbinas
       this.hum = this.loop('hum', 0.06, { rate: 0.5, lp: 1800, wet: 0.3 });
@@ -1197,6 +1221,12 @@ export class AudioEngine {
         if (r < 0.45) this.play('groan', { gain: 0.12 + Math.random() * 0.1, rate: 0.7 + Math.random() * 0.5, pan, wet: 1.2 });
         else if (r < 0.75) this.play('drip', { gain: 0.15, rate: 0.6 + Math.random() * 0.5, pan, wet: 1.4 });
         if (this.wind) this.wind.gain.gain.setTargetAtTime(0.1 + Math.random() * 0.15, t, 2.5);
+      } else if (k === 'level88') {
+        const r = Math.random();
+        if (r < 0.3) this.play('crackle', { gain: 0.07, rate: 0.5 + Math.random() * 0.3, pan, wet: 0.6 });
+        else if (r < 0.5) this.play('creak', { gain: 0.05, rate: 0.6 + Math.random() * 0.3, pan, wet: 0.8 });
+        else if (r < 0.58) this.play('groan', { gain: 0.05, rate: 0.5 + Math.random() * 0.2, pan, wet: 1.6 });
+        if (this.wind) this.wind.gain.gain.setTargetAtTime((this.windK ?? 1) * (0.06 + Math.random() * 0.1), t, 2.5);
       } else if (k === 'level0_1') {
         const r = Math.random();
         if (r < 0.4) this.play('beep', { gain: 0.05, rate: 0.9 + Math.random() * 0.8, pan, wet: 0.9 });

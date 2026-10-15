@@ -660,6 +660,7 @@ export class Level9 extends OutdoorLevel {
     this.flag.down = true;
     g.audio.paper();
     g.setObjectiveText('house', `Entre na casa nº ${number} (${name})`);
+    g.inventory.add('envelope', 1, { text: `${name}, ${number}. Entre antes que eles ouçam você.` });
     g.completeObjective('mail', `Um envelope úmido, escrito à mão: “${name}, ${number}”.`);
   }
 

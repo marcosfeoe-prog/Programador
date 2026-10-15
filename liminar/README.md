@@ -22,7 +22,7 @@ em tela cheia e na horizontal).
 
 ## Os níveis (V2)
 
-Ordem: **0 → 1 → 4 → 5 → 9 → 10 → 10.1 → 11 → 15 → 23**, mais um subnível secreto (**0.1**). Todos podem ser escolhidos no menu **Níveis** (o secreto só aparece depois de descoberto).
+Ordem: **0 → 1 → 4 → 5 → 9 → 10 → 10.1 → 11 → 15 → 23 → 88**, mais um subnível secreto (**0.1**). Todos podem ser escolhidos no menu **Níveis** (o secreto só aparece depois de descoberto).
 
 | Nível | Nome | Como é | Objetivo / saída |
 |---|---|---|---|
@@ -36,7 +36,8 @@ Ordem: **0 → 1 → 4 → 5 → 9 → 10 → 10.1 → 11 → 15 → 23**, mais 
 | **10.1** | Lago dos Cadáveres | Lago escuro quase em preto e branco, árvores secas, juncos; água rasa drena sanidade, a funda não deixa passar. Sem entidades. | Siga a margem até o píer → entre no barco |
 | **11** | Cidade Sem Fim | Metrópole deserta ao entardecer, semáforos funcionando. | Atenda o orelhão |
 | **15** | Os Salões Futuristas | Corredores brancos, trechos totalmente escuros, salas de máquinas atrás de vidro grosso. Sem entidades. | Cartão de acesso → religue 3 terminais → abra a comporta |
-| **23** | O Jardim Petrificado | Árvores petrificadas entrelaçadas, musgo, névoa e feixes de luz. Sem entidades. | Chegue à Base Seedling (final do jogo) |
+| **23** | O Jardim Petrificado | Árvores petrificadas entrelaçadas, musgo, névoa e feixes de luz. Sem entidades. | Chegue à Base Seedling e descanse no catre |
+| **88** | Lago Silencioso | Lago imóvel e gelado no fundo de um vale de floresta escura, com reflexo espelhado de verdade. Perto da água **todo som é abafado**; dentro dela, sussurros sobem pelo corpo. **Ciclo de dia e noite**: o dia é escuro, a noite quase cega. A **Criatura** persegue quem ela vê — só a **cabana com a porta fechada** salva. A **Sombra** observa de longe entre as árvores e some quando você chega perto. No acampamento abandonado há uma **carta com uma foto em branco** que recupera a sanidade sozinha enquanto estiver na mochila. | Encontre a passagem subterrânea e entre na caverna (final do jogo) |
 
 Os objetivos aparecem como checklist no HUD e a bússola aponta para o próximo passo.
 
@@ -45,6 +46,9 @@ Os objetivos aparecem como checklist no HUD e a bússola aponta para o próximo 
   pouca sanidade a imagem distorce, a cor some, o coração dispara e há sussurros.
   Se chegar a zero, você "acorda" de novo no início do nível.
 - **Água de Amêndoa** (garrafas espalhadas) e **bebedouros** recuperam sanidade.
+- **Mochila (inventário)**: botão 🎒 ou tecla **I**. Água de Amêndoa fica guardada para
+  beber quando quiser; itens de missão (chave, cartão, fusíveis…) aparecem ali, e a
+  carta do Nível 88 age sozinha enquanto estiver com você.
 - **Bilhetes** contam o que aconteceu com quem passou antes.
 - **Conversas**: na Estação Zênite, chegue perto de alguém e toque em **USAR** (ou E);
   escolha as respostas tocando nos botões ou com as teclas 1–4.
@@ -96,7 +100,7 @@ o FPS cai e volta a aumentar quando sobra desempenho.
 
 **Celular** (na horizontal): joystick à esquerda — empurre até a borda para
 correr; arraste à direita para olhar. Botões: **USAR** (pisca quando há algo para
-usar), lanterna, correr, bússola, filtro e menu. Vibra nos sustos.
+usar), lanterna, correr, mochila, bússola, filtro e menu. Vibra nos sustos.
 
 **PC**
 
@@ -109,6 +113,8 @@ usar), lanterna, correr, bússola, filtro e menu. Vibra nos sustos.
 | F | lanterna |
 | V | próximo filtro |
 | N | bússola de intuição |
+| I ou Tab | mochila (inventário) |
+| 1–4 | escolher resposta / item |
 | H | esconder HUD |
 | G | tela cheia |
 | Esc / P | pausa |
@@ -152,6 +158,8 @@ liminar/
   js/levels/level0.js (+ level0_secret.js: rastro e porta de madeira)
   js/levels/level0_1*.js  Estação Zênite (construção, adereços, espaço, pessoas, história)
   js/levels/level1.js, level4.js, level5*.js, level9*.js, level10*.js, level11.js, level15*.js, level23*.js
+  js/levels/level88*.js   Lago Silencioso (mundo, objetos, criatura e sombra)
+  js/inventory.js     mochila: itens, ícones e efeitos
   js/player.js        movimento, colisão, balanço, passos e lanterna
   js/entities.js      itens, Sorridentes e Observador
   js/input.js         teclado, mouse e toque
@@ -160,5 +168,5 @@ liminar/
   js/notes.js         textos dos bilhetes
 ```
 
-Parâmetros úteis para testes: `?level=0..10&autostart` (10 = subnível 0.1) (entra direto no nível),
+Parâmetros úteis para testes: `?level=0..11&autostart` (10 = subnível 0.1, 11 = Nível 88) (entra direto no nível),
 `?q=ultra`, `?filter=vhs`, `?seed=7`, `?touch` (força os controles de toque).

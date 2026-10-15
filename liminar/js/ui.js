@@ -26,6 +26,112 @@ export class HUD {
     });
     $('note').addEventListener('mousedown', () => this.closeNote());
     this.lastPrompt = '';
+    // mochila
+    this.invOpen = false;
+    this.invSel = null;
+    const stop = (fn) => (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      fn();
+    };
+    $('inv-close').addEventListener('click', stop(() => this.closeInventory()));
+    $('inv-close').addEventListener('touchend', stop(() => this.closeInventory()), { passive: false });
+    $('inv-use').addEventListener('click', stop(() => this.invUse()));
+    $('inv-use').addEventListener('touchend', stop(() => this.invUse()), { passive: false });
+    $('inv').addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
+  }
+
+  // ------------------------------------------------------------ mochila
+  openInventory() {
+    if (this.invOpen) return;
+    this.invOpen = true;
+    const inv = this.game.inventory;
+    if (!this.invSel || !inv.has(this.invSel)) this.invSel = inv.items.length ? inv.items[0].id : null;
+    this.invRefresh();
+    $('inv').classList.remove('hidden');
+    this.game.input.reset();
+    this.game.input.unlock();
+    this.game.audio.click();
+  }
+
+  closeInventory() {
+    if (!this.invOpen) return;
+    this.invOpen = false;
+    $('inv').classList.add('hidden');
+    this.game.input.reset();
+    if (!this.game.settings.mobile) this.game.input.lock();
+  }
+
+  invRefresh() {
+    const inv = this.game.inventory;
+    if (!inv) return;
+    const btn = $('btn-inv');
+    if (btn) btn.classList.toggle('has', inv.items.length > 0);
+    if (!this.invOpen) return;
+    const grid = $('inv-grid');
+    grid.innerHTML = '';
+    for (let i = 0; i < inv.max; i++) {
+      const it = inv.items[i];
+      const d = document.createElement('div');
+      d.className = 'inv-slot' + (it ? '' : ' empty') + (it && it.id === this.invSel ? ' sel' : '');
+      if (it) {
+        d.style.backgroundImage = `url(${inv.icon(it.id)})`;
+        if (it.n > 1) d.innerHTML = `<span class="n">×${it.n}</span>`;
+        const pick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this.invSel = it.id;
+          this.game.audio.click();
+          this.invRefresh();
+        };
+        d.addEventListener('click', pick);
+        d.addEventListener('touchend', pick, { passive: false });
+      }
+      grid.appendChild(d);
+    }
+    const sel = inv.items.find((q) => q.id === this.invSel);
+    const def = sel && inv.def(sel.id);
+    $('inv-name').textContent = def ? def.name + (sel.n > 1 ? ` (×${sel.n})` : '') : inv.items.length ? '' : 'A mochila está vazia.';
+    $('inv-desc').textContent = def ? def.desc : inv.items.length ? 'Escolha um item.' : 'Itens que você pegar ficam guardados aqui.';
+    const use = $('inv-use');
+    use.classList.toggle('hidden', !(def && def.use));
+    if (def && def.use) use.textContent = def.action || 'Usar';
+  }
+
+  invUse() {
+    if (!this.invSel) return;
+    const inv = this.game.inventory;
+    const def = inv.def(this.invSel);
+    if (!def || !def.use) return;
+    // ler fecha a mochila para mostrar o papel
+    if (def.action === 'Ler') this.closeInventory();
+    inv.use(this.invSel);
+    if (!inv.has(this.invSel)) this.invSel = inv.items.length ? inv.items[0].id : null;
+    this.invRefresh();
+  }
+
+  // Teclas dentro da mochila: I/Tab/Esc fecham, E usa o item escolhido, 1–4 escolhem.
+  invKeys(input) {
+    if (input.pressed('inventory') || input.pressed('menu')) return this.closeInventory();
+    const inv = this.game.inventory;
+    for (let i = 0; i < 4; i++)
+      if (input.pressed('opt' + (i + 1)) && inv.items[i]) {
+        this.invSel = inv.items[i].id;
+        this.invRefresh();
+      }
+    if (input.pressed('interact')) this.invUse();
+  }
+
+  // Carta com a fotografia em branco.
+  showLetter(text) {
+    const el = $('note-text');
+    el.textContent = '“' + text + '”';
+    const ph = document.createElement('div');
+    ph.className = 'letter-photo';
+    el.prepend(ph);
+    $('note').classList.remove('hidden');
+    this.noteOpen = true;
+    this.game.input.reset();
   }
 
   show(on) {

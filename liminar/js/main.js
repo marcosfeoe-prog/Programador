@@ -12,6 +12,8 @@ import { HUD, Menu } from './ui.js';
 import { Items, Smilers, Watcher } from './entities.js';
 import { clamp, damp, yieldFrame } from './util.js';
 import { Level0_1 } from './levels/level0_1.js';
+import { Level88 } from './levels/level88.js';
+import { Inventory } from './inventory.js';
 import { Level0 } from './levels/level0.js';
 import { Level1 } from './levels/level1.js';
 import { Level4 } from './levels/level4.js';
@@ -36,6 +38,7 @@ const LEVEL_CLASSES = {
   11: Level11,
   15: Level15,
   23: Level23,
+  88: Level88,
 };
 const params = new URLSearchParams(location.search);
 
@@ -132,6 +135,7 @@ class Game {
     this.hud = new HUD(this);
     this.hud.showFps(s.showFps);
     this.items = new Items(this);
+    this.inventory = new Inventory(this);
     this.player = new Player(this);
     this.smilerURL = smilerTex().image.toDataURL();
     this.resize();
@@ -225,6 +229,8 @@ class Game {
     for (const e of this.envs) e.dispose();
     this.envs = [];
     this.items.clear();
+    this.inventory.onLevel();
+    this.hud.closeInventory();
     this.audio.stopAll();
     this.scene = new THREE.Scene();
     this.scene.add(this.player.flash, this.player.flash.target);
@@ -519,7 +525,7 @@ class Game {
     this.post.u.uFadeColor.value.setRGB(1, 1, 1);
     this.fadeTarget = 1;
     this.audio.stopAll();
-    this.settings.reached = LEVELS.findIndex((l) => l.key === '23');
+    this.settings.reached = LEVELS.findIndex((l) => l.key === '88');
     saveSettings(this.settings);
     const mins = Math.round((performance.now() - this.startStats.t0) / 60000);
     setTimeout(() => {
@@ -553,7 +559,7 @@ class Game {
     if (this.hud.dialogOpen) {
       this.hud.dialogKeys(this.input);
       if (this.level && this.level.dialogTick) this.level.dialogTick(dt, this.player);
-    }
+    } else if (this.hud.invOpen) this.hud.invKeys(this.input);
     else if (!this.paused && !this.hud.noteOpen) this.update(dt);
     else if (this.hud.noteOpen && (this.input.pressed('interact') || this.input.pressed('menu'))) this.hud.closeNote();
     this.render(dt);
@@ -588,6 +594,10 @@ class Game {
       this.hud.message(s.navHelp ? 'Bússola de intuição ligada' : 'Bússola de intuição desligada', 2);
     }
     if (inp.pressed('hud')) document.getElementById('hud').classList.toggle('hidden');
+    if (inp.pressed('inventory')) {
+      this.hud.openInventory();
+      return;
+    }
     if (inp.pressed('fullscreen')) {
       if (document.fullscreenElement) document.exitFullscreen();
       else document.documentElement.requestFullscreen && document.documentElement.requestFullscreen().catch(() => {});
@@ -598,6 +608,7 @@ class Game {
     st.fear = 0;
     P.update(dt, inp, L, s);
     L.update(dt, P);
+    this.inventory.update(dt);
     // bateria da lanterna (níveis com look.battery = consumo por segundo)
     if (L.look.battery && P.flashOn) {
       this.battery = Math.max(0, this.battery - L.look.battery * dt);

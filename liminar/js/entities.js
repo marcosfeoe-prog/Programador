@@ -120,7 +120,7 @@ export class Items {
   label(it) {
     if (it.label) return it.label;
     if (it.type === 'battery') return 'Pegar a pilha';
-    if (it.type === 'water') return 'Beber Água de Amêndoa';
+    if (it.type === 'water') return 'Pegar Água de Amêndoa';
     if (it.type === 'note') return 'Ler o bilhete';
     if (it.type === 'cooler') return 'Beber água do bebedouro';
     return 'Usar';
@@ -141,9 +141,15 @@ export class Items {
       if (g.level.onBattery) g.level.onBattery(it);
       this.remove(it);
     } else if (it.type === 'water') {
-      g.addSanity(38);
-      g.audio.drink();
-      g.hud.message('Água de Amêndoa: a mente clareia. (+Sanidade)');
+      // guarda na mochila; se estiver cheia, bebe na hora
+      if (g.inventory.add('agua')) {
+        g.audio.click();
+        g.hud.message(`Água de Amêndoa guardada na mochila (${g.inventory.count('agua')}). ${g.settings.mobile ? 'Toque em 🎒' : 'Tecla I'} para beber.`, 3.5);
+      } else {
+        g.addSanity(38);
+        g.audio.drink();
+        g.hud.message('A mochila está cheia: você bebe a Água de Amêndoa ali mesmo. (+Sanidade)');
+      }
       this.remove(it);
     } else if (it.type === 'cooler') {
       g.addSanity(22);

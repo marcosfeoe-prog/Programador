@@ -740,6 +740,7 @@ export class Level5 extends GridLevel {
       },
       onUse: (game) => {
         game.audio.click();
+        game.inventory.add('chave');
         game.completeObjective(
           'key',
           `Você pegou a chave do Quarto ${this.roomNum}. A etiqueta diz: "Desligue as caldeiras antes de subir."`,

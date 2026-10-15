@@ -238,6 +238,17 @@ export const LEVELS = [
     objective: 'Fale com a supervisora no Átrio.',
     hint: 'Converse com todos. Olhe pelas janelas.',
   },
+  // Nível 88: depois do 23, o último do jogo (no fim da lista para não mudar índices salvos).
+  {
+    key: '88',
+    num: 88,
+    name: 'Lago Silencioso',
+    tag: 'Nível 88',
+    danger: 'Pendente · Não protegido · Entidades presentes',
+    desc: 'Um lago imóvel e gelado no fundo de uma floresta escura. Perto da água, todo som desaparece.',
+    objective: 'Encontre a passagem subterrânea.',
+    hint: 'Se a criatura te vir, corra para a cabana e feche a porta.',
+  },
 ];
 
 // Ordem dos níveis da versão 1 (para migrar o progresso salvo).

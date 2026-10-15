@@ -19,6 +19,8 @@ const KEYMAP = {
   KeyN: 'nav',
   KeyQ: 'leanL',
   KeyG: 'fullscreen',
+  KeyI: 'inventory',
+  Tab: 'inventory',
   Digit1: 'opt1',
   Digit2: 'opt2',
   Digit3: 'opt3',

@@ -182,6 +182,7 @@ const TALK = {
               text: 'Entendido.',
               fn: () => {
                 st.fusesHeld = 0;
+                g.inventory.remove('fusivel', 3);
                 g.completeObjective('deliver', 'A engenheira Vega instalou os fusíveis. Agora as bobinas.');
               },
             },

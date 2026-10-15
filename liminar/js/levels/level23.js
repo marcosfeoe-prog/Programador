@@ -18,14 +18,6 @@ const P = 96; // lado do bloco (2×2 células de troncos colossais)
 const SUN = new THREE.Vector3(0.32, 0.88, 0.28).normalize();
 const NCLEAR = 12; // círculos sem vegetação (troncos próximos) enviados ao shader
 
-const ENDING =
-  'O rádio estala sobre a mesa e, no meio da estática, volta a voz cansada do telefone — agora sem pressa: ' +
-  '“Você ainda está aí? Que bom. Pode parar de andar.” ' +
-  'Desde o carpete úmido do Saguão foram corredores, armazéns, campos, ruas vazias e portas que não levavam a lugar nenhum. ' +
-  'No fim de tudo, alguém deixou uma lamparina acesa à sua espera. Você se deita no catre. ' +
-  'Lá fora, as árvores de pedra continuam crescendo devagar, apertando o mundo; aqui dentro está quente. ' +
-  'Pela primeira vez desde que caiu, você fecha os olhos sem medo de acordar em outro lugar.';
-
 export class Level23 extends OutdoorLevel {
   constructor(game) {
     super(game, { P, walkSpeed: 2.15 });
@@ -869,8 +861,16 @@ export class Level23 extends OutdoorLevel {
     g.audio.play('radio', { gain: 0.5 });
     if (this.radioSnd) this.radioSnd.setGain(0.55, 0.5);
     g.hud.message('O rádio estala. No meio da estática, uma voz que você já ouviu…', 4);
+    // não é o fim: o catre leva ao Nível 88
     this.endTimer = setTimeout(() => {
-      if (g.level === this) g.finish({ title: 'Base Seedling', text: ENDING });
+      if (g.level !== this) return;
+      g.hud.message('“Você ainda está aí? Que bom. Pode parar de andar.” Você se deita no catre e fecha os olhos…', 6);
+      this.endTimer = setTimeout(() => {
+        if (g.level !== this) return;
+        g.hud.message('…e acorda com frio. Muito frio. Cheiro de água parada e de metal.', 4);
+        g.player.frozen = false;
+        g.reachExit('noclip', 1.2);
+      }, 5200);
     }, 3400);
   }
 

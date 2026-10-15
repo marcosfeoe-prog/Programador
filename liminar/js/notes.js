@@ -79,4 +79,12 @@ export const NOTES = {
     'O musgo brilha um pouco quando ninguém está olhando.',
     'Se você chegou até aqui, descanse. Este é o último lugar que eu conheço.',
   ],
+  '88': [
+    'Dia 4 no lago. Tentei chamar o Ruiz do outro lado da margem. Vi a boca dele mexer. Não ouvi nada. Ele também não me ouviu.',
+    'A cabana tem tranca por dentro. Quando aquilo vier, entre e feche a porta. Ele bate, bate, bate. Depois desiste. Sempre desiste.',
+    'Tem alguém parado entre as árvores, todo preto, olhando. Quando eu ando na direção dele, não tem ninguém. Não é ele que mata. Acho.',
+    'Entrei na água até a cintura. Os sussurros subiram pelas pernas. Eram vozes. Uma delas era a minha, dizendo coisas que eu nunca disse.',
+    'A noite aqui não é noite. É a ausência de tudo. Economize a lanterna para quando precisar correr.',
+    'O túnel atrás das pedras grandes, no fim do lago. Desci três vezes até onde a luz acaba. Na quarta vez eu vou até o fim.',
+  ],
 };

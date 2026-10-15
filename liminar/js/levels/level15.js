@@ -525,6 +525,7 @@ export class Level15 extends GridLevel {
       onUse: (game) => {
         game.audio.click();
         game.audio.play('beep', { gain: 0.3, rate: 1.25 });
+        game.inventory.add('cartao');
         game.completeObjective('card', 'Cartão de acesso: "NÍVEL 15 — MANUTENÇÃO". Ele deve abrir as salas de máquinas com terminal.');
       },
     };

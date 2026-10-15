@@ -635,6 +635,7 @@ export class Level0_1 {
     const g = this.game;
     this.st.fuses++;
     this.st.fusesHeld++;
+    g.inventory.add('fusivel');
     g.audio.play('powerUp', { gain: 0.25, rate: 1.6 });
     g.vibrate(30);
     const n = this.st.fuses;

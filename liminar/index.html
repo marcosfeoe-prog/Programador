@@ -71,6 +71,19 @@
 
     <div id="scare" class="hidden"></div>
 
+    <!-- Mochila (inventário) -->
+    <div id="inv" class="hidden">
+      <div class="inv-in">
+        <div class="inv-head"><span>MOCHILA</span><button id="inv-close" class="btn small">Fechar</button></div>
+        <div id="inv-grid"></div>
+        <div id="inv-detail">
+          <div id="inv-name"></div>
+          <div id="inv-desc"></div>
+          <button id="inv-use" class="btn small hidden">Usar</button>
+        </div>
+      </div>
+    </div>
+
   <div id="dialog" class="hidden">
     <div class="dlg-in">
       <div id="dlg-face"></div>
@@ -113,6 +126,7 @@
         <button data-act="sprint" class="tbtn" id="btn-run">CORRER</button>
       </div>
       <div class="ttop">
+        <button data-act="inventory" class="tbtn small" id="btn-inv">🎒</button>
         <button data-act="nav" class="tbtn small">🧭</button>
         <button data-act="filter" class="tbtn small" id="btn-filter">FILTRO</button>
         <button data-act="menu" class="tbtn small">☰</button>
@@ -123,7 +137,7 @@
     <div id="menu">
       <div class="menu-box">
         <h1 id="menu-title">LIMINAR</h1>
-        <div class="subtitle" id="menu-sub">espaços liminares · 10 níveis</div>
+        <div class="subtitle" id="menu-sub">espaços liminares · 11 níveis</div>
 
         <div id="m-main" class="panel">
           <button id="b-play" class="btn primary" disabled>Carregando…</button>
