@@ -88,6 +88,7 @@ uniform vec3 uFadeColor;
 uniform float uFlash;
 uniform float uGlitch;
 uniform float uDamage;
+uniform float uBlur;
 varying vec2 vUv;
 
 float hash( vec2 p ) {
@@ -188,6 +189,15 @@ void main() {
     col = vec3( colorAt( uv + dir ).r, colorAt( uv ).g, colorAt( uv - dir ).b );
   } else {
     col = colorAt( uv );
+  }
+  // visão embaçada (alguns níveis)
+  if ( uBlur > 0.001 ) {
+    vec3 acc = col;
+    for ( int k = 0; k < 8; k++ ) {
+      float a = float( k ) * 0.785398 + t * 0.4;
+      acc += colorAt( uv + vec2( cos( a ), sin( a ) * 1.6 ) * uBlur * 0.01 );
+    }
+    col = acc / 9.0;
   }
   vec3 base = col;
 
@@ -419,6 +429,7 @@ export class Post {
       uFlash: { value: 0 },
       uGlitch: { value: 0 },
       uDamage: { value: 0 },
+      uBlur: { value: 0 },
     };
     this.compMat = mk(COMPOSITE, this.u);
     this.compMat.defines = { FILTER: 0 };

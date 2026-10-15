@@ -573,7 +573,7 @@ export class Level37 {
       B.rect(M.black, [x0, -depth + 0.02, z0], [w, 0, 0], [0, 0, L], [0, 1, 0], [0, 0, 1, 1], false);
       // portinhola de entrada (lado +z) sem mureta
       this.colliders.push([x0 - 0.2, x0 + w + 0.2, z0 - 0.2, z0 + L]);
-      this.exits.push({ id: 'stairs', key: '88', x, z: z0 + L + 0.6, label: 'Descer a escada para o subterrâneo', msg: 'Uma escada desce da piscina para o escuro. Lá embaixo, cheiro de terra molhada e água parada.' });
+      this.exits.push({ id: 'stairs', key: '43', x, z: z0 + L + 0.6, label: 'Descer a escada para o subterrâneo', msg: 'Uma escada desce da piscina para o escuro. Lá embaixo, cheiro de água salgada e o zumbido de bombas de aquário.' });
       this.plate('SUBSOLO ↓', '#203040', '#d8f0ff', x, 1.1, z0 + L + 0.02, 0);
     }
     // 2) porta de manutenção (Nível 15)

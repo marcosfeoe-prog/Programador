@@ -113,6 +113,17 @@ export const NOTES = {
     'Disseram que tem uma mina antiga no sudoeste, atrás de umas tábuas pregadas.',
     'No fundo da mina tem uma porta de madeira. Do outro lado cheira a asfalto molhado.',
   ],
+  '43': [
+    'O balde do armário de limpeza ainda está cheio. Água do tanque, salgada. O gerador da Sala de Máquinas não gosta de água.',
+    'Os peixes nadam em círculos perfeitos, sempre os mesmos. Ninguém troca a água. Ela nunca fica turva.',
+    'Atrás das pedras do Grande Tanque tem uma fresta. No fundo, uma porta molhada. Do outro lado ouvi ondas. ONDAS.',
+    'No laboratório tem um computador que abre a jaula da quarentena. Lá dentro alguém deixou um rastro azul até uma porta aberta.',
+  ],
+  '44': [
+    'Não fique aqui. Depois de uns dez minutos o teto começa a cair e a vista embaça.',
+    'Existem três portas de madeira. Duas falham — piscam, tremem, mudam de cor por um instante. Essas levam ao Vazio.',
+    'Acordei no Vazio e me vi de fora, deitado no escuro. Andei até uma luz e voltei para cá.',
+  ],
   '34': [
     'Se vir um sorriso no escuro: apague a lanterna e olhe para baixo. Se você acha que ele sumiu, é porque sumiu mesmo.',
     'Não bebam a Água de Amêndoa daqui. Está contaminada. Tragam de outro nível.',

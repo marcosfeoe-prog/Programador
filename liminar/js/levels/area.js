@@ -160,7 +160,8 @@ export class CellArea {
           for (const p of dn) cl.push(this.bake(p[0], H - 0.05, p[2], [0, -1, 0]), 0);
           const fu = this.floor.uv || 2;
           const cu = this.ceil.uv || 2;
-          F.quad(up, [0, 1, 0], up.flatMap((p) => [p[0] / fu, p[2] / fu]), fl, [ft, ft, ft, ft]);
+          const ftc = this.tintAt ? this.tintAt(i, j, 'floor') || ft : ft;
+          F.quad(up, [0, 1, 0], up.flatMap((p) => [p[0] / fu, p[2] / fu]), fl, [ftc, ftc, ftc, ftc]);
           Cl.quad(dn, [0, -1, 0], dn.flatMap((p) => [p[0] / cu, p[2] / cu]), cl, [ct, ct, ct, ct]);
         }
       // paredes onde a vizinha é fechada
@@ -171,6 +172,7 @@ export class CellArea {
         [0, -1],
       ]) {
         if (this.isOpen(i + di, j + dj)) continue;
+        if (this.skip && this.skip.has(`${i},${j},${di},${dj}`)) continue;
         const n = [-di, 0, -dj];
         let ax, az, bx, bz;
         if (di === 1) [ax, az, bx, bz] = [x0 + c, z0, x0 + c, z0 + c];
@@ -192,8 +194,9 @@ export class CellArea {
             const yb = rows[r + 1];
             const ka = this.wallShade(ya, H);
             const kb = this.wallShade(yb, H);
-            const ca = [wt[0] * ka, wt[1] * ka, wt[2] * ka];
-            const cb = [wt[0] * kb, wt[1] * kb, wt[2] * kb];
+            const w2 = this.tintAt ? this.tintAt(i, j, 'wall') || wt : wt;
+            const ca = [w2[0] * ka, w2[1] * ka, w2[2] * ka];
+            const cb = [w2[0] * kb, w2[1] * kb, w2[2] * kb];
             const pts = [
               [pa[0], ya, pa[1]],
               [pb[0], ya, pb[1]],

@@ -139,6 +139,23 @@ function icon(kind) {
     c.moveTo(66, 34);
     c.lineTo(80, 10);
     c.stroke();
+  } else if (kind === 'balde') {
+    glow('rgba(90,170,255,0.3)');
+    c.fillStyle = '#8a9298';
+    c.beginPath();
+    c.moveTo(24, 30);
+    c.lineTo(72, 30);
+    c.lineTo(64, 82);
+    c.lineTo(32, 82);
+    c.closePath();
+    c.fill();
+    c.fillStyle = '#3a8ad8';
+    c.fillRect(26, 30, 44, 7);
+    c.strokeStyle = '#5a6268';
+    c.lineWidth = 3;
+    c.beginPath();
+    c.arc(48, 30, 24, Math.PI, 0);
+    c.stroke();
   } else if (kind === 'radar') {
     glow('rgba(80,255,140,0.3)');
     c.fillStyle = '#2a3a30';
@@ -177,7 +194,7 @@ function icon(kind) {
     c.fillRect(40, 24, 16, 48);
     c.fillStyle = '#9ef0ff';
     c.fillRect(46, 24, 4, 48);
-  } else if (kind === 'chaveOuro' || kind === 'chaveBranca') {
+  } else if (kind === 'chaveOuro' || kind === 'chaveBranca' || kind === 'chaveLab') {
     const col = kind === 'chaveOuro' ? '#e0b840' : '#f2f2ee';
     glow(kind === 'chaveOuro' ? 'rgba(255,200,80,0.35)' : 'rgba(255,255,255,0.3)');
     c.strokeStyle = col;
@@ -356,6 +373,8 @@ export const ITEM_DEFS = {
   chaveOuro: { name: 'Chave dourada', desc: 'Pesada, antiga, com a etiqueta “MANUT.”. Abre a porta de manutenção do Nível 2.', scope: 'level' },
   chaveBranca: { name: 'Chave branca', desc: 'Fria como plástico. Etiqueta: “PORTÃO — ROBÓTICA”. Abre o grande portão do Nível 3.', scope: 'level' },
   fusivel: { name: 'Fusível de plasma', desc: 'Zumbe e esquenta na mão. A engenheira Vega precisa de três.', scope: 'level' },
+  balde: { name: 'Balde de água', desc: 'Um balde cheio de água salgada do aquário. Pesado. Serve para alguma coisa na sala de máquinas.', scope: 'level' },
+  chaveLab: { name: 'Chave branca do aquário', desc: 'Etiqueta: “MANUTENÇÃO — LABORATÓRIO”. Abre a porta de manutenção do Nível 43.', scope: 'level' },
   chave: { name: 'Chave do quarto', desc: 'Chave antiga de hotel, com etiqueta de couro vermelho.', scope: 'level' },
   cartao: { name: 'Cartão de acesso', desc: '"NÍVEL 15 — MANUTENÇÃO". Abre as salas de máquinas com terminal.', scope: 'level' },
   envelope: { name: 'Envelope úmido', desc: 'Um endereço escrito à mão.', scope: 'level', action: 'Ler', use: (g, it) => (g.hud.showNote(it.text || ''), false) },

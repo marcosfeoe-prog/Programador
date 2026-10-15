@@ -20,6 +20,8 @@ import { Level8 } from './levels/level8.js';
 import { Level9_5 } from './levels/level9_5.js';
 import { Level34 } from './levels/level34.js';
 import { Level35 } from './levels/level35.js';
+import { Level43 } from './levels/level43.js';
+import { Level44 } from './levels/level44.js';
 import { Level12 } from './levels/level12.js';
 import { Level12Street } from './levels/level12_street.js';
 import { Level12White } from './levels/level12_white.js';
@@ -57,6 +59,8 @@ const LEVEL_CLASSES = {
   '9.5': Level9_5,
   34: Level34,
   35: Level35,
+  43: Level43,
+  44: Level44,
   12: Level12,
   '12.2': Level12Street,
   '12.3': Level12White,
@@ -721,6 +725,7 @@ class Game {
     u.uFade.value = this.fade;
     u.uDamage.value = this.damage;
     u.uGlitch.value = this.glitch;
+    u.uBlur.value = (this.level && this.level.blur) || 0;
     this.hud.camOverlay(s.filter, this.time);
     // CCTV: a cena é atualizada só ~10 vezes por segundo
     let draw = true;

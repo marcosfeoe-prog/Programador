@@ -121,7 +121,7 @@ export const FILTERS = [
 // Os níveis, na ordem em que são visitados. `key` identifica a classe do nível
 // e os bilhetes; `num` é o número canônico (10.1 é um subnível do 10).
 // Ordem em que os níveis são visitados (as chaves de LEVELS; secretos e partes ficam de fora).
-export const ORDER = ['0', '1', '2', '3', '4', '5', '8', '9', '10', '10.1', '11', '12', '15', '23', '34', '35', '37', '88'];
+export const ORDER = ['0', '1', '2', '3', '4', '5', '8', '9', '10', '10.1', '11', '12', '15', '23', '34', '35', '37', '43', '44', '88'];
 
 // Posição de um nível na ordem (partes contam como o nível principal; secretos, como o pai).
 export function orderPos(info) {
@@ -368,6 +368,26 @@ export const LEVELS = [
     desc: 'Uma garagem enorme de concreto com seis andares, luz quente e brilhos verdes e azuis, cercada por um abismo escuro. Algo grande vive nos cantos escuros.',
     objective: 'Suba até o terraço e saia pela escada.',
     hint: 'NÃO CORRA. A criatura só persegue quem corre.',
+  },
+  {
+    key: '43',
+    num: 43,
+    name: 'Mundo Aquático',
+    tag: 'Nível 43',
+    danger: 'Classe 3 · Inseguro · Sem entidades',
+    desc: 'Um parque-aquário enorme, fechado e vazio. Tanques cheios de peixes que ninguém alimenta, um alto-falante que repete avisos e lixo por toda parte.',
+    objective: 'Encontre um balde de água.',
+    hint: 'Ninguém mora aqui. Dizem que atrás do Grande Tanque existe um mar.',
+  },
+  {
+    key: '44',
+    num: 44,
+    name: 'Os Corredores Desfeitos',
+    tag: 'Nível 44',
+    danger: 'Classe 3 · Inseguro · Sem entidades',
+    desc: 'Corredores vazios de loja, com luzes que funcionam pela metade. Quanto mais tempo você fica, mais o nível se desfaz.',
+    objective: 'Encontre a porta de madeira verdadeira.',
+    hint: 'Não fique mais de 10 minutos. Duas das portas de madeira têm falhas: não entre nelas.',
   },
 ];
 
