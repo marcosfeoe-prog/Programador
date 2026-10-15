@@ -263,7 +263,16 @@ export class AudioEngine {
     }
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
-    const ctx = (this.ctx = new AC());
+    // Os sons são sintetizados a 44,1 kHz. Muitos celulares rodam a 48 kHz e o
+    // ConvolverNode exige a mesma taxa do contexto: pede 44,1 kHz e, se não der,
+    // a reverberação é gerada na taxa nativa (ver setReverb).
+    let ctx;
+    try {
+      ctx = new AC({ sampleRate: SR });
+    } catch (e) {
+      ctx = new AC();
+    }
+    this.ctx = ctx;
     this.master = ctx.createGain();
     this.master.gain.value = this.volume;
     // Equalização: alto-falante de celular quase não reproduz graves, então
@@ -308,7 +317,11 @@ export class AudioEngine {
     this.wet.gain.value = 0.3;
     this.wet.connect(this.reverb).connect(this.master);
     this.buildBuffers();
-    this.setReverb(2);
+    try {
+      this.setReverb(2);
+    } catch (e) {
+      console.warn('Reverberação indisponível:', e);
+    }
     this.ready = true;
   }
 
@@ -800,18 +813,30 @@ export class AudioEngine {
   // Resposta ao impulso sintética (decaimento exponencial estéreo).
   setReverb(seconds) {
     if (!this.ctx) return;
-    const n = Math.floor(Math.max(0.3, seconds) * SR);
-    const d = new Float32Array(n * 2);
+    const R = this.ctx.sampleRate;
+    const n = Math.floor(Math.max(0.3, seconds) * R);
+    const b = this.ctx.createBuffer(2, n, R);
     for (let ch = 0; ch < 2; ch++) {
+      const d = b.getChannelData(ch);
       let lp = 0;
       for (let i = 0; i < n; i++) {
-        const t = i / SR;
+        const t = i / R;
         const k = 0.35 + 0.6 * (1 - t / seconds);
         lp = lp * (1 - k) + (Math.random() * 2 - 1) * k;
-        d[ch * n + i] = lp * Math.exp((-t * 6.9) / seconds) * (i < SR * 0.004 ? i / (SR * 0.004) : 1);
+        d[i] = lp * Math.exp((-t * 6.9) / seconds) * (i < R * 0.004 ? i / (R * 0.004) : 1);
       }
     }
-    this.reverb.buffer = this.buf(d, 2);
+    try {
+      this.reverb.buffer = b;
+    } catch (e) {
+      // ConvolverNode já com buffer: recria o nó
+      const old = this.reverb;
+      this.reverb = this.ctx.createConvolver();
+      this.reverb.buffer = b;
+      this.wet.disconnect();
+      this.wet.connect(this.reverb).connect(this.master);
+      old.disconnect();
+    }
   }
 
   play(name, { gain = 1, rate = 1, wet = 0.3, pan = 0, when = 0 } = {}) {
