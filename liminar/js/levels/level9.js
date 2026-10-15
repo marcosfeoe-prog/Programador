@@ -156,6 +156,7 @@ export class Level9 extends OutdoorLevel {
     this.makeGround();
     this.makeFlag();
     this.hounds = new Hounds(this);
+    this.makeSnowfall();
     this.bat = 0;
     this._lights = [];
     this.objectives = [
@@ -178,6 +179,9 @@ export class Level9 extends OutdoorLevel {
     this.forceLamp.set('0,-1,0', 0);
     const gi = rnd() < 0.5 ? 1 : -2;
     this.forced.set(this.chunkKey(gi, 1), { orient: 'z', lots: [3, 3], special: [0, 1, 'goal'] });
+    // a casa coberta de neve (Nível 9.5), num quarteirão vizinho ao início
+    const si = gi === 1 ? -1 : 1;
+    this.forced.set(this.chunkKey(si, -1), { orient: 'z', lots: [3, 3], special: [1, 1, 'snow'] });
     // rua da casa certa: escura, com a luz da varanda; um poste aceso do outro lado
     this.forceLamp.set(`${gi},1,2`, 4);
     this.forceLamp.set(`${gi},1,3`, 0);
@@ -204,6 +208,18 @@ export class Level9 extends OutdoorLevel {
     this.door = { x: ix, z: iz, cx, cz };
     this.exit = { x: ix, z: iz };
     this.spawn = { x: -0.6, z: -45, yaw: Math.PI };
+    {
+      const sp = planBlock(this, si, -1);
+      const row = sp.rows[1];
+      const lot = row.lots.find((l) => l.special === 'snow');
+      const hh = lot.house;
+      const lc2 = (lot.a0 + lot.a1) / 2;
+      const [sx, sz] = rowWorld(row.fr, lc2 + hh.cu + hh.doorU, hh.setback - 0.7);
+      const [scx, scz] = rowWorld(row.fr, lc2 + hh.cu, hh.setback + hh.hd / 2);
+      const [y0x, y0z] = rowWorld(row.fr, lot.a0, -0.2);
+      const [y1x, y1z] = rowWorld(row.fr, lot.a1, hh.setback + hh.hd + 3);
+      this.snowHouse = { x: sx, z: sz, cx: scx, cz: scz, x0: Math.min(y0x, y1x), x1: Math.max(y0x, y1x), z0: Math.min(y0z, y1z), z1: Math.max(y0z, y1z), chunk: this.chunkKey(si, -1) };
+    }
   }
 
   makeGround() {
@@ -262,6 +278,7 @@ export class Level9 extends OutdoorLevel {
         yield;
       }
     }
+    if (this.snowHouse && this.snowHouse.chunk === this.chunkKey(i, j)) this.buildSnow(B, ch);
     if (plan.backFence) this.backFence(B, ch, plan);
     this.curbCars(B, ch, rnd);
     if (plan.hydrant >= 0) this.hydrant(B, ch, plan, lots);
@@ -287,6 +304,63 @@ export class Level9 extends OutdoorLevel {
     const halo = add(B.halo, M.halo, { cast: false, receive: false });
     if (halo) halo.renderOrder = 2;
     this._bch = null;
+  }
+
+  // Flocos caindo só em volta da casa brilhante (ela parece estar em outro inverno).
+  makeSnowfall() {
+    const s = this.snowHouse;
+    const n = this.Q.id === 'low' ? 500 : 1200;
+    const pos = new Float32Array(n * 3);
+    const r = mulberry32(951);
+    for (let i = 0; i < n; i++) {
+      pos[i * 3] = s.x0 - 4 + r() * (s.x1 - s.x0 + 8);
+      pos[i * 3 + 1] = r() * 14;
+      pos[i * 3 + 2] = s.z0 - 4 + r() * (s.z1 - s.z0 + 8);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 32;
+    const c = cv.getContext('2d');
+    const gr = c.createRadialGradient(16, 16, 0, 16, 16, 16);
+    gr.addColorStop(0, 'rgba(255,255,255,1)');
+    gr.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = gr;
+    c.fillRect(0, 0, 32, 32);
+    this.snowTex = new THREE.CanvasTexture(cv);
+    this.snowPts = new THREE.Points(g, new THREE.PointsMaterial({ size: 0.09, map: this.snowTex, transparent: true, depthWrite: false, color: 0xdde8ff, fog: true }));
+    this.snowPts.frustumCulled = false;
+    this.scene.add(this.snowPts);
+  }
+
+  updateSnowfall(dt) {
+    const s = this.snowHouse;
+    const a = this.snowPts.geometry.attributes.position;
+    const t = this.game.time;
+    for (let i = 0; i < a.count; i++) {
+      let y = a.getY(i) - dt * (0.6 + (i % 7) * 0.08);
+      if (y < 0) y += 14;
+      a.setY(i, y);
+      a.setX(i, a.getX(i) + Math.sin(t * 0.7 + i) * dt * 0.15);
+    }
+    a.needsUpdate = true;
+    void s;
+  }
+
+  // Neve sobre o quintal da casa brilhante: manto, montes e luz quente.
+  buildSnow(B, ch) {
+    const s = this.snowHouse;
+    const rnd = mulberry32(959);
+    const W = [0.9, 0.93, 0.98];
+    B.trim.box((s.x0 + s.x1) / 2, CURB + 0.05, (s.z0 + s.z1) / 2, s.x1 - s.x0, 0.1, s.z1 - s.z0, W, null, { ao: 0, skip: 'ny' });
+    for (let k = 0; k < 26; k++) {
+      const x = s.x0 + rnd() * (s.x1 - s.x0);
+      const z = s.z0 + rnd() * (s.z1 - s.z0);
+      const r = 0.4 + rnd() * 1.1;
+      B.trim.cylinder(x, CURB + 0.1, z, r, 0.25 + rnd() * 0.2, W, null, { sides: 10, r2: r * 0.55 });
+    }
+    ch.lights.push({ x: s.cx, y: FLOOR + 1.6, z: s.cz, col: [1.0, 0.75, 0.45], I: 14, R: 16, cone: 0, state: 0 });
+    ch.lights.push({ x: s.x, y: FLOOR + 2.2, z: s.z, col: [0.85, 0.9, 1.0], I: 8, R: 12, cone: 0, state: 0 });
   }
 
   // Postes: coluna, braço, luminária "cabeça de cobra", lente e halo (cone na neblina + brilho).
@@ -604,6 +678,12 @@ export class Level9 extends OutdoorLevel {
     this.wind.uTime.value = this.game.time;
     this.updateLamps();
     this.hounds.update(dt, player);
+    this.updateSnowfall(dt);
+    const sh = this.snowHouse;
+    if (!this.toldSnow && Math.hypot(p.x - sh.cx, p.z - sh.cz) < 30) {
+      this.toldSnow = true;
+      this.game.hud.message('Uma casa coberta de neve, com todas as janelas acesas. Só nela está nevando.', 5);
+    }
     // bandeira da caixa de correio
     const f = this.flag;
     f.piv.rotation.x += ((f.down ? -Math.PI / 2 : 0) - f.piv.rotation.x) * Math.min(1, dt * 6);
@@ -627,6 +707,16 @@ export class Level9 extends OutdoorLevel {
     const m = this.mail;
     if (!g.objectiveDone('mail') && Math.hypot(px - m.x, pz - m.z) < 1.8) {
       return { label: 'Abrir a caixa de correio', action: () => this.openMail() };
+    }
+    const sh = this.snowHouse;
+    if (Math.hypot(px - sh.x, pz - sh.z) < 1.7) {
+      return {
+        label: 'Entrar na casa coberta de neve',
+        action: () => {
+          g.audio.play('wind', { gain: 0.4, rate: 1.3 });
+          g.enterLevel('9.5', 'door', 0.6);
+        },
+      };
     }
     const d = this.door;
     if (Math.hypot(px - d.x, pz - d.z) < 1.6) {
@@ -696,6 +786,10 @@ export class Level9 extends OutdoorLevel {
 
   dispose() {
     super.dispose();
+    this.scene.remove(this.snowPts);
+    this.snowPts.geometry.dispose();
+    this.snowPts.material.dispose();
+    this.snowTex.dispose();
     // bloco interrompido no meio da montagem das malhas (ainda não registrado)
     if (this._bch) for (const m of this._bch.meshes) m.geometry.dispose();
     this._bch = null;

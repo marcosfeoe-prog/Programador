@@ -121,7 +121,7 @@ export const FILTERS = [
 // Os níveis, na ordem em que são visitados. `key` identifica a classe do nível
 // e os bilhetes; `num` é o número canônico (10.1 é um subnível do 10).
 // Ordem em que os níveis são visitados (as chaves de LEVELS; secretos e partes ficam de fora).
-export const ORDER = ['0', '1', '2', '3', '4', '5', '9', '10', '10.1', '11', '12', '15', '23', '37', '88'];
+export const ORDER = ['0', '1', '2', '3', '4', '5', '8', '9', '10', '10.1', '11', '12', '15', '23', '37', '88'];
 
 // Posição de um nível na ordem (partes contam como o nível principal; secretos, como o pai).
 export function orderPos(info) {
@@ -324,6 +324,30 @@ export const LEVELS = [
     desc: 'Corredores apertados de tijolos, cabos estalando e algo que anda de quatro. Dois andares.',
     objective: 'Encontre a chave branca.',
     hint: 'O Cão não é rápido, mas não desiste. Não corra perto dele.',
+  },
+  {
+    key: '8',
+    num: 8,
+    name: 'Sistema de Cavernas',
+    tag: 'Nível 8',
+    danger: 'Classe 4 · Muito difícil de sair · Escuro total',
+    desc: 'Uma rede enorme de cavernas frias e escuras. Só a lanterna mostra o caminho. A M.E.G. montou uma base aqui.',
+    objective: 'Encontre a área de mineração escondida.',
+    hint: 'Sem a lanterna você não vê nada. Procure a base da M.E.G.',
+  },
+  {
+    key: '9.5',
+    num: 9.5,
+    sub: true,
+    secret: true,
+    parent: '9',
+    returnTo: '10',
+    name: 'Rochester Blues',
+    tag: 'Subnível 9.5',
+    danger: 'Pendente · Frio extremo',
+    desc: 'Um subúrbio sem fim coberto de neve, numa noite que não acaba. As casas iluminadas são quentes por dentro.',
+    objective: 'Encontre a casa iluminada coberta de neve.',
+    hint: 'O frio lá fora derruba a sanidade. Descanse dentro das casas acesas.',
   },
 ];
 

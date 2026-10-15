@@ -105,6 +105,17 @@ export const NOTES = {
     'Quando as luzes apagam num trecho, apagam todas juntas. Fique parado. Elas voltam.',
     'A porta de manutenção amarela e preta precisa de uma chave dourada. Alguém deixou cair num corredor sem saída.',
   ],
+  '8': [
+    'Sem lanterna aqui embaixo você não é ninguém. A pilha acaba rápido no frio.',
+    'Achei barracas e luzes amarelas. Gente da M.E.G. Eles mapeiam as cavernas há meses.',
+    'Disseram que tem uma mina antiga no sudoeste, atrás de umas tábuas pregadas.',
+    'No fundo da mina tem uma porta de madeira. Do outro lado cheira a asfalto molhado.',
+  ],
+  '9.5': [
+    'A neve não para. Nunca parou. As casas acesas são as únicas quentes.',
+    'Tem três pessoas sentadas numa sala com velas. Elas não querem sair.',
+    'Numa casa tem uma carta na mesinha ao lado da cama. Leia até o fim antes de deitar.',
+  ],
   '3': [
     'O cão não corre. Ele anda, anda, anda. E não para. Eu corri por meia hora e ele ainda estava atrás.',
     'Achei uma chave branca, fria como plástico. Na etiqueta: PORTÃO — ROBÓTICA. Que portão?',

@@ -414,7 +414,8 @@ export class Menu {
       const L = LEVELS[i];
       order.push(i);
       LEVELS.forEach((S, j) => {
-        if (S.secret && S.parent === L.key && this.s.secretFound) order.push(j);
+        const found = this.s.secrets || (this.s.secretFound ? ['0.1'] : []);
+        if (S.secret && S.parent === L.key && found.includes(S.key)) order.push(j);
       });
     });
     order.forEach((i) => {

@@ -189,6 +189,8 @@ const PADS = {
   level15: { chords: [[64, 71, 76, 79], [62, 69, 74, 77], [60, 67, 72, 76], [62, 69, 74, 78]], cut: 2400, gain: 0.04, detune: 0.002, sparkle: true },
   level88: { chords: [[38, 45, 50, 53], [36, 43, 48, 51], [37, 44, 49, 52], [36, 43, 50, 53]], cut: 600, gain: 0.05, detune: 0.008 },
   level2: { chords: [[45, 52, 55, 60], [44, 51, 55, 59]], cut: 800, gain: 0.04, detune: 0.007 },
+  level8: { chords: [[36, 43, 48, 51], [35, 42, 47, 50], [37, 44, 49, 52]], cut: 500, gain: 0.05, detune: 0.009 },
+  level9_5: { chords: [[64, 69, 72, 76], [62, 67, 71, 74], [60, 64, 69, 72]], cut: 1800, gain: 0.04, detune: 0.004, sparkle: true },
   level3: { chords: [[41, 48, 53, 56], [40, 47, 52, 55], [42, 49, 54, 57]], cut: 700, gain: 0.045, detune: 0.008 },
   level37: { chords: [[60, 64, 67, 71, 74], [57, 60, 64, 67, 71], [62, 65, 69, 72, 76], [55, 59, 62, 67, 69]], cut: 2200, gain: 0.055, detune: 0.003, sparkle: true },
   level12_2: { chords: [[40, 47, 52, 55], [39, 46, 51, 54]], cut: 700, gain: 0.06, detune: 0.01 },
@@ -1048,7 +1050,7 @@ export class AudioEngine {
     this.windK = 1;
     this.setReverb(look.reverb || 1.5);
     const k = this.kind;
-    const wets = { level2: 0.35, level3: 0.45, level37: 0.75, level12: 0.45, level12_2: 0.15, level12_3: 0.9, level88: 0.12, level0_1: 0.4, level10: 0.08, level11: 0.2, level1: 0.55, level9: 0.12, level10_1: 0.18, level23: 0.3, level15: 0.45, level5: 0.4 };
+    const wets = { level8: 0.7, level9_5: 0.1, level2: 0.35, level3: 0.45, level37: 0.75, level12: 0.45, level12_2: 0.15, level12_3: 0.9, level88: 0.12, level0_1: 0.4, level10: 0.08, level11: 0.2, level1: 0.55, level9: 0.12, level10_1: 0.18, level23: 0.3, level15: 0.45, level5: 0.4 };
     this.wet.gain.value = wets[k] !== undefined ? wets[k] : 0.35;
     this.hum = null;
     if (k === 'level0') {
@@ -1084,6 +1086,14 @@ export class AudioEngine {
       this.hum = this.loop('hum', 0.07, { rate: 0.9, lp: 1200, wet: 0.3 });
       this.machineL = this.loop('machine', 0.1, { rate: 0.8, lp: 700, wet: 0.4 });
       this.loop('brown', 0.08, { lp: 260 });
+    } else if (k === 'level8') {
+      // caverna: vento grave nos túneis e água pingando com eco longo
+      this.wind = this.loop('wind', 0.06, { rate: 0.35, lp: 500, wet: 0.5 });
+      this.loop('brown', 0.07, { lp: 160 });
+    } else if (k === 'level9_5') {
+      // nevasca abafada, sem fim
+      this.wind = this.loop('wind', 0.2, { rate: 0.6, lp: 1600 });
+      this.loop('white', 0.012, { lp: 2500 });
     } else if (k === 'level3') {
       this.hum = this.loop('hum', 0.09, { rate: 1.0, lp: 2400, wet: 0.35 });
       this.loop('brown', 0.06, { lp: 180 });
@@ -1270,6 +1280,15 @@ export class AudioEngine {
         if (r < 0.35) this.play('steam', { gain: 0.06, rate: 0.8 + Math.random() * 0.4, pan, wet: 1.2 });
         else if (r < 0.6) this.play('knock', { gain: 0.05, rate: 1.4 + Math.random() * 0.4, pan, wet: 1.4 });
         else if (r < 0.75) this.play('drip', { gain: 0.12, rate: 0.9, pan, wet: 1.2 });
+      } else if (k === 'level8') {
+        const r = Math.random();
+        if (r < 0.55) this.play('drip', { gain: 0.14 + Math.random() * 0.1, rate: 0.5 + Math.random() * 0.6, pan, wet: 1.8 });
+        else if (r < 0.7) this.play('creak', { gain: 0.04, rate: 0.4, pan, wet: 1.8 });
+        else if (r < 0.78) this.play('groan', { gain: 0.04, rate: 0.4 + Math.random() * 0.2, pan, wet: 2 });
+        if (this.wind) this.wind.gain.gain.setTargetAtTime(0.03 + Math.random() * 0.06, t, 3);
+      } else if (k === 'level9_5') {
+        if (this.wind) this.wind.gain.gain.setTargetAtTime((this.windK ?? 1) * (0.12 + Math.random() * 0.16), t, 2.5);
+        if (Math.random() < 0.15) this.play('creak', { gain: 0.03, rate: 0.7, pan, wet: 0.6 });
       } else if (k === 'level3') {
         const r = Math.random();
         if (r < 0.45) this.play('crackle', { gain: 0.08, rate: 1 + Math.random() * 0.5, pan, wet: 0.9 });

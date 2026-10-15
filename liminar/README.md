@@ -22,7 +22,7 @@ em tela cheia e na horizontal).
 
 ## Os níveis (V2)
 
-Ordem: **0 → 1 → 2 → 3 → 4 → 5 → 9 → 10 → 10.1 → 11 → 12 → 15 → 23 → 37 → 88**, mais um subnível secreto (**0.1**). Todos podem ser escolhidos no menu **Níveis** (o secreto só aparece depois de descoberto).
+Ordem: **0 → 1 → 2 → 3 → 4 → 5 → 8 → 9 → 10 → 10.1 → 11 → 12 → 15 → 23 → 37 → 88**, mais dois subníveis secretos (**0.1** e **9.5**). Todos podem ser escolhidos no menu **Níveis** (os secretos só aparecem depois de descobertos).
 
 | Nível | Nome | Como é | Objetivo / saída |
 |---|---|---|---|
@@ -33,7 +33,9 @@ Ordem: **0 → 1 → 2 → 3 → 4 → 5 → 9 → 10 → 10.1 → 11 → 12 →
 | **3** | Estação Elétrica | Corredores apertados de tijolos de cores desencontradas, cabos, caixas elétricas e zumbido; **dois andares**. O **Cão** (como o do Nível 9) não é rápido, mas persegue de muito longe pelo labirinto. Área secreta: um **portão enorme** trancado; a **chave branca** abre e uma **cena** mostra o salão de robótica onde os **robôs** dominam o nível. Cena de despertar no início. | Chave branca → portão → computador (**ENTER**) → 2º andar → porta de saída |
 | **4** | Escritório Abandonado | Divisórias de vidro, mesas, bebedouros, janelas para o vazio. | Chame o elevador |
 | **5** | O Hotel do Terror | Hotel dos anos 1930: Salão Principal com lustres e colunas, corredores com quartos numerados, Sala das Caldeiras, jazz de vitrola. **O Hóspede** só anda quando você não olha. | Pegue a chave na recepção → feche as 3 válvulas → abra o quarto |
+| **8** | Sistema de Cavernas | Rede enorme de cavernas de calcário no breu total: túneis tortos, salões altos, estalactites, poças geladas. **Só a lanterna** mostra o caminho; sem ela a sanidade despenca. A **M.E.G.** montou uma base de pesquisa iluminada numa das câmaras, com quatro tripulantes para conversar (e dar dicas). | Ache a base → arranque as **tábuas** do túnel escondido → **área de mineração** (trilhos, vagonete, vigas, minério brilhante) → **porta de madeira** (leva ao Nível 9) |
 | **9** | Os Subúrbios | Bairro infinito à meia-noite, casas diferentes, postes falhando, lanterna com **pilha**. **Cães** que ouvem você correr; a luz dos postes é segura. | Caixa de correio com bandeira → 3 pilhas → entre na casa certa |
+| **9.5** *(secreto)* | Rochester Blues | Subnível do 9, entrado por uma **casa brilhante coberta de neve** que só existe ali. Bairro enorme sob uma **nevasca interminável**; o frio lá fora derruba a sanidade, as casas acesas aquecem. Começa com uma **cena de despertar**. Três andarilhos sem nome conversam numa sala de velas. | Ache a casa com a luz da varanda acesa → leia a **carta longa** inteira → **durma na cama** → acorde no Nível 10 |
 | **10** | A Plantação | Trigo infinito, céu nublado, postes, celeiros. | Porta solitária no trigo |
 | **10.1** | Lago dos Cadáveres | Lago escuro quase em preto e branco, árvores secas, juncos; água rasa drena sanidade, a funda não deixa passar. Sem entidades. | Siga a margem até o píer → entre no barco |
 | **11** | Cidade Sem Fim | Metrópole deserta ao entardecer, semáforos funcionando. | Atenda o orelhão |
@@ -167,6 +169,8 @@ liminar/
   js/levels/level37*.js   Sublimidade (piscinas, eventos, cena e loja dos mercenários)
   js/levels/level2*.js    Salões de Utilidades (canos quentes, Jeffrey)
   js/levels/level3*.js    Estação Elétrica (dois andares, o Cão, salão dos robôs)
+  js/levels/level8.js     Sistema de Cavernas (base da M.E.G., mina escondida)
+  js/levels/level9_5.js   Rochester Blues (nevasca, carta, cama)
   js/levels/wake.js       cena de despertar reutilizável
   js/inventory.js     mochila: itens, ícones e efeitos
   js/player.js        movimento, colisão, balanço, passos e lanterna
@@ -177,5 +181,5 @@ liminar/
   js/notes.js         textos dos bilhetes
 ```
 
-Parâmetros úteis para testes: `?level=0..17&autostart` (10 = subnível 0.1, 11 = Nível 88, 12–14 = áreas do Nível 12, 15 = Nível 37, 16 = Nível 2, 17 = Nível 3) (entra direto no nível),
+Parâmetros úteis para testes: `?level=0..19&autostart` (10 = subnível 0.1, 11 = Nível 88, 12–14 = áreas do Nível 12, 15 = Nível 37, 16 = Nível 2, 17 = Nível 3, 18 = Nível 8, 19 = subnível 9.5) (entra direto no nível),
 `?q=ultra`, `?filter=vhs`, `?seed=7`, `?touch` (força os controles de toque).

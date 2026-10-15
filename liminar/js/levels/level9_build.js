@@ -219,6 +219,19 @@ function planRow(L, i, j, r, fr, rnd, f) {
         h.drive = null;
         h.car = false;
       }
+      if (sp === 'snow') {
+        // a casa brilhante coberta de neve (entrada do Nível 9.5)
+        h.roofC = [0.93, 0.95, 0.98];
+        h.porch = h.porch || { w: Math.min(h.hw - 0.8, 3.2), d: 2.0, rail: true };
+        h.porch.u = 0;
+        h.doorU = 0;
+        h.porchLight = true;
+        h.garage = null;
+        h.drive = null;
+        h.car = false;
+        h.twin = false;
+        h.snow = true;
+      }
       if (sp === 'goal') {
         h.porch = h.porch || { w: Math.min(h.hw - 0.8, 3.4), d: 2.1, rail: true };
         h.porch.u = 0;
@@ -488,6 +501,7 @@ export function buildLot(L, B, ch, row, lot, ri, li) {
   const winRnd = mulberry32(h.seed ^ 0x5151);
   const litP = h.stories === 2 ? 0.07 : 0.05;
   const state = () => {
+    if (h.snow) return 1;
     const r = winRnd();
     return r < litP ? 1 : r < litP + 0.015 ? 2 : 0;
   };
