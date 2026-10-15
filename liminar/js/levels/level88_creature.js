@@ -220,8 +220,25 @@ export class Creature {
     limb(0.2, 1.08, -0.5, 0.6, 0.62, false, 1);
   }
 
+  // Surge à noite, longe do jogador, no fundo da mata.
+  appear(p) {
+    const L = this.L;
+    this.active = true;
+    this.root.visible = true;
+    this.state = 'roam';
+    this.target = null;
+    this.cool = 6;
+    const side = p.x > L.cabin.x ? -1 : 1;
+    this.x = clamp(p.x + side * (70 + Math.random() * 30), -200, 200);
+    this.z = L.trailZ(this.x) + 22;
+    this.game.hud.message('Do fundo da mata vem um grito comprido. Algo acordou com a noite.', 5);
+    this.playAt('scare', 0.5, 0.45);
+  }
+
   reset(first) {
     const L = this.L;
+    this.active = false;
+    this.root.visible = false;
     this.state = 'roam';
     this.x = 30;
     this.z = L.trailZ(30) + 18;
@@ -256,7 +273,7 @@ export class Creature {
       const x = L.cabin.x - 120 + r() * 220;
       const z = L.trailZ(x) + (r() - 0.35) * 50;
       if (shoreS(x, z) < 3) continue;
-      if (L.cabin.inside(x, z, 2)) continue;
+      if (Math.hypot(x - L.cabin.x, z - L.cabin.z) < 14) continue;
       return { x, z };
     }
     return { x: L.cabin.x + 30, z: L.trailZ(L.cabin.x + 30) + 15 };
@@ -313,6 +330,19 @@ export class Creature {
     const g = this.game;
     const p = player.pos;
     const dayK = L.dayK;
+    // só existe à noite: some ao amanhecer (a não ser no meio de uma caçada)
+    const night = dayK < 0.45;
+    const hunting = this.state === 'chase' || this.state === 'alert' || this.state === 'siege';
+    if (!this.active) {
+      if (!night) return;
+      this.appear(p);
+    } else if (!night && !hunting) {
+      this.active = false;
+      this.root.visible = false;
+      this.state = 'roam';
+      this.dist = 999;
+      return;
+    }
     let dx = p.x - this.x;
     let dz = p.z - this.z;
     let d = Math.hypot(dx, dz);
@@ -321,6 +351,7 @@ export class Creature {
     let tz = null;
     let speed = 0;
     const st = this.state;
+    this.toDoor = st === 'siege';
     if (st === 'roam') {
       if (!this.target || Math.hypot(this.target.x - this.x, this.target.z - this.z) < 1.5) {
         if (this.target) this.waitT = 2 + Math.random() * 5;
@@ -360,15 +391,12 @@ export class Creature {
         this.siegeT = 12 + Math.random() * 6;
         this.knockT = 1.2;
       } else if (c.inside(p.x, p.z)) {
-        // porta aberta: entra pela porta
-        const fx = c.doorX;
-        const fz = c.z - c.D / 2 - 0.9;
-        if (!c.inside(this.x, this.z, 0.2) && Math.hypot(this.x - fx, this.z - fz) > 0.8) {
-          tx = fx;
-          tz = fz;
-        } else {
-          tx = p.x;
-          tz = p.z;
+        // porta aberta: ela não entra, enfia o corpo pelo vão e ataca
+        tx = c.doorX;
+        tz = c.z - c.D / 2 - 1.1;
+        this.toDoor = true;
+        if (Math.hypot(this.x - tx, this.z - tz) < 1.6) {
+          this.kill();
         }
       } else {
         tx = p.x;
@@ -384,7 +412,7 @@ export class Creature {
         this.target = { x: this.lastX, z: this.lastZ };
         g.hud.message(inWater ? 'Ela para na margem. Não entra na água. O som some.' : 'Você a despistou… por enquanto.', 4);
       }
-      if (d < 1.8) this.kill();
+      if (d < 1.8 && !c.inside(p.x, p.z)) this.kill();
       // rosnado posicional e medo
       g.st.growl = { x: this.x, z: this.z, v: clamp(1 - d / 40, 0.15, 0.9) };
       g.st.fear = Math.max(g.st.fear, clamp(1 - d / 45, 0.3, 1));
@@ -443,6 +471,25 @@ export class Creature {
         // desvia dos troncos
         let ax = ex / e;
         let az = ez / e;
+        // contorna a cabana (nunca atravessa as paredes)
+        const cb = L.cabin;
+        const ox0 = this.x - cb.x;
+        const oz0 = this.z - cb.z;
+        const od0 = Math.hypot(ox0, oz0) || 1;
+        // perto da porta (cerco ou ataque) não precisa contornar
+        const nearDoor = this.toDoor && Math.hypot(this.x - tx, this.z - tz) < 4;
+        if (od0 < 7.5 && !nearDoor) {
+          const k = clamp((7.5 - od0) / 3, 0, 1) * 1.6;
+          ax += (ox0 / od0) * k;
+          az += (oz0 / od0) * k;
+          // alvo do outro lado da cabana: dá a volta por fora (tangente)
+          const toward = -(ox0 * ax + oz0 * az) / od0;
+          if (toward > -0.2) {
+            const sg = ox0 * (ez / e) - oz0 * (ex / e) >= 0 ? 1 : -1;
+            ax += (-oz0 / od0) * sg * 2.2;
+            az += (ox0 / od0) * sg * 2.2;
+          }
+        }
         for (const tr of L.treesNear(this.x, this.z, 3)) {
           const ox = this.x - tr.x;
           const oz = this.z - tr.z;
@@ -467,8 +514,9 @@ export class Creature {
     else if (groundH(this.x, nz) > -0.25) this.z = nz;
     const q = { x: this.x, z: this.z };
     for (const b of L.colliders) pushCircle(q, 0.45, b[0], b[1], b[2], b[3]);
-    const dc = L.cabin.doorCollider();
-    if (dc) pushCircle(q, 0.45, dc[0], dc[1], dc[2], dc[3]);
+    // a cabana inteira é sólida para ela (o corpo é comprido)
+    const cb = L.cabin;
+    pushCircle(q, 1.1, cb.x - cb.W / 2, cb.x + cb.W / 2, cb.z - cb.D / 2, cb.z + cb.D / 2);
     this.x = q.x;
     this.z = q.z;
     this.animate(dt, t, p);

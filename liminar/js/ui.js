@@ -1,5 +1,5 @@
 // Interface: HUD, bilhetes, cartões de nível, sobreposição de câmera e menus.
-import { FILTERS, LEVELS, QUALITY } from './config.js';
+import { FILTERS, LEVELS, ORDER, orderPos, QUALITY } from './config.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -409,8 +409,9 @@ export class Menu {
     list.className = 'panel';
     // ordem de exibição: cada secreto aparece logo após o nível pai (se descoberto)
     const order = [];
-    LEVELS.forEach((L, i) => {
-      if (L.secret) return;
+    ORDER.forEach((key) => {
+      const i = LEVELS.findIndex((l) => l.key === key);
+      const L = LEVELS[i];
       order.push(i);
       LEVELS.forEach((S, j) => {
         if (S.secret && S.parent === L.key && this.s.secretFound) order.push(j);
@@ -420,7 +421,7 @@ export class Menu {
       const L = LEVELS[i];
       const b = document.createElement('button');
       b.className = 'lcard' + (L.secret ? ' secret' : '');
-      const seen = L.secret ? ' · secreto' : i <= (this.s.reached || 0) ? ' · visitado' : '';
+      const seen = L.secret ? ' · secreto' : orderPos(L) <= orderPos(LEVELS[this.s.reached || 0]) ? ' · visitado' : '';
       b.innerHTML = `<div class="ln">${L.num}</div><div class="lt">${L.name}</div><div class="ld">${L.desc}</div><div class="lk">${L.danger}${seen}</div>`;
       b.onclick = () => this.cb.play(i);
       list.appendChild(b);

@@ -946,3 +946,68 @@ input[type='checkbox'] {
 .tbtn.has {
   border-color: rgba(232, 214, 160, 0.8);
 }
+
+/* cena cinematográfica (Nível 12) */
+#cine {
+  position: fixed;
+  inset: 0;
+  z-index: 24;
+  pointer-events: auto;
+}
+#cine .cb {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 13vh;
+  background: #000;
+  animation: cineIn 1.2s ease-out both;
+}
+#cine .top {
+  top: 0;
+}
+#cine .bot {
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+#cine-sub {
+  color: #eee;
+  font-family: var(--mono);
+  font-size: clamp(13px, 2.2vw, 18px);
+  letter-spacing: 1px;
+  text-align: center;
+  padding: 0 16px;
+}
+#cine-skip {
+  position: absolute;
+  right: calc(14px + var(--safe-r));
+  bottom: 6px;
+  color: #777;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+@keyframes cineIn {
+  from {
+    transform: scaleY(0);
+  }
+}
+/* legibilidade em cenários claros (Nível 12) */
+#hud-tl,
+#objective,
+#msg,
+#prompt,
+#nav {
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.9), 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+#hud.onwhite #hud-tl,
+#hud.onwhite #objective,
+#hud.onwhite #msg,
+#hud.onwhite #nav {
+  color: #1c1c1c;
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.9);
+}
+#hud.onwhite .bar {
+  background: rgba(0, 0, 0, 0.25);
+}

@@ -1,7 +1,7 @@
 // Liminar — jogo 3D de espaços liminares (Níveis 0, 1, 4, 10 e 11).
 // Orquestra renderização, níveis, jogador, entidades, áudio, filtros e menus.
 import * as THREE from 'three';
-import { QUALITY, FILTERS, LEVELS, loadSettings, saveSettings } from './config.js';
+import { QUALITY, FILTERS, LEVELS, ORDER, orderPos, loadSettings, saveSettings } from './config.js';
 import { initTextures, clearTextureCache, smilerTex } from './textures.js';
 import { LM_UNIFORMS } from './materials.js';
 import { Post } from './post.js';
@@ -13,6 +13,9 @@ import { Items, Smilers, Watcher } from './entities.js';
 import { clamp, damp, yieldFrame } from './util.js';
 import { Level0_1 } from './levels/level0_1.js';
 import { Level88 } from './levels/level88.js';
+import { Level12 } from './levels/level12.js';
+import { Level12Street } from './levels/level12_street.js';
+import { Level12White } from './levels/level12_white.js';
 import { Inventory } from './inventory.js';
 import { Level0 } from './levels/level0.js';
 import { Level1 } from './levels/level1.js';
@@ -39,6 +42,9 @@ const LEVEL_CLASSES = {
   15: Level15,
   23: Level23,
   88: Level88,
+  12: Level12,
+  '12.2': Level12Street,
+  '12.3': Level12White,
 };
 const params = new URLSearchParams(location.search);
 
@@ -287,7 +293,7 @@ class Game {
         this.settings.secretFound = true;
         saveSettings(this.settings);
       }
-    } else if (this.settings.reached < idx) {
+    } else if (!info.part && orderPos(info) > orderPos(LEVELS[this.settings.reached] || LEVELS[0])) {
       this.settings.reached = idx;
       saveSettings(this.settings);
     }
@@ -494,9 +500,11 @@ class Game {
   // Próximo nível da sequência (pula os secretos; um secreto volta ao seu destino).
   nextLevelIndex() {
     const cur = LEVELS[this.levelIdx];
-    if (cur.secret) return LEVELS.findIndex((l) => l.key === cur.returnTo);
-    for (let i = this.levelIdx + 1; i < LEVELS.length; i++) if (!LEVELS[i].secret) return i;
-    return -1;
+    const byKey = (k) => LEVELS.findIndex((l) => l.key === k);
+    if (cur.next) return byKey(cur.next);
+    if (cur.secret) return byKey(cur.returnTo);
+    const pos = ORDER.indexOf(cur.key);
+    return pos >= 0 && pos < ORDER.length - 1 ? byKey(ORDER[pos + 1]) : -1;
   }
 
   // Entra num nível específico pela chave (portas secretas).

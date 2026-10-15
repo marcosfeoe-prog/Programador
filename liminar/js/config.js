@@ -120,6 +120,16 @@ export const FILTERS = [
 
 // Os níveis, na ordem em que são visitados. `key` identifica a classe do nível
 // e os bilhetes; `num` é o número canônico (10.1 é um subnível do 10).
+// Ordem em que os níveis são visitados (as chaves de LEVELS; secretos e partes ficam de fora).
+export const ORDER = ['0', '1', '4', '5', '9', '10', '10.1', '11', '12', '15', '23', '88'];
+
+// Posição de um nível na ordem (partes contam como o nível principal; secretos, como o pai).
+export function orderPos(info) {
+  if (!info) return -1;
+  const k = info.part || (info.secret ? info.parent : info.key);
+  return ORDER.indexOf(k);
+}
+
 export const LEVELS = [
   {
     key: '0',
@@ -247,7 +257,43 @@ export const LEVELS = [
     danger: 'Pendente · Não protegido · Entidades presentes',
     desc: 'Um lago imóvel e gelado no fundo de uma floresta escura. Perto da água, todo som desaparece.',
     objective: 'Encontre a passagem subterrânea.',
-    hint: 'Se a criatura te vir, corra para a cabana e feche a porta.',
+    hint: 'À noite algo caça na mata: se ele te vir, corra para a cabana e feche a porta.',
+  },
+  // Nível 12 em três áreas (as áreas 2 e 3 são partes: não aparecem no menu).
+  {
+    key: '12',
+    num: 12,
+    next: '12.2',
+    name: 'Matrix',
+    tag: 'Nível 12',
+    danger: 'Classe 0 · Seguro · Sem entidades',
+    desc: 'Uma salinha branca com mesa, cadeira e uma porta. Do outro lado, corredores brancos que não terminam.',
+    objective: 'Encontre a passagem subterrânea nos corredores.',
+    hint: 'Nada aqui pode ser gravado. Nem lembrado direito.',
+  },
+  {
+    key: '12.2',
+    num: 12,
+    part: '12',
+    next: '12.3',
+    name: 'Matrix — A Rua Vermelha',
+    tag: 'Nível 12 · Área 2',
+    danger: 'Classe 0 · Lua vermelha',
+    desc: 'Uma rua deserta sob uma lua vermelha enorme.',
+    objective: 'Encontre a porta branca aberta.',
+    hint: 'Ela brilha. Procure a luz branca no vermelho.',
+  },
+  {
+    key: '12.3',
+    num: 12,
+    part: '12',
+    next: '15',
+    name: 'Matrix — O Branco',
+    tag: 'Nível 12 · Área 3',
+    danger: 'Classe ? · Nada',
+    desc: 'Branco. Só branco.',
+    objective: 'Espere.',
+    hint: 'Alguma coisa vai aparecer.',
   },
 ];
 

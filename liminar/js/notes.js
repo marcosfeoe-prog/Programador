@@ -87,4 +87,10 @@ export const NOTES = {
     'A noite aqui não é noite. É a ausência de tudo. Economize a lanterna para quando precisar correr.',
     'O túnel atrás das pedras grandes, no fim do lago. Desci três vezes até onde a luz acaba. Na quarta vez eu vou até o fim.',
   ],
+  '12': [
+    'Tentei filmar a sala com o celular. O vídeo saiu todo branco. O nome do arquivo virou [NULL].',
+    'A porta estava trancada. Depois não estava mais. Não lembro de ter girado a maçaneta.',
+    'Os corredores são todos iguais. Contei os passos entre as lâmpadas: sempre 4,8 metros. Sempre.',
+    'Tem um alçapão no chão em algum cruzamento. Lá embaixo o ar é quente e tem cheiro de asfalto.',
+  ],
 };

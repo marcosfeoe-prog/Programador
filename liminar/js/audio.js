@@ -188,6 +188,8 @@ const PADS = {
   level11: { chords: [[61, 65, 68, 72], [58, 61, 65, 68], [63, 66, 70, 73], [56, 60, 63, 67]], cut: 2000, gain: 0.05, detune: 0.004 },
   level15: { chords: [[64, 71, 76, 79], [62, 69, 74, 77], [60, 67, 72, 76], [62, 69, 74, 78]], cut: 2400, gain: 0.04, detune: 0.002, sparkle: true },
   level88: { chords: [[38, 45, 50, 53], [36, 43, 48, 51], [37, 44, 49, 52], [36, 43, 50, 53]], cut: 600, gain: 0.05, detune: 0.008 },
+  level12_2: { chords: [[40, 47, 52, 55], [39, 46, 51, 54]], cut: 700, gain: 0.06, detune: 0.01 },
+  level12_3: { chords: [[76, 83, 88], [77, 84, 89]], cut: 3000, gain: 0.015, detune: 0.001 },
   level23: { chords: [[50, 57, 64, 69], [48, 55, 62, 67], [53, 60, 67, 72], [52, 59, 64, 71]], cut: 1500, gain: 0.06, detune: 0.005 },
 };
 
@@ -1033,7 +1035,7 @@ export class AudioEngine {
     this.windK = 1;
     this.setReverb(look.reverb || 1.5);
     const k = this.kind;
-    const wets = { level88: 0.12, level0_1: 0.4, level10: 0.08, level11: 0.2, level1: 0.55, level9: 0.12, level10_1: 0.18, level23: 0.3, level15: 0.45, level5: 0.4 };
+    const wets = { level12: 0.45, level12_2: 0.15, level12_3: 0.9, level88: 0.12, level0_1: 0.4, level10: 0.08, level11: 0.2, level1: 0.55, level9: 0.12, level10_1: 0.18, level23: 0.3, level15: 0.45, level5: 0.4 };
     this.wet.gain.value = wets[k] !== undefined ? wets[k] : 0.35;
     this.hum = null;
     if (k === 'level0') {
@@ -1065,6 +1067,17 @@ export class AudioEngine {
     } else if (k === 'level23') {
       this.wind = this.loop('wind', 0.18, { rate: 0.55, lp: 2200 });
       this.loop('brown', 0.05, { lp: 200 });
+    } else if (k === 'level12') {
+      // fluorescentes limpas, sem defeito: zumbido agudo e constante
+      this.hum = this.loop('hum', 0.08, { rate: 1.5, lp: 4000, wet: 0.4 });
+      this.loop('white', 0.01, { lp: 6000 });
+    } else if (k === 'level12_2') {
+      this.wind = this.loop('wind', 0.16, { rate: 0.45, lp: 1200 });
+      this.loop('brown', 0.08, { lp: 120 });
+      this.hum = this.loop('hum', 0.025, { rate: 0.35, lp: 300 });
+    } else if (k === 'level12_3') {
+      // quase silêncio absoluto: só um apito fino
+      this.hum = this.loop('hum', 0.012, { rate: 4.0, lp: 9000, wet: 0.8 });
     } else if (k === 'level88') {
       // floresta morta: vento alto nas copas, quase nenhum outro som
       this.wind = this.loop('wind', 0.12, { rate: 0.5, lp: 800, wet: 0.1 });
