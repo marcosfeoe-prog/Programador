@@ -43,9 +43,20 @@ A probabilidade de tornado e a intensidade potencial dependem do ambiente
 atmosférico (CAPE, cisalhamento, helicidade, NCL e o índice STP — tecla **I**).
 
 ### Formatos de tornado
-**Corda**, **Cone**, **Cunha** e **Multivórtice** (vários vórtices de sucção girando em
-torno do centro). Todo tornado termina no estágio de corda antes de se dissipar.
-O formato do próximo tornado pode ser escolhido no "Laboratório da tempestade".
+**Corda**, **Cone**, **Cilindro**, **Forma em V**, **Cunha** e **Multivórtice** (vários
+vórtices de sucção girando em torno do centro). Todo tornado termina no estágio de corda
+antes de se dissipar. As **cunhas** começam com 1 km ou mais de largura e continuam
+crescendo enquanto estão no solo, sem limite (podem passar de 5 km em tornados longos).
+
+Aparências: **Cinza** (padrão), **Branco**, **Envolto de poeira**, **Cinza denso e escuro**
+e **Envolto pela chuva**.
+
+A intensidade depende do formato: cordas e cones pequenos costumam ser F0–F2, enquanto
+cunhas e multivórtices têm ventos acima de 250 km/h (geralmente F3–F4; F5 é raro).
+A maioria dos tornados dura de 2 a 5 minutos.
+
+No **Laboratório de tornados** (menu) dá para escolher formato, aparência e a **duração**
+dos tornados: 1, 2, 5, 10, 30, 60, 120 ou 180 minutos.
 
 ### Classificação F0–F5 pelos danos
 O tornado **não** recebe a classe pelo vento real. A classe é atribuída apenas pelos

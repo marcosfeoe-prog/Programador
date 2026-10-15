@@ -114,6 +114,24 @@ export class Physics {
         active--;
       }
     }
+    // limite rígido (cunhas gigantes): some com os destroços mais distantes da câmera
+    if (active > this.maxActive * 1.4 && this.focus) {
+      const cand = this.bodies.filter((b) => !b.frozen && b.kind !== 'car');
+      cand.sort((a, b) => b.pos.distanceToSquared(this.focus) - a.pos.distanceToSquared(this.focus));
+      const drop = new Set();
+      for (const b of cand) {
+        if (active <= this.maxActive * 1.15) break;
+        drop.add(b);
+        active--;
+      }
+      if (drop.size) {
+        for (const b of drop) {
+          if (b.onRemove) b.onRemove(b);
+          else if (b.onCull) b.onCull(b);
+        }
+        this.bodies = this.bodies.filter((b) => !drop.has(b));
+      }
+    }
     // remove os mais antigos (pequenos destroços primeiro)
     for (let i = 0; i < this.bodies.length && active > this.maxActive; i++) {
       const b = this.bodies[i];
@@ -126,7 +144,12 @@ export class Physics {
     }
   }
 
+  get overBudget() {
+    return this.activeCount() > this.maxActive * 1.2;
+  }
+
   step(dt) {
+    this.enforceBudget();
     const sub = dt > 1 / 45 ? 3 : 2;
     const h = Math.min(dt, 1 / 20) / sub;
     this.wakeTimer -= dt;

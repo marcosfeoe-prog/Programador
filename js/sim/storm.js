@@ -273,6 +273,25 @@ export class StormSystem {
     this.coverage = lerp(this.coverage, tgtCov, k(0.03));
     this.mesoAngle += dt * (0.015 + this.meso * 0.05 + (this.tornado && this.tornado.stage === 'tornado' ? 0.04 : 0));
 
+    // Tornados longos: a tempestade faz curvas para continuar sobre o mapa
+    const tor = this.tornado;
+    if (tor && tor.stage === 'tornado' && tor.life > 330) {
+      const wx = this.wallPos.x;
+      const wz = this.wallPos.y;
+      const dist = Math.hypot(wx, wz);
+      if (dist > 1800) {
+        const want = Math.atan2(-wz, -wx);
+        const cur = Math.atan2(this.dir.y, this.dir.x);
+        let dA = want - cur;
+        while (dA > Math.PI) dA -= Math.PI * 2;
+        while (dA < -Math.PI) dA += Math.PI * 2;
+        const a = cur + clamp(dA, -1, 1) * dt * 0.035 * smoothstep(1800, 3000, dist);
+        this.dir.set(Math.cos(a), Math.sin(a));
+        this.right.set(-this.dir.y, this.dir.x);
+        this.vel.copy(this.dir).multiplyScalar(this.speed);
+      }
+    }
+
     // Atualiza o tornado
     if (this.tornado) {
       const wb = this.wallBottom();
@@ -313,12 +332,13 @@ export class StormSystem {
       x: this.wallPos.x,
       z: this.wallPos.y,
       groundY: gy,
-      potential: this.potentialWind(),
+      stp: this.env.stp,
       willTouch,
       seed: r.int(1, 1e9),
       shape: this.forcedShape || null,
+      color: this.forcedColor || null,
+      durationMin: this.durationMin || null,
     });
-    this.forcedShape = null;
     this.setPhase('funnel');
     this.warning = 'tornado';
     this.emit('warning', { level: 'tornado' });
