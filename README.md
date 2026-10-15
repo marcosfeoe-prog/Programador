@@ -107,6 +107,12 @@ para pular, correr, entrar no veículo, trocar câmera, radar e menu. A qualidad
 
 ## Qualidade gráfica
 
+O jogo usa **resolução dinâmica** mirando 60 FPS: quando um quadro passa do tempo
+disponível, ele primeiro deixa as nuvens volumétricas mais leves (resolução e passos
+do ray marching, nuvens calculadas a cada dois quadros com reprojeção) e só depois
+reduz a resolução da tela; a qualidade volta sozinha quando sobra desempenho.
+Ative "Mostrar FPS" nas configurações para acompanhar.
+
 Baixa, Média, Alta e Ultra (menu → Configurações). As opções mudam a resolução das
 nuvens volumétricas, número de passos do ray marching, quantidade de árvores e grama,
 sombras e limite de destroços simultâneos. Também é possível forçar pela URL:

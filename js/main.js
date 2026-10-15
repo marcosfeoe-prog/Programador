@@ -86,9 +86,13 @@ class Game {
       throw e;
     }
     const r = this.renderer;
-    r.setPixelRatio(Math.min(window.devicePixelRatio || 1, Q.pixelRatio));
+    this.basePixelRatio = Math.min(window.devicePixelRatio || 1, Q.pixelRatio);
+    r.setPixelRatio(this.basePixelRatio);
+    this.perfLevel = 1;
+    this.renderCount = 0;
     r.shadowMap.enabled = Q.shadows;
     r.shadowMap.type = THREE.PCFSoftShadowMap;
+    r.shadowMap.autoUpdate = false;
     r.toneMapping = THREE.NoToneMapping;
     r.autoClear = true;
 
@@ -265,6 +269,7 @@ class Game {
     const now = performance.now();
     let dt = (now - this.lastT) / 1000;
     this.lastT = now;
+    this.adaptPerformance(dt);
     dt = Math.min(dt, 0.05);
     this.frames++;
     this.fpsT += dt;
@@ -277,6 +282,43 @@ class Game {
     else if (this.input.pressed('menu') && this.started) this.play();
     this.renderFrame();
     this.input.endFrame();
+  }
+
+  // Resolução dinâmica: mira 60 FPS reduzindo primeiro o custo das nuvens
+  // volumétricas e só depois a resolução da tela; recupera a qualidade quando sobra tempo.
+  adaptPerformance(dt) {
+    if (this.paused || dt <= 0 || dt > 0.5) return;
+    const ms = dt * 1000;
+    this.frameMs = this.frameMs ? this.frameMs * 0.92 + ms * 0.08 : ms;
+    this.perfT = (this.perfT || 0) + dt;
+    if (this.perfT < 1) return;
+    this.perfT = 0;
+    let lvl = this.perfLevel;
+    if (this.frameMs > 18.5) {
+      lvl -= this.frameMs > 28 ? 0.2 : 0.1;
+      this.goodSecs = 0;
+    } else if (this.frameMs < 14.5) {
+      this.goodSecs = (this.goodSecs || 0) + 1;
+      if (this.goodSecs >= 3) lvl += 0.05;
+    } else this.goodSecs = 0;
+    lvl = clamp(lvl, 0, 1);
+    if (lvl !== this.perfLevel) this.applyPerfLevel(lvl);
+  }
+
+  applyPerfLevel(lvl) {
+    this.perfLevel = lvl;
+    // 1,0 → 0,4: nuvens mais baratas
+    const k = clamp((lvl - 0.4) / 0.6, 0, 1);
+    this.vol.setScale(Math.max(0.16, Q.volScale * lerp(0.6, 1, k)));
+    this.vol.uniforms.uSteps.value = Math.round(Q.volSteps * lerp(0.65, 1, k));
+    this.vol.uniforms.uLightSteps.value = Math.max(2, Math.round(Q.lightSteps * lerp(0.6, 1, k)));
+    // abaixo de 0,4: reduz a resolução de renderização
+    const pr = this.basePixelRatio * lerp(0.62, 1, clamp(lvl / 0.4, 0, 1));
+    const prq = Math.round(pr * 20) / 20;
+    if (Math.abs(prq - this.renderer.getPixelRatio()) > 0.01) {
+      this.renderer.setPixelRatio(prq);
+      this.resize();
+    }
   }
 
   handleInput() {
@@ -441,14 +483,14 @@ class Game {
 
     // Sol / lua
     const sunUp = smoothstep(-0.04, 0.1, sun.y);
-    const sunCol = sunColorFromElevation(Math.max(sun.y, 0), _c.clone());
+    const sunCol = sunColorFromElevation(Math.max(sun.y, 0), _sunCol);
     const sunI = 3.3 * sunUp;
     const moonI = 0.28 * smoothstep(-0.05, 0.25, moon.y) * (1 - sunUp);
     const useSun = sunI >= moonI;
     const lightDir = useSun ? sun : moon;
     const shade = (1 - 0.93 * this.stormDark) * (1 - ambCover);
     const lightI = (useSun ? sunI : moonI) * shade;
-    const lightCol = useSun ? sunCol : new THREE.Color(0.55, 0.65, 0.95);
+    const lightCol = useSun ? sunCol : _moonCol;
     this.sun.color.copy(lightCol);
     this.sun.intensity = lightI;
     this.sun.target.position.set(cam.position.x, 0, cam.position.z);
@@ -570,7 +612,7 @@ class Game {
       debris: this.physics.activeCount(),
     });
     if (this.hud.visible) {
-      const e = new THREE.Euler().setFromQuaternion(cam.quaternion, 'YXZ');
+      const e = _eul.setFromQuaternion(cam.quaternion, 'YXZ');
       this.radar.update(dt, st, t, this.player.pos, this.elapsed, e.y);
     }
   }
@@ -609,6 +651,11 @@ class Game {
   }
 
   renderFrame() {
+    const n = this.renderCount++;
+    // nuvens volumétricas a meia taxa (o quadro intermediário só reprojeta)
+    this.post.volFull = this.perfLevel > 0.95 && !settings.mobile ? true : n % 2 === 0;
+    // mapa de sombras atualizado em quadros alternados quando falta desempenho
+    if (Q.shadows) this.renderer.shadowMap.needsUpdate = this.perfLevel > 0.8 || n % 2 === 0;
     this.post.render(this.scene, this.camera, this.vol, this.overlay, this.elapsed);
   }
 
@@ -624,6 +671,9 @@ class Game {
 }
 
 const _c2 = new THREE.Color();
+const _sunCol = new THREE.Color();
+const _moonCol = new THREE.Color(0.55, 0.65, 0.95);
+const _eul = new THREE.Euler();
 const _c3 = new THREE.Color();
 
 const game = new Game();
