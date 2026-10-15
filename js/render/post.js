@@ -252,7 +252,7 @@ export class PostProcessing {
     r.clear();
     r.render(scene, camera);
     // 2) Volumétrico (meia resolução)
-    volumetrics.render(r, camera, this.depthTexture, time);
+    volumetrics.render(r, camera, this.depthTexture, time, this.volFull !== false);
     // 3) Composição
     const u = this.uniforms;
     u.tVol.value = volumetrics.output;

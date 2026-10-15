@@ -122,11 +122,17 @@ export class Radar {
 
   update(dt, storm, tornado, player, time, camYaw) {
     this.sweep = (this.sweep + dt * 1.8) % (Math.PI * 2);
+    // a grade é calculada aos poucos (algumas linhas por quadro) para não travar
     this.timer -= dt;
-    if (this.timer <= 0) {
+    if (this.row === undefined) this.row = GRID;
+    if (this.row >= GRID && this.timer <= 0) {
       this.timer = 0.8;
+      this.row = 0;
+    }
+    if (this.row < GRID) {
       const d = this.img.data;
-      for (let j = 0; j < GRID; j++) {
+      const end = Math.min(GRID, this.row + 8);
+      for (let j = this.row; j < end; j++) {
         for (let i = 0; i < GRID; i++) {
           const x = (i / (GRID - 1) - 0.5) * 2 * RANGE;
           const z = (j / (GRID - 1) - 0.5) * 2 * RANGE;
@@ -140,12 +146,11 @@ export class Radar {
             d[k + 1] = c[1];
             d[k + 2] = c[2];
             d[k + 3] = 235;
-          } else {
-            d[k + 3] = 0;
-          }
+          } else d[k + 3] = 0;
         }
       }
-      this.offCtx.putImageData(this.img, 0, 0);
+      this.row = end;
+      if (this.row >= GRID) this.offCtx.putImageData(this.img, 0, 0);
     }
     this.draw(storm, tornado, player, camYaw);
   }

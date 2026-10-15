@@ -498,6 +498,7 @@ uniform mat4 uPrevProj;
 uniform mat4 uPrevViewInv;
 uniform vec2 uTexel;
 uniform float uBlend;
+uniform float uReproj;
 varying vec2 vUv;
 void main() {
   vec4 cur = texture(tCur, vUv);
@@ -530,6 +531,11 @@ void main() {
   vec4 hist = texture(tHist, puv);
   vec4 ext = (mx - mn) * 0.1 + vec4(0.004);
   hist = clamp(hist, mn - ext, mx + ext);
+  // quadro sem ray marching: só reprojeta o histórico (nuvens a meia taxa)
+  if (uReproj > 0.5) {
+    gl_FragColor = valid > 0.5 ? texture(tHist, puv) : cur;
+    return;
+  }
   float b = uBlend * valid;
   gl_FragColor = mix(avg, hist, b);
 }
@@ -625,6 +631,7 @@ export class Volumetrics {
       uPrevViewInv: { value: new THREE.Matrix4() },
       uTexel: { value: new THREE.Vector2() },
       uBlend: { value: 0 },
+      uReproj: { value: 0 },
     };
     this.resolveMat = new THREE.ShaderMaterial({ vertexShader: vert, fragmentShader: resolveFrag, uniforms: this.resolveU, depthTest: false, depthWrite: false });
     this.resolveScene = new THREE.Scene();
@@ -638,7 +645,15 @@ export class Volumetrics {
     this.output = this.hist[0].texture;
   }
 
+  setScale(s) {
+    if (Math.abs(s - this.scale) < 0.005) return;
+    this.scale = s;
+    if (this.lastW) this.setSize(this.lastW, this.lastH);
+  }
+
   setSize(w, h) {
+    this.lastW = w;
+    this.lastH = h;
     const W = Math.max(2, Math.floor(w * this.scale));
     const H = Math.max(2, Math.floor(h * this.scale));
     this.rt.setSize(W, H);
@@ -648,7 +663,27 @@ export class Volumetrics {
     this.hasHistory = false;
   }
 
-  render(renderer, camera, depthTexture, time) {
+  render(renderer, camera, depthTexture, time, full = true) {
+    if (!full && this.hasHistory) {
+      // reprojeção barata do resultado anterior
+      const r = this.resolveU;
+      const src = this.hist[this.histIdx];
+      const dst = this.hist[1 - this.histIdx];
+      r.tHist.value = src.texture;
+      r.uInvProj.value.copy(camera.projectionMatrixInverse);
+      r.uCamWorld.value.copy(camera.matrixWorld);
+      r.uPrevProj.value.copy(this.prevProj);
+      r.uPrevViewInv.value.copy(this.prevViewInv);
+      r.uReproj.value = 1;
+      renderer.setRenderTarget(dst);
+      renderer.render(this.resolveScene, this.camera);
+      r.uReproj.value = 0;
+      this.histIdx = 1 - this.histIdx;
+      this.output = dst.texture;
+      this.prevProj.copy(camera.projectionMatrix);
+      this.prevViewInv.copy(camera.matrixWorldInverse);
+      return;
+    }
     const u = this.uniforms;
     u.tDepth.value = depthTexture;
     u.uInvProj.value.copy(camera.projectionMatrixInverse);

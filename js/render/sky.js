@@ -144,6 +144,8 @@ void main() {
 }
 `;
 
+const _tc = new THREE.Color();
+
 export class Sky {
   constructor(scene) {
     this.uniforms = {
@@ -202,24 +204,24 @@ export class Sky {
     u.uOvercastColor.value.setRGB(ocL * 0.92, ocL * 0.97, ocL * 1.05);
     if (sunY < 0.25 && sunY > -0.12) {
       const s = 1 - smoothstep(-0.05, 0.25, sunY);
-      u.uOvercastColor.value.lerp(new THREE.Color(ocL * 1.25, ocL * 0.85, ocL * 0.65), s * 0.5 * day);
+      u.uOvercastColor.value.lerp(_tc.setRGB(ocL * 1.25, ocL * 0.85, ocL * 0.65), s * 0.5 * day);
     }
 
     // Aproximações para a iluminação da cena
     const sunset = (1 - smoothstep(0.0, 0.35, sunY)) * smoothstep(-0.15, 0.02, sunY);
     this.zenith.setRGB(0.09, 0.2, 0.45).multiplyScalar(day);
-    this.zenith.lerp(new THREE.Color(0.0045, 0.006, 0.012), 1 - day);
+    this.zenith.lerp(_tc.setRGB(0.0045, 0.006, 0.012), 1 - day);
     this.horizon.setRGB(0.42, 0.5, 0.6).multiplyScalar(day);
-    this.horizon.lerp(new THREE.Color(0.75, 0.42, 0.24).multiplyScalar(day + 0.15), sunset * 0.8);
-    this.horizon.lerp(new THREE.Color(0.008, 0.01, 0.018), 1 - day);
+    this.horizon.lerp(_tc.setRGB(0.75, 0.42, 0.24).multiplyScalar(day + 0.15), sunset * 0.8);
+    this.horizon.lerp(_tc.setRGB(0.008, 0.01, 0.018), 1 - day);
     const oc = u.uOvercastColor.value;
     this.zenith.lerp(oc, env.overcast);
-    this.horizon.lerp(new THREE.Color(oc.r * 1.1, oc.g * 1.1, oc.b * 1.1), env.overcast);
+    this.horizon.lerp(_tc.setRGB(oc.r * 1.1, oc.g * 1.1, oc.b * 1.1), env.overcast);
     this.ground.setRGB(0.16, 0.14, 0.1).multiplyScalar(lerp(0.02, 1, day));
 
     this.fogColor.copy(this.horizon);
     this.fogSunColor.setRGB(1.0, 0.82, 0.6).multiplyScalar(lerp(0, 0.9, day) * (1 - env.overcast * 0.8));
-    this.fogSunColor.lerp(new THREE.Color(1.0, 0.5, 0.25).multiplyScalar(0.9), sunset * (1 - env.overcast));
+    this.fogSunColor.lerp(_tc.setRGB(1.0, 0.5, 0.25).multiplyScalar(0.9), sunset * (1 - env.overcast));
     return { day, sunset };
   }
 }
