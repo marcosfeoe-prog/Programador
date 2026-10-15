@@ -148,6 +148,22 @@ function icon(kind) {
     c.fillRect(40, 24, 16, 48);
     c.fillStyle = '#9ef0ff';
     c.fillRect(46, 24, 4, 48);
+  } else if (kind === 'chaveOuro' || kind === 'chaveBranca') {
+    const col = kind === 'chaveOuro' ? '#e0b840' : '#f2f2ee';
+    glow(kind === 'chaveOuro' ? 'rgba(255,200,80,0.35)' : 'rgba(255,255,255,0.3)');
+    c.strokeStyle = col;
+    c.lineWidth = 8;
+    c.beginPath();
+    c.arc(30, 48, 14, 0, TAU);
+    c.stroke();
+    c.beginPath();
+    c.moveTo(44, 48);
+    c.lineTo(84, 48);
+    c.moveTo(72, 48);
+    c.lineTo(72, 62);
+    c.moveTo(82, 48);
+    c.lineTo(82, 60);
+    c.stroke();
   } else if (kind === 'chave') {
     glow('rgba(230,190,90,0.25)');
     c.strokeStyle = '#d6b45a';
@@ -296,6 +312,8 @@ export const ITEM_DEFS = {
       return false;
     },
   },
+  chaveOuro: { name: 'Chave dourada', desc: 'Pesada, antiga, com a etiqueta “MANUT.”. Abre a porta de manutenção do Nível 2.', scope: 'level' },
+  chaveBranca: { name: 'Chave branca', desc: 'Fria como plástico. Etiqueta: “PORTÃO — ROBÓTICA”. Abre o grande portão do Nível 3.', scope: 'level' },
   fusivel: { name: 'Fusível de plasma', desc: 'Zumbe e esquenta na mão. A engenheira Vega precisa de três.', scope: 'level' },
   chave: { name: 'Chave do quarto', desc: 'Chave antiga de hotel, com etiqueta de couro vermelho.', scope: 'level' },
   cartao: { name: 'Cartão de acesso', desc: '"NÍVEL 15 — MANUTENÇÃO". Abre as salas de máquinas com terminal.', scope: 'level' },

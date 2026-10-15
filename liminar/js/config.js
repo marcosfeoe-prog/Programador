@@ -121,7 +121,7 @@ export const FILTERS = [
 // Os níveis, na ordem em que são visitados. `key` identifica a classe do nível
 // e os bilhetes; `num` é o número canônico (10.1 é um subnível do 10).
 // Ordem em que os níveis são visitados (as chaves de LEVELS; secretos e partes ficam de fora).
-export const ORDER = ['0', '1', '4', '5', '9', '10', '10.1', '11', '12', '15', '23', '37', '88'];
+export const ORDER = ['0', '1', '2', '3', '4', '5', '9', '10', '10.1', '11', '12', '15', '23', '37', '88'];
 
 // Posição de um nível na ordem (partes contam como o nível principal; secretos, como o pai).
 export function orderPos(info) {
@@ -304,6 +304,26 @@ export const LEVELS = [
     desc: 'Um labirinto infinito de piscinas de azulejos brancos, água morna e luz que entra em ângulos impossíveis.',
     objective: 'Descanse. Explore as piscinas.',
     hint: 'Três saídas: uma escada para baixo, uma porta de manutenção e uma porta futurista.',
+  },
+  {
+    key: '2',
+    num: 2,
+    name: 'Salões de Utilidades',
+    tag: 'Nível 2',
+    danger: 'Classe 3 · Inseguro · Canos quentes',
+    desc: 'Túneis de manutenção estreitos, cheios de canos, fios e máquinas paradas. Alguns canos fervem.',
+    objective: 'Encontre a chave dourada.',
+    hint: 'Não encoste nos canos com faixa vermelha. Converse com o papagaio.',
+  },
+  {
+    key: '3',
+    num: 3,
+    name: 'Estação Elétrica',
+    tag: 'Nível 3',
+    danger: 'Classe 4 · Inseguro · Entidades presentes',
+    desc: 'Corredores apertados de tijolos, cabos estalando e algo que anda de quatro. Dois andares.',
+    objective: 'Encontre a chave branca.',
+    hint: 'O Cão não é rápido, mas não desiste. Não corra perto dele.',
   },
 ];
 

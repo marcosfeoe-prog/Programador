@@ -22,13 +22,15 @@ em tela cheia e na horizontal).
 
 ## Os níveis (V2)
 
-Ordem: **0 → 1 → 4 → 5 → 9 → 10 → 10.1 → 11 → 12 → 15 → 23 → 37 → 88**, mais um subnível secreto (**0.1**). Todos podem ser escolhidos no menu **Níveis** (o secreto só aparece depois de descoberto).
+Ordem: **0 → 1 → 2 → 3 → 4 → 5 → 9 → 10 → 10.1 → 11 → 12 → 15 → 23 → 37 → 88**, mais um subnível secreto (**0.1**). Todos podem ser escolhidos no menu **Níveis** (o secreto só aparece depois de descoberto).
 
 | Nível | Nome | Como é | Objetivo / saída |
 |---|---|---|---|
 | **0** | O Saguão | Papel de parede amarelo, carpete úmido, lâmpadas fluorescentes zumbindo. | Atravesse a parede que falha |
 | **0.1** *(secreto)* | Estação Zênite | Usina elétrica no espaço, o maior nível do jogo: Átrio com claraboia e holograma, Mirante com janela gigante para o gigante anelado Orfeu, Refeitório e alojamentos, passarela de vidro, Sala dos Geradores com três bobinas de Tesla e turbinas, Sala de Controle e Hangar com nave. **Moradores para conversar** (Ada, Vega, Lúcio, Iara, Bento, o Viajante e o robô Z-7). Sem entidades; a sanidade se recupera. | Ache no Nível 0 o **rastro vermelho** que leva a uma **porta de madeira** → fale com a Ada → 3 fusíveis → Vega → recalibre as 3 bobinas → Lúcio → elevador (leva ao Nível 1) |
 | **1** | Zona Habitável | Armazém de concreto, quedas de energia; **Sorridentes** no escuro. | Porta de SAÍDA verde |
+| **2** | Salões de Utilidades | Túneis de manutenção estreitos de concreto sujo, cheios de canos, fios e máquinas paradas; lâmpadas nuas que apagam em trechos. **Canos com faixa vermelha queimam**: ficar perto deles derruba a sanidade. Começa com uma **cena de despertar**. Sem entidades hostis: só o **Jeffrey**, um papagaio que fala e dá dicas sobre os Níveis 2 e 3. | Ache a **chave dourada** → abra a porta de manutenção trancada |
+| **3** | Estação Elétrica | Corredores apertados de tijolos de cores desencontradas, cabos, caixas elétricas e zumbido; **dois andares**. O **Cão** (como o do Nível 9) não é rápido, mas persegue de muito longe pelo labirinto. Área secreta: um **portão enorme** trancado; a **chave branca** abre e uma **cena** mostra o salão de robótica onde os **robôs** dominam o nível. Cena de despertar no início. | Chave branca → portão → computador (**ENTER**) → 2º andar → porta de saída |
 | **4** | Escritório Abandonado | Divisórias de vidro, mesas, bebedouros, janelas para o vazio. | Chame o elevador |
 | **5** | O Hotel do Terror | Hotel dos anos 1930: Salão Principal com lustres e colunas, corredores com quartos numerados, Sala das Caldeiras, jazz de vitrola. **O Hóspede** só anda quando você não olha. | Pegue a chave na recepção → feche as 3 válvulas → abra o quarto |
 | **9** | Os Subúrbios | Bairro infinito à meia-noite, casas diferentes, postes falhando, lanterna com **pilha**. **Cães** que ouvem você correr; a luz dos postes é segura. | Caixa de correio com bandeira → 3 pilhas → entre na casa certa |
@@ -163,6 +165,9 @@ liminar/
   js/levels/level88*.js   Lago Silencioso (mundo, objetos, criatura e sombra)
   js/levels/level12*.js   Matrix (corredores brancos, rua vermelha, o Branco e a cena)
   js/levels/level37*.js   Sublimidade (piscinas, eventos, cena e loja dos mercenários)
+  js/levels/level2*.js    Salões de Utilidades (canos quentes, Jeffrey)
+  js/levels/level3*.js    Estação Elétrica (dois andares, o Cão, salão dos robôs)
+  js/levels/wake.js       cena de despertar reutilizável
   js/inventory.js     mochila: itens, ícones e efeitos
   js/player.js        movimento, colisão, balanço, passos e lanterna
   js/entities.js      itens, Sorridentes e Observador
@@ -172,5 +177,5 @@ liminar/
   js/notes.js         textos dos bilhetes
 ```
 
-Parâmetros úteis para testes: `?level=0..15&autostart` (10 = subnível 0.1, 11 = Nível 88, 12–14 = áreas do Nível 12, 15 = Nível 37) (entra direto no nível),
+Parâmetros úteis para testes: `?level=0..17&autostart` (10 = subnível 0.1, 11 = Nível 88, 12–14 = áreas do Nível 12, 15 = Nível 37, 16 = Nível 2, 17 = Nível 3) (entra direto no nível),
 `?q=ultra`, `?filter=vhs`, `?seed=7`, `?touch` (força os controles de toque).

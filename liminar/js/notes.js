@@ -99,4 +99,16 @@ export const NOTES = {
     'Se a água ficar roxa, sente e espere. Não lute contra o sono. Ninguém se machucou com o roxo. Ainda.',
     'Num canto escuro tem azulejos rachados que cedem quando você empurra. Atrás deles, um homem vende coisas por tempo.',
   ],
+  '2': [
+    'Não encoste nos canos com a faixa vermelha. Encostei o ombro um segundo e fiquei uma hora sem lembrar meu nome.',
+    'Tem um papagaio aqui. Ele sabe meu nome. Eu não disse meu nome pra ele.',
+    'Quando as luzes apagam num trecho, apagam todas juntas. Fique parado. Elas voltam.',
+    'A porta de manutenção amarela e preta precisa de uma chave dourada. Alguém deixou cair num corredor sem saída.',
+  ],
+  '3': [
+    'O cão não corre. Ele anda, anda, anda. E não para. Eu corri por meia hora e ele ainda estava atrás.',
+    'Achei uma chave branca, fria como plástico. Na etiqueta: PORTÃO — ROBÓTICA. Que portão?',
+    'Atrás do portão os robôs trabalham sozinhos. Eles não atacam. Só olham. O tempo todo.',
+    'A porta de saída fica no segundo andar e só abre pelo computador do salão. ENTER. Só isso.',
+  ],
 };

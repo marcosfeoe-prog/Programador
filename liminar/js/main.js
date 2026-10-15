@@ -14,6 +14,8 @@ import { clamp, damp, yieldFrame } from './util.js';
 import { Level0_1 } from './levels/level0_1.js';
 import { Level88 } from './levels/level88.js';
 import { Level37 } from './levels/level37.js';
+import { Level2 } from './levels/level2.js';
+import { Level3 } from './levels/level3.js';
 import { Level12 } from './levels/level12.js';
 import { Level12Street } from './levels/level12_street.js';
 import { Level12White } from './levels/level12_white.js';
@@ -44,6 +46,8 @@ const LEVEL_CLASSES = {
   23: Level23,
   88: Level88,
   37: Level37,
+  2: Level2,
+  3: Level3,
   12: Level12,
   '12.2': Level12Street,
   '12.3': Level12White,
