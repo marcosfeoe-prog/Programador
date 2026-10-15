@@ -384,7 +384,7 @@ export class Creature {
         this.target = { x: this.lastX, z: this.lastZ };
         g.hud.message(inWater ? 'Ela para na margem. Não entra na água. O som some.' : 'Você a despistou… por enquanto.', 4);
       }
-      if (d < 1.45) this.kill();
+      if (d < 1.8) this.kill();
       // rosnado posicional e medo
       g.st.growl = { x: this.x, z: this.z, v: clamp(1 - d / 40, 0.15, 0.9) };
       g.st.fear = Math.max(g.st.fear, clamp(1 - d / 45, 0.3, 1));
@@ -547,7 +547,9 @@ export class Shade {
     // preto que a neblina quase não apaga
     this.mat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 1, fog: true });
     this.mat.onBeforeCompile = (sh) => {
-      sh.fragmentShader = sh.fragmentShader.replace('#include <fog_fragment>', 'fogFactor *= 0.55;\n#include <fog_fragment>');
+      // o #include ainda não foi expandido: troca pelo trecho com a neblina reduzida
+      const fogChunk = THREE.ShaderChunk.fog_fragment.replace('fogColor, fogFactor )', 'fogColor, fogFactor * 0.55 )');
+      sh.fragmentShader = sh.fragmentShader.replace('#include <fog_fragment>', fogChunk);
     };
     this.mat.customProgramCacheKey = () => 'l88-shade';
     const g = new THREE.Group();
