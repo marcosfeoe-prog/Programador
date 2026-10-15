@@ -17,6 +17,10 @@ const PASS = new Set([W.NONE, W.DOOR, W.HALF_A, W.HALF_B]);
 export class GridHounds extends Hounds {
   constructor(level) {
     level.lampU = level.lampU || lampUniforms(1);
+    // ganchos que o Cão do Nível 9 usa (zonas seguras); nos níveis em grade não há
+    if (!level.pushOutSafe) level.pushOutSafe = () => {};
+    if (!level.inSafe) level.inSafe = () => false;
+    if (!level.groundY) level.groundY = () => 0;
     super(level);
     this.pool = [this.pool[0]];
     this.spawnT = 35;
