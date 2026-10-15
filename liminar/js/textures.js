@@ -978,6 +978,30 @@ export function indoorEnvTex(base, light, rows = 6) {
 // ------------------------------------------------------------ extensão pelos níveis
 // Os níveis podem registrar geradores próprios (usados via getTex, com cache por
 // tamanho) e reutilizar os mesmos utilitários de pintura procedural.
+// Textura de imagem (foto) com repetição; resolve null se não carregar a tempo.
+export function loadPhotoTex(url, { srgb = true, timeout = 8000 } = {}) {
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (v) => {
+      if (done) return;
+      done = true;
+      resolve(v);
+    };
+    const img = new Image();
+    img.onload = () => {
+      const t = new THREE.Texture(img);
+      t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.anisotropy = maxAniso;
+      t.needsUpdate = true;
+      finish(t);
+    };
+    img.onerror = () => finish(null);
+    setTimeout(() => finish(null), timeout);
+    img.src = url;
+  });
+}
+
 export function registerTexture(name, gen) {
   if (!GENERATORS[name]) GENERATORS[name] = gen;
 }

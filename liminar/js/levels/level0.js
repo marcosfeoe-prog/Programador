@@ -10,7 +10,7 @@
 //  • Salas Escuras: um trecho onde todas as luzes morreram.
 import * as THREE from 'three';
 import { GridLevel, W, EH, EV } from './grid.js';
-import { getTex, indoorEnvTex } from '../textures.js';
+import { getTex, indoorEnvTex, loadPhotoTex } from '../textures.js';
 import { panelMaterial } from '../materials.js';
 import { clamp, fbm, hash3, mulberry32, TAU } from '../util.js';
 import { SecretTrail } from './level0_secret.js';
@@ -434,7 +434,7 @@ export class Level0 extends GridLevel {
     this.riftMat = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
         THREE.UniformsLib.fog,
-        { map: { value: wp.map }, uTime: { value: 0 }, uLight: { value: new THREE.Color(1, 1, 1) }, uRep: { value: (c - 0.2) / 1.2 } },
+        { map: { value: wp.map }, uTime: { value: 0 }, uLight: { value: new THREE.Color(1, 1, 1) }, uRep: { value: (c - 0.2) / 1.2 }, uRepY: { value: 1 } },
       ]),
       vertexShader: /* glsl */ `
         varying vec2 vUv;
@@ -450,6 +450,7 @@ export class Level0 extends GridLevel {
         uniform float uTime;
         uniform vec3 uLight;
         uniform float uRep;
+        uniform float uRepY;
         varying vec2 vUv;
         #include <fog_pars_fragment>
         float h( vec2 p ) { return fract( sin( dot( p, vec2( 127.1, 311.7 ) ) ) * 43758.5453 ); }
@@ -460,7 +461,7 @@ export class Level0 extends GridLevel {
           float row = floor( uv.y * 46.0 );
           float g = step( 0.62, h( vec2( row, tick ) ) );
           uv.x += ( h( vec2( row, tick + 1.0 ) ) - 0.5 ) * 0.3 * g;
-          vec3 wp = texture2D( map, vec2( uv.x * uRep, uv.y ) ).rgb * uLight;
+          vec3 wp = texture2D( map, vec2( uv.x * uRep, uv.y * uRepY ) ).rgb * uLight;
           float cx = 0.5 + ( h( vec2( floor( uv.y * 26.0 ), floor( t * 5.0 ) ) ) - 0.5 ) * 0.07;
           float w = 0.035 + 0.02 * sin( uv.y * 17.0 + t * 2.3 );
           float slit = smoothstep( 0.05, 0.0, abs( uv.x - cx ) - w );
@@ -563,8 +564,31 @@ export class Level0 extends GridLevel {
     return { x: this.exit.x, y: 1.4, z: this.exit.z, sound: 'rift' };
   }
 
+  // Papel de parede fotográfico (gerado no Higgsfield), carregado antes de montar
+  // as paredes; se não carregar, fica a textura desenhada por código.
+  async preload(px, pz, progress) {
+    if (!this.photoTried) {
+      this.photoTried = true;
+      const [map, nor] = await Promise.all([loadPhotoTex('assets/tex/l0_wallpaper.jpg'), loadPhotoTex('assets/tex/l0_wallpaper_n.jpg', { srgb: false })]);
+      if (map) {
+        const T = 1.35; // metros por repetição da foto
+        this.photos = [map, nor].filter(Boolean);
+        this.mats.wall.map = map;
+        if (nor) this.mats.wall.normalMap = nor;
+        this.mats.wall.normalScale = 0.7;
+        this.wallUV = [T, T];
+        const u = this.riftMat.uniforms;
+        u.map.value = map;
+        u.uRep.value = (this.cell - 0.2) / T;
+        u.uRepY.value = (this.H - 0.06) / T;
+      }
+    }
+    return super.preload(px, pz, progress);
+  }
+
   dispose() {
     super.dispose();
+    if (this.photos) for (const t of this.photos) t.dispose();
     this.pitMat.map.dispose();
     this.pitMat.dispose();
     this.pitHidden.dispose();
