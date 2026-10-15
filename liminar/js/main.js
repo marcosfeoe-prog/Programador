@@ -11,6 +11,7 @@ import { AudioEngine } from './audio.js';
 import { HUD, Menu } from './ui.js';
 import { Items, Smilers, Watcher } from './entities.js';
 import { clamp, damp, yieldFrame } from './util.js';
+import { Level0_1 } from './levels/level0_1.js';
 import { Level0 } from './levels/level0.js';
 import { Level1 } from './levels/level1.js';
 import { Level4 } from './levels/level4.js';
@@ -25,6 +26,7 @@ import { Level23 } from './levels/level23.js';
 // Classe de cada nível, pela chave definida em LEVELS (config.js).
 const LEVEL_CLASSES = {
   0: Level0,
+  '0.1': Level0_1,
   1: Level1,
   4: Level4,
   5: Level5,
@@ -548,7 +550,10 @@ class Game {
       return;
     }
     if (!this.running || !this.level) return;
-    if (this.hud.dialogOpen) this.hud.dialogKeys(this.input);
+    if (this.hud.dialogOpen) {
+      this.hud.dialogKeys(this.input);
+      if (this.level && this.level.dialogTick) this.level.dialogTick(dt, this.player);
+    }
     else if (!this.paused && !this.hud.noteOpen) this.update(dt);
     else if (this.hud.noteOpen && (this.input.pressed('interact') || this.input.pressed('menu'))) this.hud.closeNote();
     this.render(dt);

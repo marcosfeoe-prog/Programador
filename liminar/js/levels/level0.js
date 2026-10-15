@@ -1,11 +1,13 @@
 // Nível 0 — "O Saguão": papel de parede amarelo, carpete úmido e luminárias
 // fluorescentes em salas irregulares que nunca terminam.
 // Saída: uma parede que falha ("fenda"); atravessá-la leva ao Nível 1.
+// Segredo: um rastro vermelho leva a uma porta de madeira (Subnível 0.1).
 import * as THREE from 'three';
 import { GridLevel, W, EH } from './grid.js';
 import { getTex, indoorEnvTex } from '../textures.js';
 import { panelMaterial } from '../materials.js';
 import { fbm, hash3, mulberry32, TAU } from '../util.js';
+import { SecretTrail } from './level0_secret.js';
 
 export class Level0 extends GridLevel {
   constructor(game) {
@@ -184,6 +186,7 @@ export class Level0 extends GridLevel {
     const nz = ez >= 0 ? -1 : 1;
     this.exit = { x: ex * c + c / 2, z: iz * c + nz * (hT + 0.01), nz };
     this.spawn = { x: c / 2, z: c / 2, yaw: Math.atan2(-(this.exit.x - c / 2), -(this.exit.z - c / 2)) + (rnd() - 0.5) * 2 };
+    this.secret = new SecretTrail(this, mulberry32(this.seed * 13 + 1), a + Math.PI);
     // malha animada da fenda
     const wp = getTex('wallpaper', this.Q.tex);
     this.riftMat = new THREE.ShaderMaterial({
@@ -238,10 +241,10 @@ export class Level0 extends GridLevel {
     this.dynamic.add(this.rift);
   }
 
-  onChunkBuilt() {
+  onChunkBuilt(ch) {
+    this.secret.onChunkBuilt(ch);
     if (this.riftLit) return;
-    const ch = this.chunkAt(this.exit.x, this.exit.z + this.exit.nz * 0.5);
-    if (!ch) return;
+    if (!this.chunkAt(this.exit.x, this.exit.z + this.exit.nz * 0.5)) return;
     const L = this.lightLevel(this.exit.x, this.exit.z + this.exit.nz * 0.5);
     this.riftMat.uniforms.uLight.value.setRGB(1, 0.93, 0.74).multiplyScalar(Math.min(2, L * 0.9 + 0.1));
     this.riftLit = true;
@@ -249,9 +252,14 @@ export class Level0 extends GridLevel {
 
   tick(dt, player) {
     this.riftMat.uniforms.uTime.value += dt;
+    this.secret.tick(dt, player);
     const dx = player.pos.x - this.exit.x;
     const dz = (player.pos.z - this.exit.z) * this.exit.nz;
     if (Math.abs(dx) < this.cell / 2 - 0.2 && dz > 0 && dz < 0.62) this.game.reachExit();
+  }
+
+  interactable(player) {
+    return this.secret.interactable(player);
   }
 
   exitEmitter() {

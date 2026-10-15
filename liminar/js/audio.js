@@ -988,7 +988,7 @@ export class AudioEngine {
     this.kind = look.ambience;
     this.setReverb(look.reverb || 1.5);
     const k = this.kind;
-    const wets = { level10: 0.08, level11: 0.2, level1: 0.55, level9: 0.12, level10_1: 0.18, level23: 0.3, level15: 0.45, level5: 0.4 };
+    const wets = { level0_1: 0.4, level10: 0.08, level11: 0.2, level1: 0.55, level9: 0.12, level10_1: 0.18, level23: 0.3, level15: 0.45, level5: 0.4 };
     this.wet.gain.value = wets[k] !== undefined ? wets[k] : 0.35;
     this.hum = null;
     if (k === 'level0') {
@@ -1020,6 +1020,12 @@ export class AudioEngine {
     } else if (k === 'level23') {
       this.wind = this.loop('wind', 0.18, { rate: 0.55, lp: 2200 });
       this.loop('brown', 0.05, { lp: 200 });
+    } else if (k === 'level0_1') {
+      // usina: zumbido elétrico limpo, ventilação e o grave das turbinas
+      this.hum = this.loop('hum', 0.06, { rate: 0.5, lp: 1800, wet: 0.3 });
+      this.machineL = this.loop('machine', 0.06, { rate: 0.7, lp: 500, wet: 0.5 });
+      this.loop('brown', 0.07, { lp: 240 });
+      this.loop('white', 0.012, { lp: 2400, wet: 0.4 });
     } else if (k === 'level10_1') {
       this.loop('water', 0.22, { wet: 0.1 });
       this.wind = this.loop('wind', 0.09, { rate: 0.6, lp: 900 });
@@ -1166,6 +1172,11 @@ export class AudioEngine {
         if (r < 0.45) this.play('groan', { gain: 0.12 + Math.random() * 0.1, rate: 0.7 + Math.random() * 0.5, pan, wet: 1.2 });
         else if (r < 0.75) this.play('drip', { gain: 0.15, rate: 0.6 + Math.random() * 0.5, pan, wet: 1.4 });
         if (this.wind) this.wind.gain.gain.setTargetAtTime(0.1 + Math.random() * 0.15, t, 2.5);
+      } else if (k === 'level0_1') {
+        const r = Math.random();
+        if (r < 0.4) this.play('beep', { gain: 0.05, rate: 0.9 + Math.random() * 0.8, pan, wet: 0.9 });
+        else if (r < 0.6) this.play('crackle', { gain: 0.05, rate: 0.6, pan, wet: 1.2 });
+        else if (r < 0.75) this.play('door', { gain: 0.05, rate: 0.7, pan, wet: 1.4 });
       } else if (k === 'level10_1') {
         if (Math.random() < 0.3) this.play('drip', { gain: 0.12, rate: 0.35, pan, wet: 0.6 });
         if (this.wind) this.wind.gain.gain.setTargetAtTime(0.04 + Math.random() * 0.08, t, 3);

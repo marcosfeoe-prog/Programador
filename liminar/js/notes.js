@@ -7,6 +7,13 @@ export const NOTES = {
     'O carpete está sempre úmido. Não é água. Não pergunte.',
     'Algumas paredes tremem quando você não está olhando direto pra elas. Uma delas me deixou passar.',
     'Achei uma garrafa de água de amêndoa embaixo da mesa que não existe mais. O gosto acalma a cabeça.',
+    'Vi um rastro vermelho no carpete, longe da parede que falha. Ele termina numa porta de madeira. Atrás dela, juro, ouvi alguém rindo. E um zumbido limpo, diferente.',
+  ],
+  '0.1': [
+    'DIÁRIO DE BORDO — ZÊNITE, ano 11. A estrela continua no mesmo lugar. Os cabos da usina atravessam a parede norte e não saem do outro lado. Ninguém comenta.',
+    'Para quem chegar pela porta de madeira: aqui tem comida, cama e gente. Não é casa, mas é perto. — A.O.',
+    'Procedimento de fase: alvo 60,0 kHz. Acima, diminuir. Abaixo, aumentar. NÃO encostar no anel de cobre, por mais bonito que o arco pareça. — L.V.',
+    'Iara jura que viu um prédio amarelo em Tétis Rubra pelo telescópio. Bento disse que é saudade. Eu não quis olhar.',
   ],
   '1': [
     'Aqui pelo menos dá pra respirar. Caixas com comida, baterias, fitas. Quem deixou?',

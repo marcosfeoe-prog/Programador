@@ -20,13 +20,14 @@ qualquer servidor estático (GitHub Pages, Netlify…) ou acesse o IP do computa
 na mesma rede. No celular dá para "Adicionar à tela inicial" (há manifesto PWA,
 em tela cheia e na horizontal).
 
-## Os dez níveis (V2)
+## Os níveis (V2)
 
-Ordem: **0 → 1 → 4 → 5 → 9 → 10 → 10.1 → 11 → 15 → 23**. Todos podem ser escolhidos no menu **Níveis**.
+Ordem: **0 → 1 → 4 → 5 → 9 → 10 → 10.1 → 11 → 15 → 23**, mais um subnível secreto (**0.1**). Todos podem ser escolhidos no menu **Níveis** (o secreto só aparece depois de descoberto).
 
 | Nível | Nome | Como é | Objetivo / saída |
 |---|---|---|---|
 | **0** | O Saguão | Papel de parede amarelo, carpete úmido, lâmpadas fluorescentes zumbindo. | Atravesse a parede que falha |
+| **0.1** *(secreto)* | Estação Zênite | Usina elétrica no espaço, o maior nível do jogo: Átrio com claraboia e holograma, Mirante com janela gigante para o gigante anelado Orfeu, Refeitório e alojamentos, passarela de vidro, Sala dos Geradores com três bobinas de Tesla e turbinas, Sala de Controle e Hangar com nave. **Moradores para conversar** (Ada, Vega, Lúcio, Iara, Bento, o Viajante e o robô Z-7). Sem entidades; a sanidade se recupera. | Ache no Nível 0 o **rastro vermelho** que leva a uma **porta de madeira** → fale com a Ada → 3 fusíveis → Vega → recalibre as 3 bobinas → Lúcio → elevador (leva ao Nível 1) |
 | **1** | Zona Habitável | Armazém de concreto, quedas de energia; **Sorridentes** no escuro. | Porta de SAÍDA verde |
 | **4** | Escritório Abandonado | Divisórias de vidro, mesas, bebedouros, janelas para o vazio. | Chame o elevador |
 | **5** | O Hotel do Terror | Hotel dos anos 1930: Salão Principal com lustres e colunas, corredores com quartos numerados, Sala das Caldeiras, jazz de vitrola. **O Hóspede** só anda quando você não olha. | Pegue a chave na recepção → feche as 3 válvulas → abra o quarto |
@@ -45,6 +46,8 @@ Os objetivos aparecem como checklist no HUD e a bússola aponta para o próximo 
   Se chegar a zero, você "acorda" de novo no início do nível.
 - **Água de Amêndoa** (garrafas espalhadas) e **bebedouros** recuperam sanidade.
 - **Bilhetes** contam o que aconteceu com quem passou antes.
+- **Conversas**: na Estação Zênite, chegue perto de alguém e toque em **USAR** (ou E);
+  escolha as respostas tocando nos botões ou com as teclas 1–4.
 - **Sorridentes** (Nível 1) avançam no escuro e recuam quando iluminados pela
   lanterna. Um **Observador** às vezes aparece ao longe nos Níveis 0 e 10.
 - **Bússola de intuição** (pode desligar): aponta a direção aproximada da saída.
@@ -125,8 +128,14 @@ usar), lanterna, correr, bússola, filtro e menu. Vibra nos sustos.
   gradação de cor por nível, efeitos de sanidade e os filtros (compilados sob
   demanda com `#define`, para não pesar no celular).
 - **Áudio** sintetizado com Web Audio: zumbido de 120 Hz com harmônicos, passos
-  diferentes para carpete, concreto, terra, trigo e asfalto, reverberação por
-  nível, a saída como fonte sonora posicional (HRTF) e eventos aleatórios.
+  diferentes para cada piso, trilha ambiente (pads) por nível, reverberação,
+  a saída como fonte sonora posicional (HRTF) e eventos aleatórios. A saída passa
+  por equalização, compressão e limitador para ser audível em alto-falantes de
+  celular (há o botão **Testar som** em Configurações; o som começa no primeiro toque).
+- **Estação Zênite**: luz "assada" por vértice em dois canais (luzes da estação, que
+  acompanham a energia, e luz fixa das janelas/sol), sol com sombras reais da
+  qualidade média para cima, planetas e céu estrelado em shaders, pessoas montadas
+  com primitivas e rosto pintado em canvas, e diálogos com escolhas.
 
 ## Estrutura
 
@@ -140,7 +149,9 @@ liminar/
   js/textures.js      texturas procedurais em canvas (papel de parede, carpete, concreto…)
   js/levels/grid.js   motor dos níveis internos (blocos, lightmaps, colisão)
   js/levels/outdoor.js base dos níveis abertos (blocos, céu, sol com sombras)
-  js/levels/level0.js, level1.js, level4.js, level10.js, level11.js
+  js/levels/level0.js (+ level0_secret.js: rastro e porta de madeira)
+  js/levels/level0_1*.js  Estação Zênite (construção, adereços, espaço, pessoas, história)
+  js/levels/level1.js, level4.js, level5*.js, level9*.js, level10*.js, level11.js, level15*.js, level23*.js
   js/player.js        movimento, colisão, balanço, passos e lanterna
   js/entities.js      itens, Sorridentes e Observador
   js/input.js         teclado, mouse e toque
@@ -149,5 +160,5 @@ liminar/
   js/notes.js         textos dos bilhetes
 ```
 
-Parâmetros úteis para testes: `?level=0..4&autostart` (entra direto no nível),
+Parâmetros úteis para testes: `?level=0..10&autostart` (10 = subnível 0.1) (entra direto no nível),
 `?q=ultra`, `?filter=vhs`, `?seed=7`, `?touch` (força os controles de toque).
