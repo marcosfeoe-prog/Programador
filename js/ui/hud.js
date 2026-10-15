@@ -2,7 +2,7 @@
 // dados locais (vento, pressão, chuva), notificações e relatório de danos.
 import { formatTime, cardinal, msToKmh } from '../util/math.js';
 import { PHASES, PHASE_ORDER } from '../sim/storm.js';
-import { SHAPES } from '../sim/tornado.js';
+import { SHAPES, COLORS } from '../sim/tornado.js';
 import { FUJITA, FUJITA_COLORS } from '../config.js';
 import { CAMERA_MODES } from '../player.js';
 
@@ -11,7 +11,7 @@ const $ = (id) => document.getElementById(id);
 export class HUD {
   constructor() {
     this.el = {};
-    for (const id of ['hud', 'clock-icon', 'clock-time', 'clock-day', 'clock-sub', 'time-scale', 'phase-name', 'phase-steps', 'phase-sub', 'alert', 'tornado-card', 'tc-badge', 'tc-title', 'tc-rating-sub', 'tc-shape', 'tc-dist', 'tc-dir', 'tc-move', 'tc-width', 'tc-path', 'health-bar', 'wind-val', 'pres-val', 'rain-val', 'cam-val', 'feed', 'prompt', 'info-panel', 'fps', 'death', 'report', 'report-body', 'radar-wrap', 'radar-label']) {
+    for (const id of ['hud', 'clock-icon', 'clock-time', 'clock-day', 'clock-sub', 'time-scale', 'phase-name', 'phase-steps', 'phase-sub', 'alert', 'tornado-card', 'tc-badge', 'tc-title', 'tc-rating-sub', 'tc-shape', 'tc-color', 'tc-time', 'tc-dist', 'tc-dir', 'tc-move', 'tc-width', 'tc-path', 'health-bar', 'wind-val', 'pres-val', 'rain-val', 'cam-val', 'feed', 'prompt', 'info-panel', 'fps', 'death', 'report', 'report-body', 'radar-wrap', 'radar-label']) {
       this.el[id] = $(id);
     }
     const steps = PHASE_ORDER.slice(1, 8);
@@ -112,6 +112,11 @@ export class HUD {
       E['tc-title'].textContent = f >= 0 ? `Tornado ${FUJITA[f].name} (preliminar)` : 'Tornado — sem classificação';
       E['tc-rating-sub'].textContent = t.ratingInfo ? `${t.ratingInfo.di}: ${t.ratingInfo.d}` : 'Classe definida apenas pelos danos';
       E['tc-shape'].textContent = SHAPES[t.displayShape].name;
+      E['tc-color'].textContent = COLORS[t.color].name;
+      const tm = Math.floor(t.stageTime / 60);
+      const ts = Math.floor(t.stageTime % 60);
+      const lm = Math.round(t.life / 60);
+      E['tc-time'].textContent = `${tm}:${String(ts).padStart(2, '0')} / ~${lm} min`;
       const dx = t.pos.x - player.pos.x;
       const dz = t.pos.z - player.pos.z;
       const dist = Math.hypot(dx, dz);
@@ -190,6 +195,7 @@ export class HUD {
       </div>
       <div class="rep-grid">
         <span>Formato</span><b>${shapes || SHAPES[t.initialShape].name}</b>
+        <span>Aparência</span><b>${COLORS[t.color].name}</b>
         <span>Duração no solo</span><b>${Math.floor(dur / 60)} min ${Math.round(dur % 60)} s</b>
         <span>Extensão da trajetória</span><b>${(t.pathLength / 1000).toFixed(2)} km</b>
         <span>Largura máxima dos danos</span><b>${Math.round(t.maxWidth)} m</b>
