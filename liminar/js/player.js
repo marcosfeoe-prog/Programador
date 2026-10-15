@@ -91,7 +91,7 @@ export class Player {
     this.vel.z = damp(this.vel.z, tz, acc, dt);
     // fôlego
     if (sprint) {
-      this.stamina -= dt * 0.13;
+      this.stamina -= dt * 0.13 * (this.game.staminaMul || 1);
       if (this.stamina <= 0) {
         this.stamina = 0;
         this.exhausted = true;

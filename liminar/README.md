@@ -22,7 +22,7 @@ em tela cheia e na horizontal).
 
 ## Os níveis (V2)
 
-Ordem: **0 → 1 → 4 → 5 → 9 → 10 → 10.1 → 11 → 12 → 15 → 23 → 88**, mais um subnível secreto (**0.1**). Todos podem ser escolhidos no menu **Níveis** (o secreto só aparece depois de descoberto).
+Ordem: **0 → 1 → 4 → 5 → 9 → 10 → 10.1 → 11 → 12 → 15 → 23 → 37 → 88**, mais um subnível secreto (**0.1**). Todos podem ser escolhidos no menu **Níveis** (o secreto só aparece depois de descoberto).
 
 | Nível | Nome | Como é | Objetivo / saída |
 |---|---|---|---|
@@ -38,6 +38,7 @@ Ordem: **0 → 1 → 4 → 5 → 9 → 10 → 10.1 → 11 → 12 → 15 → 23 �
 | **12** | Matrix | Três áreas. (1) Salinha branca com mesa, cadeira e uma porta "trancada"; do outro lado, corredores brancos intermináveis — filtros de gravação (VHS, câmera, CCTV) falham aqui. (2) Rua deserta sob uma **lua vermelha** enorme e brilho vermelho intenso. (3) O Branco: uma **cena** mostra o boneco do jogador pela primeira vez; depois, só branco infinito, até que surge uma **porta com erros**. Sem entidades. | Abra a porta → passagem no chão → porta branca aberta → espere a porta com erros |
 | **15** | Os Salões Futuristas | Corredores brancos, trechos totalmente escuros, salas de máquinas atrás de vidro grosso. Sem entidades. | Cartão de acesso → religue 3 terminais → abra a comporta |
 | **23** | O Jardim Petrificado | Árvores petrificadas entrelaçadas, musgo, névoa e feixes de luz. Sem entidades. | Chegue à Base Seedling e descanse no catre |
+| **37** | Sublimidade | Labirinto de piscinas de azulejos brancos com água morna verde-azulada: salas claras (claraboias), salas no escuro, colunas, poços fundos. Começa com uma **cena do jogador acordando**. **Verão** (a cada 5 min, 3 min de luz de pôr do sol) e **Roxo Iminente** (raro, brilho roxo hipnótico). Área secreta dos **mercenários**: loja onde se compra com o tempo sobrevivido (kit de primeiros socorros, pilha de longa duração, tênis silencioso, amuleto de azulejo, rádio de ondas curtas). Pacífico, sem entidades. | Três saídas: escada para o subsolo (**88**), porta de manutenção (**15**), porta futurista (**0.1**) |
 | **88** | Lago Silencioso | Lago imóvel e gelado no fundo de um vale de floresta escura, com reflexo espelhado de verdade. Perto da água **todo som é abafado**; dentro dela, sussurros sobem pelo corpo. **Ciclo de dia e noite**: o dia é escuro, a noite quase cega. A **Criatura** (só à noite) persegue quem ela vê — só a **cabana com a porta fechada** salva. A **Sombra** observa de longe entre as árvores e some quando você chega perto. No acampamento abandonado há uma **carta com uma foto em branco** que recupera a sanidade sozinha enquanto estiver na mochila. | Encontre a passagem subterrânea e entre na caverna (final do jogo) |
 
 Os objetivos aparecem como checklist no HUD e a bússola aponta para o próximo passo.
@@ -161,6 +162,7 @@ liminar/
   js/levels/level1.js, level4.js, level5*.js, level9*.js, level10*.js, level11.js, level15*.js, level23*.js
   js/levels/level88*.js   Lago Silencioso (mundo, objetos, criatura e sombra)
   js/levels/level12*.js   Matrix (corredores brancos, rua vermelha, o Branco e a cena)
+  js/levels/level37*.js   Sublimidade (piscinas, eventos, cena e loja dos mercenários)
   js/inventory.js     mochila: itens, ícones e efeitos
   js/player.js        movimento, colisão, balanço, passos e lanterna
   js/entities.js      itens, Sorridentes e Observador
@@ -170,5 +172,5 @@ liminar/
   js/notes.js         textos dos bilhetes
 ```
 
-Parâmetros úteis para testes: `?level=0..14&autostart` (10 = subnível 0.1, 11 = Nível 88, 12–14 = áreas do Nível 12) (entra direto no nível),
+Parâmetros úteis para testes: `?level=0..15&autostart` (10 = subnível 0.1, 11 = Nível 88, 12–14 = áreas do Nível 12, 15 = Nível 37) (entra direto no nível),
 `?q=ultra`, `?filter=vhs`, `?seed=7`, `?touch` (força os controles de toque).

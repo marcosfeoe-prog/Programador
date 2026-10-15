@@ -321,7 +321,7 @@ export class Creature {
     // audição (o lago engole o som)
     const quiet = 1 - 0.75 * clamp((14 - shoreS(p.x, p.z)) / 14, 0, 1);
     const sprint = P.speed > 3.2;
-    const hear = (sprint ? 30 : P.speed > 0.5 ? 9 : 0) * quiet;
+    const hear = (sprint ? 30 : P.speed > 0.5 ? 9 : 0) * quiet * (g.quietMul || 1);
     return d < hear;
   }
 

@@ -13,6 +13,7 @@ import { Items, Smilers, Watcher } from './entities.js';
 import { clamp, damp, yieldFrame } from './util.js';
 import { Level0_1 } from './levels/level0_1.js';
 import { Level88 } from './levels/level88.js';
+import { Level37 } from './levels/level37.js';
 import { Level12 } from './levels/level12.js';
 import { Level12Street } from './levels/level12_street.js';
 import { Level12White } from './levels/level12_white.js';
@@ -42,6 +43,7 @@ const LEVEL_CLASSES = {
   15: Level15,
   23: Level23,
   88: Level88,
+  37: Level37,
   12: Level12,
   '12.2': Level12Street,
   '12.3': Level12White,
@@ -288,6 +290,11 @@ class Game {
     }
     this.post.render(this.scene, this.camera);
     this.hud.cardProgress(1, 'Pronto.');
+    const vk = info.part || info.key;
+    if (!(this.settings.visited || []).includes(vk)) {
+      this.settings.visited = [...(this.settings.visited || []), vk];
+      saveSettings(this.settings);
+    }
     if (info.secret) {
       if (!this.settings.secretFound) {
         this.settings.secretFound = true;
@@ -614,12 +621,19 @@ class Game {
     const st = this.st;
     st.growl = null;
     st.fear = 0;
+    // tempo sobrevivido (moeda da loja do Nível 37)
+    s.survival = (s.survival || 0) + dt;
+    this.saveT = (this.saveT || 0) + dt;
+    if (this.saveT > 15) {
+      this.saveT = 0;
+      saveSettings(s);
+    }
+    this.inventory.update(dt);
     P.update(dt, inp, L, s);
     L.update(dt, P);
-    this.inventory.update(dt);
     // bateria da lanterna (níveis com look.battery = consumo por segundo)
     if (L.look.battery && P.flashOn) {
-      this.battery = Math.max(0, this.battery - L.look.battery * dt);
+      this.battery = Math.max(0, this.battery - L.look.battery * dt * (this.batteryMul || 1));
       if (this.battery <= 0) {
         P.flashOn = false;
         this.hud.message('A pilha da lanterna acabou.', 3);
@@ -645,7 +659,7 @@ class Game {
     // sanidade
     const light = L.lightLevel ? L.lightLevel(P.pos.x, P.pos.z) * this.power : 1;
     const darkK = L.indoor ? 1 + Math.max(0, 0.45 - light) * 2.2 : 1;
-    const drain = (L.look.sanityDrain || 0.1) * darkK + this.sanityDrainExtra + (L.sanityExtra || 0);
+    const drain = ((L.look.sanityDrain || 0.1) * darkK + this.sanityDrainExtra) * (this.drainMul || 1) + (L.sanityExtra || 0);
     if (!this.transitioning) this.sanity = Math.min(100, this.sanity - drain * dt);
     if (this.sanity <= 0) {
       this.sanity = 0;

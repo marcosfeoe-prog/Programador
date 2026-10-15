@@ -867,7 +867,7 @@ export class Level23 extends OutdoorLevel {
       g.hud.message('“Você ainda está aí? Que bom. Pode parar de andar.” Você se deita no catre e fecha os olhos…', 6);
       this.endTimer = setTimeout(() => {
         if (g.level !== this) return;
-        g.hud.message('…e acorda com frio. Muito frio. Cheiro de água parada e de metal.', 4);
+        g.hud.message('…e acorda com água morna batendo nos dedos.', 4);
         g.player.frozen = false;
         g.reachExit('noclip', 1.2);
       }, 5200);

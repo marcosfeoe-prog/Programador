@@ -25,6 +25,8 @@ const KEYMAP = {
   Digit2: 'opt2',
   Digit3: 'opt3',
   Digit4: 'opt4',
+  Digit5: 'opt5',
+  Digit6: 'opt6',
   Escape: 'menu',
   KeyP: 'menu',
 };

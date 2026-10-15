@@ -251,7 +251,7 @@ export class HUD {
 
   // Teclas 1–3 escolhem; E/Espaço completa o texto ou fecha.
   dialogKeys(input) {
-    for (let i = 0; i < 4; i++) if (input.pressed('opt' + (i + 1))) return this.pickChoice(i);
+    for (let i = 0; i < 6; i++) if (input.pressed('opt' + (i + 1))) return this.pickChoice(i);
     if (input.pressed('menu')) return this.closeDialog();
     if (input.pressed('interact')) this.typeFull && this.typeFull();
   }

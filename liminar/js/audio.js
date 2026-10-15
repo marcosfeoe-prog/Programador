@@ -188,6 +188,7 @@ const PADS = {
   level11: { chords: [[61, 65, 68, 72], [58, 61, 65, 68], [63, 66, 70, 73], [56, 60, 63, 67]], cut: 2000, gain: 0.05, detune: 0.004 },
   level15: { chords: [[64, 71, 76, 79], [62, 69, 74, 77], [60, 67, 72, 76], [62, 69, 74, 78]], cut: 2400, gain: 0.04, detune: 0.002, sparkle: true },
   level88: { chords: [[38, 45, 50, 53], [36, 43, 48, 51], [37, 44, 49, 52], [36, 43, 50, 53]], cut: 600, gain: 0.05, detune: 0.008 },
+  level37: { chords: [[60, 64, 67, 71, 74], [57, 60, 64, 67, 71], [62, 65, 69, 72, 76], [55, 59, 62, 67, 69]], cut: 2200, gain: 0.055, detune: 0.003, sparkle: true },
   level12_2: { chords: [[40, 47, 52, 55], [39, 46, 51, 54]], cut: 700, gain: 0.06, detune: 0.01 },
   level12_3: { chords: [[76, 83, 88], [77, 84, 89]], cut: 3000, gain: 0.015, detune: 0.001 },
   level23: { chords: [[50, 57, 64, 69], [48, 55, 62, 67], [53, 60, 67, 72], [52, 59, 64, 71]], cut: 1500, gain: 0.06, detune: 0.005 },
@@ -1035,7 +1036,7 @@ export class AudioEngine {
     this.windK = 1;
     this.setReverb(look.reverb || 1.5);
     const k = this.kind;
-    const wets = { level12: 0.45, level12_2: 0.15, level12_3: 0.9, level88: 0.12, level0_1: 0.4, level10: 0.08, level11: 0.2, level1: 0.55, level9: 0.12, level10_1: 0.18, level23: 0.3, level15: 0.45, level5: 0.4 };
+    const wets = { level37: 0.75, level12: 0.45, level12_2: 0.15, level12_3: 0.9, level88: 0.12, level0_1: 0.4, level10: 0.08, level11: 0.2, level1: 0.55, level9: 0.12, level10_1: 0.18, level23: 0.3, level15: 0.45, level5: 0.4 };
     this.wet.gain.value = wets[k] !== undefined ? wets[k] : 0.35;
     this.hum = null;
     if (k === 'level0') {
@@ -1067,6 +1068,10 @@ export class AudioEngine {
     } else if (k === 'level23') {
       this.wind = this.loop('wind', 0.18, { rate: 0.55, lp: 2200 });
       this.loop('brown', 0.05, { lp: 200 });
+    } else if (k === 'level37') {
+      // água morna batendo nos azulejos, eco longo
+      this.waterL = this.loop('water', 0.1, { rate: 0.7, lp: 1400, wet: 0.6 });
+      this.loop('brown', 0.03, { lp: 200 });
     } else if (k === 'level12') {
       // fluorescentes limpas, sem defeito: zumbido agudo e constante
       this.hum = this.loop('hum', 0.08, { rate: 1.5, lp: 4000, wet: 0.4 });
@@ -1240,6 +1245,10 @@ export class AudioEngine {
         else if (r < 0.5) this.play('creak', { gain: 0.05, rate: 0.6 + Math.random() * 0.3, pan, wet: 0.8 });
         else if (r < 0.58) this.play('groan', { gain: 0.05, rate: 0.5 + Math.random() * 0.2, pan, wet: 1.6 });
         if (this.wind) this.wind.gain.gain.setTargetAtTime((this.windK ?? 1) * (0.06 + Math.random() * 0.1), t, 2.5);
+      } else if (k === 'level37') {
+        const r = Math.random();
+        if (r < 0.45) this.play('drip', { gain: 0.12 + Math.random() * 0.1, rate: 0.7 + Math.random() * 0.6, pan, wet: 1.6 });
+        else if (r < 0.7) this.play('water', { gain: 0.05, rate: 1.2 + Math.random() * 0.4, pan, wet: 1.4 });
       } else if (k === 'level0_1') {
         const r = Math.random();
         if (r < 0.4) this.play('beep', { gain: 0.05, rate: 0.9 + Math.random() * 0.8, pan, wet: 0.9 });

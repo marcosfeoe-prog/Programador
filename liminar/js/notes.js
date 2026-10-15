@@ -93,4 +93,10 @@ export const NOTES = {
     'Os corredores são todos iguais. Contei os passos entre as lâmpadas: sempre 4,8 metros. Sempre.',
     'Tem um alçapão no chão em algum cruzamento. Lá embaixo o ar é quente e tem cheiro de asfalto.',
   ],
+  '37': [
+    'Fiquei três dias boiando aqui. Ninguém veio. Nada veio. Foi o melhor descanso da minha vida.',
+    'A cada poucos minutos a luz fica laranja, como fim de tarde. Dura um pouco e passa. Não tenha medo: é só o Verão.',
+    'Se a água ficar roxa, sente e espere. Não lute contra o sono. Ninguém se machucou com o roxo. Ainda.',
+    'Num canto escuro tem azulejos rachados que cedem quando você empurra. Atrás deles, um homem vende coisas por tempo.',
+  ],
 };

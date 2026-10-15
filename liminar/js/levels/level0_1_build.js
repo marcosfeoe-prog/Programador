@@ -265,7 +265,7 @@ export function buildShell(B, room, colliders) {
   const h = room.h;
   B.setRoom(room);
   // piso e teto (com recortes)
-  const floorRects = [{ x0: room.x0, x1: room.x1, z0: room.z0, z1: room.z1 }];
+  const floorRects = subtractRects({ x0: room.x0, x1: room.x1, z0: room.z0, z1: room.z1 }, room.floorHoles || []);
   for (const r of floorRects) B.rect(M.floor, [r.x0, 0, r.z0], [r.x1 - r.x0, 0, 0], [0, 0, r.z1 - r.z0], [0, 1, 0]);
   const ceil = subtractRects({ x0: room.x0, x1: room.x1, z0: room.z0, z1: room.z1 }, room.ceilHoles || []);
   for (const r of ceil) B.rect(M.ceil, [r.x0, h, r.z0], [r.x1 - r.x0, 0, 0], [0, 0, r.z1 - r.z0], [0, -1, 0]);

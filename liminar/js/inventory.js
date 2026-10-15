@@ -67,6 +67,78 @@ function icon(kind) {
     c.strokeStyle = '#ccc8bc';
     c.strokeRect(-12, -15, 24, 24);
     c.restore();
+  } else if (kind === 'kit') {
+    glow('rgba(255,90,90,0.25)');
+    c.fillStyle = '#e8e4dc';
+    c.fillRect(18, 30, 60, 44);
+    c.fillStyle = '#b8b2a6';
+    c.fillRect(38, 22, 20, 10);
+    c.fillStyle = '#d23a2e';
+    c.fillRect(42, 38, 12, 28);
+    c.fillRect(34, 46, 28, 12);
+  } else if (kind === 'pilha') {
+    glow('rgba(120,255,140,0.3)');
+    c.fillStyle = '#1d1d1f';
+    c.fillRect(34, 22, 28, 60);
+    c.fillStyle = '#3fd36b';
+    c.fillRect(34, 40, 28, 24);
+    c.fillStyle = '#c8c8c8';
+    c.fillRect(42, 14, 12, 8);
+    c.fillStyle = '#103018';
+    c.font = 'bold 13px sans-serif';
+    c.fillText('MAX', 37, 57);
+  } else if (kind === 'tenis') {
+    glow('rgba(200,200,255,0.2)');
+    c.fillStyle = '#3a4a6a';
+    c.beginPath();
+    c.moveTo(12, 64);
+    c.lineTo(16, 40);
+    c.lineTo(44, 38);
+    c.lineTo(58, 52);
+    c.lineTo(84, 58);
+    c.lineTo(86, 70);
+    c.lineTo(12, 70);
+    c.closePath();
+    c.fill();
+    c.fillStyle = '#eeeeee';
+    c.fillRect(12, 68, 74, 8);
+    c.strokeStyle = '#d8d8d8';
+    c.lineWidth = 2;
+    for (let i = 0; i < 4; i++) {
+      c.beginPath();
+      c.moveTo(26 + i * 7, 44);
+      c.lineTo(32 + i * 7, 52);
+      c.stroke();
+    }
+  } else if (kind === 'amuleto') {
+    glow('rgba(80,200,220,0.35)');
+    c.strokeStyle = '#9a8a5a';
+    c.lineWidth = 2;
+    c.beginPath();
+    c.moveTo(48, 6);
+    c.lineTo(48, 30);
+    c.stroke();
+    c.fillStyle = '#e8f4f2';
+    c.fillRect(30, 30, 36, 36);
+    c.fillStyle = '#3aa8a0';
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) if ((i + j) % 2 === 0) c.fillRect(32 + i * 11, 32 + j * 11, 10, 10);
+  } else if (kind === 'radio') {
+    glow('rgba(255,200,120,0.25)');
+    c.fillStyle = '#4a3a2a';
+    c.fillRect(20, 34, 56, 40);
+    c.fillStyle = '#c8b890';
+    c.beginPath();
+    c.arc(38, 54, 11, 0, TAU);
+    c.fill();
+    c.fillStyle = '#1a1a1a';
+    c.fillRect(54, 44, 16, 6);
+    c.fillRect(54, 56, 16, 6);
+    c.strokeStyle = '#888';
+    c.lineWidth = 2;
+    c.beginPath();
+    c.moveTo(66, 34);
+    c.lineTo(80, 10);
+    c.stroke();
   } else if (kind === 'fusivel') {
     glow('rgba(100,220,255,0.35)');
     c.fillStyle = '#b8c0c8';
@@ -157,6 +229,73 @@ export const ITEM_DEFS = {
       return false;
     },
   },
+  // itens da loja dos mercenários (Nível 37)
+  kit: {
+    name: 'Kit de primeiros socorros',
+    desc: 'Gaze, analgésicos e um bilhete escrito “calma”. Recupera muita sanidade de uma vez.',
+    action: 'Usar',
+    scope: 'game',
+    price: 3,
+    use: (g) => {
+      g.addSanity(60);
+      g.audio.play('paper', { gain: 0.4 });
+      g.hud.message('Você respira fundo enquanto faz o curativo. (+Sanidade)');
+      return true;
+    },
+  },
+  pilha: {
+    name: 'Pilha de longa duração',
+    desc: 'Enquanto estiver na mochila, a lanterna gasta metade da bateria.',
+    scope: 'game',
+    price: 4,
+    passive: (g) => {
+      g.batteryMul *= 0.5;
+    },
+  },
+  tenis: {
+    name: 'Tênis silencioso',
+    desc: 'Solado macio e gasto. Você corre por mais tempo e faz menos barulho: as criaturas ouvem menos.',
+    scope: 'game',
+    price: 5,
+    passive: (g) => {
+      g.staminaMul *= 0.6;
+      g.quietMul *= 0.5;
+    },
+  },
+  amuleto: {
+    name: 'Amuleto de azulejo',
+    desc: 'Um azulejo do Nível 37 num cordão. Enquanto estiver com você, a sanidade cai 40% mais devagar.',
+    scope: 'game',
+    price: 6,
+    passive: (g) => {
+      g.drainMul *= 0.6;
+    },
+  },
+  radio: {
+    name: 'Rádio de ondas curtas',
+    desc: 'Chia e às vezes fala. Usar sintoniza a direção e a distância do próximo objetivo.',
+    action: 'Sintonizar',
+    scope: 'game',
+    price: 3,
+    use: (g) => {
+      const L = g.level;
+      const t = L && (L.navTarget ? L.navTarget() : L.exit);
+      g.audio.play('radio', { gain: 0.35 });
+      if (!t) {
+        g.hud.message('O rádio só chia. Aqui não há para onde ir.', 4);
+        return false;
+      }
+      const P = g.player;
+      const dx = t.x - P.pos.x;
+      const dz = t.z - P.pos.z;
+      const d = Math.round(Math.hypot(dx, dz));
+      const ang = Math.atan2(dx * Math.cos(P.yaw) - dz * Math.sin(P.yaw), -dx * Math.sin(P.yaw) - dz * Math.cos(P.yaw));
+      const deg = (ang * 180) / Math.PI;
+      const dir = Math.abs(deg) < 25 ? 'em frente' : Math.abs(deg) > 155 ? 'atrás de você' : deg > 0 ? 'à sua direita' : 'à sua esquerda';
+      g.hud.message(`Uma voz no meio da estática: “…${d} metros… ${dir}…”`, 5);
+      return false;
+    },
+  },
   fusivel: { name: 'Fusível de plasma', desc: 'Zumbe e esquenta na mão. A engenheira Vega precisa de três.', scope: 'level' },
   chave: { name: 'Chave do quarto', desc: 'Chave antiga de hotel, com etiqueta de couro vermelho.', scope: 'level' },
   cartao: { name: 'Cartão de acesso', desc: '"NÍVEL 15 — MANUTENÇÃO". Abre as salas de máquinas com terminal.', scope: 'level' },
@@ -223,6 +362,12 @@ export class Inventory {
   }
 
   update(dt) {
+    // multiplicadores dos itens passivos (recalculados a cada quadro)
+    const g = this.game;
+    g.drainMul = 1;
+    g.batteryMul = 1;
+    g.staminaMul = 1;
+    g.quietMul = 1;
     for (const it of this.items) {
       const d = ITEM_DEFS[it.id];
       if (d && d.passive) d.passive(this.game, dt, it);

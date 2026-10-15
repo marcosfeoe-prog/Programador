@@ -121,7 +121,7 @@ export const FILTERS = [
 // Os níveis, na ordem em que são visitados. `key` identifica a classe do nível
 // e os bilhetes; `num` é o número canônico (10.1 é um subnível do 10).
 // Ordem em que os níveis são visitados (as chaves de LEVELS; secretos e partes ficam de fora).
-export const ORDER = ['0', '1', '4', '5', '9', '10', '10.1', '11', '12', '15', '23', '88'];
+export const ORDER = ['0', '1', '4', '5', '9', '10', '10.1', '11', '12', '15', '23', '37', '88'];
 
 // Posição de um nível na ordem (partes contam como o nível principal; secretos, como o pai).
 export function orderPos(info) {
@@ -294,6 +294,16 @@ export const LEVELS = [
     desc: 'Branco. Só branco.',
     objective: 'Espere.',
     hint: 'Alguma coisa vai aparecer.',
+  },
+  {
+    key: '37',
+    num: 37,
+    name: 'Sublimidade',
+    tag: 'Nível 37',
+    danger: 'Classe 0 · Seguro · Desprovido de entidades',
+    desc: 'Um labirinto infinito de piscinas de azulejos brancos, água morna e luz que entra em ângulos impossíveis.',
+    objective: 'Descanse. Explore as piscinas.',
+    hint: 'Três saídas: uma escada para baixo, uma porta de manutenção e uma porta futurista.',
   },
 ];
 
