@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#0e1116" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="description" content="Jogo de corrida 3D no navegador com física de suspensão e pneus, carros detalhados e adversários controlados pelo computador." />
+    <title>Corrida 3D</title>
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/style.css" />
+    <script type="importmap">
+      { "imports": { "three": "../vendor/three/three.module.min.js" } }
+    </script>
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+
+    <!-- HUD -->
+    <div id="hud" class="hidden">
+      <div id="hud-left" class="panel">
+        <div class="big"><span id="hud-pos">1º</span><small id="hud-pos-of">/6</small></div>
+        <div id="hud-lap">Volta 1/3</div>
+        <ol id="hud-board"></ol>
+      </div>
+      <div id="hud-times" class="panel">
+        <div><span>Tempo</span><b id="t-total">0:00.000</b></div>
+        <div><span>Volta</span><b id="t-lap">0:00.000</b></div>
+        <div><span>Melhor</span><b id="t-best">—</b></div>
+      </div>
+      <div id="lights"><i></i><i></i><i></i><i></i><i></i></div>
+      <div id="msg"></div>
+      <div id="wrongway" class="hidden">⚠ CONTRAMÃO</div>
+      <canvas id="minimap" width="200" height="200"></canvas>
+      <canvas id="speedo" width="240" height="240"></canvas>
+      <div id="hud-btns">
+        <button id="btn-cam" title="Câmera (C)">🎥</button>
+        <button id="btn-reset" title="Recolocar na pista (R)">↺</button>
+        <button id="btn-pause" title="Pausa (P / Esc)">❚❚</button>
+      </div>
+      <div id="tips" class="panel">
+        <b>↑/W</b> acelerar · <b>↓/S</b> frear/ré · <b>←→/AD</b> direção · <b>Espaço</b> freio de mão · <b>C</b> câmera · <b>R</b> recolocar · <b>T</b> controle de tração · <b>M</b> som · <b>P</b> pausa
+      </div>
+    </div>
+
+    <!-- Controles de toque -->
+    <div id="touch" class="hidden">
+      <div class="tleft">
+        <button data-touch="left">◀</button>
+        <button data-touch="right">▶</button>
+      </div>
+      <div class="tright">
+        <button data-touch="hand" class="small">FREIO<br />DE MÃO</button>
+        <button data-touch="brake">FREIO</button>
+        <button data-touch="gas" class="gas">ACELERAR</button>
+      </div>
+    </div>
+
+    <!-- Menu -->
+    <div id="menu">
+      <div class="menu-box">
+        <h1>CORRIDA <span>3D</span></h1>
+        <p class="sub">Física de suspensão e pneus · carros detalhados · 2,2 km de circuito</p>
+        <h3>Carro</h3>
+        <div id="car-list" class="cards"></div>
+        <h3>Cor</h3>
+        <div id="color-list" class="swatches"></div>
+        <div class="row">
+          <div>
+            <h3>Voltas</h3>
+            <div class="seg" id="opt-laps"></div>
+          </div>
+          <div>
+            <h3>Adversários</h3>
+            <div class="seg" id="opt-opp"></div>
+          </div>
+          <div>
+            <h3>Dificuldade</h3>
+            <div class="seg" id="opt-diff"></div>
+          </div>
+        </div>
+        <button id="btn-start" class="primary">CORRER ▶</button>
+        <p class="help" id="help-keys">
+          Teclado: <b>↑/W</b> acelerar, <b>↓/S</b> frear e ré, <b>←→/AD</b> direção, <b>Espaço</b> freio de mão,
+          <b>C</b> câmera, <b>R</b> recolocar na pista, <b>T</b> controle de tração. Também funciona com controle (gamepad) e toque.
+        </p>
+      </div>
+    </div>
+
+    <!-- Pausa -->
+    <div id="pause" class="overlay hidden">
+      <div class="menu-box small">
+        <h2>Pausa</h2>
+        <button id="btn-resume" class="primary">Continuar</button>
+        <button id="btn-restart">Reiniciar corrida</button>
+        <button id="btn-tc">Controle de tração: ligado</button>
+        <button id="btn-sound">Som: ligado</button>
+        <button id="btn-menu">Menu principal</button>
+      </div>
+    </div>
+
+    <!-- Resultado -->
+    <div id="results" class="overlay hidden">
+      <div class="menu-box">
+        <h2 id="res-title">Resultado</h2>
+        <table id="res-table"></table>
+        <div class="btnrow">
+          <button id="btn-again" class="primary">Correr de novo</button>
+          <button id="btn-menu2">Menu</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="loading">Carregando…</div>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>

@@ -154,3 +154,13 @@ Segundo jogo do repositório: exploração em primeira pessoa pelos **Níveis 0,
 noturna, câmera térmica…), qualidade gráfica **Baixa, Média, Alta e Ultra** e
 controles feitos para **celular**. Com o servidor rodando (`npm start`), abra
 `http://localhost:8080/liminar/`. Detalhes em [`liminar/README.md`](liminar/README.md).
+
+---
+
+# Corrida 3D (pasta `corrida/`)
+
+Jogo de corrida com **física de carro** (suspensão nas 4 rodas, pneus com deriva e
+círculo de atrito, motor e câmbio, aerodinâmica e colisões), **carros 3D detalhados**
+gerados proceduralmente (3 modelos, 8 cores) e adversários controlados pelo computador
+num circuito de 2,2 km. Com o servidor rodando (`npm start`), abra
+`http://localhost:8080/corrida/`. Detalhes em [`corrida/README.md`](corrida/README.md).
