@@ -583,6 +583,27 @@ export class Level0 extends GridLevel {
         u.uRepY.value = (this.H - 0.06) / T;
       }
     }
+    // Carpete e forro fotográficos (fotos enviadas pelo jogador, tratadas para
+    // repetir sem emenda); se não carregarem, ficam as texturas desenhadas por código.
+    if (!this.photoTried2) {
+      this.photoTried2 = true;
+      const [cm, cn, km, kn] = await Promise.all([
+        loadPhotoTex('assets/tex/l0_carpet.jpg'),
+        loadPhotoTex('assets/tex/l0_carpet_n.jpg', { srgb: false }),
+        loadPhotoTex('assets/tex/l0_ceiling.jpg'),
+        loadPhotoTex('assets/tex/l0_ceiling_n.jpg', { srgb: false }),
+      ]);
+      this.photos = (this.photos || []).concat([cm, cn, km, kn].filter(Boolean));
+      if (cm) {
+        this.mats.floor.map = cm;
+        if (cn) this.mats.floor.normalMap = cn;
+        this.mats.floor.normalScale = 0.9;
+      }
+      if (km) {
+        this.mats.ceil.map = km;
+        if (kn) this.mats.ceil.normalMap = kn;
+      }
+    }
     return super.preload(px, pz, progress);
   }
 
