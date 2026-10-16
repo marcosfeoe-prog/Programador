@@ -24,6 +24,7 @@ import { Level43 } from './levels/level43.js';
 import { Level44 } from './levels/level44.js';
 import { Level45 } from './levels/level45.js';
 import { Level14 } from './levels/level14.js';
+import { Level16 } from './levels/level16.js';
 import { Level12 } from './levels/level12.js';
 import { Level12Street } from './levels/level12_street.js';
 import { Level12White } from './levels/level12_white.js';
@@ -65,6 +66,7 @@ const LEVEL_CLASSES = {
   44: Level44,
   45: Level45,
   14: Level14,
+  16: Level16,
   12: Level12,
   '12.2': Level12Street,
   '12.3': Level12White,

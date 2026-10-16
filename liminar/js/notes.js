@@ -119,6 +119,11 @@ export const NOTES = {
     'Atrás das pedras do Grande Tanque tem uma fresta. No fundo, uma porta molhada. Do outro lado ouvi ondas. ONDAS.',
     'No laboratório tem um computador que abre a jaula da quarentena. Lá dentro alguém deixou um rastro azul até uma porta aberta.',
   ],
+  '16': [
+    'Aqui é tão bom que dá medo de ir embora. Talvez seja essa a armadilha.',
+    'Depois de uns 250 passos grandes a vista embaça. Continue. Depois de 400, o céu fica rosa e aparece um planeta. Não pare para olhar demais.',
+    'Existe uma árvore só. Ela brilha e falha como uma foto velha. Quando encostei nela, ela me puxou.',
+  ],
   '14': [
     'Não confie no cheiro doce. Quanto mais bonito fica, mais longe de casa você está.',
     'Entrei em todas as casas. Nenhuma tem nada. Nem um prego no chão. Como se ninguém tivesse terminado de imaginá-las.',

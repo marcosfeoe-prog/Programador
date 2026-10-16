@@ -1005,12 +1005,40 @@ export class AudioEngine {
     const g = ctx.createGain();
     g.gain.value = 0;
     g.gain.setTargetAtTime(gain, ctx.currentTime + 0.2, fade);
-    s.connect(g).connect(this.music);
+    // caminho limpo + caminho distorcido (saturado e abafado), misturados por setFx
+    const dry = ctx.createGain();
+    dry.gain.value = 1;
+    const fx = ctx.createGain();
+    fx.gain.value = 0;
+    const sh = ctx.createWaveShaper();
+    const curve = new Float32Array(1024);
+    for (let i = 0; i < 1024; i++) {
+      const x = (i / 1023) * 2 - 1;
+      curve[i] = Math.tanh(x * 6) * 0.6;
+    }
+    sh.curve = curve;
+    sh.oversample = this.lowCost ? 'none' : '2x';
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 1400;
+    s.connect(g);
+    g.connect(dry).connect(this.music);
+    g.connect(sh).connect(lp).connect(fx).connect(this.music);
     const w = ctx.createGain();
     w.gain.value = 0.25;
     g.connect(w).connect(this.wet);
     s.start();
-    const h = { src: s, gain: g, base: gain };
+    const h = {
+      src: s,
+      gain: g,
+      base: gain,
+      // k: 0 limpo → 1 distorcido
+      setFx: (k, tc = 1) => {
+        dry.gain.setTargetAtTime(1 - k * 0.75, ctx.currentTime, tc);
+        fx.gain.setTargetAtTime(k * 0.55, ctx.currentTime, tc);
+      },
+      setRate: (r, tc = 1) => s.playbackRate.setTargetAtTime(r, ctx.currentTime, tc),
+    };
     this.loops.push(h);
     return h;
   }
@@ -1091,7 +1119,7 @@ export class AudioEngine {
     this.windK = 1;
     this.setReverb(look.reverb || 1.5);
     const k = this.kind;
-    const wets = { level14: 0.3, level45: 0.35, level43: 0.55, level44: 0.3, level34: 0.6, level35: 0.5, level8: 0.7, level9_5: 0.1, level2: 0.35, level3: 0.45, level37: 0.75, level12: 0.45, level12_2: 0.15, level12_3: 0.9, level88: 0.12, level0_1: 0.4, level10: 0.08, level11: 0.2, level1: 0.55, level9: 0.12, level10_1: 0.18, level23: 0.3, level15: 0.45, level5: 0.4 };
+    const wets = { level16: 0.2, level14: 0.3, level45: 0.35, level43: 0.55, level44: 0.3, level34: 0.6, level35: 0.5, level8: 0.7, level9_5: 0.1, level2: 0.35, level3: 0.45, level37: 0.75, level12: 0.45, level12_2: 0.15, level12_3: 0.9, level88: 0.12, level0_1: 0.4, level10: 0.08, level11: 0.2, level1: 0.55, level9: 0.12, level10_1: 0.18, level23: 0.3, level15: 0.45, level5: 0.4 };
     this.wet.gain.value = wets[k] !== undefined ? wets[k] : 0.35;
     this.hum = null;
     if (k === 'level0') {
@@ -1132,6 +1160,9 @@ export class AudioEngine {
       this.machineL = this.loop('machine', 0.06, { rate: 0.5, lp: 500, wet: 0.5 });
       this.waterL = this.loop('water', 0.07, { rate: 0.8, lp: 1200, wet: 0.6 });
       this.loop('brown', 0.04, { lp: 200 });
+    } else if (k === 'level16') {
+      // campos: só um vento morno e suave
+      this.wind = this.loop('wind', 0.035, { rate: 0.35, lp: 900, wet: 0.2 });
     } else if (k === 'level14') {
       // floresta: vento morno nas copas
       this.wind = this.loop('wind', 0.05, { rate: 0.45, lp: 1200, wet: 0.3 });
@@ -1353,6 +1384,8 @@ export class AudioEngine {
         const r = Math.random();
         if (r < 0.4) this.play('drip', { gain: 0.1, rate: 0.9 + Math.random() * 0.5, pan, wet: 1.4 });
         else if (r < 0.55) this.play('water', { gain: 0.05, rate: 1.6, pan, wet: 1.2 });
+      } else if (k === 'level16') {
+        if (Math.random() < 0.15) this.play('ding', { gain: 0.025, rate: 1.5 + Math.random(), pan, wet: 1.5 });
       } else if (k === 'level14') {
         const r = Math.random();
         if (r < 0.2) this.play('creak', { gain: 0.03, rate: 0.5 + Math.random() * 0.3, pan, wet: 1.0 });

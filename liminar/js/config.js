@@ -121,7 +121,7 @@ export const FILTERS = [
 // Os níveis, na ordem em que são visitados. `key` identifica a classe do nível
 // e os bilhetes; `num` é o número canônico (10.1 é um subnível do 10).
 // Ordem em que os níveis são visitados (as chaves de LEVELS; secretos e partes ficam de fora).
-export const ORDER = ['0', '1', '2', '3', '4', '5', '8', '9', '10', '10.1', '11', '12', '14', '15', '23', '34', '35', '37', '43', '44', '45', '88'];
+export const ORDER = ['0', '1', '2', '3', '4', '5', '8', '9', '10', '10.1', '11', '12', '14', '15', '16', '23', '34', '35', '37', '43', '44', '45', '88'];
 
 // Posição de um nível na ordem (partes contam como o nível principal; secretos, como o pai).
 export function orderPos(info) {
@@ -408,6 +408,16 @@ export const LEVELS = [
     desc: 'Uma floresta de árvores vermelhas sob um brilho roxo intenso. Flores que brilham, uma trilha de terra e casas abertas, totalmente vazias. Uma música toca de lugar nenhum.',
     objective: 'Siga a trilha até a casa da porta negra.',
     hint: 'A saída fica a 300 metros, no fim da trilha.',
+  },
+  {
+    key: '16',
+    num: 16,
+    name: 'Mundo Dreamcore',
+    tag: 'Nível 16',
+    danger: 'Classe 0 · Seguro? · Sem entidades',
+    desc: 'Campos abertos e macios, céu pastel e montanhas cor-de-rosa que nunca acabam. Coisas que não deveriam estar ali — e que mudam conforme você avança.',
+    objective: 'Atravesse os campos até a árvore que brilha.',
+    hint: 'A saída fica a mais de 500 metros. Não acredite em tudo o que você vê.',
   },
 ];
 
