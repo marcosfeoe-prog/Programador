@@ -22,7 +22,7 @@ em tela cheia e na horizontal).
 
 ## Os níveis (V2)
 
-Ordem: **0 → 1 → 2 → 3 → 4 → 5 → 8 → 9 → 10 → 10.1 → 11 → 12 → 15 → 23 → 34 → 35 → 37 → 43 → 44 → 45 → 88**, mais dois subníveis secretos (**0.1** e **9.5**). Todos podem ser escolhidos no menu **Níveis** (os secretos só aparecem depois de descobertos).
+Ordem: **0 → 1 → 2 → 3 → 4 → 5 → 8 → 9 → 10 → 10.1 → 11 → 12 → 14 → 15 → 23 → 34 → 35 → 37 → 43 → 44 → 45 → 88**, mais dois subníveis secretos (**0.1** e **9.5**). Todos podem ser escolhidos no menu **Níveis** (os secretos só aparecem depois de descobertos).
 
 | Nível | Nome | Como é | Objetivo / saída |
 |---|---|---|---|
@@ -40,7 +40,8 @@ Ordem: **0 → 1 → 2 → 3 → 4 → 5 → 8 → 9 → 10 → 10.1 → 11 → 
 | **10.1** | Lago dos Cadáveres | Lago escuro quase em preto e branco, árvores secas, juncos; água rasa drena sanidade, a funda não deixa passar. Sem entidades. | Siga a margem até o píer → entre no barco |
 | **11** | Cidade Sem Fim | Metrópole deserta ao entardecer, semáforos funcionando. | Atenda o orelhão |
 | **12** | Matrix | Três áreas. (1) Salinha branca com mesa, cadeira e uma porta "trancada"; do outro lado, corredores brancos intermináveis — filtros de gravação (VHS, câmera, CCTV) falham aqui. (2) Rua deserta sob uma **lua vermelha** enorme e brilho vermelho intenso. (3) O Branco: uma **cena** mostra o boneco do jogador pela primeira vez; depois, só branco infinito, até que surge uma **porta com erros**. Sem entidades. | Abra a porta → passagem no chão → porta branca aberta → espere a porta com erros |
-| **15** | Os Salões Futuristas | Corredores brancos, trechos totalmente escuros, salas de máquinas atrás de vidro grosso. Sem entidades. | Cartão de acesso → religue 3 terminais → abra a comporta |
+| **14** | O Paraíso Doente | Uma floresta de **árvores vermelhas** sob um **brilho roxo intenso**: flores que brilham, capim roxo, vaga-lumes e folhas caindo. Uma **trilha** de terra leva **300 m** até a saída; pelo caminho, **casas abertas e totalmente vazias**. Uma **música** toca de lugar nenhum ("apathy (slowed)", de neheart) e fica mais lenta perto da porta negra. Sem entidades. | Siga a trilha até a casa da **porta negra** |
+| **15** | Os Salões Futuristas | Corredores brancos, trechos totalmente escuros, salas de máquinas atrás de vidro grosso. Começa com o andarilho **acordando no chão** e, pela primeira vez, **falando sozinho** (o motivo disso tudo, se isso vai ter fim). Sem entidades. | Cartão de acesso → religue 3 terminais → abra a comporta |
 | **23** | O Jardim Petrificado | Árvores petrificadas entrelaçadas, musgo, névoa e feixes de luz. Sem entidades. | Chegue à Base Seedling e descanse no catre |
 | **34** | Sistema de Esgoto | Túneis de esgoto sem fim, **tijolo em cima e pedra embaixo**, água amarelada parada (anda-se mais devagar), quase sem luz e com pilha na lanterna. Um dos níveis mais perigosos: **Sorridentes** (apague a lanterna e olhe para o chão para ele sumir), **Cães de caça**, bandos de **Ratos da Morte** e a silhueta de um suposto **Ladrão de Pele**. Áreas diferentes: esgoto comum, trechos **decaídos** (paredes desmoronando), trechos onde as paredes **mudam de cor** e trechos **sem teto**, sob um **céu esverdeado**. A Água de Amêndoa daqui está **contaminada**. | Ache a **Sala de Junção** (dois túneis se cruzam em volta de um poço) → mergulhe até o fundo |
 | **35** | Um Estacionamento Vazio | Garagem enorme de concreto com **seis andares** (P1–P5 e o terraço), ligados por rampas. Luz fraca e quente, com **luzes verdes e azuis** brilhando baixinho; muros no perímetro e um **abismo escuro** além deles. Carros raros — entrar num deles tem **efeitos variados**. Uma única entidade: uma **criatura enorme e rara** que surge nos cantos escuros e **só persegue quem corre** (e é muito rápida). | Suba as rampas até o terraço → ao chegar perto da saída, o terraço **se enche de carros** sem motorista, que aceleram se você passar na frente → escada de saída |
@@ -184,6 +185,7 @@ liminar/
   js/levels/level43*.js   Mundo Aquático (tanques, peixes, mar secreto)
   js/levels/level44.js    Corredores Desfeitos (decaimento, portas, o Vazio)
   js/levels/level45.js    Escritório Esquecido (salas, cartão, porta de metal)
+  js/levels/level14.js    Paraíso Doente (floresta vermelha, trilha, casas, porta negra, música)
   js/levels/level34*.js   Sistema de Esgoto (áreas, céu verde, Ratos da Morte)
   js/levels/level35*.js   Estacionamento (andares, rampas, criatura, carros)
   js/levels/wake.js       cena de despertar reutilizável
@@ -196,5 +198,5 @@ liminar/
   js/notes.js         textos dos bilhetes
 ```
 
-Parâmetros úteis para testes: `?level=0..24&autostart` (10 = subnível 0.1, 11 = Nível 88, 12–14 = áreas do Nível 12, 15 = Nível 37, 16 = Nível 2, 17 = Nível 3, 18 = Nível 8, 19 = subnível 9.5, 20 = Nível 34, 21 = Nível 35, 22 = Nível 43, 23 = Nível 44, 24 = Nível 45) (entra direto no nível),
+Parâmetros úteis para testes: `?level=0..25&autostart` (10 = subnível 0.1, 11 = Nível 88, 12–14 = áreas do Nível 12, 15 = Nível 37, 16 = Nível 2, 17 = Nível 3, 18 = Nível 8, 19 = subnível 9.5, 20 = Nível 34, 21 = Nível 35, 22 = Nível 43, 23 = Nível 44, 24 = Nível 45, 25 = Nível 14) (entra direto no nível),
 `?q=ultra`, `?filter=vhs`, `?seed=7`, `?touch` (força os controles de toque).

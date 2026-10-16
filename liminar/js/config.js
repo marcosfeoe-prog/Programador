@@ -121,7 +121,7 @@ export const FILTERS = [
 // Os níveis, na ordem em que são visitados. `key` identifica a classe do nível
 // e os bilhetes; `num` é o número canônico (10.1 é um subnível do 10).
 // Ordem em que os níveis são visitados (as chaves de LEVELS; secretos e partes ficam de fora).
-export const ORDER = ['0', '1', '2', '3', '4', '5', '8', '9', '10', '10.1', '11', '12', '15', '23', '34', '35', '37', '43', '44', '45', '88'];
+export const ORDER = ['0', '1', '2', '3', '4', '5', '8', '9', '10', '10.1', '11', '12', '14', '15', '23', '34', '35', '37', '43', '44', '45', '88'];
 
 // Posição de um nível na ordem (partes contam como o nível principal; secretos, como o pai).
 export function orderPos(info) {
@@ -287,7 +287,7 @@ export const LEVELS = [
     key: '12.3',
     num: 12,
     part: '12',
-    next: '15',
+    next: '14',
     name: 'Matrix — O Branco',
     tag: 'Nível 12 · Área 3',
     danger: 'Classe ? · Nada',
@@ -398,6 +398,16 @@ export const LEVELS = [
     desc: 'Corredores longos de um escritório abandonado: paredes cinzas, carpete branco, mesas vazias e lâmpadas fluorescentes que zumbem sem parar.',
     objective: 'Encontre o cartão de acesso.',
     hint: 'O cartão abre a porta de manutenção de metal. Procure nas salas, não nos corredores.',
+  },
+  {
+    key: '14',
+    num: 14,
+    name: 'O Paraíso Doente',
+    tag: 'Nível 14',
+    danger: 'Classe 1 · Seguro? · Sem entidades',
+    desc: 'Uma floresta de árvores vermelhas sob um brilho roxo intenso. Flores que brilham, uma trilha de terra e casas abertas, totalmente vazias. Uma música toca de lugar nenhum.',
+    objective: 'Siga a trilha até a casa da porta negra.',
+    hint: 'A saída fica a 300 metros, no fim da trilha.',
   },
 ];
 

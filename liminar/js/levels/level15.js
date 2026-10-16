@@ -16,6 +16,7 @@ import { ledMaterial, lensMaterial, glossMaterial, numMaterial, envFollowsLightm
 import { fillMachine, fillWhite, fillHatch, paintDigit, sidePoint, vquad } from './level15_rooms.js';
 import { cove, pipes, slit, kick, glassFrame, doorFrame, threshold, buildLamp, fp } from './level15_hall.js';
 import { doorLeaf, slidingDoor, readerLed, terminalFx, hatchFx } from './level15_dyn.js';
+import { standardWake } from './wake.js';
 
 const B = 5; // células por quarteirão
 const MDOOR = 8; // aresta própria: porta de metal reforçada (bloqueia a luz)
@@ -746,6 +747,11 @@ export class Level15 extends GridLevel {
     const g = this.game;
     const t = g.time;
     this.ledMat.uniforms.uTime.value = t;
+    if (this.wake === undefined) this.startWake();
+    if (this.wake.active) {
+      this.wake.update(dt);
+      return;
+    }
     // rotores, pistões e exaustores
     for (const ch of this.chunks.values()) {
       if (!ch.dyn) continue;
@@ -777,6 +783,43 @@ export class Level15 extends GridLevel {
       this.soundT = 0.5;
       this.updateSounds(player);
     }
+  }
+
+  // O andarilho acorda no chão do corredor branco e, pela primeira vez, fala sozinho.
+  startWake() {
+    const g = this.game;
+    const fromForest = g.prevKey === '14';
+    const s = this.spawn;
+    this.wake = standardWake(
+      this,
+      s.x,
+      s.z,
+      s.yaw,
+      [
+        [1.0, fromForest ? 'O roxo sumiu. As árvores vermelhas sumiram. A música parou no meio de uma nota.' : 'Branco. Uma luz fria, sem sombra.'],
+        [4.4, 'Chão liso e gelado. Cheiro de metal e de ar filtrado.'],
+        [7.4, 'Em algum lugar, máquinas batendo devagar, como um coração enorme.'],
+        [10.2, ''],
+      ],
+      {
+        sound: 'breath',
+        done: () => {
+          g.hud.say(
+            [
+              fromForest ? '…De novo. Eu fechei os olhos numa floresta e abri aqui.' : '…De novo. Eu fechei os olhos num lugar e abri em outro.',
+              'Por que eu? O que foi que eu fiz pra parar aqui dentro?',
+              'Toda porta que eu abro me leva mais pro fundo. Nenhuma me leva pra casa.',
+              'Talvez não exista motivo nenhum. Talvez eu só tenha tropeçado no lugar errado da realidade.',
+              '',
+              'Isso vai ter fim? …Tem que ter. Alguém escreveu aqueles bilhetes. Alguém saiu.',
+              'Ou ninguém saiu… e os bilhetes são tudo o que sobrou deles.',
+              'Chega. Se eu parar de andar, isso aqui me engole. Continua.',
+            ],
+            () => g.hud.objective('Ache o cartão de acesso, religue os três terminais e abra a comporta.', 7),
+          );
+        },
+      },
+    );
   }
 
   tickHatch(dt, t) {
@@ -823,6 +866,7 @@ export class Level15 extends GridLevel {
   }
 
   interactable(player) {
+    if (this.wake && this.wake.active) return null;
     const p = player.pos;
     const g = this.game;
     const c = this.cell;
@@ -1001,6 +1045,7 @@ export class Level15 extends GridLevel {
 
   dispose() {
     super.dispose();
+    if (this.wake) this.wake.dispose();
     for (const m of [this.panelMat, this.glassMat, this.ledMat, this.numMat, this.glossMat, this.signMat]) m.dispose();
   }
 }

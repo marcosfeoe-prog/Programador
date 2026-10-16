@@ -155,6 +155,7 @@ export class HUD {
   }
 
   setLevel(info) {
+    this.stopSay();
     $('lvl-tag').textContent = info.tag.toUpperCase();
     $('lvl-name').textContent = info.name;
   }
@@ -171,6 +172,58 @@ export class HUD {
     m.textContent = text;
     m.classList.add('on');
     this.msgT = dur;
+  }
+
+  // Fala do próprio andarilho: legenda com nome, letra por letra.
+  // lines: textos ('' = pausa); done: chamado no fim.
+  say(lines, done) {
+    let el = $('dlg');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'dlg';
+      el.innerHTML = '<div class="who">VOCÊ</div><div class="txt"></div>';
+      this.el.appendChild(el);
+    }
+    this.dlg = { lines, i: -1, done };
+    this.nextLine();
+  }
+
+  nextLine() {
+    const d = this.dlg;
+    const el = $('dlg');
+    d.i++;
+    if (d.i >= d.lines.length) {
+      el.classList.remove('on');
+      this.dlg = null;
+      if (d.done) d.done();
+      return;
+    }
+    const line = d.lines[d.i];
+    d.text = line;
+    d.t = 0;
+    d.shown = -1;
+    d.dur = line ? 2.2 + line.length * 0.058 : 1.4;
+    el.querySelector('.txt').textContent = '';
+    el.classList.toggle('on', !!line);
+    if (line) this.game.audio.play('breath', { gain: 0.06, rate: 1.1, wet: 0.1 });
+  }
+
+  stopSay() {
+    const el = $('dlg');
+    if (el) el.classList.remove('on');
+    this.dlg = null;
+  }
+
+  updateSay(dt) {
+    const d = this.dlg;
+    if (!d) return;
+    d.t += dt;
+    const n = Math.min(d.text.length, Math.floor(d.t * 34));
+    if (n !== d.shown) {
+      d.shown = n;
+      $('dlg').querySelector('.txt').textContent = d.text.slice(0, n);
+    }
+    if (d.t >= d.dur) this.nextLine();
   }
 
   prompt(label) {
@@ -307,6 +360,7 @@ export class HUD {
   }
 
   update(dt, st) {
+    this.updateSay(dt);
     if (this.msgT > 0) {
       this.msgT -= dt;
       if (this.msgT <= 0) $('msg').classList.remove('on');

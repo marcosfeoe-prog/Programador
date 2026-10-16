@@ -979,6 +979,42 @@ export class AudioEngine {
     if (this.ready && !this.B.jazz) this.B.jazz = this.buf(makeJazz());
   }
 
+  // Carrega uma faixa de música de um arquivo (decodificada uma vez só).
+  async loadTrack(name, url, timeout = 15000) {
+    if (!this.ready || this.B[name]) return !!this.B[name];
+    try {
+      const ctl = new AbortController();
+      const tm = setTimeout(() => ctl.abort(), timeout);
+      const res = await fetch(url, { signal: ctl.signal });
+      const data = await res.arrayBuffer();
+      clearTimeout(tm);
+      this.B[name] = await this.ctx.decodeAudioData(data);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Toca uma faixa carregada em laço pelo canal de música (para na troca de nível).
+  startTrack(name, gain = 0.5, fade = 2) {
+    if (!this.ready || !this.B[name]) return null;
+    const ctx = this.ctx;
+    const s = ctx.createBufferSource();
+    s.buffer = this.B[name];
+    s.loop = true;
+    const g = ctx.createGain();
+    g.gain.value = 0;
+    g.gain.setTargetAtTime(gain, ctx.currentTime + 0.2, fade);
+    s.connect(g).connect(this.music);
+    const w = ctx.createGain();
+    w.gain.value = 0.25;
+    g.connect(w).connect(this.wet);
+    s.start();
+    const h = { src: s, gain: g, base: gain };
+    this.loops.push(h);
+    return h;
+  }
+
   // Fonte posicional em laço (ou única) num ponto do mundo. Devolve um controle
   // com setPos/setGain/stop; é parado automaticamente na troca de nível.
   positional(name, x, y, z, { gain = 1, ref = 3, rolloff = 1.2, loop = true, rate = 1, wet = 0.4, offset = 0 } = {}) {
@@ -1055,7 +1091,7 @@ export class AudioEngine {
     this.windK = 1;
     this.setReverb(look.reverb || 1.5);
     const k = this.kind;
-    const wets = { level45: 0.35, level43: 0.55, level44: 0.3, level34: 0.6, level35: 0.5, level8: 0.7, level9_5: 0.1, level2: 0.35, level3: 0.45, level37: 0.75, level12: 0.45, level12_2: 0.15, level12_3: 0.9, level88: 0.12, level0_1: 0.4, level10: 0.08, level11: 0.2, level1: 0.55, level9: 0.12, level10_1: 0.18, level23: 0.3, level15: 0.45, level5: 0.4 };
+    const wets = { level14: 0.3, level45: 0.35, level43: 0.55, level44: 0.3, level34: 0.6, level35: 0.5, level8: 0.7, level9_5: 0.1, level2: 0.35, level3: 0.45, level37: 0.75, level12: 0.45, level12_2: 0.15, level12_3: 0.9, level88: 0.12, level0_1: 0.4, level10: 0.08, level11: 0.2, level1: 0.55, level9: 0.12, level10_1: 0.18, level23: 0.3, level15: 0.45, level5: 0.4 };
     this.wet.gain.value = wets[k] !== undefined ? wets[k] : 0.35;
     this.hum = null;
     if (k === 'level0') {
@@ -1096,6 +1132,10 @@ export class AudioEngine {
       this.machineL = this.loop('machine', 0.06, { rate: 0.5, lp: 500, wet: 0.5 });
       this.waterL = this.loop('water', 0.07, { rate: 0.8, lp: 1200, wet: 0.6 });
       this.loop('brown', 0.04, { lp: 200 });
+    } else if (k === 'level14') {
+      // floresta: vento morno nas copas
+      this.wind = this.loop('wind', 0.05, { rate: 0.45, lp: 1200, wet: 0.3 });
+      this.loop('brown', 0.025, { lp: 200 });
     } else if (k === 'level45') {
       // escritório: reatores fluorescentes e o ar-condicionado central
       this.hum = this.loop('hum', 0.08, { rate: 1.0, lp: 3500, wet: 0.3 });
@@ -1313,6 +1353,11 @@ export class AudioEngine {
         const r = Math.random();
         if (r < 0.4) this.play('drip', { gain: 0.1, rate: 0.9 + Math.random() * 0.5, pan, wet: 1.4 });
         else if (r < 0.55) this.play('water', { gain: 0.05, rate: 1.6, pan, wet: 1.2 });
+      } else if (k === 'level14') {
+        const r = Math.random();
+        if (r < 0.2) this.play('creak', { gain: 0.03, rate: 0.5 + Math.random() * 0.3, pan, wet: 1.0 });
+        else if (r < 0.28) this.play('whisper', { gain: 0.025, rate: 0.7, pan, wet: 1.6 });
+        else if (r < 0.36) this.play('crow', { gain: 0.04, rate: 0.6, pan, wet: 1.4 });
       } else if (k === 'level45') {
         const r = Math.random();
         if (r < 0.25) this.play('crackle', { gain: 0.03, rate: 1.4, pan, wet: 0.8 });

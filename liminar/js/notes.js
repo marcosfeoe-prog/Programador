@@ -119,6 +119,11 @@ export const NOTES = {
     'Atrás das pedras do Grande Tanque tem uma fresta. No fundo, uma porta molhada. Do outro lado ouvi ondas. ONDAS.',
     'No laboratório tem um computador que abre a jaula da quarentena. Lá dentro alguém deixou um rastro azul até uma porta aberta.',
   ],
+  '14': [
+    'Não confie no cheiro doce. Quanto mais bonito fica, mais longe de casa você está.',
+    'Entrei em todas as casas. Nenhuma tem nada. Nem um prego no chão. Como se ninguém tivesse terminado de imaginá-las.',
+    'A música fica mais lenta perto da casa da porta negra. Atrás dela não tem casa nenhuma — só escuro. Eu entrei mesmo assim.',
+  ],
   '45': [
     'O cartão de manutenção fica sempre numa das salas, em cima de uma mesa. Nunca no corredor.',
     'As alas de tijolo são mais antigas. As lâmpadas lá quase não funcionam.',
