@@ -119,6 +119,11 @@ export const NOTES = {
     'Atrás das pedras do Grande Tanque tem uma fresta. No fundo, uma porta molhada. Do outro lado ouvi ondas. ONDAS.',
     'No laboratório tem um computador que abre a jaula da quarentena. Lá dentro alguém deixou um rastro azul até uma porta aberta.',
   ],
+  '45': [
+    'O cartão de manutenção fica sempre numa das salas, em cima de uma mesa. Nunca no corredor.',
+    'As alas de tijolo são mais antigas. As lâmpadas lá quase não funcionam.',
+    'Passei pela porta de metal com o cartão. O leitor ficou verde e o corredor do outro lado cheirava a outra coisa.',
+  ],
   '44': [
     'Não fique aqui. Depois de uns dez minutos o teto começa a cair e a vista embaça.',
     'Existem três portas de madeira. Duas falham — piscam, tremem, mudam de cor por um instante. Essas levam ao Vazio.',

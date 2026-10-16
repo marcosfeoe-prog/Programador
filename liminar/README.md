@@ -22,7 +22,7 @@ em tela cheia e na horizontal).
 
 ## Os níveis (V2)
 
-Ordem: **0 → 1 → 2 → 3 → 4 → 5 → 8 → 9 → 10 → 10.1 → 11 → 12 → 15 → 23 → 34 → 35 → 37 → 43 → 44 → 88**, mais dois subníveis secretos (**0.1** e **9.5**). Todos podem ser escolhidos no menu **Níveis** (os secretos só aparecem depois de descobertos).
+Ordem: **0 → 1 → 2 → 3 → 4 → 5 → 8 → 9 → 10 → 10.1 → 11 → 12 → 15 → 23 → 34 → 35 → 37 → 43 → 44 → 45 → 88**, mais dois subníveis secretos (**0.1** e **9.5**). Todos podem ser escolhidos no menu **Níveis** (os secretos só aparecem depois de descobertos).
 
 | Nível | Nome | Como é | Objetivo / saída |
 |---|---|---|---|
@@ -47,6 +47,7 @@ Ordem: **0 → 1 → 2 → 3 → 4 → 5 → 8 → 9 → 10 → 10.1 → 11 → 
 | **37** | Sublimidade | Labirinto de piscinas de azulejos brancos com água morna verde-azulada: salas claras (claraboias), salas no escuro, colunas, poços fundos. Começa com uma **cena do jogador acordando**. **Verão** (a cada 5 min, 3 min de luz de pôr do sol) e **Roxo Iminente** (raro, brilho roxo hipnótico). Área secreta dos **mercenários**: loja onde se compra com o tempo sobrevivido (kit de primeiros socorros, pilha de longa duração, tênis silencioso, amuleto de azulejo, rádio de ondas curtas). Pacífico, sem entidades. | Três saídas: escada para o subsolo (**43**), porta de manutenção (**15**), porta futurista (**0.1**) |
 | **43** | Mundo Aquático | Parque-aquário enorme, fechado e vazio, em várias seções: Saguão com bilheterias e lixo, **Túnel dos Peixes** (vidro dos dois lados), salão do **Grande Tanque** (cardumes, arraias, tubarões e um tubarão-baleia), corredor de serviço, Sala de Máquinas, Laboratório e Tanques de Quarentena. Um alto-falante repete avisos do parque. Sem entidades. Área secreta: **O Mar** — atrás de uma fresta escura no Grande Tanque, uma porta molhada leva a uma plataforma no meio de um mar infinito. | Balde de água → jogue no **gerador** → **chave branca** → porta de manutenção → computador **"Abrir Jaula"** → siga o **rastro azul** até a porta aberta |
 | **44** | Os Corredores Desfeitos | Corredores vazios de loja, piso de lajotas bege, luzes pela metade. Sem entidades — mas depois de **10 minutos** o nível se desfaz: o teto cai aos pedaços, a imagem falha, a **vista embaça** e aparecem vultos. Três **portas de madeira**: duas são réplicas com **falhas** e levam ao **Vazio** (cena de despertar em terceira pessoa; uma luz ao longe traz de volta). | Ache a porta de madeira **sem falhas** |
+| **45** | O Escritório Esquecido | Longos corredores de um **escritório abandonado**: paredes cinzas de reboco, **carpete branco** manchado e forro de placas com fluorescentes que zumbem. Salas com mesas, monitores apagados, arquivos e divisórias, portas e janelas de vidro para o corredor; **alas antigas de tijolo cinza**, mais escuras. Texturas feitas a partir de **fotos reais** (parede, carpete, tijolo). Sem entidades. | Ache o **cartão de acesso** em cima de uma mesa → passe-o no leitor da **porta de manutenção de metal** |
 | **88** | Lago Silencioso | Lago imóvel e gelado no fundo de um vale de floresta escura, com reflexo espelhado de verdade. Perto da água **todo som é abafado**; dentro dela, sussurros sobem pelo corpo. **Ciclo de dia e noite**: o dia é escuro, a noite quase cega. A **Criatura** (só à noite) persegue quem ela vê — só a **cabana com a porta fechada** salva. A **Sombra** observa de longe entre as árvores e some quando você chega perto. No acampamento abandonado há uma **carta com uma foto em branco** que recupera a sanidade sozinha enquanto estiver na mochila. | Encontre a passagem subterrânea e entre na caverna (final do jogo) |
 
 Os objetivos aparecem como checklist no HUD e a bússola aponta para o próximo passo.
@@ -182,6 +183,7 @@ liminar/
   js/radar.js             Radar de entidades
   js/levels/level43*.js   Mundo Aquático (tanques, peixes, mar secreto)
   js/levels/level44.js    Corredores Desfeitos (decaimento, portas, o Vazio)
+  js/levels/level45.js    Escritório Esquecido (salas, cartão, porta de metal)
   js/levels/level34*.js   Sistema de Esgoto (áreas, céu verde, Ratos da Morte)
   js/levels/level35*.js   Estacionamento (andares, rampas, criatura, carros)
   js/levels/wake.js       cena de despertar reutilizável
@@ -194,5 +196,5 @@ liminar/
   js/notes.js         textos dos bilhetes
 ```
 
-Parâmetros úteis para testes: `?level=0..23&autostart` (10 = subnível 0.1, 11 = Nível 88, 12–14 = áreas do Nível 12, 15 = Nível 37, 16 = Nível 2, 17 = Nível 3, 18 = Nível 8, 19 = subnível 9.5, 20 = Nível 34, 21 = Nível 35, 22 = Nível 43, 23 = Nível 44) (entra direto no nível),
+Parâmetros úteis para testes: `?level=0..24&autostart` (10 = subnível 0.1, 11 = Nível 88, 12–14 = áreas do Nível 12, 15 = Nível 37, 16 = Nível 2, 17 = Nível 3, 18 = Nível 8, 19 = subnível 9.5, 20 = Nível 34, 21 = Nível 35, 22 = Nível 43, 23 = Nível 44, 24 = Nível 45) (entra direto no nível),
 `?q=ultra`, `?filter=vhs`, `?seed=7`, `?touch` (força os controles de toque).

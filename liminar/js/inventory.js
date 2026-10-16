@@ -227,7 +227,7 @@ function icon(kind) {
     c.stroke();
     c.fillStyle = '#8a2a20';
     c.fillRect(14, 62, 18, 24);
-  } else if (kind === 'cartao') {
+  } else if (kind === 'cartao' || kind === 'cartao45') {
     glow('rgba(120,200,255,0.2)');
     c.fillStyle = '#e8edf2';
     c.fillRect(16, 28, 64, 42);
@@ -377,6 +377,7 @@ export const ITEM_DEFS = {
   chaveLab: { name: 'Chave branca do aquário', desc: 'Etiqueta: “MANUTENÇÃO — LABORATÓRIO”. Abre a porta de manutenção do Nível 43.', scope: 'level' },
   chave: { name: 'Chave do quarto', desc: 'Chave antiga de hotel, com etiqueta de couro vermelho.', scope: 'level' },
   cartao: { name: 'Cartão de acesso', desc: '"NÍVEL 15 — MANUTENÇÃO". Abre as salas de máquinas com terminal.', scope: 'level' },
+  cartao45: { name: 'Cartão de manutenção', desc: '“MANUTENÇÃO — ACESSO LIVRE”. A foto do dono foi arrancada. Abre a porta de metal do Nível 45.', scope: 'level' },
   envelope: { name: 'Envelope úmido', desc: 'Um endereço escrito à mão.', scope: 'level', action: 'Ler', use: (g, it) => (g.hud.showNote(it.text || ''), false) },
 };
 

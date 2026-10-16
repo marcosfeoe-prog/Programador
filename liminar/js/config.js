@@ -121,7 +121,7 @@ export const FILTERS = [
 // Os níveis, na ordem em que são visitados. `key` identifica a classe do nível
 // e os bilhetes; `num` é o número canônico (10.1 é um subnível do 10).
 // Ordem em que os níveis são visitados (as chaves de LEVELS; secretos e partes ficam de fora).
-export const ORDER = ['0', '1', '2', '3', '4', '5', '8', '9', '10', '10.1', '11', '12', '15', '23', '34', '35', '37', '43', '44', '88'];
+export const ORDER = ['0', '1', '2', '3', '4', '5', '8', '9', '10', '10.1', '11', '12', '15', '23', '34', '35', '37', '43', '44', '45', '88'];
 
 // Posição de um nível na ordem (partes contam como o nível principal; secretos, como o pai).
 export function orderPos(info) {
@@ -388,6 +388,16 @@ export const LEVELS = [
     desc: 'Corredores vazios de loja, com luzes que funcionam pela metade. Quanto mais tempo você fica, mais o nível se desfaz.',
     objective: 'Encontre a porta de madeira verdadeira.',
     hint: 'Não fique mais de 10 minutos. Duas das portas de madeira têm falhas: não entre nelas.',
+  },
+  {
+    key: '45',
+    num: 45,
+    name: 'O Escritório Esquecido',
+    tag: 'Nível 45',
+    danger: 'Classe 1 · Seguro · Sem entidades',
+    desc: 'Corredores longos de um escritório abandonado: paredes cinzas, carpete branco, mesas vazias e lâmpadas fluorescentes que zumbem sem parar.',
+    objective: 'Encontre o cartão de acesso.',
+    hint: 'O cartão abre a porta de manutenção de metal. Procure nas salas, não nos corredores.',
   },
 ];
 
