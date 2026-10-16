@@ -1,7 +1,8 @@
 // Corrida 3D — laço principal, corrida, câmeras e HUD.
 import * as THREE from 'three';
 import { Track, terrainHeight } from './track.js';
-import { buildCar, CAR_MODELS, CAR_COLORS } from './carModel.js';
+import { buildCar, CAR_MODELS, CAR_COLORS, sharedMaterials } from './carModel.js';
+import { DamageSystem } from './damage.js';
 import { Vehicle, collideCars } from './vehicle.js';
 import { AIDriver } from './ai.js';
 import { Skidmarks, Particles } from './effects.js';
@@ -12,11 +13,18 @@ import { rng } from './textures.js';
 
 const $ = (id) => document.getElementById(id);
 const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
-const quality = isTouch ? 0.6 : 1;
 if (isTouch) document.body.classList.add('touch');
 
 // ------------------------------------------------------------- configurações
-const DEFAULTS = { model: 0, color: 0, laps: 3, opp: 5, diff: 1, cam: 0, tc: true, mute: false };
+const DEFAULTS = { model: 0, color: 0, laps: 3, opp: 5, diff: 1, cam: 0, tc: true, mute: false, gfx: isTouch ? 1 : 2 };
+
+// níveis de qualidade gráfica
+const QUALITY = [
+  { name: 'Baixo', pr: 0.75, shadow: 0, soft: false, terrain: 100, trees: 260, grass: 0, particles: 50, fog: 900, aniso: 2, reflect: false },
+  { name: 'Médio', pr: 1, shadow: 1024, soft: false, terrain: 150, trees: 520, grass: 2500, particles: 100, fog: 1200, aniso: 4, reflect: false },
+  { name: 'Alta', pr: 1.5, shadow: 2048, soft: true, terrain: 220, trees: 950, grass: 9000, particles: 170, fog: 1500, aniso: 8, reflect: false },
+  { name: 'Ultra', pr: 2, shadow: 4096, soft: true, terrain: 320, trees: 1600, grass: 22000, particles: 260, fog: 1800, aniso: 16, reflect: true },
+];
 let settings = { ...DEFAULTS };
 try {
   Object.assign(settings, JSON.parse(localStorage.getItem('corrida3d') || '{}'));
@@ -34,7 +42,6 @@ function saveSettings() {
 // ------------------------------------------------------------------- render
 const canvas = $('game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, isTouch ? 1.5 : 2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.0;
@@ -46,9 +53,9 @@ scene.fog = new THREE.Fog(0xb6cbe0, 260, 1500);
 scene.add(createSky());
 scene.environment = createEnvMap(renderer);
 const lights = createLights(scene);
-if (isTouch) lights.sun.shadow.mapSize.set(1024, 1024);
 
 const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.05, 6000);
+camera.layers.enable(1);
 addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight);
   camera.aspect = innerWidth / innerHeight;
@@ -56,9 +63,98 @@ addEventListener('resize', () => {
 });
 
 const track = new Track();
-track.build(scene, quality);
 const skids = new Skidmarks(scene);
-const particles = new Particles(scene, isTouch ? 80 : 160);
+const particles = new Particles(scene, 260);
+const damage = new DamageSystem(scene, particles);
+
+// reflexos em tempo real (Ultra): cubemap renderizado em volta do carro em foco
+let cubeRT = null;
+let cubeCam = null;
+let cubeTick = 0;
+let gfx = null;
+let trackGroup = null;
+
+function setCarEnvMaps(envMap) {
+  const mats = new Set(Object.values(sharedMaterials()).filter((m) => m && m.isMaterial));
+  const cars = race.cars.map((c) => c.veh);
+  if (showcase) cars.push(showcase);
+  for (const v of cars) for (const m of v.vis.paints) mats.add(m);
+  for (const m of mats) {
+    if (m.envMap !== envMap) {
+      m.envMap = envMap;
+      m.needsUpdate = true;
+    }
+  }
+}
+
+function applyQuality(level) {
+  const q = QUALITY[level];
+  gfx = q;
+  renderer.setPixelRatio(level === 0 ? Math.min(devicePixelRatio, 1) * q.pr : Math.min(devicePixelRatio, q.pr));
+  renderer.setSize(innerWidth, innerHeight);
+  const sun = lights.sun;
+  renderer.shadowMap.enabled = q.shadow > 0;
+  renderer.shadowMap.type = q.soft ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
+  sun.castShadow = q.shadow > 0;
+  if (q.shadow > 0) {
+    sun.shadow.mapSize.set(q.shadow, q.shadow);
+    const ext = q.shadow >= 4096 ? 60 : 45;
+    Object.assign(sun.shadow.camera, { left: -ext, right: ext, top: ext, bottom: -ext });
+    sun.shadow.camera.updateProjectionMatrix();
+    if (sun.shadow.map) {
+      sun.shadow.map.dispose();
+      sun.shadow.map = null;
+    }
+  }
+  scene.fog.far = q.fog;
+  // cenário (relevo, árvores, grama) refeito com o novo nível de detalhe
+  if (trackGroup) {
+    trackGroup.traverse((o) => {
+      if (o.isMesh) {
+        o.geometry.dispose();
+        const ms = Array.isArray(o.material) ? o.material : [o.material];
+        ms.forEach((m) => {
+          if (m.map) m.map.dispose();
+          m.dispose();
+        });
+      }
+    });
+    trackGroup.removeFromParent();
+  }
+  trackGroup = track.build(scene, q);
+  particles.max = q.particles;
+  // reflexos dinâmicos só no Ultra
+  if (q.reflect && !cubeRT) {
+    cubeRT = new THREE.WebGLCubeRenderTarget(256, { type: THREE.HalfFloatType, generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter });
+    cubeCam = new THREE.CubeCamera(0.3, 900, cubeRT);
+    // o reflexo ignora a grama 3D (camada 1) para ficar leve
+    cubeCam.children.forEach((c) => c.layers.set(0));
+    scene.add(cubeCam);
+  }
+  setCarEnvMaps(q.reflect ? cubeRT.texture : null);
+  scene.traverse((o) => {
+    if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => (m.needsUpdate = true));
+  });
+  if ($('btn-gfx')) $('btn-gfx').textContent = 'Gráficos: ' + q.name;
+}
+
+function updateReflections() {
+  if (!gfx || !gfx.reflect || !cubeCam) return;
+  const focus = race.state === 'menu' ? showcase : race.player && race.player.veh;
+  if (!focus || cubeTick++ % 3) return;
+  const hidden = race.cars.map((c) => c.veh.object);
+  if (showcase) hidden.push(showcase.object);
+  hidden.forEach((o) => (o.visible = false));
+  const ps = particles.list.filter((it) => it.s.visible);
+  ps.forEach((it) => (it.s.visible = false));
+  cubeCam.position.copy(focus.pos).y += 0.4;
+  // reaproveita o mapa de sombras do quadro (não recalcula 6 vezes)
+  renderer.shadowMap.autoUpdate = false;
+  cubeCam.update(renderer, scene);
+  renderer.shadowMap.autoUpdate = true;
+  hidden.forEach((o) => (o.visible = true));
+  ps.forEach((it) => (it.s.visible = true));
+}
 const audio = new AudioFX();
 audio.setMuted(settings.mute);
 const input = new Input();
@@ -100,7 +196,9 @@ function makeCar(modelIdx, colorIdx, number, variant) {
   const model = CAR_MODELS[modelIdx];
   const vis = buildCar(model, CAR_COLORS[colorIdx], number, variant);
   const veh = new Vehicle(model, vis, track);
+  damage.init(veh);
   scene.add(veh.object);
+  if (gfx && gfx.reflect && cubeRT) for (const m of vis.paints) m.envMap = cubeRT.texture;
   return veh;
 }
 
@@ -114,6 +212,7 @@ function clearCars() {
   }
   skids.clear();
   particles.clear();
+  damage.clear();
 }
 
 // --------------------------------------------------------------------- menu
@@ -174,6 +273,8 @@ function buildMenu() {
   seg('opt-laps', [1, 3, 5], 'laps');
   seg('opt-opp', [0, 3, 5, 7], 'opp');
   seg('opt-diff', [0, 1, 2], 'diff', (v) => DIFF[v].name);
+  seg('opt-gfx', [0, 1, 2, 3], 'gfx', (v) => QUALITY[v].name);
+  if (gfx !== QUALITY[settings.gfx]) applyQuality(settings.gfx);
 }
 
 function buildShowcase() {
@@ -392,6 +493,7 @@ function applyCamVisibility() {
 }
 
 function updateCamera(dt) {
+  if (window.__freezeCam) return;
   let target;
   if (race.state === 'menu') target = showcase;
   else target = race.player ? race.player.veh : null;
@@ -592,6 +694,38 @@ function drawSpeedo(v) {
   g.fillText('x1000 rpm', cx, cy - 30);
 }
 
+// indicador de danos: silhueta do carro vista de cima, cor por região
+const dmgCtx = $('dmg').getContext('2d');
+function drawDamage(v) {
+  const g = dmgCtx;
+  g.clearRect(0, 0, 80, 140);
+  const col = (d) => {
+    const t = Math.min(1, d / 60);
+    return `hsl(${120 - t * 120}, 85%, ${50 - t * 8}%)`;
+  };
+  const z = v.damage.zones;
+  g.fillStyle = 'rgba(10,13,18,0.6)';
+  g.beginPath();
+  g.roundRect(4, 4, 72, 132, 14);
+  g.fill();
+  const seg = (x, y, w, h, c) => {
+    g.fillStyle = c;
+    g.beginPath();
+    g.roundRect(x, y, w, h, 6);
+    g.fill();
+  };
+  seg(18, 12, 44, 28, col(z.front));
+  seg(18, 100, 44, 28, col(z.rear));
+  seg(12, 44, 14, 52, col(z.left));
+  seg(54, 44, 14, 52, col(z.right));
+  g.fillStyle = 'rgba(255,255,255,0.15)';
+  g.fillRect(30, 46, 20, 48);
+  g.fillStyle = '#fff';
+  g.font = 'bold 11px system-ui, Arial';
+  g.textAlign = 'center';
+  g.fillText(Math.min(100, Math.round(v.damage.total / 5)) + '%', 40, 74);
+}
+
 let boardTimer = 0;
 function updateHUD(dt) {
   const p = race.player;
@@ -613,6 +747,7 @@ function updateHUD(dt) {
       .join('');
   }
   drawSpeedo(p.veh);
+  if (boardTimer === 0.25) drawDamage(p.veh);
   drawMini();
   // contramão
   const v = p.veh;
@@ -634,7 +769,7 @@ function carEffects(c, dt) {
   for (const w of v.wheels) {
     k++;
     const key = v.object.id * 10 + k;
-    const slip = Math.max(w.slipLat - 2.5, w.slipLong - 1.5);
+    const slip = w.slide - 1;
     const onRoad = w.surface !== 2;
     _dir.copy(v.fwd);
     if (w.front) _dir.applyAxisAngle(v.up, -v.steerAngle);
@@ -645,6 +780,31 @@ function carEffects(c, dt) {
     } else if (!onRoad && v.speed > 6 && Math.random() < 0.18 * (isTouch ? 0.5 : 1)) {
       particles.spawn(_v.copy(w.cp).addScaledVector(w.n, 0.2), _w.copy(v.vel).multiplyScalar(0.1).add({ x: 0, y: 0.8, z: 0 }), 0x9a7b4f, 0.6, 3, 1.3, 0.4);
     }
+  }
+  // danos das batidas desta rodada
+  // (um mesmo choque gera vários contatos: conta só o mais forte de cada região,
+  // e ignora repetições logo em seguida)
+  v.hitCool = Math.max(0, (v.hitCool || 0) - dt);
+  if (v.hits.length) {
+    v.hits.sort((a, b) => b.v - a.v);
+    const taken = [];
+    for (const h of v.hits) {
+      if (taken.length >= 2 || taken.some((t) => t.p.distanceTo(h.p) < 1.5)) continue;
+      if (v.hitCool > 0 && h.v < (v.lastHitV || 0) + 3) continue;
+      taken.push(h);
+    }
+    for (const h of taken) damage.hit(v, h);
+    if (taken.length) {
+      v.hitCool = 0.35;
+      v.lastHitV = taken[0].v;
+    }
+    v.hits.length = 0;
+  }
+  // motor muito danificado solta fumaça
+  if (v.damage.total > 150 && Math.random() < Math.min(0.5, (v.damage.total - 150) / 250) * dt * 30) {
+    _v.set(0, 0.85 - v.cgY, v.model.length * 0.3).applyQuaternion(v.quat).add(v.pos);
+    const dark = v.damage.total > 300;
+    particles.spawn(_v, _w.copy(v.vel).multiplyScalar(0.3).add({ x: 0, y: 1.2, z: 0 }), dark ? 0x2a2a2a : 0x9a9a9a, 0.5, 3.2, 1.6, dark ? 0.55 : 0.35);
   }
   if (v.impact > 0.5) {
     if (c.isPlayer) {
@@ -722,6 +882,7 @@ function update(dt) {
       for (const c of race.cars) carEffects(c, dt);
       skids.update();
       particles.update(dt);
+      damage.update(dt, race.cars.map((c) => c.veh));
       updateHUD(dt);
     }
   }
@@ -734,6 +895,7 @@ function update(dt) {
     lights.sun.position.copy(focus.pos).addScaledVector(SUN_DIR, 120);
   }
   audio.update(race.player ? race.player.veh : null, race.state !== 'menu' && !race.paused);
+  updateReflections();
 }
 
 // ------------------------------------------------------------------ botões
@@ -774,6 +936,11 @@ $('btn-restart').onclick = () => {
   startRace();
 };
 $('btn-tc').onclick = toggleTC;
+$('btn-gfx').onclick = () => {
+  settings.gfx = (settings.gfx + 1) % QUALITY.length;
+  saveSettings();
+  applyQuality(settings.gfx);
+};
 $('btn-sound').onclick = toggleMute;
 $('btn-menu').onclick = () => {
   if (audio.ctx) audio.ctx.resume();
@@ -784,6 +951,10 @@ $('btn-menu2').onclick = showMenu;
 $('btn-tc').textContent = 'Controle de tração: ' + (settings.tc ? 'ligado' : 'desligado');
 $('btn-sound').textContent = 'Som: ' + (settings.mute ? 'desligado' : 'ligado');
 if (isTouch) $('help-keys').textContent = 'Use os botões na tela: ◀ ▶ para virar, ACELERAR, FREIO (segure parado para dar ré) e FREIO DE MÃO para derrapar.';
+
+damage.onPartLost = (veh, part) => {
+  if (race.player && veh === race.player.veh) showMsg(`<small>Peça perdida: ${part.name}</small>`, 1.6);
+};
 
 buildMenu();
 showMenu();

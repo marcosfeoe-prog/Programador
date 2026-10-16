@@ -96,11 +96,18 @@ export class Particles {
       this.list.push({ s, life: 0, max: 1, vel: new THREE.Vector3(), size0: 1, size1: 3, op: 0.4 });
     }
     this.next = 0;
+    this.max = count;
   }
 
-  spawn(p, vel, color, size0, size1, life, op) {
+  spawn(p, vel, color, size0, size1, life, op, opts) {
     const it = this.list[this.next];
-    this.next = (this.next + 1) % this.list.length;
+    this.next = (this.next + 1) % Math.min(this.max, this.list.length);
+    it.grav = opts && opts.grav !== undefined ? opts.grav : 0.6;
+    const add = !!(opts && opts.additive);
+    if (it.s.material.blending !== (add ? THREE.AdditiveBlending : THREE.NormalBlending)) {
+      it.s.material.blending = add ? THREE.AdditiveBlending : THREE.NormalBlending;
+      it.s.material.needsUpdate = true;
+    }
     it.s.position.copy(p);
     it.vel.copy(vel);
     it.life = 0;
@@ -121,8 +128,9 @@ export class Particles {
         it.s.visible = false;
         continue;
       }
-      it.vel.multiplyScalar(1 - dt * 1.5);
-      it.vel.y += dt * 0.6;
+      if (it.grav < 0) it.vel.multiplyScalar(1 - dt * 0.3);
+      else it.vel.multiplyScalar(1 - dt * 1.5);
+      it.vel.y += dt * it.grav;
       it.s.position.addScaledVector(it.vel, dt);
       const sz = it.size0 + (it.size1 - it.size0) * t;
       it.s.scale.set(sz, sz, 1);

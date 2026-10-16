@@ -36,16 +36,23 @@ export class AIDriver {
 
     // desvio de carros à frente
     let want = 0;
+    let followV = Infinity;
     const right = new THREE.Vector3().copy(car.left).negate();
     for (const o of cars) {
       if (o === car) continue;
       const rel = o.pos.clone().sub(car.pos);
       const ahead = rel.dot(car.fwd);
-      if (ahead < 1 || ahead > 22) continue;
+      if (ahead < 1 || ahead > 30) continue;
       const side = rel.dot(right);
       if (Math.abs(side) > 2.8) continue;
       if (o.forwardSpeed > v + 1.5) continue;
       want = side > 0 ? -3.2 : 3.2;
+      // mantém distância segura: não chega mais rápido do que consegue frear
+      if (Math.abs(side) < 2.3) {
+        const gap = Math.max(0, ahead - car.model.length - 1.5);
+        const vo = Math.max(0, o.vel.dot(car.fwd));
+        followV = Math.min(followV, Math.sqrt(vo * vo + 2 * 6 * gap) + 1);
+      }
     }
     this.avoid += (want - this.avoid) * Math.min(1, dt * 2.5);
 
@@ -64,7 +71,7 @@ export class AIDriver {
     const ang = Math.atan2(across, along);
     const wb = car.model.length * 0.6;
     const delta = Math.atan((2 * wb * Math.sin(ang)) / Math.max(look, 4));
-    const maxSteer = 0.6 / (1 + Math.abs(v) / 24);
+    const maxSteer = car.maxSteer(v);
     // amortece a guinada para evitar oscilação
     const yawRate = car.angVel.dot(car.up);
     ctl.steer = THREE.MathUtils.clamp(delta / maxSteer + yawRate * 0.06, -1, 1);
@@ -81,6 +88,7 @@ export class AIDriver {
       vt = Math.min(vt, Math.sqrt(vm * vm + 2 * decel * dist));
     }
     if (car.onGrass > 1) vt = Math.min(vt, 22);
+    vt = Math.min(vt, followV);
     const diff = vt - v;
     ctl.throttle = THREE.MathUtils.clamp(diff / 3 + 0.2, 0, 1);
     ctl.brake = diff < -1.2 ? THREE.MathUtils.clamp(-diff / 5, 0, 1) : 0;

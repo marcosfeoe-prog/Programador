@@ -92,7 +92,7 @@ export class AudioFX {
     let speed = 0;
     let grass = 0;
     if (car) {
-      for (const w of car.wheels) if (w.contact && w.surface !== 2) slip = Math.max(slip, Math.max(w.slipLat - 2.5, w.slipLong - 1.5));
+      for (const w of car.wheels) if (w.contact && w.surface !== 2) slip = Math.max(slip, w.slide - 1);
       speed = car.speed;
       grass = car.onGrass > 0 ? Math.min(1, speed / 15) : 0;
     }

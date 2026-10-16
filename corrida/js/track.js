@@ -173,22 +173,23 @@ export class Track {
   }
 
   // ---------------------------------------------------------------- malhas
-  build(scene, quality = 1) {
+  build(scene, q) {
+    this.q = q;
     const group = new THREE.Group();
     scene.add(group);
-    this.buildTerrain(group, quality);
+    this.buildTerrain(group, q.terrain);
     this.buildRoad(group);
     this.buildCurbs(group);
     this.buildWalls(group);
     this.buildStartArea(group);
-    this.buildTrees(group, quality);
+    this.buildTrees(group, q.trees);
+    if (q.grass) this.buildGrass(group, q.grass);
     this.buildMountains(group);
     return group;
   }
 
-  buildTerrain(group, quality) {
+  buildTerrain(group, seg) {
     const size = 1800;
-    const seg = quality > 0.7 ? 220 : 150;
     const geo = new THREE.PlaneGeometry(size, size, seg, seg);
     geo.rotateX(-Math.PI / 2);
     const pos = geo.attributes.position;
@@ -257,6 +258,7 @@ export class Track {
       (i, c) => [c / (offs.length - 1), (i * this.ds) / vRep],
     );
     const tex = TX.asphaltTexture();
+    tex.anisotropy = this.q.aniso;
     const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: tex, roughness: 0.88, metalness: 0 }));
     m.receiveShadow = true;
     group.add(m);
@@ -480,9 +482,8 @@ export class Track {
     return Math.sqrt(bd);
   }
 
-  buildTrees(group, quality) {
+  buildTrees(group, count) {
     const rand = TX.rng(2024);
-    const count = quality > 0.7 ? 900 : 450;
     const trunkGeo = new THREE.CylinderGeometry(0.18, 0.28, 3, 6);
     trunkGeo.translate(0, 1.5, 0);
     const leafGeo = new THREE.IcosahedronGeometry(2.4, 1);
@@ -528,6 +529,66 @@ export class Track {
       m.receiveShadow = true;
       group.add(m);
     }
+  }
+
+  // tufos de grama 3D (instanciados) entre a zebra e o muro e fora dele
+  buildGrass(group, count) {
+    const rand = TX.rng(31);
+    // tufo com 9 folhas finas espalhadas num raio pequeno, base escura e ponta clara
+    const pos = [];
+    const col = [];
+    const nor = [];
+    for (let k = 0; k < 9; k++) {
+      const a = rand() * Math.PI;
+      const ox = (rand() - 0.5) * 0.35;
+      const oz = (rand() - 0.5) * 0.35;
+      const w = 0.025 + rand() * 0.02;
+      const h = 0.18 + rand() * 0.22;
+      const ca = Math.cos(a) * w;
+      const sa = Math.sin(a) * w;
+      const lx = (rand() - 0.5) * 0.12;
+      const lz = (rand() - 0.5) * 0.12;
+      // duas faces (frente e verso) com normais para cima: a grama recebe a
+      // mesma luz do chão dos dois lados
+      pos.push(ox - ca, 0, oz - sa, ox + ca, 0, oz + sa, ox + lx, h, oz + lz);
+      pos.push(ox + ca, 0, oz + sa, ox - ca, 0, oz - sa, ox + lx, h, oz + lz);
+      for (let f = 0; f < 2; f++) {
+        col.push(0.26, 0.42, 0.15, 0.26, 0.42, 0.15, 0.46, 0.68, 0.26);
+        nor.push(0, 1, 0, 0, 1, 0, 0, 1, 0);
+      }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+    const mat = new THREE.MeshLambertMaterial({ vertexColors: true });
+    const inst = new THREE.InstancedMesh(geo, mat, count);
+    const m4 = new THREE.Matrix4();
+    const qt = new THREE.Quaternion();
+    const sc = new THREE.Vector3();
+    const p = new THREE.Vector3();
+    const up = new THREE.Vector3(0, 1, 0);
+    const c = new THREE.Color();
+    let n = 0;
+    for (let t = 0; t < count * 2 && n < count; t++) {
+      const i = Math.floor(rand() * this.N);
+      const side = rand() < 0.5 ? -1 : 1;
+      // 60% perto da pista (entre zebra e muro), resto fora do muro
+      const lat = rand() < 0.6 ? ROAD_HALF + CURB_W + 0.4 + rand() * (WALL_OFF - ROAD_HALF - CURB_W - 0.8) : WALL_OFF + 1 + rand() * 45;
+      const pp = this.pose(i, side * lat);
+      p.set(pp.x + (rand() - 0.5) * 2, 0, pp.z + (rand() - 0.5) * 2);
+      p.y = terrainHeight(p.x, p.z) - 0.02;
+      qt.setFromAxisAngle(up, rand() * 6.28);
+      const s = 0.8 + rand() * 0.8;
+      sc.set(s, s * (0.6 + rand() * 0.7), s);
+      m4.compose(p, qt, sc);
+      inst.setMatrixAt(n, m4);
+      inst.setColorAt(n++, c.setRGB(0.8 + rand() * 0.2, 0.85 + rand() * 0.2, 0.75 + rand() * 0.15));
+    }
+    inst.count = n;
+    inst.receiveShadow = true;
+    inst.layers.set(1);
+    group.add(inst);
   }
 
   buildMountains(group) {

@@ -56,6 +56,11 @@ export class Vehicle {
     this.peakTorque = 520 * model.power;
     this.mu = 1.12 * model.grip;
     this.tc = true;
+    this.final = model.final || FINAL;
+    this.damageFactor = 1;
+    this.hits = [];
+    this.esc = true; // controle de estabilidade (desliga no freio de mão)
+    this.wheelbase = visual.wheels[0].pivot.position.z - visual.wheels[2].pivot.position.z;
 
     this.wheels = visual.wheels.map((w) => ({
       vis: w,
@@ -117,6 +122,13 @@ export class Vehicle {
     this.flipTimer = 0;
   }
 
+  // ângulo máximo útil das rodas: o que a aderência permite na velocidade atual
+  // (direção sensível à velocidade, como num carro real)
+  maxSteer(v) {
+    const v2 = Math.max(v * v, 1);
+    return Math.min(0.6, Math.atan((this.wheelbase * this.mu * G * 1.1) / v2) + 0.075);
+  }
+
   get speed() {
     return this.vel.length();
   }
@@ -169,8 +181,7 @@ export class Vehicle {
     const rate = Math.abs(target) < Math.abs(this.steer) || Math.sign(target) !== Math.sign(this.steer) ? 6 : 3.2;
     this.steer += THREE.MathUtils.clamp(target - this.steer, -rate * h, rate * h);
     if (ctl.analog) this.steer = target;
-    const maxSteer = 0.6 / (1 + Math.abs(vF) / 24);
-    this.steerAngle = this.steer * maxSteer;
+    this.steerAngle = this.steer * this.maxSteer(vF) + (this.steerBias || 0);
 
     // marcha à ré automática
     let thr = ctl.throttle;
@@ -186,7 +197,7 @@ export class Vehicle {
     let driveForce = 0;
     let rearV = 0;
     for (const w of this.wheels) if (!w.front) rearV += w.spin * this.R * 0.5;
-    const ratio = (this.gear < 0 ? REVERSE : GEARS[this.gear - 1]) * FINAL;
+    const ratio = (this.gear < 0 ? REVERSE : GEARS[this.gear - 1]) * this.final;
     let rpm = (Math.abs(rearV) / this.R) * ratio * (60 / (2 * Math.PI));
     rpm = Math.max(IDLE, rpm);
     if (this.wheelspin > 0.3) rpm = Math.max(rpm, IDLE + (REDLINE - IDLE) * thr * 0.9);
@@ -202,7 +213,7 @@ export class Vehicle {
       }
     }
     if (this.shiftTimer <= 0 && this.rpm < REDLINE + 150) {
-      const tq = thr * this.peakTorque * torqueCurve(this.rpm);
+      const tq = thr * this.peakTorque * this.damageFactor * torqueCurve(this.rpm);
       driveForce = ((tq * ratio * 0.88) / this.R) * (this.gear < 0 ? -1 : 1);
     }
     if (this.gear < 0 && vF < -14) driveForce = 0;
@@ -266,6 +277,7 @@ export class Vehicle {
         if (ctl.handbrake && !w.front) w.spin = 0;
         w.slipLat = 0;
         w.slipLong = 0;
+        w.slide = 0;
         continue;
       }
       const n = w.n;
@@ -300,7 +312,7 @@ export class Vehicle {
       Fx -= w.roll * Fz * THREE.MathUtils.clamp(vLong * 2, -1, 1);
       // deriva lateral
       const alpha = Math.atan2(vLat, Math.max(Math.abs(vLong), 3));
-      let Fy = -maxF * latMult * Math.sin(1.25 * Math.atan(9 * alpha));
+      let Fy = -maxF * latMult * Math.sin(1.3 * Math.atan(13 * alpha));
       // controle de tração
       let spinning = 0;
       if (!w.front && driveForce !== 0) {
@@ -318,9 +330,11 @@ export class Vehicle {
         Fy *= s;
       }
       w.slipLat = Math.abs(vLat);
+      // escorregamento além do pico de aderência (marcas, fumaça e chiado)
       if (!w.front && Math.abs(vLong) > 4) rearAlpha = Math.max(rearAlpha, Math.abs(alpha));
       w.slipLong = locked && Math.abs(vLong) > 2 ? Math.abs(vLong) : spinning * 12;
       if (brk > 0.85 && Math.abs(vLong) > 8 && brakeTotal * share > maxF) w.slipLong = Math.max(w.slipLong, 2.5);
+      w.slide = Math.max(0, Math.abs(alpha) - 0.13) * Math.max(Math.abs(vLong), 3) + w.slipLong;
       spinSum += spinning;
       // rotação visual da roda
       if (locked) w.spin = 0;
@@ -336,6 +350,25 @@ export class Vehicle {
     }
     this.wheelspin = spinSum / 2;
     this.escCut = THREE.MathUtils.clamp((rearAlpha - 0.09) / 0.08, 0, 1);
+    // controle de estabilidade (ESC): compara a guinada real com a esperada
+    // pela direção e "freia uma roda" para corrigir (torque oposto + leve frenagem)
+    this.escActive = 0;
+    this.hbTimer = ctl.handbrake ? 1.0 : Math.max(0, (this.hbTimer || 0) - h);
+    if (this.esc && this.hbTimer <= 0 && Math.abs(vF) > 6 && contacts >= 3) {
+      const r = this.angVel.dot(this.up);
+      const vch = 28;
+      let rRef = (-vF * Math.tan(this.steerAngle)) / (this.wheelbase * (1 + (vF * vF) / (vch * vch)));
+      const rMax = (this.mu * G) / Math.abs(vF);
+      rRef = THREE.MathUtils.clamp(rRef, -rMax, rMax);
+      const err = r - rRef;
+      if (Math.abs(err) > 0.06) {
+        const Iy = 1 / this.invI.y;
+        const tq = THREE.MathUtils.clamp((-Iy * (err - Math.sign(err) * 0.06)) / 0.25, -9000, 9000);
+        torque.addScaledVector(this.up, tq);
+        force.addScaledVector(this.fwd, -Math.sign(vF) * Math.abs(tq) * 0.6);
+        this.escActive = Math.min(1, Math.abs(tq) / 4000);
+      }
+    }
 
     // integração (Euler semi-implícito)
     this.vel.addScaledVector(force, h / m);
@@ -373,7 +406,8 @@ export class Vehicle {
       if (pen <= 0) continue;
       _n.set(_gnd.nx, _gnd.ny, _gnd.nz);
       _r.subVectors(p, this.pos);
-      this.contactImpulse(_r, _n, 0.15, 0.6);
+      const gv = this.contactImpulse(_r, _n, 0.15, 0.6);
+      if (-gv > 3 && y > 0.3) this.hits.push({ p: p.clone(), n: _n.clone(), v: -gv });
       this.pos.addScaledVector(_n, pen * 0.6);
     }
   }
@@ -393,6 +427,7 @@ export class Vehicle {
       _r.subVectors(p, this.pos);
       const vn = this.contactImpulse(_r, _n, 0.25, 0.35);
       this.impact = Math.max(this.impact, -vn);
+      if (-vn > 2.5) this.hits.push({ p: p.clone(), n: _n.clone(), v: -vn });
       this.pos.addScaledVector(_n, pen);
     }
   }
@@ -475,6 +510,11 @@ export function collideCars(A, B) {
       A.applyImpulse(J, ra);
       B.applyImpulse(J.clone().negate(), rb);
       hit = Math.max(hit, -vn);
+      if (-vn > 2.5) {
+        // toques entre carros amassam menos que batidas no muro
+        A.hits.push({ p: cp.clone(), n: n.clone(), v: -vn * 0.75 });
+        B.hits.push({ p: cp.clone(), n: n.clone().negate(), v: -vn * 0.75 });
+      }
     }
   if (hit > 0) {
     A.impact = Math.max(A.impact, hit);

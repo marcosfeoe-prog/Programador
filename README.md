@@ -160,7 +160,8 @@ controles feitos para **celular**. Com o servidor rodando (`npm start`), abra
 # Corrida 3D (pasta `corrida/`)
 
 Jogo de corrida com **física de carro** (suspensão nas 4 rodas, pneus com deriva e
-círculo de atrito, motor e câmbio, aerodinâmica e colisões), **carros 3D detalhados**
-gerados proceduralmente (3 modelos, 8 cores) e adversários controlados pelo computador
-num circuito de 2,2 km. Com o servidor rodando (`npm start`), abra
+círculo de atrito, motor e câmbio, ESC, aerodinâmica e colisões), **danos** com lataria
+amassada e peças que se soltam, **carros 3D detalhados** gerados proceduralmente
+(4 modelos, incluindo o Eagle SS, em 8 cores), gráficos Baixo/Médio/Alta/Ultra e
+adversários controlados pelo computador num circuito de 2,2 km. Com o servidor rodando (`npm start`), abra
 `http://localhost:8080/corrida/`. Detalhes em [`corrida/README.md`](corrida/README.md).
