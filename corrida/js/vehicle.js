@@ -464,7 +464,7 @@ export class Vehicle {
       v.spin.rotation.x += THREE.MathUtils.clamp(w.spin, -120, 120) * dt;
     }
     if (this.vis.steeringWheel) this.vis.steeringWheel.rotation.z = this.steer * 1.6;
-    this.vis.brakeMat.emissiveIntensity = this.braking > 0.05 ? 3.5 : 0.7;
+    this.vis.brakeMat.emissiveIntensity = this.braking > 0.05 ? 4 : 1.1;
     this.vis.revMat.emissiveIntensity = this.gear < 0 ? 2.5 : 0;
   }
 }

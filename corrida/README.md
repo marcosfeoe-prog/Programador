@@ -71,18 +71,32 @@ indicador ao lado do velocímetro mostra o dano de cada região do carro.
 
 ## Carros
 
-Quatro modelos com dirigibilidade diferente — **Falcão GT** (com asa), **Raio S**
-(motor central), **Bisão V8** (muscle car) e **Eagle SS** (fastback V8 preparado,
-inspirado no Mustang: o mais potente, com lanternas de três barras, faróis com
-"presas" de LED, capô com ressalto e aberturas, entradas de ar laterais, asa baixa e
-quatro escapamentos) — em 8 cores. A carroceria é gerada por
-seções superelípticas com caixas de roda recortadas e tem pintura com verniz,
-faixas, número e patrocínios, cabine com vidros e colunas, faróis com projetores e
-luz diurna, lanternas que acendem ao frear, luz de ré, grade colmeia, splitter,
-difusor, escapamentos, retrovisores, limpadores, maçanetas, tampa de combustível,
-placa, interior com bancos, painel, volante que gira e piloto de capacete. As rodas
-têm pneu com banda de rodagem e letras na lateral, aro de raios duplos, porcas,
-disco de freio e pinça colorida; giram, esterçam e acompanham a suspensão.
+Quatro modelos com dirigibilidade diferente, em 8 cores:
+
+- **Falcão GT**: GT de corrida com para-lamas acima do capô, aberturas no capô e
+  nos para-lamas, canards, splitter e difusor de carbono, asa com endplates, gaiola
+  de proteção e rodas de porca central.
+- **Raio S**: superesportivo de motor central, cabine avançada, entradas de ar
+  laterais grandes, venezianas sobre o motor, barra de LED traseira e rodas em Y.
+- **Bisão V8**: muscle car de capô longo e teto "notchback", grade de largura total
+  com quatro faróis redondos, para-choques cromados, tomada de ar no capô e rodas
+  "slot".
+- **Eagle SS**: fastback V8 preparado, inspirado no Mustang, com o ressalto do capô
+  na própria lataria, grade "nariz de tubarão", três presas de LED, lanternas de três
+  barras, antena barbatana e asa baixa.
+
+A carroceria é gerada por seções transversais com forma de carro de verdade
+(assoalho plano, lateral quase vertical, ombro arredondado, capô e tampa com
+abaulamento, para-lamas que podem ficar acima do capô) e as caixas de roda são
+recortadas na lataria com lábio alargado e caixa interna preta. A cabine tem
+para-brisa e vidro traseiro que abraçam as colunas, borracha nos vidros, serigrafia
+preta nas bordas, forro do teto e lado de dentro das portas (dá para olhar de dentro
+na câmera de cockpit). Faróis, lanternas, grades e aberturas são posicionados e
+orientados pela própria superfície. Pintura com verniz, faixas, juntas de portas,
+capô e tampa, número e patrocinadores. Interior com bancos concha, painel com
+instrumentos, volante que gira e piloto. As rodas têm pneu com banda de rodagem e
+letras na lateral, aro com degrau e lábio, cinco desenhos de raios, disco de freio
+perfurado e pinça de seis pistões; giram, esterçam e acompanham a suspensão.
 
 ## Pista
 

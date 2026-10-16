@@ -167,7 +167,7 @@ export function honeycombTexture() {
     }
   }
   const t = toTex(c);
-  t.repeat.set(3, 1);
+  t.repeat.set(4, 8);
   return t;
 }
 
@@ -213,7 +213,10 @@ export function tireTexture(treadV0, treadV1, sideTextV) {
   return toTex(c, { aniso: 4 });
 }
 
-// Pintura do carro. U = comprimento (0 = frente), V = volta (0 baixo, .25 esquerda, .5 topo, .75 direita).
+// Pintura do carro. U = comprimento (0 = frente). V = volta na seção, com
+// faixas fixas: 0–0,04 assoalho, 0,04–0,08 canto inferior, 0,08–0,30 lateral,
+// 0,30–0,36 ombro e 0,36–0,5 topo (V = 0,5 − 0,22·x). A outra metade espelha (1 − V).
+export const LIVERY_V = { side0: 0.08, side1: 0.3, topK: 0.22 };
 export function liveryTexture(spec) {
   const W = 1024;
   const H = 512;
@@ -221,46 +224,56 @@ export function liveryTexture(spec) {
   g.fillStyle = spec.color;
   g.fillRect(0, 0, W, H);
   const vy = (v) => (1 - v) * H;
-  // faixas no topo
+  const vx = (x) => 0.5 - LIVERY_V.topK * x; // V no topo para a distância x do centro
+  const both = (fn) => {
+    fn(false);
+    fn(true);
+  };
+  // faixas duplas no capô, teto e tampa traseira
   if (spec.stripes) {
     g.fillStyle = spec.stripeColor;
-    g.fillRect(0, vy(0.5) - 26, W, 16);
-    g.fillRect(0, vy(0.5) + 10, W, 16);
+    for (const [x0, x1] of [
+      [0.06, 0.2],
+      [-0.2, -0.06],
+    ])
+      g.fillRect(W * 0.004, vy(vx(x0)), W * 0.992, vy(vx(x1)) - vy(vx(x0)));
   }
-  // faixa lateral
+  // faixa lateral alta, logo abaixo do ombro
   if (spec.sideStripe) {
     g.fillStyle = spec.stripeColor;
-    for (const v of [0.215, 0.785]) {
+    both((r) => {
+      const v = r ? 1 - 0.288 : 0.288;
       g.save();
       g.translate(0, vy(v));
+      if (r) g.scale(1, -1);
       g.beginPath();
-      g.moveTo(W * 0.08, -6);
-      g.lineTo(W * 0.92, -14);
-      g.lineTo(W * 0.92, 4);
-      g.lineTo(W * 0.08, 6);
+      g.moveTo(W * 0.06, 4);
+      g.lineTo(W * 0.95, 9);
+      g.lineTo(W * 0.95, -7);
+      g.lineTo(W * 0.06, -3);
       g.fill();
       g.restore();
-    }
+    });
   }
-  // linhas das portas
-  g.strokeStyle = 'rgba(0,0,0,0.55)';
+  // juntas de painéis (portas, capô, tampa traseira)
+  g.strokeStyle = 'rgba(0,0,0,0.6)';
   g.lineWidth = 2;
-  for (const [vA, vB] of [
-    [0.16, 0.34],
-    [0.66, 0.84],
-  ]) {
-    for (const u of spec.doorLines) {
-      g.beginPath();
-      g.moveTo(u * W, vy(vA));
-      g.lineTo(u * W + 6, vy(vB));
-      g.stroke();
-    }
+  const line = (u0, v0, u1, v1) => {
+    g.beginPath();
+    g.moveTo(u0 * W, vy(v0));
+    g.lineTo(u1 * W, vy(v1));
+    g.stroke();
+  };
+  for (const r of [false, true]) {
+    const V = (v) => (r ? 1 - v : v);
+    for (const u of spec.doorLines) line(u, V(0.1), u + 0.006, V(0.3));
+    line(spec.doorLines[0], V(0.1), spec.doorLines[1], V(0.1));
+    // capô: laterais e junta traseira
+    line(0.012, V(vx(spec.hoodHalf)), spec.hoodLine, V(vx(spec.hoodHalf)));
+    if (spec.trunkLine) line(spec.trunkLine, V(vx(spec.trunkHalf)), 0.99, V(vx(spec.trunkHalf)));
   }
-  // capô: linhas das juntas
-  g.beginPath();
-  g.moveTo(spec.hoodLine * W, vy(0.42));
-  g.lineTo(spec.hoodLine * W, vy(0.58));
-  g.stroke();
+  line(spec.hoodLine, vx(spec.hoodHalf), spec.hoodLine, 1 - vx(spec.hoodHalf));
+  if (spec.trunkLine) line(spec.trunkLine, vx(spec.trunkHalf), spec.trunkLine, 1 - vx(spec.trunkHalf));
   // número nas laterais
   const drawNumber = (u, v, flip) => {
     g.save();
@@ -268,40 +281,94 @@ export function liveryTexture(spec) {
     if (flip) g.rotate(Math.PI);
     g.fillStyle = '#f7f7f7';
     g.beginPath();
-    g.ellipse(0, 0, 46, 34, 0, 0, Math.PI * 2);
+    g.ellipse(0, 0, 44, 30, 0, 0, Math.PI * 2);
     g.fill();
     g.lineWidth = 4;
     g.strokeStyle = '#111';
     g.stroke();
     g.fillStyle = '#111';
-    g.font = 'bold 50px Arial, sans-serif';
+    g.font = 'bold 46px Arial, sans-serif';
     g.textAlign = 'center';
     g.textBaseline = 'middle';
     g.fillText(String(spec.number), 0, 3);
     g.restore();
   };
-  drawNumber(spec.numberU, 0.24, false);
-  drawNumber(spec.numberU, 0.76, true);
-  // patrocínio na saia lateral
+  drawNumber(spec.numberU, 0.19, false);
+  drawNumber(spec.numberU, 0.81, true);
+  // patrocínios na parte baixa da lateral
   const sponsor = (u, v, flip, txt) => {
     g.save();
     g.translate(u * W, vy(v));
     if (flip) g.rotate(Math.PI);
     g.fillStyle = spec.sponsorColor;
-    g.font = 'bold 22px Arial, sans-serif';
+    g.font = 'bold 17px Arial, sans-serif';
     g.textAlign = 'center';
     g.textBaseline = 'middle';
     g.fillText(txt, 0, 0);
     g.restore();
   };
-  sponsor(0.3, 0.12, false, 'VELOX');
-  sponsor(0.3, 0.88, true, 'VELOX');
-  sponsor(0.72, 0.13, false, 'PNEUS ARCO');
-  sponsor(0.72, 0.87, true, 'PNEUS ARCO');
-  // fundo escuro
-  g.fillStyle = '#16171a';
-  g.fillRect(0, vy(0.06), W, vy(0) - vy(0.06));
-  g.fillRect(0, 0, W, vy(0.94));
+  // entre as caixas de roda: VELOX na porta, PNEUS ARCO atrás dela
+  const su0 = spec.doorLines[0] + 0.045;
+  const su1 = Math.min(spec.doorLines[1] + 0.045, spec.rearU - 0.16);
+  sponsor(su0, 0.115, false, 'VELOX');
+  sponsor(su0, 0.885, true, 'VELOX');
+  sponsor(su1, 0.115, false, 'PNEUS ARCO');
+  sponsor(su1, 0.885, true, 'PNEUS ARCO');
+  // assoalho e canto inferior escuros
+  g.fillStyle = '#141518';
+  g.fillRect(0, vy(0.055), W, vy(0) - vy(0.055));
+  g.fillRect(0, 0, W, vy(0.945));
+  return toTex(c, { repeat: false });
+}
+
+// Veneziana (aberturas do capô/para-lama): ripas inclinadas escuras.
+export function louverTexture() {
+  const [c, g] = canvas(64, 64);
+  g.fillStyle = '#060607';
+  g.fillRect(0, 0, 64, 64);
+  for (let y = 0; y < 64; y += 8) {
+    const lg = g.createLinearGradient(0, y, 0, y + 8);
+    lg.addColorStop(0, '#3a3c40');
+    lg.addColorStop(0.35, '#1c1d20');
+    lg.addColorStop(1, '#050506');
+    g.fillStyle = lg;
+    g.fillRect(0, y + 1, 64, 6);
+  }
+  return toTex(c);
+}
+
+// Disco de freio ventilado e perfurado (UV planar da tampa do cilindro).
+export function discTexture() {
+  const [c, g] = canvas(256, 256);
+  g.fillStyle = '#2a2b2e';
+  g.fillRect(0, 0, 256, 256);
+  const grd = g.createRadialGradient(128, 128, 40, 128, 128, 128);
+  grd.addColorStop(0, '#3a3b3f');
+  grd.addColorStop(0.45, '#8c8f94');
+  grd.addColorStop(0.75, '#9a9da2');
+  grd.addColorStop(0.98, '#6d7075');
+  grd.addColorStop(1, '#2a2b2e');
+  g.fillStyle = grd;
+  g.beginPath();
+  g.arc(128, 128, 127, 0, Math.PI * 2);
+  g.fill();
+  // marcas circulares de uso
+  g.strokeStyle = 'rgba(0,0,0,0.12)';
+  for (let r = 64; r < 125; r += 3) {
+    g.beginPath();
+    g.arc(128, 128, r, 0, Math.PI * 2);
+    g.stroke();
+  }
+  // furos
+  g.fillStyle = '#121214';
+  for (let k = 0; k < 36; k++) {
+    for (const rr of [78, 96, 114]) {
+      const a = (k / 36) * Math.PI * 2 + rr * 0.01;
+      g.beginPath();
+      g.arc(128 + Math.cos(a) * rr, 128 + Math.sin(a) * rr, 3, 0, Math.PI * 2);
+      g.fill();
+    }
+  }
   return toTex(c, { repeat: false });
 }
 

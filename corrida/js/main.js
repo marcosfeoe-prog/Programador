@@ -546,7 +546,7 @@ function updateCamera(dt) {
     _w.set(view.x * 0.3, view.y - target.cgY - 0.25, view.z + 20).applyQuaternion(target.quat).add(tp);
     camera.up.copy(target.up);
     camera.lookAt(_w);
-    camera.fov = camMode === 3 ? 68 : 64 + Math.min(10, speed * 0.15);
+    camera.fov = camMode === 3 ? 72 : 64 + Math.min(10, speed * 0.15);
   }
   // tremida em batidas e em alta velocidade
   camState.shake = Math.max(0, camState.shake - dt * 3);
