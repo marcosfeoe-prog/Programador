@@ -51,8 +51,8 @@ export class Vehicle {
     this.cDamp = 4600 * (m / 1250);
     this.kArb = 26000 * (m / 1250);
     this.sag = (m * G) / 4 / this.k;
-    this.cDrag = 0.42;
-    this.cDown = 0.55;
+    this.cDrag = 0.42 * (model.drag || 1);
+    this.cDown = 0.55 * (model.downforce || 1);
     this.peakTorque = 520 * model.power;
     this.mu = 1.12 * model.grip;
     this.tc = true;

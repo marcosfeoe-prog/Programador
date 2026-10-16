@@ -265,6 +265,7 @@ export function liveryTexture(spec) {
     g.stroke();
   };
   for (const r of [false, true]) {
+    if (spec.noPanelLines) break;
     const V = (v) => (r ? 1 - v : v);
     for (const u of spec.doorLines) line(u, V(0.1), u + 0.006, V(0.3));
     line(spec.doorLines[0], V(0.1), spec.doorLines[1], V(0.1));
@@ -272,8 +273,8 @@ export function liveryTexture(spec) {
     line(0.012, V(vx(spec.hoodHalf)), spec.hoodLine, V(vx(spec.hoodHalf)));
     if (spec.trunkLine) line(spec.trunkLine, V(vx(spec.trunkHalf)), 0.99, V(vx(spec.trunkHalf)));
   }
-  line(spec.hoodLine, vx(spec.hoodHalf), spec.hoodLine, 1 - vx(spec.hoodHalf));
-  if (spec.trunkLine) line(spec.trunkLine, vx(spec.trunkHalf), spec.trunkLine, 1 - vx(spec.trunkHalf));
+  if (!spec.noPanelLines) line(spec.hoodLine, vx(spec.hoodHalf), spec.hoodLine, 1 - vx(spec.hoodHalf));
+  if (spec.trunkLine && !spec.noPanelLines) line(spec.trunkLine, vx(spec.trunkHalf), spec.trunkLine, 1 - vx(spec.trunkHalf));
   // número nas laterais
   const drawNumber = (u, v, flip) => {
     g.save();
@@ -293,8 +294,10 @@ export function liveryTexture(spec) {
     g.fillText(String(spec.number), 0, 3);
     g.restore();
   };
-  drawNumber(spec.numberU, 0.19, false);
-  drawNumber(spec.numberU, 0.81, true);
+  if (!spec.noNumber) {
+    drawNumber(spec.numberU, 0.19, false);
+    drawNumber(spec.numberU, 0.81, true);
+  }
   // patrocínios na parte baixa da lateral
   const sponsor = (u, v, flip, txt) => {
     g.save();
@@ -310,10 +313,14 @@ export function liveryTexture(spec) {
   // entre as caixas de roda: VELOX na porta, PNEUS ARCO atrás dela
   const su0 = spec.doorLines[0] + 0.045;
   const su1 = Math.min(spec.doorLines[1] + 0.045, spec.rearU - 0.16);
-  sponsor(su0, 0.115, false, 'VELOX');
-  sponsor(su0, 0.885, true, 'VELOX');
-  sponsor(su1, 0.115, false, 'PNEUS ARCO');
-  sponsor(su1, 0.885, true, 'PNEUS ARCO');
+  if (!spec.noSponsors) {
+    sponsor(su0, 0.115, false, 'VELOX');
+    sponsor(su0, 0.885, true, 'VELOX');
+    sponsor(su1, 0.115, false, 'PNEUS ARCO');
+    sponsor(su1, 0.885, true, 'PNEUS ARCO');
+  }
+  // desenho extra do módulo do carro (grafismos, textos, degradês)
+  if (spec.draw) spec.draw(g, { W, H, vy, vx, both, line, drawNumber, sponsor, spec });
   // assoalho e canto inferior escuros
   g.fillStyle = '#141518';
   g.fillRect(0, vy(0.055), W, vy(0) - vy(0.055));
