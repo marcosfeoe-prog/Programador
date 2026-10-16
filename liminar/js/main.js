@@ -25,6 +25,11 @@ import { Level44 } from './levels/level44.js';
 import { Level45 } from './levels/level45.js';
 import { Level14 } from './levels/level14.js';
 import { Level16 } from './levels/level16.js';
+import { Level177 } from './levels/level177.js';
+import { Level177Park } from './levels/level177_park.js';
+import { Level177Neon } from './levels/level177_neon.js';
+import { Level177Hill } from './levels/level177_hill.js';
+import { Level177Fog } from './levels/level177_fog.js';
 import { Level12 } from './levels/level12.js';
 import { Level12Street } from './levels/level12_street.js';
 import { Level12White } from './levels/level12_white.js';
@@ -67,6 +72,11 @@ const LEVEL_CLASSES = {
   45: Level45,
   14: Level14,
   16: Level16,
+  177: Level177,
+  '177.2': Level177Park,
+  '177.3': Level177Neon,
+  '177.4': Level177Hill,
+  '177.5': Level177Fog,
   12: Level12,
   '12.2': Level12Street,
   '12.3': Level12White,
@@ -566,7 +576,7 @@ class Game {
     this.post.u.uFadeColor.value.setRGB(1, 1, 1);
     this.fadeTarget = 1;
     this.audio.stopAll();
-    this.settings.reached = LEVELS.findIndex((l) => l.key === '88');
+    this.settings.reached = LEVELS.findIndex((l) => l.key === ORDER[ORDER.length - 1]);
     saveSettings(this.settings);
     const mins = Math.round((performance.now() - this.startStats.t0) / 60000);
     setTimeout(() => {

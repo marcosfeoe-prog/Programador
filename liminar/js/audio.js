@@ -820,6 +820,33 @@ export class AudioEngine {
       }
       B.crow = this.buf(normalize(env(biquad(o, 'bp', 1300, 2.5), 0.02, 0.15), 0.6));
     }
+    // passarinhos cantando (4 s, vários pios e trinados)
+    {
+      const n = sec(4);
+      const o = new Float32Array(n);
+      let seed = 7;
+      const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+      for (let k = 0; k < 16; k++) {
+        const at = sec(rnd() * 3.6);
+        const f0 = 2600 + rnd() * 2200;
+        const notes = 1 + Math.floor(rnd() * 5);
+        const len = 0.05 + rnd() * 0.08;
+        const pan = 0.3 + rnd() * 0.7;
+        for (let q = 0; q < notes; q++) {
+          const st = at + sec(q * (len + 0.03));
+          const m = sec(len);
+          let ph = 0;
+          const up = rnd() < 0.5;
+          for (let i = 0; i < m && st + i < n; i++) {
+            const t = i / m;
+            const f = f0 * (up ? 0.8 + t * 0.45 : 1.25 - t * 0.4) * (1 + 0.04 * Math.sin(t * 60));
+            ph += (2 * Math.PI * f) / SR;
+            o[st + i] += Math.sin(ph) * Math.sin(Math.PI * t) * pan;
+          }
+        }
+      }
+      B.birds = this.buf(normalize(o, 0.45));
+    }
     // gota
     {
       const n = sec(0.25);
@@ -996,7 +1023,7 @@ export class AudioEngine {
   }
 
   // Toca uma faixa carregada em laço pelo canal de música (para na troca de nível).
-  startTrack(name, gain = 0.5, fade = 2) {
+  startTrack(name, gain = 0.5, fade = 2, offset = 0) {
     if (!this.ready || !this.B[name]) return null;
     const ctx = this.ctx;
     const s = ctx.createBufferSource();
@@ -1027,9 +1054,13 @@ export class AudioEngine {
     const w = ctx.createGain();
     w.gain.value = 0.25;
     g.connect(w).connect(this.wet);
-    s.start();
+    const dur = s.buffer.duration;
+    s.start(ctx.currentTime, offset % dur);
+    // posição aproximada na faixa (para continuar de onde parou em outra área)
+    const h0 = { t: ctx.currentTime, pos: offset % dur, rate: 1 };
     const h = {
       src: s,
+      pos: () => (h0.pos + (ctx.currentTime - h0.t) * h0.rate) % dur,
       gain: g,
       base: gain,
       // k: 0 limpo → 1 distorcido
@@ -1037,7 +1068,12 @@ export class AudioEngine {
         dry.gain.setTargetAtTime(1 - k * 0.75, ctx.currentTime, tc);
         fx.gain.setTargetAtTime(k * 0.55, ctx.currentTime, tc);
       },
-      setRate: (r, tc = 1) => s.playbackRate.setTargetAtTime(r, ctx.currentTime, tc),
+      setRate: (r, tc = 1) => {
+        h0.pos = h.pos();
+        h0.t = ctx.currentTime;
+        h0.rate = r;
+        s.playbackRate.setTargetAtTime(r, ctx.currentTime, tc);
+      },
     };
     this.loops.push(h);
     return h;
@@ -1119,7 +1155,7 @@ export class AudioEngine {
     this.windK = 1;
     this.setReverb(look.reverb || 1.5);
     const k = this.kind;
-    const wets = { level16: 0.2, level14: 0.3, level45: 0.35, level43: 0.55, level44: 0.3, level34: 0.6, level35: 0.5, level8: 0.7, level9_5: 0.1, level2: 0.35, level3: 0.45, level37: 0.75, level12: 0.45, level12_2: 0.15, level12_3: 0.9, level88: 0.12, level0_1: 0.4, level10: 0.08, level11: 0.2, level1: 0.55, level9: 0.12, level10_1: 0.18, level23: 0.3, level15: 0.45, level5: 0.4 };
+    const wets = { level177: 0.5, level177_2: 0.15, level177_3: 0.6, level177_4: 0.1, level177_5: 0.35, level16: 0.2, level14: 0.3, level45: 0.35, level43: 0.55, level44: 0.3, level34: 0.6, level35: 0.5, level8: 0.7, level9_5: 0.1, level2: 0.35, level3: 0.45, level37: 0.75, level12: 0.45, level12_2: 0.15, level12_3: 0.9, level88: 0.12, level0_1: 0.4, level10: 0.08, level11: 0.2, level1: 0.55, level9: 0.12, level10_1: 0.18, level23: 0.3, level15: 0.45, level5: 0.4 };
     this.wet.gain.value = wets[k] !== undefined ? wets[k] : 0.35;
     this.hum = null;
     if (k === 'level0') {
@@ -1159,6 +1195,22 @@ export class AudioEngine {
       // bombas e filtros dos tanques, água borbulhando
       this.machineL = this.loop('machine', 0.06, { rate: 0.5, lp: 500, wet: 0.5 });
       this.waterL = this.loop('water', 0.07, { rate: 0.8, lp: 1200, wet: 0.6 });
+      this.loop('brown', 0.04, { lp: 200 });
+    } else if (k === 'level177') {
+      // corredores roxos: zumbido baixo e grave
+      this.hum = this.loop('hum', 0.05, { rate: 0.85, lp: 2000, wet: 0.4 });
+      this.loop('brown', 0.03, { lp: 180 });
+    } else if (k === 'level177_2') {
+      // noite no parque: grilos e vento nas folhas
+      this.loop('crickets', 0.08, { wet: 0.2 });
+      this.wind = this.loop('wind', 0.03, { rate: 0.4, lp: 900, wet: 0.2 });
+    } else if (k === 'level177_3') {
+      this.hum = this.loop('hum', 0.04, { rate: 1.3, lp: 4000, wet: 0.5 });
+    } else if (k === 'level177_4') {
+      this.wind = this.loop('wind', 0.05, { rate: 0.5, lp: 1200, wet: 0.1 });
+      this.loop('birds', 0.04, { rate: 0.9, wet: 0.3 });
+    } else if (k === 'level177_5') {
+      this.wind = this.loop('wind', 0.05, { rate: 0.3, lp: 600, wet: 0.4 });
       this.loop('brown', 0.04, { lp: 200 });
     } else if (k === 'level16') {
       // campos: só um vento morno e suave
@@ -1384,6 +1436,10 @@ export class AudioEngine {
         const r = Math.random();
         if (r < 0.4) this.play('drip', { gain: 0.1, rate: 0.9 + Math.random() * 0.5, pan, wet: 1.4 });
         else if (r < 0.55) this.play('water', { gain: 0.05, rate: 1.6, pan, wet: 1.2 });
+      } else if (k === 'level177_2') {
+        const r = Math.random();
+        if (r < 0.25) this.play('creak', { gain: 0.05, rate: 0.7 + Math.random() * 0.2, pan, wet: 0.4 });
+        else if (r < 0.3) this.play('bark', { gain: 0.03, rate: 0.9, pan, wet: 1.2 });
       } else if (k === 'level16') {
         if (Math.random() < 0.15) this.play('ding', { gain: 0.025, rate: 1.5 + Math.random(), pan, wet: 1.5 });
       } else if (k === 'level14') {

@@ -121,7 +121,7 @@ export const FILTERS = [
 // Os níveis, na ordem em que são visitados. `key` identifica a classe do nível
 // e os bilhetes; `num` é o número canônico (10.1 é um subnível do 10).
 // Ordem em que os níveis são visitados (as chaves de LEVELS; secretos e partes ficam de fora).
-export const ORDER = ['0', '1', '2', '3', '4', '5', '8', '9', '10', '10.1', '11', '12', '14', '15', '16', '23', '34', '35', '37', '43', '44', '45', '88'];
+export const ORDER = ['0', '1', '2', '3', '4', '5', '8', '9', '10', '10.1', '11', '12', '14', '15', '16', '23', '34', '35', '37', '43', '44', '45', '88', '177'];
 
 // Posição de um nível na ordem (partes contam como o nível principal; secretos, como o pai).
 export function orderPos(info) {
@@ -418,6 +418,63 @@ export const LEVELS = [
     desc: 'Campos abertos e macios, céu pastel e montanhas cor-de-rosa que nunca acabam. Coisas que não deveriam estar ali — e que mudam conforme você avança.',
     objective: 'Atravesse os campos até a árvore que brilha.',
     hint: 'A saída fica a mais de 500 metros. Não acredite em tudo o que você vê.',
+  },
+  {
+    key: '177',
+    num: 177,
+    name: 'Memórias do Passado',
+    tag: 'Nível 177',
+    danger: 'Classe 0 · Seguro · Sem entidades',
+    desc: 'Corredores roxos sob um brilho violeta intenso. Atrás de uma porta branca começam as lembranças de alguém — as suas.',
+    objective: 'Encontre a porta branca.',
+    hint: 'Ela não combina com o resto. Procure a luz quente por baixo dela.',
+  },
+  {
+    key: '177.2',
+    num: 177,
+    part: '177',
+    next: '177.3',
+    name: 'Memórias do Passado — O Parque',
+    tag: 'Nível 177 · Área 2',
+    danger: 'Classe 0 · Noite',
+    desc: 'Um parquinho ao ar livre na calada da noite, tudo azulado sob a lua.',
+    objective: 'Ache a trilha e siga até o fim.',
+    hint: 'A trilha começa atrás do parquinho. A saída fica a 150 metros.',
+  },
+  {
+    key: '177.3',
+    num: 177,
+    part: '177',
+    next: '177.4',
+    name: 'Memórias do Passado — As Luzes',
+    tag: 'Nível 177 · Área 3',
+    danger: 'Classe 0 · Neon',
+    desc: 'Corredores curtos de neon colorido, como o caminho para uma festa.',
+    objective: 'Siga as luzes até a porta branca.',
+    hint: 'A porta fica a uns 50 metros. Tem uma carta pregada nela.',
+  },
+  {
+    key: '177.4',
+    num: 177,
+    part: '177',
+    next: '177.5',
+    name: 'Memórias do Passado — O Morro',
+    tag: 'Nível 177 · Área 4',
+    danger: 'Classe 0 · Pôr do sol',
+    desc: 'Campos de grama baixa e uma montanha enorme no pôr do sol. Lá em cima, fumaça.',
+    objective: 'Suba a montanha até a fogueira.',
+    hint: 'Siga os montinhos de pedra.',
+  },
+  {
+    key: '177.5',
+    num: 177,
+    part: '177',
+    name: 'Memórias do Passado — A Neblina',
+    tag: 'Nível 177 · Área 5',
+    danger: 'Classe 0 · Neblina',
+    desc: 'Uma única rua sem fim no meio de uma neblina fortíssima.',
+    objective: 'Siga pela rua até encontrar uma casa.',
+    hint: 'Não dá para ver nada. Continue andando: são 265 metros.',
   },
 ];
 

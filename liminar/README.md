@@ -22,7 +22,7 @@ em tela cheia e na horizontal).
 
 ## Os níveis (V2)
 
-Ordem: **0 → 1 → 2 → 3 → 4 → 5 → 8 → 9 → 10 → 10.1 → 11 → 12 → 14 → 15 → 16 → 23 → 34 → 35 → 37 → 43 → 44 → 45 → 88**, mais dois subníveis secretos (**0.1** e **9.5**). Todos podem ser escolhidos no menu **Níveis** (os secretos só aparecem depois de descobertos).
+Ordem: **0 → 1 → 2 → 3 → 4 → 5 → 8 → 9 → 10 → 10.1 → 11 → 12 → 14 → 15 → 16 → 23 → 34 → 35 → 37 → 43 → 44 → 45 → 88 → 177**, mais dois subníveis secretos (**0.1** e **9.5**). Todos podem ser escolhidos no menu **Níveis** (os secretos só aparecem depois de descobertos).
 
 | Nível | Nome | Como é | Objetivo / saída |
 |---|---|---|---|
@@ -50,7 +50,8 @@ Ordem: **0 → 1 → 2 → 3 → 4 → 5 → 8 → 9 → 10 → 10.1 → 11 → 
 | **43** | Mundo Aquático | Parque-aquário enorme, fechado e vazio, em várias seções: Saguão com bilheterias e lixo, **Túnel dos Peixes** (vidro dos dois lados), salão do **Grande Tanque** (cardumes, arraias, tubarões e um tubarão-baleia), corredor de serviço, Sala de Máquinas, Laboratório e Tanques de Quarentena. Um alto-falante repete avisos do parque. Sem entidades. Área secreta: **O Mar** — atrás de uma fresta escura no Grande Tanque, uma porta molhada leva a uma plataforma no meio de um mar infinito. | Balde de água → jogue no **gerador** → **chave branca** → porta de manutenção → computador **"Abrir Jaula"** → siga o **rastro azul** até a porta aberta |
 | **44** | Os Corredores Desfeitos | Corredores vazios de loja, piso de lajotas bege, luzes pela metade. Sem entidades — mas depois de **10 minutos** o nível se desfaz: o teto cai aos pedaços, a imagem falha, a **vista embaça** e aparecem vultos. Três **portas de madeira**: duas são réplicas com **falhas** e levam ao **Vazio** (cena de despertar em terceira pessoa; uma luz ao longe traz de volta). | Ache a porta de madeira **sem falhas** |
 | **45** | O Escritório Esquecido | Longos corredores de um **escritório abandonado**: paredes cinzas de reboco, **carpete branco** manchado e forro de placas com fluorescentes que zumbem. Salas com mesas, monitores apagados, arquivos e divisórias, portas e janelas de vidro para o corredor; **alas antigas de tijolo cinza**, mais escuras. Texturas feitas a partir de **fotos reais** (parede, carpete, tijolo). Sem entidades. | Ache o **cartão de acesso** em cima de uma mesa → passe-o no leitor da **porta de manutenção de metal** |
-| **88** | Lago Silencioso | Lago imóvel e gelado no fundo de um vale de floresta escura, com reflexo espelhado de verdade. Perto da água **todo som é abafado**; dentro dela, sussurros sobem pelo corpo. **Ciclo de dia e noite**: o dia é escuro, a noite quase cega. A **Criatura** (só à noite) persegue quem ela vê — só a **cabana com a porta fechada** salva. A **Sombra** observa de longe entre as árvores e some quando você chega perto. No acampamento abandonado há uma **carta com uma foto em branco** que recupera a sanidade sozinha enquanto estiver na mochila. | Encontre a passagem subterrânea e entre na caverna (final do jogo) |
+| **88** | Lago Silencioso | Lago imóvel e gelado no fundo de um vale de floresta escura, com reflexo espelhado de verdade. Perto da água **todo som é abafado**; dentro dela, sussurros sobem pelo corpo. **Ciclo de dia e noite**: o dia é escuro, a noite quase cega. A **Criatura** (só à noite) persegue quem ela vê — só a **cabana com a porta fechada** salva. A **Sombra** observa de longe entre as árvores e some quando você chega perto. No acampamento abandonado há uma **carta com uma foto em branco** que recupera a sanidade sozinha enquanto estiver na mochila. | Encontre a passagem subterrânea e entre na caverna (leva ao Nível 177) |
+| **177** | Memórias do Passado | O nível final, em **cinco áreas**, contando a história do andarilho — o **Mike**, que fala sozinho o nível inteiro. (1) **Corredores roxos** com brilho violeta intenso; ache a **porta branca**. (2) Um **parquinho** na calada da noite, tudo azulado sob a lua; uma **trilha** de 150 m leva a uma casa com a luz acesa e a **chaleira soltando vapor**. (3) **Corredores de neon** colorido, com confete e balões; a 50 m, uma porta branca com a carta **"Festa de Mike"** (é aqui que ele lembra o próprio nome). (4) **Campos de grama baixa** e uma **montanha enorme no pôr do sol**; no topo, uma **fogueira** e uma carta sobre o aniversário em que o Mike sumiu. (5) Uma **rua sem fim na neblina**, com a vista embaçada; a 265 m, uma **casa desolada** com uma cama, a chaleira no fogo e o **bilhete com a história do Mike**. Músicas: "rescue" (neheart x ashess) nas áreas 1–3, cada vez **mais lenta e distorcida** nas áreas 2 e 3; "you not the same" (tilekid) nas áreas 4 e 5. | Deite na cama: **cena final** — Mike dorme, acorda numa floresta viva ao pôr do sol com pássaros cantando, anda perdido e encontra a **casa onde cresceu**: voltou para a Terra (as **Frontrooms**). **Primeiro final do jogo** |
 
 Os objetivos aparecem como checklist no HUD e a bússola aponta para o próximo passo.
 
@@ -188,6 +189,7 @@ liminar/
   js/levels/level45.js    Escritório Esquecido (salas, cartão, porta de metal)
   js/levels/level14.js    Paraíso Doente (floresta vermelha, trilha, casas, porta negra, música)
   js/levels/level16.js    Mundo Dreamcore (estágios por distância, céu/planeta, alucinações, árvore)
+  js/levels/level177*.js  Memórias do Passado (5 áreas, música contínua, história do Mike, final)
   js/levels/level34*.js   Sistema de Esgoto (áreas, céu verde, Ratos da Morte)
   js/levels/level35*.js   Estacionamento (andares, rampas, criatura, carros)
   js/levels/wake.js       cena de despertar reutilizável
@@ -200,5 +202,5 @@ liminar/
   js/notes.js         textos dos bilhetes
 ```
 
-Parâmetros úteis para testes: `?level=0..26&autostart` (10 = subnível 0.1, 11 = Nível 88, 12–14 = áreas do Nível 12, 15 = Nível 37, 16 = Nível 2, 17 = Nível 3, 18 = Nível 8, 19 = subnível 9.5, 20 = Nível 34, 21 = Nível 35, 22 = Nível 43, 23 = Nível 44, 24 = Nível 45, 25 = Nível 14, 26 = Nível 16) (entra direto no nível),
+Parâmetros úteis para testes: `?level=0..31&autostart` (10 = subnível 0.1, 11 = Nível 88, 12–14 = áreas do Nível 12, 15 = Nível 37, 16 = Nível 2, 17 = Nível 3, 18 = Nível 8, 19 = subnível 9.5, 20 = Nível 34, 21 = Nível 35, 22 = Nível 43, 23 = Nível 44, 24 = Nível 45, 25 = Nível 14, 26 = Nível 16, 27–31 = áreas 1–5 do Nível 177) (entra direto no nível),
 `?q=ultra`, `?filter=vhs`, `?seed=7`, `?touch` (força os controles de toque).

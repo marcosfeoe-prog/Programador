@@ -869,7 +869,9 @@ export class Level88 {
     if (!g.objectiveDone('cave')) g.completeObjective('cave');
     g.completeObjective('enter', 'Você desce para dentro da terra.');
     g.audio.setMuffle(0);
-    setTimeout(() => g.level === this && g.finish({ title: 'Lago Silencioso', text: ENDING }), 1800);
+    // a passagem não termina aqui: leva ao Nível 177 (o primeiro final do jogo)
+    g.hud.message(ENDING.split('. ')[0] + '.', 5);
+    setTimeout(() => g.level === this && g.reachExit('noclip', 0.2), 2600);
   }
 
   onCollapse() {

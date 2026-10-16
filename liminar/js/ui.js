@@ -176,7 +176,7 @@ export class HUD {
 
   // Fala do próprio andarilho: legenda com nome, letra por letra.
   // lines: textos ('' = pausa); done: chamado no fim.
-  say(lines, done) {
+  say(lines, done, who = 'VOCÊ') {
     let el = $('dlg');
     if (!el) {
       el = document.createElement('div');
@@ -184,6 +184,7 @@ export class HUD {
       el.innerHTML = '<div class="who">VOCÊ</div><div class="txt"></div>';
       this.el.appendChild(el);
     }
+    el.querySelector('.who').textContent = who;
     this.dlg = { lines, i: -1, done };
     this.nextLine();
   }

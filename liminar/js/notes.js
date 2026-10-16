@@ -119,6 +119,11 @@ export const NOTES = {
     'Atrás das pedras do Grande Tanque tem uma fresta. No fundo, uma porta molhada. Do outro lado ouvi ondas. ONDAS.',
     'No laboratório tem um computador que abre a jaula da quarentena. Lá dentro alguém deixou um rastro azul até uma porta aberta.',
   ],
+  '177': [
+    'Este lugar não é como os outros. Ele parece lembrar de alguém.',
+    'Tem uma porta branca no meio do roxo. Atrás dela, a noite e um parquinho.',
+    'Se você ouvir alguém dizer um nome que é seu, não se assuste. Você só tinha esquecido.',
+  ],
   '16': [
     'Aqui é tão bom que dá medo de ir embora. Talvez seja essa a armadilha.',
     'Depois de uns 250 passos grandes a vista embaça. Continue. Depois de 400, o céu fica rosa e aparece um planeta. Não pare para olhar demais.',
