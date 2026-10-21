@@ -121,7 +121,7 @@ export const FILTERS = [
 // Os níveis, na ordem em que são visitados. `key` identifica a classe do nível
 // e os bilhetes; `num` é o número canônico (10.1 é um subnível do 10).
 // Ordem em que os níveis são visitados (as chaves de LEVELS; secretos e partes ficam de fora).
-export const ORDER = ['0', '1', '2', '3', '4', '5', '8', '9', '10', '10.1', '11', '12', '14', '15', '16', '23', '34', '35', '37', '43', '44', '45', '88', '177'];
+export const ORDER = ['0', '1', '2', '3', '4', '5', '8', '9', '10', '10.1', '11', '12', '14', '15', '16', '23', '34', '35', '37', '43', '44', '45', '46', '88', '177'];
 
 // Posição de um nível na ordem (partes contam como o nível principal; secretos, como o pai).
 export function orderPos(info) {
@@ -475,6 +475,16 @@ export const LEVELS = [
     desc: 'Uma única rua sem fim no meio de uma neblina fortíssima.',
     objective: 'Siga pela rua até encontrar uma casa.',
     hint: 'Não dá para ver nada. Continue andando: são 265 metros.',
+  },
+  {
+    key: '46',
+    num: 46,
+    name: 'Deserto Árabe',
+    tag: 'Nível 46',
+    danger: 'Classe 3 · Inseguro · Sem entidades · Calor extremo',
+    desc: 'Um deserto imenso de dunas douradas sob um sol branco. Vento quente o tempo todo e algumas cabanas de madeira perdidas na areia. O calor é o perigo.',
+    objective: 'Atravesse o deserto (600 m).',
+    hint: 'Fique na sombra das cabanas quando o calor apertar. Cuidado com tempestades de areia e miragens.',
   },
 ];
 
