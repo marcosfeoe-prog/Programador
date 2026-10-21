@@ -49,7 +49,7 @@ const POD_T0 = [[0, 0.0], [0.05, 0.18], [0.1, 0.5], [0.17, 0.56], [0.3, 0.56], [
 // recebem um forro fosco). y0/y1 podem ser chaves [u, y] (bocas em cunha).
 const SCOOPS = [
   // canal côncavo que nasce atrás da roda dianteira e corre pela lateral
-  { u0: 0.255, u1: 0.64, y0: 0.24, y1: 0.6, depth: 0.15, fu: 0.07, fy: 0.1, shade: 0.35 },
+  { u0: 0.255, u1: 0.64, y0: 0.24, y1: 0.6, depth: 0.15, fu: 0.07, fy: 0.1, shade: 0.55 },
   // grande entrada de ar antes da roda traseira: cunha estreita na frente, alta atrás
   { u0: 0.49, u1: 0.688, y0: [[0.49, 0.5], [0.688, 0.4]], y1: [[0.49, 0.66], [0.688, 0.95]], depth: 0.2, fu: 0.07, fy: 0.12, shade: 0.95, liner: 0.25 },
   // saída de ar vertical logo atrás da caixa de roda dianteira
@@ -69,10 +69,31 @@ function secInfo(c) {
   return { rs, xt, x0, ys1: c.yf - rs, ys0: c.yb + c.rb };
 }
 
+// medidas básicas (as mesmas da especificação no fim do arquivo)
+const LEN = 5.0;
+const FRONT_U = 0.165;
+const WHEEL_R = 0.37;
+const Z_F = LEN / 2 - FRONT_U * LEN; // eixo dianteiro
+// barra de LED dos pontões: corre baixa pela face da frente (do "V" central até
+// perto da roda, subindo um pouco) e depois sobe acompanhando a frente da caixa
+// de roda (arco de raio LED_R em volta do eixo)
+const LED_Y0 = 0.33; // altura no centro (ponta do "V")
+const LED_Y1 = WHEEL_R; // altura onde a face encontra o arco
+const LED_R = 0.49;
+const LED_UF = (LEN / 2 - Z_F - LED_R) / LEN; // fim da face (início do arco)
+const LED_TH = 0.5; // ângulo final do arco (rad)
+// altura da barra de LED na posição u (acima dela a frente é pintada; abaixo, recuo escuro)
+function ledY(u) {
+  if (u <= LED_UF) return mix(LED_Y0, LED_Y1, sstep(0, LED_UF, u));
+  const dz = LEN / 2 - u * LEN - Z_F;
+  return WHEEL_R + Math.sqrt(Math.max(0, LED_R * LED_R - dz * dz));
+}
 // recuo escuro da frente (abaixo da barra de LED, acima do lábio inferior); uEnd é
 // onde ele termina: a forma recua só antes da caixa de roda, a pintura escura vai até ela
-const frontRecess = (u, y, c, ys1, uEnd = 0.085) =>
-  sstep(0.004, 0.03, u) * (1 - sstep(uEnd - 0.03, uEnd, u)) * sstep(c.yb + 0.08, c.yb + 0.12, y) * (1 - sstep(ys1 - 0.05, ys1 - 0.005, y));
+const frontRecess = (u, y, c, ys1, uEnd = 0.072, u0 = 0.004) => {
+  const top = Math.min(ledY(u) - 0.016, ys1 - 0.005);
+  return sstep(u0, u0 + 0.026, u) * (1 - sstep(uEnd - 0.03, uEnd, u)) * sstep(c.yb + 0.08, c.yb + 0.12, y) * (1 - sstep(top - 0.035, top, y));
+};
 
 function bodyMod(u, p, c) {
   const { xt, x0, ys1 } = secInfo(c);
@@ -112,15 +133,15 @@ let DOT_TEX = null;
 function dotTexture(THREE, TX) {
   if (DOT_TEX) return DOT_TEX;
   const [c, g] = makeCanvas(256, 256);
-  g.fillStyle = '#aeb4bf';
+  g.fillStyle = '#b4bccb';
   g.fillRect(0, 0, 256, 256);
   const rand = TX.rng(77);
-  for (let i = 0; i < 5200; i++) {
+  for (let i = 0; i < 2600; i++) {
     const x = rand() * 256;
     const y = rand() * 256;
-    const r = 0.7 + rand() * 1.5;
+    const r = 1.2 + rand() * 2.2;
     const l = rand();
-    g.fillStyle = l < 0.55 ? `rgba(52,58,72,${0.35 + rand() * 0.4})` : `rgba(240,244,250,${0.35 + rand() * 0.5})`;
+    g.fillStyle = l < 0.5 ? `rgba(60,70,96,${0.3 + rand() * 0.35})` : `rgba(240,245,255,${0.4 + rand() * 0.5})`;
     g.beginPath();
     g.arc(x, y, r, 0, Math.PI * 2);
     g.fill();
@@ -128,7 +149,7 @@ function dotTexture(THREE, TX) {
   DOT_TEX = new THREE.CanvasTexture(c);
   DOT_TEX.colorSpace = THREE.SRGBColorSpace;
   DOT_TEX.wrapS = DOT_TEX.wrapT = THREE.RepeatWrapping;
-  DOT_TEX.repeat.set(7, 7);
+  DOT_TEX.repeat.set(4, 4);
   DOT_TEX.anisotropy = 8;
   return DOT_TEX;
 }
@@ -191,68 +212,96 @@ function ringsGeometry(THREE, rings, closed = false, flip = false) {
 }
 
 // ------------------------------------------------------------ rodas
-// calota aerodinâmica de 5 lâminas curvas ("turbina"), pontilhada
+// calota aerodinâmica: disco azul-escuro com 5 raios retos deslocados do centro
+// ("cata-vento"/turbina) e 5 painéis pontilhados prata entre eles, junto ao aro
 function wheelFace(w) {
   const { THREE, TX, spin, face, rimR, mesh } = w;
-  const base = new THREE.MeshPhysicalMaterial({ color: 0x141a2a, metalness: 0.7, roughness: 0.35, clearcoat: 0.6, side: THREE.DoubleSide });
-  const blade = new THREE.MeshStandardMaterial({ color: 0xffffff, map: dotTexture(THREE, TX), metalness: 0.55, roughness: 0.42 });
+  const base = new THREE.MeshPhysicalMaterial({ color: 0x1a2c60, metalness: 0.6, roughness: 0.3, clearcoat: 0.8, side: THREE.DoubleSide });
+  const panel = new THREE.MeshStandardMaterial({ color: 0xffffff, map: dotTexture(THREE, TX), metalness: 0.5, roughness: 0.45 });
   // fundo: prato raso (cone) escuro
   const dish = new THREE.LatheGeometry(
-    [new THREE.Vector2(0.001, -0.03), new THREE.Vector2(0.09, -0.028), new THREE.Vector2(rimR * 0.7, -0.012), new THREE.Vector2(rimR + 0.004, 0.0)],
+    [new THREE.Vector2(0.001, -0.026), new THREE.Vector2(0.09, -0.024), new THREE.Vector2(rimR * 0.7, -0.012), new THREE.Vector2(rimR + 0.004, 0.0)],
     48,
   );
   dish.rotateZ(-Math.PI / 2);
   const dm = mesh(dish, base, false);
   dm.position.x = face - 0.004;
   spin.add(dm);
-  // lâminas: borda de ataque curva, larga no aro e estreita no cubo
-  const r0 = 0.07;
-  const r1 = rimR - 0.012;
-  const N = 8;
-  for (let k = 0; k < 5; k++) {
-    const a0 = -0.45; // construída em torno do ângulo 0 e depois girada para o lugar
-    const sh = new THREE.Shape();
-    const lead = [];
-    const trail = [];
-    for (let i = 0; i <= N; i++) {
-      const t = i / N;
-      const r = r0 + (r1 - r0) * t;
-      const a = a0 + 0.24 * t * t + 0.05 * t; // varredura (curva)
-      const wdt = 0.5 + 0.36 * t; // largura angular
-      lead.push([Math.cos(a) * r, Math.sin(a) * r]);
-      trail.push([Math.cos(a + wdt) * r, Math.sin(a + wdt) * r]);
+  // geometria dos raios: reta de direção th deslocada "off" para o lado (cata-vento)
+  const r1 = rimR - 0.01;
+  const rh = 0.075; // raio do cubo
+  const ws = 0.06; // largura do raio
+  const off = 0.034;
+  const N5 = 5;
+  // ponto da reta (direção th, deslocamento lateral o) no raio r
+  const onLine = (th, o, r) => {
+    const s = Math.sqrt(Math.max(0, r * r - o * o));
+    return [Math.cos(th) * s - Math.sin(th) * o, Math.sin(th) * s + Math.cos(th) * o];
+  };
+  const ang = (p) => Math.atan2(p[1], p[0]);
+  for (let k = 0; k < N5; k++) {
+    const thA = (k / N5) * Math.PI * 2;
+    const thB = ((k + 1) / N5) * Math.PI * 2;
+    // painel entre a borda "de cima" do raio A e a borda "de baixo" do raio B
+    const oA = off + ws / 2;
+    const oB = off - ws / 2;
+    const pts = [];
+    const nIn = 4;
+    // da borda A (do cubo até o aro)
+    const rIn = rh + 0.045;
+    for (let i = 0; i <= nIn; i++) pts.push(onLine(thA, oA, rIn + ((r1 - rIn) * i) / nIn));
+    // arco no aro
+    let a0 = ang(pts[pts.length - 1]);
+    let a1 = ang(onLine(thB, oB, r1));
+    while (a1 < a0) a1 += Math.PI * 2;
+    for (let i = 1; i < 9; i++) {
+      const a = a0 + ((a1 - a0) * i) / 9;
+      pts.push([Math.cos(a) * r1, Math.sin(a) * r1]);
     }
-    sh.moveTo(lead[0][0], lead[0][1]);
-    for (let i = 1; i <= N; i++) sh.lineTo(lead[i][0], lead[i][1]);
-    sh.absarc(0, 0, r1, Math.atan2(lead[N][1], lead[N][0]), Math.atan2(trail[N][1], trail[N][0]) + (Math.atan2(trail[N][1], trail[N][0]) < Math.atan2(lead[N][1], lead[N][0]) ? Math.PI * 2 : 0), false);
-    for (let i = N; i >= 0; i--) sh.lineTo(trail[i][0], trail[i][1]);
+    // borda B (do aro até o cubo)
+    for (let i = nIn; i >= 0; i--) pts.push(onLine(thB, oB, rIn + ((r1 - rIn) * i) / nIn));
+    const sh = new THREE.Shape();
+    sh.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) sh.lineTo(pts[i][0], pts[i][1]);
     sh.closePath();
-    const g = new THREE.ExtrudeGeometry(sh, { depth: 0.016, bevelEnabled: false, curveSegments: 6 });
+    const g = new THREE.ExtrudeGeometry(sh, { depth: 0.012, bevelEnabled: false, curveSegments: 4 });
+    // painel levemente torcido (faceta de turbina): gira em torno do raio do meio
+    const mid = (thA + thB) / 2;
+    g.rotateZ(-mid);
+    g.rotateX(0.13);
+    g.rotateZ(mid);
     g.rotateY(Math.PI / 2);
-    // torção em volta do próprio raio: lâmina de turbina (uma borda sai, a outra afunda)
-    g.rotateZ(0.2);
-    const bm = mesh(g, blade, false);
-    bm.position.x = face - 0.012;
-    bm.rotation.x = (k / 5) * Math.PI * 2;
-    spin.add(bm);
+    const pm = mesh(g, panel, false);
+    pm.position.x = face - 0.006;
+    spin.add(pm);
+    // raio: lâmina escura levemente saliente, com aresta (duas faces)
+    const len = r1 - rh;
+    const sg = new THREE.BoxGeometry(len, ws * 0.92, 0.014);
+    const mid0 = onLine(thA, off, rh + len / 2);
+    sg.rotateZ(thA);
+    sg.translate(mid0[0], mid0[1], 0);
+    sg.rotateY(Math.PI / 2);
+    const sm = mesh(sg, base, false);
+    sm.position.x = face - 0.004;
+    spin.add(sm);
   }
-  // cubo central escuro com anel
-  const hub = new THREE.CylinderGeometry(0.068, 0.075, 0.03, 32);
+  // cubo central: pentágono escuro com anel
+  const hub = new THREE.CylinderGeometry(rh, rh + 0.008, 0.03, 5);
   hub.rotateZ(Math.PI / 2);
   const hm = mesh(hub, base, false);
   hm.position.x = face + 0.002;
   spin.add(hm);
-  const ring = new THREE.TorusGeometry(0.07, 0.006, 8, 32);
+  const ring = new THREE.TorusGeometry(0.04, 0.005, 5, 20);
   ring.rotateY(Math.PI / 2);
-  const rm = mesh(ring, blade, false);
-  rm.position.x = face + 0.016;
+  const rm = mesh(ring, panel, false);
+  rm.position.x = face + 0.018;
   spin.add(rm);
   return true;
 }
 
 // ------------------------------------------------------------ detalhes
 function decorate(ctx) {
-  const { THREE, TX, S, M, paint, paintPlain, part, onRear, onTop, plateGeo, mirrorPts, mesh, root, drlMat, headMat, brakeMat, revMat, bumperG, cab, front, rear } = ctx;
+  const { THREE, TX, S, M, paint, paintPlain, part, onRear, onTop, onSide, plateGeo, mirrorPts, mesh, root, drlMat, headMat, brakeMat, revMat, bumperG, cab, front, rear } = ctx;
   const L = S.L;
   const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
   const cabTop = (t) => {
@@ -305,9 +354,9 @@ function decorate(ctx) {
     }
   };
   // poço escuro entre os pontões (frente do cockpit)
-  shadeCols(0.1, 0.3, (u, p, c) => (p.seg === 4 ? 0.93 * win(0.13, 0.225, 0.02, u) * sstep(c.yt + 0.1, c.yt + 0.03, p.y) : 0), '6,8,14');
+  shadeCols(0.1, 0.3, (u, p, c) => (p.seg === 4 ? 0.93 * win(0.13, 0.225, 0.02, u) * sstep(c.yt + 0.075, c.yt + 0.03, p.y) : 0), '6,8,14');
   // recuo da frente (sob a barra de LED)
-  shadeCols(0, 0.15, (u, p, c) => (p.seg === 2 ? 0.94 * frontRecess(u, p.y, c, secInfo(c).ys1, 0.135) : 0), '5,7,12');
+  shadeCols(0, 0.13, (u, p, c) => (p.seg === 2 ? 0.94 * frontRecess(u, p.y, c, secInfo(c).ys1, 0.082, -0.03) : 0), '5,7,12');
   // interior das entradas laterais
   shadeCols(0.22, 0.75, (u, p) => {
     if (p.seg !== 2) return 0;
@@ -367,47 +416,80 @@ function decorate(ctx) {
   // o canvas mudou: reenvia a textura
   paint.map.needsUpdate = true;
 
-  // ---- barra de LED na borda de ataque dos pontões (desce em "V" até o bico)
-  const ledPath = (sgn) => {
-    const pts = [];
-    // começa na ponta do "V", no centro do bico
-    const h0 = S.halfPath(0.004);
-    pts.push(V3(0, (h0[I_SH0 + 2].y + h0[I_SH0 + 3].y) / 2 + 0.004, S.z(0.004) + 0.012));
-    for (let k = 0; k <= 26; k++) {
-      const u = 0.006 + (0.112 - 0.006) * (k / 26) ** 1.1;
-      const h = S.halfPath(u);
-      const a = h[I_SH0 + 2];
-      const b = h[I_SH0 + 3];
-      pts.push(V3(sgn * ((a.x + b.x) / 2 + 0.006), (a.y + b.y) / 2 + 0.006, S.z(u) + 0.004));
+  // ---- barra de LED na borda de baixo da frente dos pontões: desce em "V" até o
+  // bico e sobe pela frente da caixa de roda; em cima dela, cascata de "pixels"
+  const ledPts = (sgn, out = 0.018) => {
+    // ponto na lataria (u, y) afastado "out" ao longo da normal da superfície
+    const at = (u, y) => {
+      // (a normal usa diferenças em u ± 0,01: longe da ponta, onde u < 0 não existe)
+      const n = S.sideNormal(Math.max(u, 0.012), y);
+      return V3(sgn * (S.sideX(u, y) + n.x * out), y + n.y * out, S.z(u) + n.z * out);
+    };
+    const pts = [V3(0, LED_Y0, S.z(0) + out * 0.8)];
+    for (let k = 1; k <= 22; k++) {
+      const u = LED_UF * (k / 22) ** 1.15;
+      pts.push(at(u, ledY(u)));
     }
-    return new THREE.CatmullRomCurve3(pts);
+    for (let k = 1; k <= 10; k++) {
+      const th = (LED_TH * k) / 10;
+      const z = Z_F + LED_R * Math.cos(th);
+      pts.push(at(S.u(z), WHEEL_R + LED_R * Math.sin(th)));
+    }
+    return pts;
   };
   for (const sgn of [1, -1]) {
     const hp = part(sgn > 0 ? 'farol esquerdo' : 'farol direito', 14);
-    const tube = new THREE.TubeGeometry(ledPath(sgn), 64, 0.011, 6, false);
-    hp.add(mesh(tube, drlMat, false));
-    // moldura preta sob a barra
-    const back = new THREE.TubeGeometry(ledPath(sgn), 64, 0.015, 6, false);
-    const bm = mesh(back, M.gloss, false);
-    bm.position.set(-sgn * 0.005, -0.009, -0.006);
-    hp.add(bm);
-    // cascata de "pixels" de LED sobre o pontão, rareando para trás
+    const path = ledPts(sgn);
+    const curve = new THREE.CatmullRomCurve3(path);
+    hp.add(mesh(new THREE.TubeGeometry(curve, 64, 0.011, 5, false), drlMat, false));
+    // moldura preta atrás da barra (um pouco abaixo: "sombra" do vinco)
+    const back = mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(ledPts(sgn, 0.002)), 64, 0.017, 5, false), M.gloss, false);
+    back.position.y = -0.008;
+    hp.add(back);
+    // cascata de pixels: densa junto à metade de fora da barra, rareando para
+    // cima e para trás (sobre a face e depois sobre o alto do pontão)
     const rand = TX.rng(sgn > 0 ? 913 : 517);
-    const px = new THREE.BoxGeometry(0.024, 0.024, 0.008);
-    for (let i = 0; i < 13; i++) {
-      const uR = 0.06 + i * 0.0072;
+    const px = new THREE.BoxGeometry(0.019, 0.019, 0.008);
+    const shY = (u) => S.halfPath(u)[I_SH0].y;
+    for (let i = 0; i < 24; i++) {
+      const s = i / 23; // 0 = meio da face, 1 = fim do arco
+      let u;
+      let y0;
+      if (s < 0.62) {
+        u = LED_UF * (0.4 + (0.6 * s) / 0.62);
+        y0 = ledY(u);
+      } else {
+        const th = (LED_TH * (s - 0.62)) / 0.38;
+        u = S.u(Z_F + LED_R * Math.cos(th));
+        y0 = WHEEL_R + LED_R * Math.sin(th);
+      }
+      for (let j = 0; j < 11; j++) {
+        const fade = (1 - s) * 0.5 + j / 11;
+        if (rand() < fade * fade * 0.85 + 0.04) continue;
+        const uu = u + (rand() - 0.5) * 0.003 + j * 0.0024;
+        const y = y0 + 0.03 + j * 0.022 + (rand() - 0.5) * 0.006;
+        if (y > shY(uu) - 0.01) break;
+        const gq = onSide(uu, y, sgn, 0.004);
+        const q = mesh(px, rand() < 0.6 ? drlMat : headMat, false);
+        const sc = (1.05 - fade * 0.45) * (0.75 + rand() * 0.4);
+        q.scale.set(sc, sc * (0.8 + rand() * 0.4), 1);
+        gq.add(q);
+        hp.add(gq);
+      }
+    }
+    // alguns pixels soltos no alto do pontão, perto da quina
+    for (let i = 0; i < 8; i++) {
+      const uR = 0.07 + i * 0.008;
       const h = S.halfPath(uR);
       const xEdge = (h[I_SH0 + 2].x + h[I_SH0 + 3].x) / 2;
-      for (let j = 0; j < 16; j++) {
-        const fade = i / 13 + j / 15;
-        if (rand() < fade * fade * 1.2 + 0.04) continue;
-        const u = uR + (rand() - 0.5) * 0.004;
-        const x = xEdge - 0.026 - j * 0.027 - i * 0.006 + (rand() - 0.5) * 0.012;
-        if (x < 0.5) break;
-        const gq = onTop(u, sgn * x, 0.004);
-        const q = mesh(px, rand() < 0.6 ? drlMat : headMat, false);
-        const s = (1.05 - fade * 0.5) * (0.75 + rand() * 0.4);
-        q.scale.set(s, s * (0.8 + rand() * 0.4), 1);
+      for (let j = 0; j < 6; j++) {
+        const fade = i / 8 + j / 6;
+        if (rand() < fade * fade * 1.1 + 0.25) continue;
+        const x = xEdge - 0.01 - j * 0.03 + (rand() - 0.5) * 0.012;
+        const gq = onTop(uR + (rand() - 0.5) * 0.004, sgn * x, 0.004);
+        const q = mesh(px, drlMat, false);
+        const sc = (0.95 - fade * 0.4) * (0.75 + rand() * 0.4);
+        q.scale.set(sc, sc, 1);
         gq.add(q);
         hp.add(gq);
       }
@@ -418,16 +500,22 @@ function decorate(ctx) {
   // entrada vertical com filete rosa no meio
   {
     const h0 = S.halfPath(0);
-    const yLip = h0[0].y + 0.07;
-    const cy = (yLip + h0[h0.length - 1].y) / 2;
-    const half = h0.filter((q) => q.y > yLip && q.x > 0.004).map((q) => [q.x * 0.99, cy + (q.y - cy) * 0.99]);
-    const outline = [[half[0][0], yLip], ...half, ...mirrorPts(half), [-half[0][0], yLip]];
+    const yLip = h0[0].y + 0.025;
+    const yTop = LED_Y0 - 0.016;
+    // largura da seção da ponta em cada altura, só abaixo da barra de LED
+    const half = [];
+    for (let k = 0; k <= 6; k++) {
+      const y = yLip + ((yTop - yLip) * k) / 6;
+      half.push([S.sideX(0, y) * 0.97, y]);
+    }
+    half.push([0.02, yTop]);
+    const outline = [...half, ...mirrorPts(half)];
     const cap = new THREE.Group();
     cap.add(mesh(plateGeo(outline, 0.01, 0.012), M.gloss, false));
-    const intake = mesh(plateGeo([[-0.045, yLip + 0.02], [0.045, yLip + 0.02], [0.03, cy + 0.06], [0, cy + 0.08], [-0.03, cy + 0.06]], 0.01, 0.01), M.exhaustIn, false);
+    const intake = mesh(plateGeo([[-0.05, yLip + 0.012], [0.05, yLip + 0.012], [0.035, yTop - 0.025], [0, yTop - 0.008], [-0.035, yTop - 0.025]], 0.01, 0.01), M.exhaustIn, false);
     intake.position.z = 0.002;
     cap.add(intake);
-    const fil = mesh(plateGeo([[-0.004, yLip + 0.03], [0.004, yLip + 0.03], [0.004, cy + 0.06], [-0.004, cy + 0.06]], 0.002, 0.006), M.accentPink, false);
+    const fil = mesh(plateGeo([[-0.004, yLip + 0.02], [0.004, yLip + 0.02], [0.004, yTop - 0.02], [-0.004, yTop - 0.02]], 0.002, 0.006), M.accentPink, false);
     fil.position.z = 0.006;
     cap.add(fil);
     cap.position.z = S.z(0) + 0.002;
@@ -602,7 +690,7 @@ function decorate(ctx) {
   // vidro da bolha bem escuro (troca só o vidro desta cabine)
   {
     // só a face de fora: visto de dentro (câmera do cockpit) o vidro não escurece a pista
-    const glass = new THREE.MeshPhysicalMaterial({ color: 0x02040a, metalness: 0.35, roughness: 0.03, transparent: true, opacity: 0.9, envMapIntensity: 2.4, clearcoat: 1, side: THREE.FrontSide, depthWrite: false });
+    const glass = new THREE.MeshPhysicalMaterial({ color: 0x01030a, metalness: 0, roughness: 0.06, transparent: true, opacity: 0.96, envMapIntensity: 0.14, clearcoat: 0.4, clearcoatRoughness: 0.03, side: THREE.FrontSide, depthWrite: false });
     for (const o of root.children) if (o.isMesh && Array.isArray(o.material) && o.material[1] === M.darkGlass) o.material = [o.material[0], glass, o.material[2], o.material[3]];
   }
 
@@ -625,7 +713,7 @@ function decorate(ctx) {
           const a = t * Math.PI * 2 * 6;
           helix.push(V3(-0.09 + 0.18 * t, Math.cos(a) * 0.026, Math.sin(a) * 0.026));
         }
-        grp.add(mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(helix), 80, 0.005, 4, false), springMat, false));
+        grp.add(mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(helix), 54, 0.005, 3, false), springMat, false));
         grp.position.set(sgn * 0.33, y - 0.025, S.z(u));
         grp.rotation.y = sgn * ang;
         root.add(grp);
@@ -765,8 +853,8 @@ function decorate(ctx) {
     const grp = new THREE.Group();
     grp.add(wm);
     // letreiro "ALVORADA" sobre o extradorso
-    const tMat = new THREE.MeshBasicMaterial({ map: textTexture(THREE, 'ALVORADA', { w: 1024, h: 160, size: 120, weight: '300', spacing: 34, stroke: 3 }), transparent: true, opacity: 0.95, depthWrite: false, color: 0xd8ecff });
-    const tp = mesh(new THREE.PlaneGeometry(1.5, 0.22), tMat, false);
+    const tMat = new THREE.MeshBasicMaterial({ map: textTexture(THREE, 'ALVORADA', { w: 1024, h: 160, size: 124, weight: '400', spacing: 30, stroke: 6 }), transparent: true, opacity: 1, depthWrite: false, color: 0xe6f4ff });
+    const tp = mesh(new THREE.PlaneGeometry(1.66, 0.26), tMat, false);
     tp.rotation.x = -Math.PI / 2 - 0.06;
     tp.position.set(0, 0.078, -chord * 0.46);
     grp.add(tp);
@@ -858,8 +946,8 @@ function decorate(ctx) {
         .reverse()
         .map(([x, y]) => V3(sgn * Math.max(0.004, x), y, zr - 0.009));
       const curve = new THREE.CatmullRomCurve3(pts);
-      lp.add(mesh(new THREE.TubeGeometry(curve, 70, 0.009, 6, false), brakeMat, false));
-      const back = mesh(new THREE.TubeGeometry(curve, 70, 0.017, 6, false), M.gloss, false);
+      lp.add(mesh(new THREE.TubeGeometry(curve, 56, 0.009, 5, false), brakeMat, false));
+      const back = mesh(new THREE.TubeGeometry(curve, 56, 0.017, 5, false), M.gloss, false);
       back.position.z = 0.006;
       lp.add(back);
     }
@@ -924,6 +1012,45 @@ function decorate(ctx) {
     root.add(fg);
   }
 
+  // ---- lábio preto em volta das caixas de roda: acompanha o arco do recorte e
+  // esconde o serrilhado da borda (o recorte é resolvido anel a anel do loft)
+  {
+    const lipMat = new THREE.MeshPhysicalMaterial({ color: 0x07080c, metalness: 0.2, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.1, side: THREE.DoubleSide });
+    for (const zw of [S.zF, S.zR]) {
+      const uw = S.u(zw);
+      const c = S.sec(uw);
+      const clamp = c.yf - key(ctx.model.rs, uw) * 0.6 - 0.015;
+      // ponto do caminho do lábio: s em [0, 1] (frente → trás), d = afastamento do arco
+      const yLow = c.yb + 0.03;
+      const lenV = S.yc - yLow;
+      const lenA = Math.PI * S.rA;
+      const tot = 2 * lenV + lenA;
+      const at = (s, d) => {
+        const l = s * tot;
+        const r = S.rA + d;
+        if (l < lenV) return [zw + r, yLow + l];
+        if (l > lenV + lenA) return [zw - r, S.yc - (l - lenV - lenA)];
+        const a = ((l - lenV) / lenA) * Math.PI;
+        return [zw + r * Math.cos(a), Math.min(S.yc + r * Math.sin(a), clamp + d)];
+      };
+      for (const sgn of [1, -1]) {
+        const rows = [];
+        for (const d of [-0.024, 0.01, 0.042]) {
+          const row = [];
+          for (let k = 0; k <= 64; k++) {
+            const [z, y] = at(k / 64, d);
+            const u = S.u(z);
+            // a borda de fora encosta na lataria; a de dentro fica 7 mm saliente
+            const out = d > 0.035 ? 0.0 : 0.007;
+            row.push(V3(sgn * (S.sideX(u, y) + out), y, z));
+          }
+          rows.push(row);
+        }
+        root.add(mesh(ringsGeometry(THREE, rows), lipMat, false));
+      }
+    }
+  }
+
   // ---- saias laterais (lâminas de carbono)
   for (const sgn of [1, -1]) {
     const u0 = 0.27;
@@ -970,10 +1097,10 @@ export default {
   wheelR: 0.37,
   tireW: 0.33,
   trackHalf: 0.9,
-  hw: [[0, 0.2], [0.025, 0.5], [0.055, 0.8], [0.09, 0.98], [0.13, 1.06], [0.165, 1.08], [0.21, 1.075], [0.26, 1.02], [0.32, 0.95], [0.42, 0.92], [0.52, 0.94], [0.62, 1.0], [0.71, 1.07], [0.79, 1.09], [0.87, 1.075], [0.94, 1.03], [0.98, 0.97], [1, 0.92]],
+  hw: [[0, 0.16], [0.02, 0.5], [0.045, 0.8], [0.075, 0.96], [0.11, 1.045], [0.165, 1.08], [0.21, 1.075], [0.26, 1.02], [0.32, 0.95], [0.42, 0.92], [0.52, 0.94], [0.62, 1.0], [0.71, 1.07], [0.79, 1.09], [0.87, 1.075], [0.94, 1.03], [0.98, 0.97], [1, 0.92]],
   yb: [[0, 0.17], [0.03, 0.11], [0.08, 0.1], [0.5, 0.095], [0.9, 0.11], [0.97, 0.16], [1, 0.22]],
-  yt: [[0, 0.46], [0.05, 0.52], [0.1, 0.56], [0.125, 0.52], [0.15, 0.44], [0.2, 0.43], [0.25, 0.5], [0.33, 0.62], [0.5, 0.66], [0.62, 0.7], [0.72, 0.68], [0.85, 0.69], [0.95, 0.69], [1, 0.64]],
-  yf: [[0, 0.47], [0.03, 0.53], [0.06, 0.65], [0.1, 0.8], [0.15, 0.92], [0.2, 0.94], [0.25, 0.88], [0.3, 0.76], [0.36, 0.69], [0.46, 0.67], [0.54, 0.74], [0.62, 0.88], [0.7, 0.97], [0.79, 1.0], [0.87, 0.98], [0.94, 0.92], [1, 0.8]],
+  yt: [[0, 0.37], [0.04, 0.49], [0.1, 0.56], [0.125, 0.52], [0.15, 0.44], [0.2, 0.43], [0.25, 0.5], [0.33, 0.62], [0.5, 0.66], [0.62, 0.7], [0.72, 0.68], [0.85, 0.69], [0.95, 0.69], [1, 0.64]],
+  yf: [[0, 0.38], [0.03, 0.56], [0.06, 0.72], [0.1, 0.85], [0.15, 0.93], [0.2, 0.94], [0.25, 0.88], [0.3, 0.76], [0.36, 0.69], [0.46, 0.67], [0.54, 0.74], [0.62, 0.88], [0.7, 0.97], [0.79, 1.0], [0.87, 0.98], [0.94, 0.92], [1, 0.8]],
   rs: [[0, 0.08], [0.06, 0.14], [0.15, 0.2], [0.3, 0.16], [0.45, 0.12], [0.6, 0.12], [0.7, 0.15], [0.79, 0.2], [0.95, 0.16], [1, 0.12]],
   rb: 0.06,
   tuck: 0.04,

@@ -25,18 +25,18 @@ const mix = (a, b, t) => a + (b - a) * t;
 // ---------------------------------------------------- escultura da lataria
 // borda dianteira do ressalto do capô (forma de "U" vista de cima)
 const NOSE_Y = 0.27; // altura da boca central na ponta
-const POD_W = 0.44;
-const podU = (x) => 0.214 + 0.045 * (Math.min(1, x / POD_W) ** 2);
+const POD_W = 0.47;
+const podU = (x) => 0.222 + 0.05 * (Math.min(1, x / POD_W) ** 2);
 // altura do ressalto acima do capô (pele própria, com a frente escura)
 const podH = (u, x) => {
   const us = podU(x);
   const side = 1 - sm(0.28, POD_W, x);
-  return -0.016 + 0.093 * sm(us - 0.004, us + 0.018, u) * Math.pow(side, 0.6) * (1 - 0.25 * (x / POD_W) ** 2);
+  return -0.016 + 0.125 * sm(us - 0.004, us + 0.022, u) * Math.pow(side, 0.6) * (1 - 0.25 * (x / POD_W) ** 2);
 };
 // canal lateral: borda de cima (vinco) sobe de trás da roda dianteira até a tomada
 const chanTop = (u) => mix(0.36, 0.69, sm(0.27, 0.62, u));
-const CH_END0 = 0.62;
-const CH_END1 = 0.65;
+const CH_END0 = 0.585;
+const CH_END1 = 0.655;
 const chanDepth = (u) => 0.15 * sm(0.27, 0.6, u) ** 0.8 * (1 - sm(CH_END0, CH_END1, u));
 
 function topProfile(u, x, c) {
@@ -51,7 +51,7 @@ function topProfile(u, x, c) {
   y += 0.02 * win(u, 0.0, 0.03, 0.14, 0.2) * Math.exp(-((x / 0.2) ** 2));
   // painel central do capô levemente elevado, com vincos que abrem até o ressalto
   const xe = mix(0.2, POD_W - 0.04, sm(0.0, 0.22, u));
-  y += 0.014 * win(u, 0.005, 0.03, 0.2, 0.24) * (1 - sm(xe - 0.03, xe + 0.03, x));
+  y += 0.018 * win(u, 0.005, 0.03, 0.2, 0.24) * (1 - sm(xe - 0.045, xe + 0.045, x));
   // capô rebaixado logo antes do ressalto (aumenta a "boca" da abertura)
   const fx = 1 - sm(POD_W - 0.1, POD_W + 0.02, x);
   y -= 0.03 * win(u, 0.11, 0.2, 0.225, 0.27) * fx;
@@ -66,7 +66,7 @@ function bodyMod(u, p, c) {
   // bico: a ponta encolhe para os lados e para o meio da altura (tampa plana pequena)
   if (u < 0.035) {
     const k = Math.sqrt(u / 0.035);
-    p.x *= mix(0.6, 1, k);
+    p.x *= mix(0.8, 1, k);
     p.y = NOSE_Y + (p.y - NOSE_Y) * mix(0.5, 1, k);
   }
   if (p.seg === 2) {
@@ -96,9 +96,9 @@ function mats(ctx) {
       const x = i * 8;
       const y = j * 8;
       const lg = hor ? g.createLinearGradient(x, y, x, y + 8) : g.createLinearGradient(x, y, x + 8, y);
-      lg.addColorStop(0, '#0c0d0f');
-      lg.addColorStop(0.5, hor ? '#43464c' : '#2a2c31');
-      lg.addColorStop(1, '#0c0d0f');
+      lg.addColorStop(0, '#060708');
+      lg.addColorStop(0.5, hor ? '#5c6068' : '#30333a');
+      lg.addColorStop(1, '#060708');
       g.fillStyle = lg;
       g.fillRect(x, y, 8, 8);
     }
@@ -114,10 +114,19 @@ function mats(ctx) {
     // carbono com trama fina (UV em metros nas peles e nas peças extrudadas)
     carbon: new THREE.MeshPhysicalMaterial({ color: 0xffffff, map: carbonTex(9, 9), metalness: 0.2, roughness: 0.38, clearcoat: 0.9, clearcoatRoughness: 0.05, envMapIntensity: 0.8 }),
     // carbono do teto (UV da cabine: u ao longo do carro todo)
-    roofCarbon: new THREE.MeshPhysicalMaterial({ color: 0x86898f, map: carbonTex(26, 25), metalness: 0.15, roughness: 0.4, clearcoat: 0.8, clearcoatRoughness: 0.06, envMapIntensity: 0.32 }),
+    roofCarbon: new THREE.MeshPhysicalMaterial({ color: 0xa4a8b0, map: carbonTex(15, 14), metalness: 0.15, roughness: 0.4, clearcoat: 0.85, clearcoatRoughness: 0.06, envMapIntensity: 0.45 }),
+    // vidro fumê bem escuro (para-brisa e janelas)
+    tint: (() => {
+      const m = M.darkGlass.clone();
+      m.color.set(0x020305);
+      m.opacity = 0.86;
+      // só por fora: de dentro (cockpit) o vidro não escurece a vista
+      m.side = THREE.FrontSide;
+      return m;
+    })(),
     hole: new THREE.MeshStandardMaterial({ color: 0x050506, roughness: 0.85, metalness: 0 }),
     satinBlack: new THREE.MeshStandardMaterial({ color: 0x0e0f11, roughness: 0.45, metalness: 0.3 }),
-    lampBase: new THREE.MeshPhysicalMaterial({ color: 0x0a1424, metalness: 0.85, roughness: 0.25, clearcoat: 1 }),
+    lampBase: new THREE.MeshPhysicalMaterial({ color: 0x0c1c3a, metalness: 0.85, roughness: 0.25, clearcoat: 1 }),
     grille: M.grille,
     louver: M.louver,
   };
@@ -332,10 +341,10 @@ export default {
   wheelR: 0.345,
   tireW: 0.31,
   trackHalf: 0.86,
-  hw: [[0, 0.74], [0.03, 0.87], [0.08, 0.95], [0.13, 1.0], [0.19, 1.035], [0.25, 1.02], [0.32, 0.95], [0.45, 0.93], [0.6, 0.98], [0.7, 1.05], [0.75, 1.075], [0.85, 1.05], [0.95, 0.98], [1, 0.92]],
+  hw: [[0, 0.56], [0.025, 0.74], [0.06, 0.88], [0.1, 0.96], [0.14, 1.01], [0.19, 1.035], [0.25, 1.02], [0.32, 0.95], [0.45, 0.93], [0.6, 0.98], [0.7, 1.05], [0.75, 1.075], [0.85, 1.05], [0.95, 0.98], [1, 0.92]],
   yb: [[0, 0.14], [0.06, 0.12], [0.5, 0.12], [0.82, 0.13], [0.9, 0.2], [1, 0.32]],
   yt: [[0, 0.46], [0.04, 0.52], [0.1, 0.58], [0.19, 0.63], [0.3, 0.68], [0.45, 0.74], [0.6, 0.82], [0.75, 0.9], [0.9, 0.9], [1, 0.84]],
-  yf: [[0, 0.46], [0.04, 0.62], [0.1, 0.76], [0.19, 0.87], [0.27, 0.83], [0.35, 0.79], [0.5, 0.8], [0.62, 0.9], [0.75, 0.99], [0.88, 0.97], [1, 0.88]],
+  yf: [[0, 0.46], [0.04, 0.62], [0.1, 0.78], [0.19, 0.9], [0.27, 0.855], [0.35, 0.8], [0.5, 0.8], [0.62, 0.9], [0.75, 0.99], [0.88, 0.97], [1, 0.88]],
   rs: [[0, 0.1], [0.12, 0.085], [0.27, 0.09], [0.4, 0.12], [0.75, 0.16], [1, 0.12]],
   rb: 0.06,
   tuck: 0.05,
@@ -348,8 +357,8 @@ export default {
     roof: 1.13,
     tW: 0.3,
     tR: 0.42,
-    hwBase: [[0, 0.7], [0.2, 0.8], [0.4, 0.82], [0.65, 0.72], [1, 0.42]],
-    hwRoof: [[0, 0.5], [0.3, 0.62], [0.6, 0.58], [1, 0.3]],
+    hwBase: [[0, 0.76], [0.2, 0.85], [0.4, 0.86], [0.65, 0.74], [1, 0.42]],
+    hwRoof: [[0, 0.56], [0.3, 0.68], [0.6, 0.62], [1, 0.3]],
     rRoof: 0.2,
     crown: 0.06,
     winEnd: WIN_END,
@@ -369,7 +378,7 @@ export default {
       const yA = c.yt - c.crown * (xr / c.wR) ** 2;
       const ySide = yA + ((-2 * c.crown * xr) / (c.wR * c.wR)) * c.r - c.r;
       if (ySide - c.belt < 0.07) return;
-      const q = sm(0.22, WIN_END + 0.04, t) ** 2;
+      const q = sm(0.36, WIN_END + 0.03, t) ** 1.6;
       const yW = mix(c.belt + 0.04, ySide - 0.014, q);
       const i = Math.round((p.v - 0.302) / 0.003); // 0 = borracha, 1..6 = lateral
       const y = i === 0 ? yW - 0.02 : i === 1 ? yW : yW + ((ySide - yW) * (i - 1)) / 5;
@@ -387,10 +396,14 @@ export default {
       }
       if (seg === 2) {
         if (t < 0.28) return inner && t > 0.035 ? 1 : 2;
+        // metade de fora do canto também é vidro: a janela em gota fica alta (moldura branca fina)
+        if (j <= 14 && t > 0.31 && t < WIN_END + 0.02) return 1;
         return 0;
       }
       if (t < 0.05 && j <= 5) return 2;
       // lateral (j de 4 a 11): 6 = borracha, 7..11 = vidro
+      // coluna branca entre o para-brisa envolvente e a janela lateral em gota
+      if (t > 0.272 && t < 0.31 && j >= 6) return 0;
       if (t < WIN_END && j >= 6) return t < 0.035 || j === 6 ? 2 : 1;
       return 0;
     },
@@ -428,6 +441,28 @@ export default {
         g.closePath();
         g.fill();
       }
+      // colarinho preto na base do para-brisa (passa por baixo do vidro)
+      g.fillStyle = '#060607';
+      g.fillRect(0.274 * W, vy(0.68), 0.03 * W, vy(0.32) - vy(0.68));
+      // vincos do capô: do centro do bico abrindo até as bordas do ressalto
+      for (const r of [false, true]) {
+        const V = (v) => vy(r ? 1 - v : v);
+        const crease = (dx, col, lw) => {
+          g.strokeStyle = col;
+          g.lineWidth = lw;
+          g.beginPath();
+          for (let k = 0; k <= 16; k++) {
+            const u = 0.025 + (0.2 * k) / 16;
+            const x = 0.1 + 0.32 * Math.pow(k / 16, 1.2) + dx;
+            if (k) g.lineTo(u * W, V(vx(x)));
+            else g.moveTo(u * W, V(vx(x)));
+          }
+          g.stroke();
+        };
+        crease(0.03, 'rgba(60,64,72,0.16)', 6);
+        crease(0.012, 'rgba(40,44,50,0.24)', 2.5);
+        crease(-0.012, 'rgba(255,255,255,0.5)', 2);
+      }
       // junta da porta (sutil)
       g.strokeStyle = 'rgba(0,0,0,0.35)';
       g.lineWidth = 2;
@@ -461,25 +496,25 @@ export default {
   drag: 0.9,
   final: 3.0,
 
-  // aro preto de 10 raios finos em pares (V), côncavo, com porca central
+  // aro preto de 10 pares de raios finos (20 raios), côncavo, com porca central
   wheelFace(w) {
     const { THREE, spin, face, rimR, mesh } = w;
     if (!RIM) RIM = new THREE.MeshPhysicalMaterial({ color: 0x0f1012, metalness: 0.55, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.1 });
     const mat = RIM;
-    const r0 = 0.072;
+    const r0 = 0.06;
     const r1 = rimR - 0.008;
     const dish = 0.05;
     const pos = [];
     const N = 7;
-    for (let k = 0; k < 5; k++) {
-      const base = (k / 5) * Math.PI * 2;
+    for (let k = 0; k < 10; k++) {
+      const base = (k / 10) * Math.PI * 2;
       for (const side of [-1, 1]) {
         const st = [];
         for (let i = 0; i <= N; i++) {
           const f = i / N;
           const r = r0 + (r1 - r0) * f;
-          const ang = base + side * (0.09 + 0.2 * f) + 0.06 * f; // abre em V e gira um pouco
-          const half = (0.011 - 0.003 * f) / r; // meia largura angular
+          const ang = base + side * (0.05 + 0.07 * f) + 0.05 * f; // abre em V e gira um pouco
+          const half = (0.0085 - 0.0025 * f) / r; // meia largura angular
           const xf = face - 0.004 - dish * (1 - f) ** 1.3;
           const xb = xf - 0.03;
           const c = (a, rr, x) => [x, Math.cos(a) * rr, Math.sin(a) * rr];
@@ -500,7 +535,7 @@ export default {
     g.computeVertexNormals();
     spin.add(mesh(g, mat, false));
     // cubo e porca central
-    const hub = new THREE.CylinderGeometry(0.085, 0.09, 0.05, 28);
+    const hub = new THREE.CylinderGeometry(0.068, 0.074, 0.05, 28);
     hub.rotateZ(Math.PI / 2);
     const hm = mesh(hub, mat, false);
     hm.position.x = face - dish - 0.012;
@@ -531,8 +566,8 @@ export default {
     };
 
     // branco perolado: leve iridescência no verniz (vale para qualquer cor escolhida)
-    for (const pm of [ctx.paint, paintPlain]) {
-      pm.iridescence = 0.3;
+    for (const pm of [ctx.paint]) {
+      pm.iridescence = 0.12;
       pm.iridescenceIOR = 1.45;
       pm.iridescenceThicknessRange = [260, 420];
     }
@@ -558,6 +593,7 @@ export default {
       if (o.isMesh && Array.isArray(o.material) && o.material[3] === M.carbon) {
         o.material = o.material.slice();
         o.material[3] = X.roofCarbon;
+        o.material[1] = X.tint;
       }
 
     // ------------------------- ressalto do capô com a abertura escura na frente
@@ -575,7 +611,9 @@ export default {
           const [u, , x] = podMap(a, b);
           return podH(u, x);
         },
-        quadMat: (a, b) => (b < 0.3 ? 1 : 0),
+        // frente escura em "U": os cantos descem para trás pelos flancos do ressalto
+        // e a base do para-brisa também é preta ("colarinho" em volta do ressalto)
+        quadMat: (a, b) => (b < 0.3 || (a > 0.84 && b < 0.3 + 0.55 * sm(0.84, 1, a)) || b > 0.9 ? 1 : 0),
         cast: true,
       });
       add(root, o);
@@ -585,9 +623,9 @@ export default {
     {
       // linha central do farol: da ponta dianteira (a = 0) até a ponta traseira (a = 1)
       const lamp = (a, b, grow = 0) => {
-        const u = 0.02 + 0.1 * a;
-        const sC = sOfY(u, mix(0.47, 0.6, a)); // na face da frente, subindo para o para-lama
-        const hw = 0.042 * Math.pow(1 - a, 0.7) * Math.sqrt(sm(0, 0.12, a)) + 0.005 + grow;
+        const u = 0.03 + 0.12 * a;
+        const sC = sOfY(u, mix(0.5, 0.7, a)); // na face da frente, subindo para o para-lama
+        const hw = 0.052 * Math.pow(1 - a, 0.75) * Math.sqrt(sm(0, 0.12, a)) + 0.006 + grow;
         return [u, sC + (b * 2 - 1) * hw];
       };
       for (const sgn of [1, -1]) {
@@ -663,19 +701,22 @@ export default {
       const uB = 0.15;
       for (let k = 0; k <= 12; k++) {
         const u = uB * (1 - k / 12);
-        const x = S.sideX(u, ySp + 0.06) + 0.035 + 0.03 * (1 - u / uB);
+        const x = S.sideX(u, ySp + 0.06) + 0.035 + 0.07 * (1 - u / uB);
         pts.push([x, S.z(u)]);
       }
-      const zN = S.z(0) + 0.11;
-      pts.push([0.35, zN - 0.02]);
-      pts.push([0, zN]);
-      pts.push([-0.35, zN - 0.02]);
-      for (let k = 12; k >= 0; k--) {
+      // borda da frente em arco (ponta central um pouco mais saliente)
+      const [xs0, zs0] = pts[12];
+      const zN = S.z(0) + 0.13;
+      for (let k = 1; k <= 10; k++) {
+        const f = k / 10;
+        pts.push([xs0 * (1 - f), zs0 + (zN - zs0) * Math.sin((f * Math.PI) / 2) ** 0.7]);
+      }
+      for (let k = pts.length - 2; k >= 0; k--) {
         const [x, z] = pts[k];
         pts.push([-x, z]);
       }
-      shp.moveTo(pts[0][0], -pts[0][1]);
-      for (const [x, z] of pts.slice(1)) shp.lineTo(x, -z);
+      shp.moveTo(pts[0][0], pts[0][1]);
+      for (const [x, z] of pts.slice(1)) shp.lineTo(x, z);
       shp.closePath();
       const geo = new THREE.ExtrudeGeometry(shp, { depth: 0.028, bevelEnabled: true, bevelSize: 0.006, bevelThickness: 0.006, bevelSegments: 2, curveSegments: 4 });
       geo.rotateX(Math.PI / 2);
@@ -882,8 +923,8 @@ export default {
           const u = u0 + (1 - u0) * (k / 8);
           shp.push([S.z(u), S.sec(u).yb + 0.01]);
         }
-        shp.push([S.z(1) - 0.03, 0.2]);
-        shp.push([S.z(u0), 0.13]);
+        shp.push([S.z(1) - 0.03, 0.25]);
+        shp.push([S.z(u0), 0.125]);
         const fg = mesh(plateGeo(shp.map(([z, y]) => [z, y]), 0.01, 0.012), X.satinBlack);
         fg.rotation.y = -Math.PI / 2;
         fg.position.set(xf - 0.006, 0, 0);
@@ -900,9 +941,6 @@ export default {
         { mat: X.hole, lift: 0.004, sides: [1, -1] },
       );
       add(dif, ramp);
-      const lip = mesh(new THREE.BoxGeometry(rear.hw * 1.7, 0.012, 0.08), X.carbon);
-      lip.position.set(0, 0.125, S.z(1) - 0.0);
-      dif.add(lip);
     }
   },
 };
