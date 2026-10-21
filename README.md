@@ -154,3 +154,6 @@ Segundo jogo do repositório: exploração em primeira pessoa pelos **Níveis 0,
 noturna, câmera térmica…), qualidade gráfica **Baixa, Média, Alta e Ultra** e
 controles feitos para **celular**. Com o servidor rodando (`npm start`), abra
 `http://localhost:8080/liminar/`. Detalhes em [`liminar/README.md`](liminar/README.md).
+
+## Outros jogos neste repositório
+- [`restaurante/`](restaurante/README.md) — **Sabor Tycoon**, tycoon de restaurante 2D isométrico estilo celular.
