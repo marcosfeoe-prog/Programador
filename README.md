@@ -154,3 +154,14 @@ Segundo jogo do repositório: exploração em primeira pessoa pelos **Níveis 0,
 noturna, câmera térmica…), qualidade gráfica **Baixa, Média, Alta e Ultra** e
 controles feitos para **celular**. Com o servidor rodando (`npm start`), abra
 `http://localhost:8080/liminar/`. Detalhes em [`liminar/README.md`](liminar/README.md).
+
+---
+
+# Escape dos Backrooms (pasta `escape/`)
+
+Terceiro jogo: terror em primeira pessoa inspirado em *Escape the Backrooms*, com
+**5 níveis** (O Saguão, Zona Habitável, Sonhos de Canos, O Hotel e Corra Pela Sua
+Vida), entidades animadas que perseguem o jogador, quebra-cabeças (fusíveis,
+válvulas, cartão-chave), lanterna, fôlego e água de amêndoas. Com o servidor rodando
+(`npm start`), abra `http://localhost:8080/escape/`. Detalhes em
+[`escape/README.md`](escape/README.md).

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0a07" />
+  <meta name="description" content="Escape dos Backrooms: terror em primeira pessoa com 5 níveis, entidades e perseguições, direto no navegador." />
+  <title>Escape dos Backrooms</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script type="importmap">
+    { "imports": { "three": "../vendor/three/three.module.min.js" } }
+  </script>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <div id="grain"></div>
+  <div id="vignette"></div>
+  <div id="fear"></div>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div id="top">
+      <div id="hud-level"></div>
+      <div id="objective"></div>
+    </div>
+    <div id="crosshair"></div>
+    <div id="hold"></div>
+    <div id="prompt"></div>
+    <div id="toast"></div>
+    <div id="bottom">
+      <div class="bar" id="stamina-wrap"><span>FÔLEGO</span><div class="track"><div id="stamina"></div></div></div>
+      <div class="bar" id="battery-wrap"><span>LANTERNA</span><div class="track"><div id="battery"></div></div></div>
+      <div id="inv" title="Água de amêndoas (Q)"><i class="bottle"></i><b id="inv-almond">× 0</b></div>
+      <div id="crouch-ico">AGACHADO</div>
+    </div>
+    <!-- Controles de toque -->
+    <div id="touch">
+      <div id="t-stick-zone"></div>
+      <div id="t-look-zone"></div>
+      <div id="t-base"><div id="t-knob"></div></div>
+      <button id="t-pause" class="tb">II</button>
+      <div id="t-buttons">
+        <button id="t-use" class="tb big">USAR</button>
+        <button id="t-run" class="tb">CORRER</button>
+        <button id="t-crouch" class="tb">AGACHAR</button>
+        <button id="t-light" class="tb">LUZ</button>
+        <button id="t-drink" class="tb">BEBER</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="levelcard">
+    <div id="lc-num"></div>
+    <div id="lc-name"></div>
+    <div id="lc-sub"></div>
+  </div>
+
+  <!-- Menu principal -->
+  <div id="menu" class="screen on">
+    <div class="title">
+      <h1 data-text="ESCAPE DOS">ESCAPE DOS</h1>
+      <h1 class="big" data-text="BACKROOMS">BACKROOMS</h1>
+      <p class="tag">Se você não tomar cuidado e sair da realidade nas áreas erradas…</p>
+    </div>
+    <div class="menu-col">
+      <button id="btn-continue" class="btn primary">CONTINUAR</button>
+      <button id="btn-new" class="btn">NOVO JOGO</button>
+      <div id="level-select"></div>
+      <button id="btn-help" class="btn ghost">CONTROLES</button>
+      <label class="opt">Sensibilidade <input id="opt-sens" type="range" min="0.3" max="2.5" step="0.05" value="1" /></label>
+      <label class="opt">Volume <input id="opt-vol" type="range" min="0" max="1" step="0.05" value="0.8" /></label>
+    </div>
+    <div id="webgl-error" class="hidden">Seu navegador não suporta WebGL — o jogo não pode rodar aqui.</div>
+  </div>
+
+  <div id="help" class="screen">
+    <div class="panel">
+      <h2>CONTROLES</h2>
+      <table>
+        <tr><td>WASD / setas</td><td>Andar</td></tr>
+        <tr><td>Mouse</td><td>Olhar (clique para capturar o mouse)</td></tr>
+        <tr><td>Shift</td><td>Correr (gasta fôlego)</td></tr>
+        <tr><td>C / Ctrl</td><td>Agachar (alternar / segurar) — mais silencioso, passa sob vigas</td></tr>
+        <tr><td>E / clique</td><td>Usar, abrir portas, pegar itens (segure nas válvulas)</td></tr>
+        <tr><td>F</td><td>Lanterna</td></tr>
+        <tr><td>Q</td><td>Beber água de amêndoas (restaura o fôlego)</td></tr>
+        <tr><td>Esc / P</td><td>Pausar</td></tr>
+      </table>
+      <p>No celular: analógico à esquerda, arraste à direita para olhar. Empurre o analógico até o fim para correr.</p>
+      <button class="btn" data-back>VOLTAR</button>
+    </div>
+  </div>
+
+  <div id="pause" class="screen">
+    <div class="panel">
+      <h2>PAUSADO</h2>
+      <button id="btn-resume" class="btn primary">CONTINUAR</button>
+      <button id="btn-restart" class="btn">REINICIAR NÍVEL</button>
+      <button id="btn-pause-help" class="btn ghost">CONTROLES</button>
+      <button id="btn-menu" class="btn ghost">MENU PRINCIPAL</button>
+    </div>
+  </div>
+
+  <div id="death">
+    <h2>VOCÊ FOI PEGO</h2>
+    <p id="death-msg"></p>
+    <div class="row">
+      <button id="btn-retry" class="btn primary">TENTAR DE NOVO</button>
+      <button id="btn-death-menu" class="btn ghost">MENU</button>
+    </div>
+  </div>
+
+  <div id="win" class="screen">
+    <div class="panel center">
+      <h2>VOCÊ ESCAPOU</h2>
+      <p>A porta se abre para a luz do dia. O zumbido finalmente para.</p>
+      <p id="win-stats"></p>
+      <button id="btn-win-menu" class="btn primary">MENU PRINCIPAL</button>
+    </div>
+  </div>
+
+  <div id="jumpflash"></div>
+  <div id="fade" class="on"></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
