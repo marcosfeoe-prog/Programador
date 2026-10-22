@@ -1,0 +1,10 @@
+{
+  "name": "Blocos — Mundo de Blocos 3D",
+  "short_name": "Blocos",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#3b2a1a",
+  "theme_color": "#3b2a1a",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

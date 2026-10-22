@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#3b2a1a" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="description" content="Blocos: jogo de mundo aberto em blocos no estilo Minecraft, feito do zero no navegador, com primeira e terceira pessoa." />
+    <title>Blocos — Mundo de Blocos 3D</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/style.css" />
+    <script type="importmap">
+      { "imports": { "three": "../vendor/three/three.module.min.js" } }
+    </script>
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+
+    <!-- HUD -->
+    <div id="hud" class="hidden">
+      <div id="crosshair"></div>
+      <div id="debug" class="hidden"></div>
+      <div id="chat-log"></div>
+      <div id="hotbar-wrap">
+        <div id="item-name"></div>
+        <div id="stats">
+          <div id="hearts"></div>
+          <div id="hunger"></div>
+          <div id="air"></div>
+        </div>
+        <div id="hotbar"></div>
+      </div>
+      <div id="vignette"></div>
+      <div id="hurt-flash"></div>
+      <div id="water-overlay"></div>
+    </div>
+
+    <!-- controles de toque -->
+    <div id="touch" class="hidden">
+      <div id="t-joy"><div id="t-knob"></div></div>
+      <button id="t-jump" class="tbtn">⤒</button>
+      <button id="t-sneak" class="tbtn">⇩</button>
+      <button id="t-inv" class="tbtn small">⋯</button>
+      <button id="t-cam" class="tbtn small">👁</button>
+      <button id="t-drop" class="tbtn small">⇣</button>
+      <button id="t-pause" class="tbtn small">❚❚</button>
+    </div>
+
+    <!-- tela do inventário / bancada / fornalha / baú -->
+    <div id="container-screen" class="screen dim hidden">
+      <div id="container" class="gui-window"></div>
+      <div id="carried" class="slot-item hidden"></div>
+      <div id="tooltip" class="hidden"></div>
+    </div>
+
+    <!-- chat -->
+    <div id="chat" class="hidden">
+      <input id="chat-input" type="text" maxlength="100" autocomplete="off" spellcheck="false" />
+    </div>
+
+    <!-- menus -->
+    <div id="title" class="screen menu-bg">
+      <div class="menu-col">
+        <canvas id="logo" width="460" height="120"></canvas>
+        <div id="splash">Feito do zero!</div>
+        <button class="mc-btn" data-act="singleplayer">Um jogador</button>
+        <button class="mc-btn" data-act="options">Opções...</button>
+        <button class="mc-btn" data-act="controls">Controles</button>
+      </div>
+      <div class="corner-left">Blocos 1.0</div>
+      <div class="corner-right">Feito com three.js · tudo gerado por código</div>
+    </div>
+
+    <div id="worlds" class="screen dirt-bg hidden">
+      <h2>Selecionar mundo</h2>
+      <div id="world-list" class="list-box"></div>
+      <div class="btn-row">
+        <button class="mc-btn half" data-act="play-world" disabled>Jogar mundo</button>
+        <button class="mc-btn half" data-act="new-world">Criar novo mundo</button>
+      </div>
+      <div class="btn-row">
+        <button class="mc-btn half" data-act="delete-world" disabled>Excluir</button>
+        <button class="mc-btn half" data-act="back">Cancelar</button>
+      </div>
+    </div>
+
+    <div id="create" class="screen dirt-bg hidden">
+      <h2>Criar novo mundo</h2>
+      <label class="mc-label">Nome do mundo</label>
+      <input id="new-name" class="mc-input" type="text" maxlength="32" value="Novo mundo" />
+      <label class="mc-label">Semente para o gerador de mundo (deixe em branco para aleatória)</label>
+      <input id="new-seed" class="mc-input" type="text" maxlength="32" />
+      <button class="mc-btn" id="new-mode" data-act="toggle-mode">Modo de jogo: Sobrevivência</button>
+      <div id="mode-desc" class="mc-desc">Procure recursos, construa, ganhe vida e lute contra monstros.</div>
+      <button class="mc-btn" id="new-diff" data-act="toggle-diff">Dificuldade: Normal</button>
+      <div class="btn-row">
+        <button class="mc-btn half" data-act="create-world">Criar novo mundo</button>
+        <button class="mc-btn half" data-act="back">Cancelar</button>
+      </div>
+    </div>
+
+    <div id="options" class="screen dirt-bg hidden">
+      <h2>Opções</h2>
+      <div class="opt-grid">
+        <div class="mc-slider"><input type="range" id="opt-fov" min="50" max="110" step="1" /><span></span></div>
+        <div class="mc-slider"><input type="range" id="opt-sens" min="10" max="200" step="1" /><span></span></div>
+        <div class="mc-slider"><input type="range" id="opt-dist" min="2" max="16" step="1" /><span></span></div>
+        <div class="mc-slider"><input type="range" id="opt-bright" min="0" max="100" step="1" /><span></span></div>
+        <div class="mc-slider"><input type="range" id="opt-vol" min="0" max="100" step="1" /><span></span></div>
+        <div class="mc-slider"><input type="range" id="opt-music" min="0" max="100" step="1" /><span></span></div>
+        <button class="mc-btn" id="opt-clouds" data-act="opt-clouds"></button>
+        <button class="mc-btn" id="opt-bob" data-act="opt-bob"></button>
+        <button class="mc-btn" id="opt-gui" data-act="opt-gui"></button>
+        <button class="mc-btn" id="opt-fps" data-act="opt-fps"></button>
+      </div>
+      <button class="mc-btn" data-act="back">Concluído</button>
+    </div>
+
+    <div id="controls" class="screen dirt-bg hidden">
+      <h2>Controles</h2>
+      <div class="controls-list">
+        <div><b>W A S D</b> andar</div><div><b>Espaço</b> pular (2× no criativo: voar)</div>
+        <div><b>Shift</b> agachar / descer</div><div><b>Ctrl</b> ou <b>W</b> 2× correr</div>
+        <div><b>Botão esquerdo</b> quebrar / atacar</div><div><b>Botão direito</b> colocar / usar / comer</div>
+        <div><b>Botão do meio</b> escolher bloco</div><div><b>1–9 / roda</b> barra rápida</div>
+        <div><b>E</b> inventário</div><div><b>Q</b> soltar item (Ctrl+Q: pilha)</div>
+        <div><b>F5</b> ou <b>V</b> 1ª / 3ª pessoa (costas e frente)</div><div><b>F3</b> informações de depuração</div>
+        <div><b>F1</b> esconder interface</div><div><b>T</b> ou <b>/</b> chat e comandos</div>
+        <div><b>Esc</b> pausar</div><div><b>Celular:</b> toque = colocar, segure = quebrar</div>
+      </div>
+      <div class="mc-desc">Comandos: /gamemode creative|survival · /time set day|night|noon|midnight · /tp x y z · /give &lt;item&gt; [qtd] · /spawn porco|ovelha|vaca|zumbi|creeper · /seed · /kill</div>
+      <button class="mc-btn" data-act="back">Concluído</button>
+    </div>
+
+    <div id="loading" class="screen dirt-bg hidden">
+      <h2 id="loading-title">Gerando terreno</h2>
+      <div id="loading-bar"><div></div></div>
+      <div id="loading-sub"></div>
+    </div>
+
+    <div id="pause" class="screen dim hidden">
+      <h2>Menu do jogo</h2>
+      <button class="mc-btn" data-act="resume">Voltar ao jogo</button>
+      <button class="mc-btn" data-act="options">Opções...</button>
+      <button class="mc-btn" data-act="controls">Controles</button>
+      <button class="mc-btn" data-act="quit">Salvar e sair para o título</button>
+    </div>
+
+    <div id="death" class="screen red hidden">
+      <h1>Você morreu!</h1>
+      <div id="death-msg"></div>
+      <button class="mc-btn" data-act="respawn">Renascer</button>
+      <button class="mc-btn" data-act="quit">Tela de título</button>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>

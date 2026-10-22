@@ -154,3 +154,15 @@ Segundo jogo do repositório: exploração em primeira pessoa pelos **Níveis 0,
 noturna, câmera térmica…), qualidade gráfica **Baixa, Média, Alta e Ultra** e
 controles feitos para **celular**. Com o servidor rodando (`npm start`), abra
 `http://localhost:8080/liminar/`. Detalhes em [`liminar/README.md`](liminar/README.md).
+
+---
+
+# Blocos — Mundo de Blocos 3D (pasta `blocos/`)
+
+Terceiro jogo do repositório: um mundo aberto em blocos no estilo **Minecraft**, feito do
+zero, com câmera em **primeira e terceira pessoa** (F5), mundo infinito com biomas e
+cavernas, ciclo de dia e noite, iluminação por propagação, sobrevivência (vida, fome,
+ferramentas, criação, fornalha), criativo com voo, criaturas animadas (porco, ovelha,
+vaca, zumbi e creeper) e controles para celular. Com o servidor rodando (`npm start`), abra
+`http://localhost:8080/blocos/`. Detalhes em [`blocos/README.md`](blocos/README.md).
+
