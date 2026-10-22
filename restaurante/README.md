@@ -23,4 +23,18 @@ em qualquer servidor estático, como `npm start` → `http://localhost:8080/rest
   mais valiosos, mantendo gemas e decoração.
 - Ganhos enquanto você está fora (até 3 horas) e salvamento automático.
 
+## Novidades
+- **Dia e noite** (ciclo de 8 minutos): à noite as luminárias, postes, faróis e o
+  letreiro acendem, e o jantar paga **+25%** por prato.
+- **Chuva**: gotas na tela, pedestres com guarda-chuva e pedidos de delivery em dobro.
+- **Delivery de moto** (aba Delivery): o motoboy para na porta, o chef prepara e um
+  garçom entrega o pedido (1,5x o preço do prato).
+- **Clientes VIP** de coroa pagam 5x. O **crítico gastronômico** (boina e óculos)
+  dá 5 estrelas e +5 gemas se for atendido rápido.
+- **Hora do Rush**: de tempos em tempos chegam clientes sem parar por 45 segundos.
+- **Roleta da Sorte**: um giro grátis por dia; giros extras custam 10 gemas.
+- **Toque para jogar**: tocar no fogão acelera o preparo e as moedas de gorjeta
+  deixadas nas mesas precisam ser tocadas para coletar.
+- Dois pratos novos: **Taça de Sorvete** e **Lagosta Gratinada**, e novas missões.
+
 Controles: arraste para mover a câmera, pinça (ou roda do mouse / botões + e −) para zoom.

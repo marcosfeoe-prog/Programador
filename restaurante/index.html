@@ -62,6 +62,20 @@ button:focus-visible{outline:3px solid var(--mustard);outline-offset:2px}
   background:var(--purple);border-bottom:4px solid var(--purple-d);box-shadow:0 2px 0 rgba(0,0,0,.25)}
 .sidebtn svg{width:28px;height:28px}
 .sidebtn span{font:400 12px var(--font-display);letter-spacing:.3px}
+.sidebtn{position:relative}
+.sidebtn .badge{top:-6px;right:-6px}
+.sidebtn.wheelb{background:var(--blue);border-bottom-color:var(--blue-d)}
+#events{position:absolute;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 96px);display:flex;flex-wrap:wrap;justify-content:center;gap:5px;
+  width:max-content;max-width:calc(100% - 170px);pointer-events:none}
+.chip{display:flex;align-items:center;gap:5px;padding:3px 10px 3px 4px;border-radius:999px;color:#fff;font:400 12.5px var(--font-display);letter-spacing:.3px;
+  background:rgba(48,26,16,.85);border:2px solid rgba(255,255,255,.2);white-space:nowrap;font-variant-numeric:tabular-nums}
+.chip i{width:16px;height:16px;border-radius:50%;flex:none;border:2px solid rgba(255,255,255,.7)}
+.chip.rush{background:#c8302b;animation:pulse .8s ease-in-out infinite}
+.wheelwrap{position:relative;width:min(270px,70vw);aspect-ratio:1;max-width:100%}
+.wheelwrap canvas{width:100%;height:100%}
+.wheelwrap .pointer{position:absolute;left:50%;top:-6px;transform:translateX(-50%);width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:26px solid var(--red);filter:drop-shadow(0 2px 0 var(--ink))}
+#wres{min-height:2.9em}
+#wres b{color:var(--ink);font:400 20px var(--font-display);display:block}
 .sidebtn.on{background:#ff8a1f;border-bottom-color:#b8560a;animation:pulse 1s ease-in-out infinite}
 #zoom{display:flex;flex-direction:column;gap:6px}
 #zoom .iconbtn{width:36px;height:36px;font:400 22px var(--font-display);color:#fff}
@@ -176,7 +190,7 @@ button:focus-visible{outline:3px solid var(--mustard);outline-offset:2px}
 .steps div{display:grid;grid-template-columns:44px 1fr;gap:10px;align-items:center;font-size:14px;font-weight:800;color:var(--ink)}
 .steps img{width:44px;height:44px}
 
-#toast{position:absolute;left:50%;top:calc(env(safe-area-inset-top,0px) + 96px);transform:translate(-50%,-10px);opacity:0;pointer-events:none;
+#toast{position:absolute;left:50%;top:calc(env(safe-area-inset-top,0px) + 132px);transform:translate(-50%,-10px);opacity:0;pointer-events:none;
   background:rgba(48,26,16,.9);color:#fff;padding:8px 14px;border-radius:999px;font-size:14px;font-weight:800;white-space:nowrap;transition:opacity .2s,transform .2s;z-index:12;max-width:calc(100% - 32px);overflow:hidden;text-overflow:ellipsis}
 #toast.show{opacity:1;transform:translate(-50%,0)}
 
@@ -185,7 +199,7 @@ button:focus-visible{outline:3px solid var(--mustard);outline-offset:2px}
 @keyframes popin{from{transform:scale(.7);opacity:0}}
 @media (prefers-reduced-motion:reduce){
   #sheet{transition:none}
-  .badge,.sidebtn.on,.day.today,.mcard{animation:none}
+  .badge,.sidebtn.on,.day.today,.mcard,.chip.rush{animation:none}
 }
 @media (min-width:700px){
   #sheet{left:50%;right:auto;width:560px;transform:translate(-50%,calc(100% + 140px))}
@@ -207,7 +221,10 @@ button:focus-visible{outline:3px solid var(--mustard);outline-offset:2px}
 
   <div id="ribbon"><span class="stroke" id="rname">Lanchonete do Bairro</span><span class="stroke" id="rstars">★</span></div>
 
+  <div id="events"></div>
+
   <div id="side">
+    <button class="sidebtn wheelb" id="wheelBtn"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="17" r="12.5" fill="#fff6e2" stroke="#3b2116" stroke-width="2.2"/><path d="M16 17V4.5A12.5 12.5 0 0 1 28.5 17z" fill="#e8403a"/><path d="M16 17h12.5A12.5 12.5 0 0 1 16 29.5z" fill="#ffc531"/><path d="M16 17v12.5A12.5 12.5 0 0 1 3.5 17z" fill="#3fb64a"/><circle cx="16" cy="17" r="12.5" fill="none" stroke="#3b2116" stroke-width="2.2"/><circle cx="16" cy="17" r="3" fill="#fff" stroke="#3b2116" stroke-width="1.8"/><path d="M12 1.5h8l-4 6z" fill="#3b2116"/></svg><span class="stroke">Roleta</span><i class="badge" id="bWheel" hidden>1</i></button>
     <button class="sidebtn" id="turbo"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M18 3L7 18h7l-2 11 13-16h-8z" fill="#ffd23f" stroke="#3b2116" stroke-width="2" stroke-linejoin="round"/></svg><span class="stroke" id="turboT">Turbo</span></button>
     <div id="zoom">
       <button class="iconbtn" id="zin" aria-label="Aproximar">+</button>
@@ -309,6 +326,8 @@ const DISHES = [
   { id: 'pasta',  name: 'Espaguete',       price: 210,  cook: 5.0, unlock: 45000, cost: 13000 },
   { id: 'sushi',  name: 'Sushi',           price: 640,  cook: 5.5, unlock: 5e5,   cost: 1.4e5 },
   { id: 'cake',   name: 'Bolo de Morango', price: 1900, cook: 6.0, unlock: 5e6,   cost: 1.5e6 },
+  { id: 'icecream', name: 'Taça de Sorvete', price: 5800, cook: 6.5, unlock: 5e7, cost: 1.6e7 },
+  { id: 'lobster',  name: 'Lagosta Gratinada', price: 18000, cook: 7.5, unlock: 5e8, cost: 1.7e8 },
 ];
 const DISH_MAX = 100;
 const COUNTS = {
@@ -320,6 +339,7 @@ const LEVELS = {
   stoveLvl:  { name: 'Fogões Turbo',      icon: 'flame', max: 60, base: 100, g: 1.27, v: l => (1 + .1 * l).toFixed(1).replace('.', ',') + 'x', unit: 'velocidade de preparo' },
   comfort:   { name: 'Conforto do Salão', icon: 'heart', max: 60, base: 80,  g: 1.27, v: l => `+${l * 6}%`, unit: 'em gorjetas' },
   waiterLvl: { name: 'Garçons Ágeis',     icon: 'boot',  max: 50, base: 120, g: 1.27, v: l => (1 + .07 * l).toFixed(2).replace('.', ',') + 'x', unit: 'velocidade dos garçons' },
+  delivery:  { name: 'Delivery de Moto',  icon: 'moto',  max: 40, base: 2500, g: 1.3, v: l => l ? (60 / deliveryInterval(l)).toFixed(1).replace('.', ',') : '0', unit: 'entregas por minuto (2x na chuva)' },
   mkt:       { name: 'Propaganda',        icon: 'mkt',   max: 60, base: 70,  g: 1.25, v: l => (60 / arrival(l)).toFixed(1).replace('.', ','), unit: 'clientes por minuto' },
 };
 const DECOR = {
@@ -369,20 +389,33 @@ const MISSIONS = [
   { t: 'Sirva 50 clientes',                v: s => s.served, n: 50, r: 10 },
   { t: 'Compre uma decoração',             v: s => s.decor.owned.length - 5, n: 1, r: 10 },
   { t: 'Propaganda no nível 5',            v: s => s.mkt, n: 5, r: 10 },
+  { t: 'Gire a Roleta da Sorte',           v: s => s.spins, n: 1, r: 5, nw: true },
   { t: 'Desbloqueie a Pizza',              v: s => s.dishes.pizza ? 1 : 0, n: 1, r: 15 },
+  { t: 'Atenda 3 clientes VIP',            v: s => s.vips, n: 3, r: 10, nw: true },
   { t: 'Tenha 6 mesas',                    v: s => s.tables, n: 6, r: 12 },
   { t: 'Ganhe $10K neste restaurante',     v: s => s.earnedHere, n: 1e4, r: 12 },
+  { t: 'Libere o Delivery de Moto',        v: s => s.delivery ? 1 : 0, n: 1, r: 12, nw: true },
   { t: 'Contrate 3 garçons',               v: s => s.waiters, n: 3, r: 15 },
   { t: 'Desbloqueie o Espaguete',          v: s => s.dishes.pasta ? 1 : 0, n: 1, r: 20 },
   { t: 'Sirva 250 clientes',               v: s => s.served, n: 250, r: 20 },
+  { t: 'Ganhe 5 estrelas de um crítico',   v: s => s.critics, n: 1, r: 15, nw: true },
+  { t: 'Faça 25 entregas',                 v: s => s.deliveries, n: 25, r: 15, nw: true },
   { t: 'Tenha 4 fogões',                   v: s => s.stoves, n: 4, r: 20 },
   { t: 'Tenha 9 mesas',                    v: s => s.tables, n: 9, r: 20 },
   { t: 'Desbloqueie o Sushi',              v: s => s.dishes.sushi ? 1 : 0, n: 1, r: 25 },
   { t: 'Ganhe $1M neste restaurante',      v: s => s.earnedHere, n: 1e6, r: 25 },
   { t: 'Tenha 12 mesas',                   v: s => s.tables, n: 12, r: 30 },
   { t: 'Desbloqueie o Bolo de Morango',    v: s => s.dishes.cake ? 1 : 0, n: 1, r: 30 },
+  { t: 'Desbloqueie a Taça de Sorvete',    v: s => s.dishes.icecream ? 1 : 0, n: 1, r: 35, nw: true },
   { t: 'Abra um novo restaurante',         v: s => s.rest, n: 1, r: 50 },
+  { t: 'Atenda 25 clientes VIP',           v: s => s.vips, n: 25, r: 25, nw: true },
+  { t: 'Desbloqueie a Lagosta Gratinada',  v: s => s.dishes.lobster ? 1 : 0, n: 1, r: 60, nw: true },
 ];
+// Saves antigos guardavam o índice da missão; hoje guardamos o texto (id estável)
+function migrateMissions() {
+  const old = MISSIONS.filter(m => !m.nw);
+  S.mDone = S.mDone.map(n => typeof n !== 'number' ? n : n < old.length ? old[n].t : `Sirva ${fmt(500 * Math.pow(n - old.length + 1, 2))} clientes`);
+}
 function mission(i) {
   if (i < MISSIONS.length) return MISSIONS[i];
   const k = i - MISSIONS.length + 1;
@@ -394,8 +427,8 @@ function mission(i) {
    ========================================================= */
 const SAVE_KEY = 'saborTycoon.v1';
 function freshRest() {
-  return { money: 0, dishes: { burger: 1, fries: 0, pizza: 0, pasta: 0, sushi: 0, cake: 0 },
-    tables: 2, comfort: 0, stoves: 1, stoveLvl: 0, waiters: 1, waiterLvl: 0, mkt: 0, earnedHere: 0 };
+  return { money: 0, dishes: { burger: 1, fries: 0, pizza: 0, pasta: 0, sushi: 0, cake: 0, icecream: 0, lobster: 0 },
+    tables: 2, comfort: 0, stoves: 1, stoveLvl: 0, waiters: 1, waiterLvl: 0, mkt: 0, delivery: 0, earnedHere: 0 };
 }
 function freshState() {
   return Object.assign(freshRest(), {
@@ -403,6 +436,7 @@ function freshState() {
     decor: { owned: ['f0', 'w0', 'c0', 'k0', 's0'], eq: { floor: 'f0', wall: 'w0', cloth: 'c0', kfloor: 'k0', stove: 's0' } },
     gift: { day: 0, last: '' }, mDone: [], boostUntil: 0, lastSeen: Date.now(), rate: 0,
     muted: false, intro: false, bulk: 1,
+    vips: 0, critics: 0, spins: 0, deliveries: 0, wheelDay: '', tipHint: false,
   });
 }
 function merge(base, data) {
@@ -432,6 +466,12 @@ const costMul = () => Math.pow(5, S.rest);
 const incMul = () => Math.pow(6, S.rest);
 const boostOn = () => S.boostUntil > Date.now();
 function arrival(l = S.mkt) { return 4.6 / (1 + .14 * l); }
+function deliveryInterval(l = S.delivery) { return 32 / (1 + .15 * (l - 1)); }
+// Ciclo de dia e noite (8 min) e clima
+const DAY_LEN = 480;
+const nightAmt = () => clamp((-Math.sin(((T / DAY_LEN) + .05) % 1 * TAU) - .3) * 2.2, 0, 1);
+const isNight = () => nightAmt() > .5;
+const mulNow = () => (boostOn() ? 2 : 1) * (isNight() ? 1.25 : 1);
 function dishPrice(i, L = S.dishes[DISHES[i].id]) {
   return DISHES[i].price * (1 + .3 * (L - 1)) * Math.pow(2, Math.floor(L / 25)) * incMul();
 }
@@ -592,6 +632,9 @@ function drawPerson(c, e, time) {
     circ(c, -4.5, hy - 17, 5); fs(c, '#ffffff', 1.2); circ(c, 4.5, hy - 17, 5); fs(c, '#ffffff', 1.2); circ(c, 0, hy - 19.5, 5.8); fs(c, '#ffffff', 1.2);
     c.fillStyle = '#ffffff'; c.fillRect(-6.4, hy - 16, 12.8, 9);
     c.strokeStyle = '#e3e3e3'; c.lineWidth = 1; c.beginPath(); c.moveTo(-6, hy - 9); c.lineTo(6, hy - 9); c.stroke();
+  } else if (L.hair === 'helmet') {
+    c.beginPath(); c.arc(0, hy - 1, 11, Math.PI * .9, Math.PI * 2.1); c.closePath(); fs(c, L.cap, 1.3);
+    if (!e.back) { rr(c, 1, hy - 3, 10, 5, 2); fs(c, 'rgba(160,220,255,.85)', 1); }
   } else if (L.hair === 'bun') { circ(c, -1, hy - 11, 4.6); fs(c, L.hairC, 1.2); }
   else if (L.hair === 'spiky') {
     c.beginPath(); c.moveTo(-9, hy - 4); for (let i = 0; i < 5; i++) { c.lineTo(-7 + i * 4, hy - 14 + (i % 2) * 2); c.lineTo(-5 + i * 4, hy - 7); } c.lineTo(9, hy - 4); c.closePath(); fs(c, L.hairC, 1.1);
@@ -600,6 +643,21 @@ function drawPerson(c, e, time) {
     if (!e.back) { rr(c, 4, hy - 3.5, 11, 3.5, 1.7); fs(c, shade(L.cap, -.2), 1.1); }
   } else if (L.hair === 'curly') {
     for (let i = 0; i < 6; i++) { circ(c, -8 + i * 3.2, hy - 7 - Math.sin(i * 1.3) * 2.5, 3.6); fs(c, L.hairC, 1); }
+  }
+  if (L.glasses && !e.back) {
+    c.strokeStyle = '#1d1d22'; c.lineWidth = 1.2; circ(c, 2.4, hy + .8, 2.6); c.stroke(); circ(c, 7, hy + .8, 2.6); c.stroke();
+    c.beginPath(); c.moveTo(4.9, hy + .5); c.lineTo(4.5, hy + .5); c.moveTo(-.2, hy + .3); c.lineTo(-7, hy - 1); c.stroke();
+  }
+  if (L.beret) { c.beginPath(); c.ellipse(-1, hy - 8, 11.5, 4.6, -.15, 0, TAU); fs(c, '#2b2b33', 1.2); circ(c, -1.5, hy - 12.8, 1.6); fs(c, '#2b2b33', 1); }
+  if (L.crown) {
+    c.beginPath(); c.moveTo(-6.5, hy - 8); c.lineTo(-7, hy - 16); c.lineTo(-3.2, hy - 11.5); c.lineTo(0, hy - 17.5); c.lineTo(3.2, hy - 11.5); c.lineTo(7, hy - 16); c.lineTo(6.5, hy - 8); c.closePath(); fs(c, '#ffc531', 1.2);
+    c.fillStyle = '#e8403a'; circ(c, 0, hy - 10.5, 1.4); c.fill();
+  }
+  if (e.umbrella && !sit && (e.role !== 'cust' || e.x > GX - .2)) {
+    c.strokeStyle = OUT; c.lineWidth = 1.4; c.beginPath(); c.moveTo(4, top + 10); c.lineTo(2, hy - 20); c.stroke();
+    c.beginPath(); c.moveTo(-16, hy - 14); c.quadraticCurveTo(2, hy - 38, 20, hy - 14);
+    for (let k = 0; k < 4; k++) c.quadraticCurveTo(20 - k * 9 - 4.5, hy - 18, 20 - (k + 1) * 9, hy - 14);
+    c.closePath(); fs(c, L.cap, 1.3);
   }
   // braço da frente (anda, carrega prato ou come)
   c.save();
@@ -669,6 +727,31 @@ function drawDish(c, id, x, y, s) {
       }
       break;
     }
+    case 'icecream': {
+      c.save(); c.translate(7.5, -11); c.rotate(.5); rr(c, -1.6, -7, 3.2, 11, 1); fs(c, '#e9b35a', 1); c.restore();
+      c.beginPath(); c.moveTo(-10, -2); c.lineTo(10, -2); c.quadraticCurveTo(9, 6, 2, 7.5); c.lineTo(-2, 7.5); c.quadraticCurveTo(-9, 6, -10, -2); c.closePath(); fs(c, '#d6f2ff');
+      rr(c, -1.6, 7, 3.2, 4, 1); fs(c, '#d6f2ff', 1); c.beginPath(); c.ellipse(0, 11.5, 6.5, 2.2, 0, 0, TAU); fs(c, '#d6f2ff', 1);
+      circ(c, -4.8, -4, 5.2); fs(c, '#ffb3cf'); circ(c, 4.8, -4, 5.2); fs(c, '#fff1c9'); circ(c, 0, -9.5, 5.4); fs(c, '#8b5a3c');
+      c.fillStyle = '#5a321c'; c.beginPath(); c.ellipse(0, -12.5, 4, 1.6, 0, 0, TAU); c.fill();
+      circ(c, 0, -16, 2.6); fs(c, '#e8303a', 1);
+      c.strokeStyle = OUT; c.lineWidth = 1; c.beginPath(); c.moveTo(0, -18.4); c.quadraticCurveTo(1, -21, 3.5, -22); c.stroke();
+      c.fillStyle = 'rgba(255,255,255,.7)'; c.fillRect(-7, 0, 2, 4);
+      break;
+    }
+    case 'lobster': {
+      c.beginPath(); c.ellipse(0, 4, 14, 5.5, 0, 0, TAU); fs(c, '#ffffff');
+      for (let k = 0; k < 3; k++) { c.beginPath(); c.ellipse(-8 + k * 3.3, 1.5 - k * .3, 3.5, 3, 0, 0, TAU); fs(c, '#e2452f', 1); }
+      c.beginPath(); c.moveTo(-13, 1.5); c.lineTo(-10, -1.5); c.lineTo(-10, 4.5); c.closePath(); fs(c, '#e2452f', 1);
+      c.beginPath(); c.ellipse(4, -.5, 6.5, 4.4, 0, 0, TAU); fs(c, '#e8503a');
+      c.beginPath(); c.ellipse(10, -6, 3.8, 2.5, -.6, 0, TAU); fs(c, '#e8503a', 1);
+      c.beginPath(); c.ellipse(10, 4, 3.8, 2.5, .6, 0, TAU); fs(c, '#e8503a', 1);
+      c.fillStyle = '#ffd96a'; c.beginPath(); c.ellipse(3, -2.5, 3.5, 1.4, 0, 0, TAU); c.fill();
+      c.fillStyle = '#2a1a12'; circ(c, 7.5, -2.5, .9); c.fill(); circ(c, 7.5, 1, .9); c.fill();
+      c.strokeStyle = OUT; c.lineWidth = .8; c.beginPath(); c.moveTo(8.5, -2.5); c.quadraticCurveTo(13, -9, 16, -8); c.moveTo(8.5, .5); c.quadraticCurveTo(14, -4, 17, -2.5); c.stroke();
+      c.beginPath(); c.moveTo(-12, 6); c.arc(-9, 6, 3, Math.PI, 0); c.closePath(); fs(c, '#ffe14d', .9);
+      c.fillStyle = '#4caf50'; circ(c, -3, 6.5, 1.4); c.fill(); circ(c, -1, 7, 1.2); c.fill();
+      break;
+    }
     case 'cake': {
       c.beginPath(); c.ellipse(0, 6, 13, 4, 0, 0, TAU); fs(c, '#ffffff');
       rr(c, -10, -6, 20, 12, 3); fs(c, '#ff9ec0');
@@ -721,6 +804,14 @@ const ICONS = {
     rr(g, -32, -10, 10, 18, 3); fs(g, '#ffd23f', 2.4);
     g.beginPath(); g.ellipse(14, -2, 6, 24, 0, 0, TAU); fs(g, '#ffffff', 2.4);
     g.strokeStyle = OUT; g.lineWidth = 3; g.beginPath(); g.moveTo(26, -14); g.lineTo(32, -20); g.moveTo(28, -2); g.lineTo(36, -2); g.moveTo(26, 10); g.lineTo(32, 16); g.stroke();
+  },
+  moto(g) {
+    g.scale(2.4, 2.4); g.translate(0, 12);
+    for (const wx of [-12, 12]) { circ(g, wx, -6, 6); fs(g, '#2a2a33', 1.2); circ(g, wx, -6, 2.4); fs(g, '#c3cbd2', 1); }
+    rr(g, -18, -30, 13, 13, 2); fs(g, '#e8403a', 1.3); g.fillStyle = '#ffc531'; g.fillRect(-17, -25, 11, 3);
+    g.beginPath(); g.moveTo(-16, -9); g.lineTo(6, -9); g.lineTo(10, -22); g.lineTo(14, -22); g.lineTo(11, -8); g.quadraticCurveTo(0, -4, -16, -6); g.closePath(); fs(g, '#f2f2f2', 1.3);
+    g.strokeStyle = OUT; g.lineWidth = 2.5; g.beginPath(); g.moveTo(12, -22); g.lineTo(8, -28); g.stroke();
+    circ(g, 15, -18, 2.4); fs(g, '#fff6b0', 1);
   },
   bolt(g) { g.beginPath(); g.moveTo(6, -34); g.lineTo(-20, 4); g.lineTo(-2, 4); g.lineTo(-8, 34); g.lineTo(22, -8); g.lineTo(4, -8); g.closePath(); fs(g, '#ffd23f', 2.8); },
   coin(g) {
@@ -788,6 +879,9 @@ const SFX = {
 let tables = [], stoves = [], chefs = [], waiters = [], customers = [], walkers = [], cars = [];
 let orders = [], counter = [], particles = [], floaters = [];
 let spawnT = 1, walkerT = 2, carT = 1, T = 0, booted = false;
+let motos = [], deliveryT = 8, rushUntil = 0, rushNext = rand(150, 260), rainUntil = 0, rainNext = rand(100, 200), rainAmt = 0, wasNight = false;
+const raining = () => rainAmt > .5;
+const DROPS = Array.from({ length: 150 }, () => ({ x: Math.random() * 1200, y: Math.random() * 1000, s: rand(500, 750) }));
 const PROPS = [];  // árvores, plantas, postes (estáticos, ordenados por profundidade)
 
 function newChef(i) { const c = person('chef'); c.x = STOVE_X[i]; c.y = CHEF_Y; c.stove = i; c.speed = 2.6; c.back = true; return c; }
@@ -807,7 +901,7 @@ function syncWorld() {
   }
 }
 function resetWorld() {
-  tables = []; stoves = []; chefs = []; waiters = []; customers = []; orders = []; counter = [];
+  tables = []; stoves = []; chefs = []; waiters = []; customers = []; orders = []; counter = []; motos = [];
   syncWorld(); spawnT = .6;
 }
 
@@ -821,7 +915,12 @@ function spawnCustomer(t) {
   const c = person('cust');
   const fromTop = Math.random() < .5;
   c.x = SX; c.y = fromTop ? -8 : GY + 10; c.exitY = fromTop ? GY + 10 : -8;
-  c.table = t; t.cust = c; c.dish = chooseDish(); c.state = 'in'; c.speed = 2.4;
+  c.table = t; t.cust = c; c.dish = chooseDish(); c.state = 'in'; c.speed = 2.4; c.umbrella = raining();
+  const r = Math.random();
+  if (S.served >= 15 && r < .045 && !customers.some(x => x.critic)) {
+    c.critic = true; c.look.beret = true; c.look.glasses = true; c.look.shirt = '#2b2b33'; c.look.hair = 'short';
+    toast('Um crítico gastronômico chegou! Sirva rápido.');
+  } else if (r < .11) { c.vip = true; c.look.crown = true; c.look.shirt = '#8b5cf6'; }
   c.path = [{ x: SX, y: DOOR_Y }, { x: DOOR_IN.x, y: DOOR_Y }, ...route(DOOR_IN, chairPos(t))];
   customers.push(c);
 }
@@ -834,6 +933,8 @@ function earn(v, at) {
 
 function updCustomer(c, dt) {
   const t = c.table;
+  if (c.seated && c.state !== 'eating') c.wait = (c.wait || 0) + dt;
+  if (c.vip && c.seated && Math.random() < dt * 2.5) particles.push(mkPart('spark', P(c.x + rand(-.2, .2), c.y, 50)));
   switch (c.state) {
     case 'in':
       if (stepMove(c, dt)) { c.state = 'seated'; c.seated = true; c.flip = false; c.back = false; c.t = 0; }
@@ -841,8 +942,18 @@ function updCustomer(c, dt) {
     case 'eating':
       c.t += dt; t.eat = Math.min(1, c.t / 3.2);
       if (c.t >= 3.2) {
-        const v = dishPrice(dishIndex(c.dish)) * tipMul() * (boostOn() ? 2 : 1);
+        let v = dishPrice(dishIndex(c.dish)) * tipMul() * mulNow();
+        if (c.vip) { v *= 5; S.vips++; burst(P(c.x, c.y, 50)); floaters.push({ x: P(t.x, t.y, 95)[0], y: P(t.x, t.y, 95)[1], text: 'VIP x5', t: 0, color: '#d9c2ff' }); }
+        if (c.critic) {
+          v *= 3;
+          if (c.wait < 24) { S.critics++; S.gems += 5; SFX.gift(); burst(P(c.x, c.y, 50)); toast('O crítico deu 5 estrelas! +5 gemas'); }
+          else toast('O crítico achou o serviço lento. Melhore garçons e fogões!');
+        }
         earn(v, P(t.x, t.y, 70)); S.served++; SFX.coin();
+        if (!c.critic && Math.random() < .13) {
+          t.tip = (t.tip || 0) + v * .8;
+          if (!S.tipHint) { S.tipHint = true; toast('Uma gorjeta ficou na mesa: toque na moeda!'); }
+        }
         for (let i = 0; i < 5; i++) particles.push(mkPart('coin', P(t.x, t.y, 40)));
         if (Math.random() < .35) particles.push(mkPart('heart', P(c.x, c.y, 62)));
         t.cust = null; t.food = null; t.claim = false; t.eat = 0;
@@ -899,10 +1010,22 @@ function updWaiter(w, dt) {
       w.t += dt;
       if (w.t > .25) {
         const d = counter[w.task.slot]; counter[w.task.slot] = null;
-        w.carry = d.dish; w.task.table = d.table; w.state = 'goServe'; w.path = route(w, standPos(d.table));
+        w.carry = d.dish;
+        if (d.delivery) { w.task.delivery = d.delivery; w.state = 'goDeliver'; w.path = [...route(w, DOOR_IN), { x: GX - .25, y: DOOR_Y }]; }
+        else { w.task.table = d.table; w.state = 'goServe'; w.path = route(w, standPos(d.table)); }
       }
       break;
     case 'goServe': if (stepMove(w, dt)) { w.state = 'serving'; w.t = 0; w.back = true; } break;
+    case 'goDeliver': if (stepMove(w, dt)) { w.state = 'handing'; w.t = 0; w.back = false; w.flip = false; } break;
+    case 'handing':
+      w.t += dt;
+      if (w.t > .35) {
+        const m = w.task.delivery, v = dishPrice(dishIndex(w.carry)) * 1.5 * tipMul() * mulNow();
+        earn(v, P(GX + 1.2, DOOR_Y, 70)); S.deliveries++; SFX.coin();
+        for (let i = 0; i < 4; i++) particles.push(mkPart('coin', P(GX + 1, DOOR_Y, 30)));
+        w.carry = null; m.state = 'leave'; m.rider.carry = null; w.task = null; w.state = 'idle';
+      }
+      break;
     case 'serving':
       w.t += dt;
       if (w.t > .3) {
@@ -929,10 +1052,26 @@ function updChef(c, dt) {
     case 'goDrop': if (stepMove(c, dt)) { c.state = 'drop'; c.t = 0; c.back = false; } break;
     case 'drop':
       c.t += dt;
-      if (c.t > .25) { counter[c.stove] = { dish: c.order.dish, table: c.order.table, claim: false }; c.carry = null; c.order = null; c.state = 'back'; c.path = [{ x: sx, y: CHEF_Y }]; }
+      if (c.t > .25) { counter[c.stove] = { dish: c.order.dish, table: c.order.table, delivery: c.order.delivery, claim: false }; c.carry = null; c.order = null; c.state = 'back'; c.path = [{ x: sx, y: CHEF_Y }]; }
       break;
     case 'back': if (stepMove(c, dt)) c.state = 'idle'; break;
   }
+}
+
+function updDelivery(dt) {
+  if (S.delivery > 0) {
+    deliveryT -= dt * (raining() ? 2 : 1);
+    if (deliveryT <= 0 && !motos.some(m => m.state !== 'leave')) {
+      deliveryT = deliveryInterval() * rand(.8, 1.2);
+      const rider = person('cust'); rider.look.hair = 'helmet'; rider.look.cap = pick(['#e8403a', '#ffc531', '#2fa3e6']); rider.seated = true; rider.flip = true;
+      motos.push({ x: GX + 2.3, y: -14, state: 'arrive', dish: chooseDish(), rider });
+    }
+  }
+  for (const m of motos) {
+    if (m.state === 'arrive') { m.y += 5.5 * dt; if (m.y >= DOOR_Y) { m.y = DOOR_Y; m.state = 'wait'; orders.push({ delivery: m, dish: m.dish }); } }
+    else if (m.state === 'leave') { m.y += 6.5 * dt; if (m.y > GY + 16) m.dead = true; }
+  }
+  motos = motos.filter(m => !m.dead);
 }
 
 function mkPart(kind, at) {
@@ -950,10 +1089,20 @@ function update(dt) {
   // chegada de clientes
   spawnT -= dt;
   if (spawnT <= 0) {
-    spawnT = arrival() * rand(.75, 1.25);
+    spawnT = arrival() * rand(.75, 1.25) * (T < rushUntil ? .3 : 1);
     const free = tables.filter(t => !t.cust);
     if (free.length) spawnCustomer(pick(free));
   }
+  // eventos: hora do rush, chuva, noite
+  rushNext -= dt;
+  if (rushNext <= 0) { rushNext = rand(220, 380); rushUntil = T + 45; spawnT = .2; SFX.gift(); toast('Hora do Rush! Clientes chegando sem parar'); }
+  rainNext -= dt;
+  if (rainNext <= 0) { rainNext = rand(260, 440); rainUntil = T + rand(45, 80); if (S.delivery) toast('Começou a chover: entregas em dobro!'); }
+  rainAmt += ((T < rainUntil ? 1 : 0) - rainAmt) * Math.min(1, dt * .5);
+  if (rainAmt > .02) for (const d of DROPS) { d.y += d.s * dt; d.x -= d.s * .22 * dt; if (d.y > H + 20) { d.y = -20; d.x = Math.random() * (W + 200); } }
+  const nightNow = isNight();
+  if (nightNow !== wasNight) { wasNight = nightNow; if (nightNow) toast('Hora do jantar: pratos +25%'); }
+  updDelivery(dt);
   for (const c of customers) updCustomer(c, dt);
   customers = customers.filter(c => !c.dead);
   dispatch();
@@ -966,7 +1115,7 @@ function update(dt) {
     walkerT = rand(2.5, 6);
     const w = person('cust'), down = Math.random() < .5;
     w.x = SX + rand(-.15, .25); w.y = down ? -9 : GY + 11; w.speed = rand(1.4, 2.1);
-    w.path = [{ x: w.x, y: down ? GY + 11 : -9 }]; walkers.push(w);
+    w.path = [{ x: w.x, y: down ? GY + 11 : -9 }]; w.umbrella = raining(); walkers.push(w);
   }
   for (const w of walkers) if (stepMove(w, dt)) w.dead = true;
   walkers = walkers.filter(w => !w.dead);
@@ -1282,6 +1431,22 @@ function drawCounterDish(i) {
   drawDish(ctx, d.dish, o[0], o[1] - 3, .55);
 }
 
+function drawMoto(m) {
+  const [x, y] = P(m.x, m.y);
+  ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(x, y, 20, 8, 0, 0, TAU); ctx.fill();
+  ctx.save(); ctx.translate(x, y); ctx.scale(-1, 1); ctx.transform(1, .5, 0, 1, 0, 0);  // frente aponta para +y (baixo-esquerda)
+  for (const wx of [-12, 12]) { circ(ctx, wx, -6, 6); fs(ctx, '#2a2a33', 1.2); circ(ctx, wx, -6, 2.4); fs(ctx, '#c3cbd2', 1); }
+  rr(ctx, -18, -30, 13, 13, 2); fs(ctx, '#e8403a', 1.3); ctx.fillStyle = '#ffc531'; ctx.fillRect(-17, -25, 11, 3);
+  ctx.beginPath(); ctx.moveTo(-16, -9); ctx.lineTo(6, -9); ctx.lineTo(10, -22); ctx.lineTo(14, -22); ctx.lineTo(11, -8); ctx.quadraticCurveTo(0, -4, -16, -6); ctx.closePath(); fs(ctx, '#f2f2f2', 1.3);
+  rr(ctx, -12, -15, 14, 5, 2.5); fs(ctx, '#3a3d44', 1.1);
+  ctx.restore();
+  const r = m.rider; r.flip = true; r.carry = null;
+  ctx.save(); ctx.translate(x + 2, y + 1); drawPerson(ctx, r, T); ctx.restore();
+  ctx.save(); ctx.translate(x, y); ctx.scale(-1, 1); ctx.transform(1, .5, 0, 1, 0, 0);
+  ctx.strokeStyle = OUT; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(12, -22); ctx.lineTo(8, -28); ctx.stroke();
+  circ(ctx, 15, -18, 2.4); fs(ctx, '#fff6b0', 1);
+  ctx.restore();
+}
 function personAt(e) { return () => { const [x, y] = P(e.x, e.y); ctx.save(); ctx.translate(x, y); drawPerson(ctx, e, T); ctx.restore(); }; }
 
 function collect() {
@@ -1311,12 +1476,13 @@ function collect() {
   for (const c of chefs) add(c.x + c.y, personAt(c));
   for (const w of walkers) add(w.x + w.y, personAt(w));
   for (const c of cars) add(c.x + c.y, () => drawCar(c));
+  for (const m of motos) add(m.x + m.y, () => drawMoto(m));
   return L;
 }
 
-function bubble(x, y, draw) {
-  rr(ctx, x - 15, y - 30, 30, 24, 9); fs(ctx, '#ffffff', 1.4);
-  ctx.beginPath(); ctx.moveTo(x - 4, y - 6.7); ctx.lineTo(x, y); ctx.lineTo(x + 4, y - 6.7); ctx.fillStyle = '#ffffff'; ctx.fill();
+function bubble(x, y, draw, bg = '#ffffff') {
+  rr(ctx, x - 15, y - 30, 30, 24, 9); fs(ctx, bg, 1.4);
+  ctx.beginPath(); ctx.moveTo(x - 4, y - 6.7); ctx.lineTo(x, y); ctx.lineTo(x + 4, y - 6.7); ctx.fillStyle = bg; ctx.fill();
   ctx.strokeStyle = OUT; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(x - 4, y - 6); ctx.lineTo(x, y); ctx.lineTo(x + 4, y - 6); ctx.stroke();
   draw(x, y - 18);
 }
@@ -1334,12 +1500,21 @@ function drawOverlays() {
   // balões dos clientes
   for (const c of customers) {
     if (!c.seated) continue;
-    const [x, y] = P(c.x, c.y, 62);
+    const [x, y] = P(c.x, c.y, c.vip || c.critic ? 70 : 62), bg = c.vip ? '#ffe680' : c.critic ? '#e4ecff' : '#ffffff';
     if (c.state === 'seated') bubble(x, y, (bx, by) => {
       ctx.font = '400 20px "Lilita One", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillStyle = '#e8403a'; ctx.fillText('!', bx, by + 1 + Math.sin(T * 8) * 1.2);
-    });
-    else if (c.state === 'waitFood' || c.state === 'ordering') bubble(x, y, (bx, by) => drawDish(ctx, c.dish, bx, by + 2, .62));
+    }, bg);
+    else if (c.state === 'waitFood' || c.state === 'ordering') bubble(x, y, (bx, by) => drawDish(ctx, c.dish, bx, by + 2, .62), bg);
+  }
+  for (const m of motos) if (m.state === 'wait') { const [x, y] = P(m.x, m.y, 70); bubble(x, y, (bx, by) => drawDish(ctx, m.dish, bx, by + 2, .62), '#ffe0d6'); }
+  // gorjetas esquecidas nas mesas (toque para pegar)
+  for (const t of tables) {
+    if (!t.tip) continue;
+    const [x, y] = P(t.x, t.y, 52 + Math.abs(Math.sin(T * 4 + t.i)) * 7), sq = Math.abs(Math.cos(T * 3 + t.i));
+    ctx.fillStyle = 'rgba(255,230,120,.45)'; circ(ctx, x, y, 15); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x, y, 10 * (.35 + sq * .65), 10, 0, 0, TAU); fs(ctx, '#ffcf2e', 1.6);
+    if (sq > .5) { ctx.fillStyle = '#a66d0a'; ctx.font = '400 13px "Lilita One", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('$', x, y + 1); }
   }
   // anel de progresso do cozimento
   for (const ch of chefs) {
@@ -1380,7 +1555,41 @@ function render() {
   drawFloors(); drawWalls();
   const L = collect(); L.sort((a, b) => a.k - b.k);
   for (const d of L) d.f();
+  const n = nightAmt();
+  if (n > .01) drawLighting(n);
+  if (rainAmt > .02) drawRain();
   drawOverlays();
+}
+const lc = document.createElement('canvas'), lx = lc.getContext('2d');
+function drawLighting(n) {
+  if (lc.width !== cv.width || lc.height !== cv.height) { lc.width = cv.width; lc.height = cv.height; }
+  const wt = [DPR * Z, 0, 0, DPR * Z, DPR * (W / 2 - camX * Z), DPR * (H / 2 - camY * Z)];
+  lx.setTransform(1, 0, 0, 1, 0, 0); lx.globalCompositeOperation = 'source-over'; lx.clearRect(0, 0, lc.width, lc.height);
+  lx.fillStyle = `rgba(14,20,62,${.6 * n})`; lx.fillRect(0, 0, lc.width, lc.height);
+  lx.globalCompositeOperation = 'destination-out'; lx.setTransform(...wt);
+  lx.fillStyle = 'rgba(0,0,0,.5)'; lx.beginPath();
+  [P(0, GY), P(0, GY, WH), P(0, 0, WH), P(GX, 0, WH), P(GX, 0), P(GX, GY)].forEach((p, i) => i ? lx.lineTo(p[0], p[1]) : lx.moveTo(p[0], p[1])); lx.fill();
+  const light = (p, r, a) => { const g = lx.createRadialGradient(p[0], p[1], 0, p[0], p[1], r); g.addColorStop(0, `rgba(0,0,0,${a})`); g.addColorStop(1, 'rgba(0,0,0,0)'); lx.fillStyle = g; lx.beginPath(); lx.arc(p[0], p[1], r, 0, TAU); lx.fill(); };
+  for (const t of tables) light(P(t.x, t.y, 50), 75, .7);
+  for (const p of PROPS) if (p.kind === 'lamp') light(P(p.x, p.y, 40), 115, .9);
+  light(P(6, -.15, WH + 23), 150, .8);
+  for (const c of cars) light(P(c.x, c.y + c.dir * 1.6, 0), 50, .75);
+  for (const m of motos) light(P(m.x, m.y + 1.2, 0), 36, .7);
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(lc, 0, 0);
+  ctx.setTransform(...wt); ctx.globalCompositeOperation = 'lighter';
+  const glow = (p, r, a) => { const g = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], r); g.addColorStop(0, `rgba(255,190,90,${a * n})`); g.addColorStop(1, 'rgba(255,190,90,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, TAU); ctx.fill(); };
+  for (const t of tables) glow(P(t.x, t.y, 88), 34, .35);
+  for (const p of PROPS) if (p.kind === 'lamp') glow(P(p.x, p.y, 96), 30, .5);
+  ctx.globalCompositeOperation = 'source-over';
+}
+function drawRain() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.fillStyle = `rgba(50,70,105,${.16 * rainAmt})`; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = `rgba(215,230,255,${.55 * rainAmt})`; ctx.lineWidth = 1.2; ctx.beginPath();
+  const n = Math.floor(DROPS.length * rainAmt);
+  for (let i = 0; i < n; i++) { const d = DROPS[i]; ctx.moveTo(d.x, d.y); ctx.lineTo(d.x + 4, d.y - 15); }
+  ctx.stroke();
+  ctx.setTransform(DPR * Z, 0, 0, DPR * Z, DPR * (W / 2 - camX * Z), DPR * (H / 2 - camY * Z));
 }
 
 /* =========================================================
@@ -1447,7 +1656,20 @@ function tap(sx, sy) {
   const near = (p, r) => Math.hypot(p[0] - wx, p[1] - wy) < r;
   if (S.tables < 12 && near(P(tablePos(S.tables).x, tablePos(S.tables).y, 22), 44)) return buyCount('tables');
   if (S.stoves < 6 && near(P(STOVE_X[S.stoves], .55, 40), 44)) return buyCount('stoves');
-  for (let i = 0; i < S.stoves; i++) if (near(P(STOVE_X[i], .55, 20), 34)) { SFX.tap(); return openSheet('up', 'kitchen'); }
+  for (const t of tables) if (t.tip && near(P(t.x, t.y, 56), 30)) {
+    earn(t.tip, P(t.x, t.y, 80)); t.tip = 0; SFX.coin();
+    for (let i = 0; i < 6; i++) particles.push(mkPart('coin', P(t.x, t.y, 56)));
+    return;
+  }
+  for (let i = 0; i < S.stoves; i++) if (near(P(STOVE_X[i], .55, 20), 34)) {
+    const ch = chefs[i];
+    if (ch && ch.state === 'cook' && ch.t < ch.dur) {   // tocar no fogão acelera o preparo
+      ch.t = Math.min(ch.dur, ch.t + .4); tone(500 + Math.random() * 300, .05, 'triangle', .04);
+      for (let k = 0; k < 5; k++) particles.push(mkPart('spark', P(STOVE_X[i], .55, 40)));
+      return;
+    }
+    SFX.tap(); return openSheet('up', 'kitchen');
+  }
   for (const c of chefs) if (near(P(c.x, c.y, 26), 22)) { SFX.tap(); return openSheet('up', 'kitchen'); }
   for (const w of waiters) if (near(P(w.x, w.y, 26), 22)) { SFX.tap(); return openSheet('up', 'staff'); }
   for (const t of tables) if (near(P(t.x, t.y, 20), 34)) { SFX.tap(); return openSheet('up', 'hall'); }
@@ -1543,12 +1765,79 @@ function giftReward(day) {
 }
 const rewardLabel = r => r.kind === 'money' ? money(r.v) : r.kind === 'gems' ? `${r.v} gemas` : `Turbo ${r.v} min`;
 const rewardIcon = r => r.kind === 'money' ? icon('coins') : r.kind === 'gems' ? icon('gem') : icon('bolt');
-function claimGift() {
-  const g = giftState(); if (!g.can) return;
-  const r = giftReward(g.day);
+function applyReward(r) {
   if (r.kind === 'money') earn(r.v);
   if (r.kind === 'gems') S.gems += r.v;
   if (r.kind === 'turbo') S.boostUntil = Math.max(Date.now(), S.boostUntil) + r.v * 60000;
+}
+const WHEEL = [
+  { kind: 'money', m: 5, w: 22, c: '#ffc531' }, { kind: 'gems', v: 3, w: 18, c: '#8b5cf6' },
+  { kind: 'money', m: 15, w: 16, c: '#3fb64a' }, { kind: 'turbo', v: 10, w: 12, c: '#ff8a1f' },
+  { kind: 'gems', v: 8, w: 10, c: '#2fa3e6' }, { kind: 'money', m: 60, w: 10, c: '#e8403a' },
+  { kind: 'turbo', v: 30, w: 8, c: '#ff7aa2' }, { kind: 'gems', v: 25, w: 4, c: '#3b2116' },
+];
+const wheelReward = s => s.kind === 'money' ? { kind: 'money', v: Math.max(300 * incMul(), ratePerSec() * 60) * s.m } : { kind: s.kind, v: s.v };
+let wheelRot = 0, spinning = false;
+function drawWheel(cv2, imgs) {
+  const g = cv2.getContext('2d'), R = 270, seg = TAU / WHEEL.length;
+  g.setTransform(1, 0, 0, 1, 280, 280); g.clearRect(-280, -280, 560, 560);
+  circ(g, 0, 0, R); fs(g, '#3b2116', 6);
+  WHEEL.forEach((s, i) => {
+    const a0 = wheelRot + i * seg - Math.PI / 2;
+    g.beginPath(); g.moveTo(0, 0); g.arc(0, 0, R - 8, a0, a0 + seg); g.closePath(); g.fillStyle = s.c; g.fill();
+    g.strokeStyle = '#fff6e2'; g.lineWidth = 4; g.stroke();
+    g.save(); g.rotate(a0 + seg / 2 + Math.PI / 2);
+    if (imgs[i].complete) g.drawImage(imgs[i], -34, -R + 22, 68, 68);
+    const r = wheelReward(s), label = s.kind === 'money' ? money(r.v) : s.kind === 'gems' ? String(s.v) : s.v + ' min';
+    g.font = '400 30px "Lilita One", sans-serif'; g.textAlign = 'center'; g.lineWidth = 7; g.strokeStyle = '#3b2116'; g.strokeText(label, 0, -R + 122); g.fillStyle = '#ffffff'; g.fillText(label, 0, -R + 122);
+    g.restore();
+  });
+  for (let i = 0; i < 16; i++) { const a = i / 16 * TAU; circ(g, Math.cos(a) * (R - 4), Math.sin(a) * (R - 4), 6); g.fillStyle = (i + Math.floor(T * 4)) % 2 ? '#fff6b0' : '#ffc531'; g.fill(); }
+  circ(g, 0, 0, 34); fs(g, '#fff6e2', 5); circ(g, 0, 0, 12); fs(g, '#e8403a', 3);
+}
+function openWheel() {
+  const m = $('modal'), free = () => S.wheelDay !== today();
+  m.innerHTML = `<div class="mcard" role="dialog" aria-modal="true"><div class="mhead"><h2 class="stroke">Roleta da Sorte</h2></div><div class="mbody">
+    <div class="wheelwrap"><canvas width="560" height="560"></canvas><div class="pointer"></div></div>
+    <p id="wres">Um giro grátis por dia. Giros extras custam 10 gemas.</p>
+    <div class="mbtns"><button class="buy max" id="wClose"><small>&nbsp;</small><em>Fechar</em></button><button class="buy" id="wSpin"><small></small><em>Girar!</em></button></div></div></div>`;
+  m.hidden = false;
+  const c2 = m.querySelector('canvas'), spinB = $('wSpin'), closeB = $('wClose');
+  const imgs = WHEEL.map(s => { const im = new Image(); im.onload = () => drawWheel(c2, imgs); im.src = s.kind === 'money' ? icon('coins') : s.kind === 'gems' ? icon('gem') : icon('bolt'); return im; });
+  const setSpin = () => { spinB.className = 'buy' + (free() ? '' : ' gemb'); spinB.querySelector('small').innerHTML = free() ? 'Grátis hoje' : 'por ' + gemSm + '10'; spinB.disabled = spinning; closeB.disabled = spinning; };
+  setSpin(); drawWheel(c2, imgs);
+  closeB.onclick = () => { if (!spinning) { m.hidden = true; refreshUI(true); } };
+  spinB.onclick = () => {
+    unlockAudio();
+    if (spinning) return;
+    if (free()) S.wheelDay = today(); else if (!spendGems(10)) return;
+    S.spins++; spinning = true; setSpin();
+    let tot = 0; WHEEL.forEach(s => tot += s.w);
+    let roll = Math.random() * tot, idx = 0;
+    while (roll > WHEEL[idx].w) { roll -= WHEEL[idx].w; idx++; }
+    const seg = TAU / WHEEL.length, start = wheelRot % TAU;
+    const end = TAU * 6 - (idx + .5) * seg + rand(-.3, .3) * seg;
+    const t0 = performance.now(), dur = 4200; let lastSeg = -1;
+    const step = now => {
+      const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+      wheelRot = start + (end - start) * e;
+      const sNow = Math.floor((wheelRot + Math.PI * 64) / seg);
+      if (sNow !== lastSeg) { lastSeg = sNow; tone(900, .03, 'square', .025); }
+      drawWheel(c2, imgs);
+      if (k < 1 && !m.hidden) return requestAnimationFrame(step);
+      spinning = false;
+      const r = wheelReward(WHEEL[idx]); applyReward(r); SFX.gift(); burst(P(6, 8, 40));
+      $('wres').innerHTML = `Você ganhou<b>${rewardLabel(r)}</b>`;
+      setSpin(); refreshUI(true);
+    };
+    requestAnimationFrame(step);
+  };
+}
+$('wheelBtn').onclick = () => { unlockAudio(); SFX.tap(); openWheel(); };
+function claimGift() {
+  const g = giftState(); if (!g.can) return;
+  const r = giftReward(g.day);
+  applyReward(r);
   S.gift.last = today(); S.gift.day = (g.day + 1) % 7;
   SFX.gift(); burst(P(6, 8, 40));
   showModal({ title: 'Presente coletado!', html: `<img src="${rewardIcon(r)}" alt=""><div class="big">${rewardLabel(r)}</div><p>Volte amanhã para abrir o presente do próximo dia.</p>`, buttons: [{ label: 'Oba!', fn: () => {} }] });
@@ -1556,12 +1845,12 @@ function claimGift() {
 }
 function activeMissions() {
   const out = []; let i = 0;
-  while (out.length < 3 && i < 500) { if (!S.mDone.includes(i)) out.push(i); i++; }
+  while (out.length < 3 && i < 500) { if (!S.mDone.includes(mission(i).t)) out.push(i); i++; }
   return out;
 }
 function claimMission(i) {
-  const m = mission(i); if (m.v(S) < m.n || S.mDone.includes(i)) return;
-  S.mDone.push(i); S.gems += m.r; SFX.gift(); toast(`+${m.r} gemas!`); refreshUI(true);
+  const m = mission(i); if (m.v(S) < m.n || S.mDone.includes(m.t)) return;
+  S.mDone.push(m.t); S.gems += m.r; SFX.gift(); toast(`+${m.r} gemas!`); refreshUI(true);
 }
 
 /* =========================================================
@@ -1583,7 +1872,7 @@ function doExpand() {
    ========================================================= */
 let sheetOpen = null, sheetTab = null, rows = [];
 const TABS = {
-  up: [['menu', 'Cardápio'], ['kitchen', 'Cozinha'], ['hall', 'Salão'], ['staff', 'Equipe'], ['mkt', 'Marketing']],
+  up: [['menu', 'Cardápio'], ['kitchen', 'Cozinha'], ['hall', 'Salão'], ['staff', 'Equipe'], ['delivery', 'Delivery'], ['mkt', 'Marketing']],
   decor: [['floor', 'Piso'], ['wall', 'Paredes'], ['cloth', 'Toalhas'], ['kfloor', 'Cozinha'], ['stove', 'Fogões']],
 };
 const TITLES = { up: 'Melhorias', decor: 'Decore seu restaurante', gift: 'Presentes semanais', missions: 'Missões', expand: 'Novo restaurante' };
@@ -1652,7 +1941,7 @@ function levelRow(body, key) {
     const l = S[key], q = lvCalc(key);
     r.b.textContent = `${d.name} · Nv ${l}`; r.s.textContent = `${d.v(l)}${q.n ? ' → ' + d.v(l + q.n) : ''} ${d.unit}`;
     r.bar.style.width = (l / d.max * 100) + '%';
-    if (!q.n) setBtn(r, 'Máximo', null, false); else setBtn(r, `Melhorar x${q.n}`, q.cost, S.money >= q.cost);
+    if (!q.n) setBtn(r, 'Máximo', null, false); else setBtn(r, l ? `Melhorar x${q.n}` : 'Liberar', q.cost, S.money >= q.cost);
   };
   body.appendChild(r.el); rows.push(r);
 }
@@ -1680,6 +1969,11 @@ function buildUp(body) {
   } else if (sheetTab === 'kitchen') { countRow(body, 'stoves'); levelRow(body, 'stoveLvl'); }
   else if (sheetTab === 'hall') { countRow(body, 'tables'); levelRow(body, 'comfort'); }
   else if (sheetTab === 'staff') { countRow(body, 'waiters'); levelRow(body, 'waiterLvl'); }
+  else if (sheetTab === 'delivery') {
+    const h = document.createElement('p'); h.className = 'hint';
+    h.textContent = 'Motoboys param na porta, o chef prepara o pedido e um garçom entrega. Cada entrega rende 1,5x o preço do prato, e na chuva chegam o dobro de pedidos.';
+    body.appendChild(h); levelRow(body, 'delivery');
+  }
   else if (sheetTab === 'mkt') {
     levelRow(body, 'mkt');
     gemRow(body, 'bolt', 'Turbo 2x', () => boostOn() ? `Ativo por mais ${fmtTime((S.boostUntil - Date.now()) / 1000)} · usar soma 10 min` : 'Lucro em dobro por 10 minutos', 15, activateTurbo);
@@ -1836,6 +2130,13 @@ function refreshUI(force) {
   const ready = activeMissions().filter(i => mission(i).v(S) >= mission(i).n).length;
   $('bMis').hidden = !ready; $('bMis').textContent = ready;
   $('bExp').hidden = S.earnedHere < expandReq();
+  $('bWheel').hidden = S.wheelDay === today();
+  const chips = [];
+  if (T < rushUntil) chips.push(`<span class="chip rush"><i style="background:#ffc531"></i>Hora do Rush ${fmtTime(rushUntil - T)}</span>`);
+  if (isNight()) chips.push('<span class="chip"><i style="background:#2b356a"></i>Jantar: pratos +25%</span>');
+  if (raining()) chips.push(`<span class="chip"><i style="background:#2fa3e6"></i>${S.delivery ? 'Chuva: entregas 2x' : 'Chovendo'}</span>`);
+  if (customers.some(c => c.critic)) chips.push('<span class="chip"><i style="background:#2b2b33"></i>Crítico no salão</span>');
+  const ch = chips.join(''); if ($('events').innerHTML !== ch) $('events').innerHTML = ch;
   const on = boostOn(); $('turbo').classList.toggle('on', on);
   $('turboT').textContent = on ? fmtTime((S.boostUntil - Date.now()) / 1000) : 'Turbo';
   if (force) shownMoney = S.money;
@@ -1893,6 +2194,7 @@ function intro() {
         <div><img src="${icon('waiter')}" alt=""><span>Os garçons anotam os pedidos e servem as mesas.</span></div>
         <div><img src="${icon('chef')}" alt=""><span>Os chefs cozinham cada prato no fogão.</span></div>
         <div><img src="${icon('coins')}" alt=""><span>Toque nas etiquetas verdes no restaurante para comprar mesas e fogões.</span></div>
+        <div><img src="${icon('flame')}" alt=""><span>Toque nos fogões para cozinhar mais rápido e nas moedas das mesas para pegar gorjetas.</span></div>
       </div>`,
     buttons: [{ label: 'Abrir o restaurante', fn: () => { S.intro = true; save(); } }],
   });
@@ -1922,7 +2224,7 @@ window.addEventListener('resize', resize);
 window.addEventListener('keydown', e => { if (e.key === 'Escape') { if (!$('modal').hidden) $('modal').hidden = true; else closeSheet(); } });
 
 function start(hot) {
-  S = load(hot);
+  S = load(hot); migrateMissions();
   resize(); fitCam(); resetWorld(); setMuteIcon();
   booted = true;
   const away = (Date.now() - S.lastSeen) / 1000;
