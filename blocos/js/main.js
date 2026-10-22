@@ -587,11 +587,16 @@ class Game {
       case 'delete-world': {
         if (!this.selectedWorld) return;
         const meta = Save.listWorlds().find((w) => w.id === this.selectedWorld);
-        if (meta && confirm(`Excluir o mundo "${meta.name}"? Isso não pode ser desfeito.`)) {
-          Save.deleteWorld(meta.id);
-          this.selectedWorld = null;
-          this.renderWorldList();
+        if (!meta) return;
+        // segundo clique confirma (o navegador pode bloquear janelas de confirmação)
+        if (this.confirmDelete !== meta.id) {
+          this.confirmDelete = meta.id;
+          document.querySelector('[data-act="delete-world"]').textContent = 'Clique de novo para excluir';
+          return;
         }
+        Save.deleteWorld(meta.id);
+        this.selectedWorld = null;
+        this.renderWorldList();
         break;
       }
       case 'resume':
@@ -654,6 +659,8 @@ class Game {
       });
       box.appendChild(d);
     }
+    this.confirmDelete = null;
+    document.querySelector('[data-act="delete-world"]').textContent = 'Excluir';
     const has = !!list.find((w) => w.id === this.selectedWorld);
     document.querySelector('[data-act="play-world"]').disabled = !has;
     document.querySelector('[data-act="delete-world"]').disabled = !has;
