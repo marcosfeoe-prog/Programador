@@ -22,10 +22,11 @@ em tela cheia e na horizontal).
 
 ## Os níveis (V2)
 
-Ordem: **0 → 1 → 2 → 3 → 4 → 5 → 8 → 9 → 10 → 10.1 → 11 → 12 → 14 → 15 → 16 → 23 → 34 → 35 → 37 → 43 → 44 → 45 → 46 → 88 → 177**, mais dois subníveis secretos (**0.1** e **9.5**). Todos podem ser escolhidos no menu **Níveis** (os secretos só aparecem depois de descobertos).
+Ordem: **Frontrooms → 0 → 1 → 2 → 3 → 4 → 5 → 8 → 9 → 10 → 10.1 → 11 → 12 → 14 → 15 → 16 → 23 → 34 → 35 → 37 → 43 → 44 → 45 → 46 → 88 → 177**, mais dois subníveis secretos (**0.1** e **9.5**). Todos podem ser escolhidos no menu **Níveis** (os secretos só aparecem depois de descobertos).
 
 | Nível | Nome | Como é | Objetivo / saída |
 |---|---|---|---|
+| **Frontrooms** | A Terra | O **ponto de partida** (um jogo novo começa aqui): uma casa simples no meio de uma floresta viva, num fim de tarde, com pássaros cantando e fumaça na chaminé. Dentro da casa, uma **falha na parede** tremula e mostra o papel de parede amarelo por trás. | Atravesse a falha → **Nível 0**, que começa com um **despertar em terceira pessoa**: o andarilho se levanta, olha ao redor e a câmera avança pelo corredor mostrando o Nível 0 |
 | **0** | O Saguão | Papel de parede amarelo, carpete úmido, lâmpadas fluorescentes zumbindo. Bem maior (a saída fica a ~140 m). Áreas secretas atrás de frestas e portas: **As Armadilhas** (carpete podre e encharcado, luzes morrendo, **buracos no chão** — alguns escondidos — que derrubam você direto no Nível 1), **Sala Manila** (toda acesa, segura, a sanidade se recupera) e **Salas Escuras** (todas as lâmpadas apagadas). | Atravesse a parede que falha |
 | **0.1** *(secreto)* | Estação Zênite | Usina elétrica no espaço, o maior nível do jogo: Átrio com claraboia e holograma, Mirante com janela gigante para o gigante anelado Orfeu, Refeitório e alojamentos, passarela de vidro, Sala dos Geradores com três bobinas de Tesla e turbinas, Sala de Controle e Hangar com nave. **Moradores para conversar** (Ada, Vega, Lúcio, Iara, Bento, o Viajante e o robô Z-7). Sem entidades; a sanidade se recupera. | Ache no Nível 0 o **rastro vermelho** que leva a uma **porta de madeira** → fale com a Ada → 3 fusíveis → Vega → recalibre as 3 bobinas → Lúcio → elevador (leva ao Nível 1) |
 | **1** | Zona Habitável | Armazém de concreto, quedas de energia; **Sorridentes** no escuro. Bem maior (a saída fica a ~150 m). Área secreta **Manutenção 1**, atrás de uma porta com placa amarela num canto escuro: ala técnica vazia com racks de servidores piscando, mesa de controle (o **terminal** indica a distância e a direção da saída) e um **gerador de reserva** que acaba com as quedas de energia. | Porta de SAÍDA verde |
@@ -190,6 +191,8 @@ liminar/
   js/levels/level45.js    Escritório Esquecido (salas, cartão, porta de metal)
   js/levels/level14.js    Paraíso Doente (floresta vermelha, trilha, casas, porta negra, música)
   js/levels/level16.js    Mundo Dreamcore (estágios por distância, céu/planeta, alucinações, árvore)
+  js/levels/levelFR.js    Frontrooms (casa na floresta, a falha na parede)
+  js/levels/level0_wake.js despertar em terceira pessoa ao chegar no Nível 0
   js/levels/level46.js    Deserto Árabe (dunas, calor, cabanas, 3 eventos)
   js/levels/level177*.js  Memórias do Passado (5 áreas, música contínua, história do Mike, final)
   js/levels/level34*.js   Sistema de Esgoto (áreas, céu verde, Ratos da Morte)
@@ -204,5 +207,5 @@ liminar/
   js/notes.js         textos dos bilhetes
 ```
 
-Parâmetros úteis para testes: `?level=0..32&autostart` (10 = subnível 0.1, 11 = Nível 88, 12–14 = áreas do Nível 12, 15 = Nível 37, 16 = Nível 2, 17 = Nível 3, 18 = Nível 8, 19 = subnível 9.5, 20 = Nível 34, 21 = Nível 35, 22 = Nível 43, 23 = Nível 44, 24 = Nível 45, 25 = Nível 14, 26 = Nível 16, 27–31 = áreas 1–5 do Nível 177, 32 = Nível 46) (entra direto no nível),
+Parâmetros úteis para testes: `?level=0..33&autostart` (10 = subnível 0.1, 11 = Nível 88, 12–14 = áreas do Nível 12, 15 = Nível 37, 16 = Nível 2, 17 = Nível 3, 18 = Nível 8, 19 = subnível 9.5, 20 = Nível 34, 21 = Nível 35, 22 = Nível 43, 23 = Nível 44, 24 = Nível 45, 25 = Nível 14, 26 = Nível 16, 27–31 = áreas 1–5 do Nível 177, 32 = Nível 46, 33 = Frontrooms) (entra direto no nível),
 `?q=ultra`, `?filter=vhs`, `?seed=7`, `?touch` (força os controles de toque).

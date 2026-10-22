@@ -1,5 +1,5 @@
 // Interface: HUD, bilhetes, cartões de nível, sobreposição de câmera e menus.
-import { FILTERS, LEVELS, ORDER, orderPos, QUALITY } from './config.js';
+import { FILTERS, LEVELS, ORDER, orderPos, QUALITY, START } from './config.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -439,8 +439,8 @@ export class Menu {
     this.root = $('menu');
     this.ingame = false;
     this.panels = ['m-main', 'm-levels', 'm-filters', 'm-settings', 'm-help'];
-    $('b-play').onclick = () => (this.ingame ? cb.resume() : cb.play(this.s.reached || 0));
-    $('b-new').onclick = () => cb.play(0);
+    $('b-play').onclick = () => (this.ingame ? cb.resume() : cb.play(this.s.reached ?? START));
+    $('b-new').onclick = () => cb.play(START);
     $('b-levels').onclick = () => this.open('m-levels');
     $('b-filters').onclick = () => this.open('m-filters');
     $('b-settings').onclick = () => this.open('m-settings');
@@ -551,7 +551,7 @@ export class Menu {
 
   setMode(ingame) {
     this.ingame = ingame;
-    const r = this.s.reached || 0;
+    const r = this.s.reached ?? START;
     const play = $('b-play');
     play.disabled = false;
     if (ingame) {
@@ -561,9 +561,9 @@ export class Menu {
     } else {
       $('menu-title').textContent = 'LIMINAR';
       $('menu-sub').textContent = 'espaços liminares · 10 níveis';
-      play.textContent = r > 0 ? `Continuar — ${LEVELS[r].tag}` : 'Entrar nos Bastidores';
+      play.textContent = r !== START ? `Continuar — ${LEVELS[r].tag}` : 'Começar';
     }
-    $('b-new').classList.toggle('hidden', ingame || r === 0);
+    $('b-new').classList.toggle('hidden', ingame || r === START);
     $('b-restart').classList.toggle('hidden', !ingame);
     $('b-quit').classList.toggle('hidden', !ingame);
     this.root.classList.toggle('ingame', ingame);

@@ -119,6 +119,7 @@ export const NOTES = {
     'Atrás das pedras do Grande Tanque tem uma fresta. No fundo, uma porta molhada. Do outro lado ouvi ondas. ONDAS.',
     'No laboratório tem um computador que abre a jaula da quarentena. Lá dentro alguém deixou um rastro azul até uma porta aberta.',
   ],
+  fr: ['Lista de compras: pão, leite, lâmpadas (a da sala anda zumbindo).'],
   '46': [
     'A água das cabanas é quente, mas é água. Beba antes que a vista comece a tremer.',
     'Vi um oásis. Corri até ele. Quando cheguei perto, só tinha areia. Não corra atrás de oásis.',

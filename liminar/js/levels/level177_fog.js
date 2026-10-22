@@ -51,7 +51,7 @@ const _q = new THREE.Quaternion();
 const _s = new THREE.Vector3();
 const _e = new THREE.Euler();
 
-function forestTree(seed) {
+export function forestTree(seed) {
   const r = mulberry32(seed);
   const parts = [];
   const H = 5 + r() * 3;

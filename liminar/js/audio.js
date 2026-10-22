@@ -1155,7 +1155,7 @@ export class AudioEngine {
     this.windK = 1;
     this.setReverb(look.reverb || 1.5);
     const k = this.kind;
-    const wets = { level46: 0.05, level177: 0.5, level177_2: 0.15, level177_3: 0.6, level177_4: 0.1, level177_5: 0.35, level16: 0.2, level14: 0.3, level45: 0.35, level43: 0.55, level44: 0.3, level34: 0.6, level35: 0.5, level8: 0.7, level9_5: 0.1, level2: 0.35, level3: 0.45, level37: 0.75, level12: 0.45, level12_2: 0.15, level12_3: 0.9, level88: 0.12, level0_1: 0.4, level10: 0.08, level11: 0.2, level1: 0.55, level9: 0.12, level10_1: 0.18, level23: 0.3, level15: 0.45, level5: 0.4 };
+    const wets = { levelFR: 0.1, level46: 0.05, level177: 0.5, level177_2: 0.15, level177_3: 0.6, level177_4: 0.1, level177_5: 0.35, level16: 0.2, level14: 0.3, level45: 0.35, level43: 0.55, level44: 0.3, level34: 0.6, level35: 0.5, level8: 0.7, level9_5: 0.1, level2: 0.35, level3: 0.45, level37: 0.75, level12: 0.45, level12_2: 0.15, level12_3: 0.9, level88: 0.12, level0_1: 0.4, level10: 0.08, level11: 0.2, level1: 0.55, level9: 0.12, level10_1: 0.18, level23: 0.3, level15: 0.45, level5: 0.4 };
     this.wet.gain.value = wets[k] !== undefined ? wets[k] : 0.35;
     this.hum = null;
     if (k === 'level0') {
@@ -1196,6 +1196,11 @@ export class AudioEngine {
       this.machineL = this.loop('machine', 0.06, { rate: 0.5, lp: 500, wet: 0.5 });
       this.waterL = this.loop('water', 0.07, { rate: 0.8, lp: 1200, wet: 0.6 });
       this.loop('brown', 0.04, { lp: 200 });
+    } else if (k === 'levelFR') {
+      // a Terra: pássaros, vento nas folhas
+      this.loop('birds', 0.16, { wet: 0.3 });
+      this.loop('birds', 0.08, { rate: 0.85, wet: 0.5 });
+      this.wind = this.loop('wind', 0.03, { rate: 0.4, lp: 1200, wet: 0.1 });
     } else if (k === 'level46') {
       // deserto: vento constante, com rajadas
       this.wind = this.loop('wind', 0.12, { rate: 0.55, lp: 2400, wet: 0.05 });

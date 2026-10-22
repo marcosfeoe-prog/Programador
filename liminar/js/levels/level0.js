@@ -14,6 +14,7 @@ import { getTex, indoorEnvTex, loadPhotoTex } from '../textures.js';
 import { panelMaterial } from '../materials.js';
 import { clamp, fbm, hash3, mulberry32, TAU } from '../util.js';
 import { SecretTrail } from './level0_secret.js';
+import { ThirdPersonWake } from './level0_wake.js';
 
 export class Level0 extends GridLevel {
   constructor(game) {
@@ -499,6 +500,12 @@ export class Level0 extends GridLevel {
 
   tick(dt, player) {
     this.riftMat.uniforms.uTime.value += dt;
+    // vindo das Frontrooms: o despertar visto de fora
+    if (this.wake === undefined) this.wake = this.game.prevKey === 'fr' ? new ThirdPersonWake(this) : null;
+    if (this.wake && this.wake.active) {
+      this.wake.update(dt);
+      return;
+    }
     this.secret.tick(dt, player);
     this.zoneTick(dt, player);
     const dx = player.pos.x - this.exit.x;
@@ -557,6 +564,7 @@ export class Level0 extends GridLevel {
   }
 
   interactable(player) {
+    if (this.wake && this.wake.active) return null;
     return this.secret.interactable(player);
   }
 
@@ -608,6 +616,7 @@ export class Level0 extends GridLevel {
   }
 
   dispose() {
+    if (this.wake) this.wake.dispose();
     super.dispose();
     if (this.photos) for (const t of this.photos) t.dispose();
     this.pitMat.map.dispose();

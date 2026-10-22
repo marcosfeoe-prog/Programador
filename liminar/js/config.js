@@ -121,7 +121,7 @@ export const FILTERS = [
 // Os níveis, na ordem em que são visitados. `key` identifica a classe do nível
 // e os bilhetes; `num` é o número canônico (10.1 é um subnível do 10).
 // Ordem em que os níveis são visitados (as chaves de LEVELS; secretos e partes ficam de fora).
-export const ORDER = ['0', '1', '2', '3', '4', '5', '8', '9', '10', '10.1', '11', '12', '14', '15', '16', '23', '34', '35', '37', '43', '44', '45', '46', '88', '177'];
+export const ORDER = ['fr', '0', '1', '2', '3', '4', '5', '8', '9', '10', '10.1', '11', '12', '14', '15', '16', '23', '34', '35', '37', '43', '44', '45', '46', '88', '177'];
 
 // Posição de um nível na ordem (partes contam como o nível principal; secretos, como o pai).
 export function orderPos(info) {
@@ -486,7 +486,20 @@ export const LEVELS = [
     objective: 'Atravesse o deserto (600 m).',
     hint: 'Fique na sombra das cabanas quando o calor apertar. Cuidado com tempestades de areia e miragens.',
   },
+  {
+    key: 'fr',
+    num: 0,
+    name: 'Frontrooms — A Terra',
+    tag: 'Frontrooms',
+    danger: 'O mundo real',
+    desc: 'Uma casa simples no meio da floresta, numa tarde qualquer. Tudo normal. Quase tudo.',
+    objective: 'Explore a casa.',
+    hint: 'Alguma coisa nas paredes não está certa.',
+  },
 ];
+
+// Onde um jogo novo começa: as Frontrooms.
+export const START = LEVELS.findIndex((l) => l.key === 'fr');
 
 // Ordem dos níveis da versão 1 (para migrar o progresso salvo).
 const V1_ORDER = ['0', '1', '4', '10', '11'];
@@ -509,7 +522,7 @@ export function defaultSettings() {
     navHelp: true,
     showFps: false,
     dynamicRes: mobile,
-    reached: 0,
+    reached: START,
     v2: true,
     mobile,
   };
