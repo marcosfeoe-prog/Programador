@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { B, BLOCKS, info } from './blocks.js';
 import { moveBox, liquidIn } from './physics.js';
-import { HumanoidModel, QuadrupedModel, CreeperModel, ChickenModel, SpiderModel, arrowMesh, heldItemMesh } from './models.js';
+import { HumanoidModel, QuadrupedModel, CreeperModel, ChickenModel, SpiderModel, arrowMesh, heldItemMesh, modelOptions } from './models.js';
 import { blockItemGeometry } from './mesher.js';
 import { OPAQUE, SOLID, LIQUID } from './world.js';
 import { CH } from './consts.js';
@@ -348,16 +348,16 @@ export class Mob extends Entity {
   }
 
   buildModel() {
-    const real = !!(this.game.quality && this.game.quality.articulated);
+    const o = modelOptions(this.game.quality);
     const t = this.type;
-    if (t === 'zombie') this.model = new HumanoidModel('zombie', real);
+    if (t === 'zombie') this.model = new HumanoidModel('zombie', o);
     else if (t === 'skeleton') {
-      this.model = new HumanoidModel('skeleton', real);
+      this.model = new HumanoidModel('skeleton', o);
       this.model.setHeld(275);
-    } else if (t === 'creeper') this.model = new CreeperModel();
-    else if (t === 'chicken') this.model = new ChickenModel(real);
-    else if (t === 'spider') this.model = new SpiderModel(real);
-    else this.model = new QuadrupedModel(t, real);
+    } else if (t === 'creeper') this.model = new CreeperModel(o);
+    else if (t === 'chicken') this.model = new ChickenModel(o);
+    else if (t === 'spider') this.model = new SpiderModel(o);
+    else this.model = new QuadrupedModel(t, o);
     this.object = this.model.root;
   }
   // troca o modelo ao mudar a qualidade gráfica
@@ -496,7 +496,7 @@ export class Mob extends Entity {
         speed = this.def.speed * 2;
       } else if (this.eatGrass > 0) {
         this.eatGrass--;
-        if (this.eatGrass === 4) {
+        if (this.eatGrass === 4 && this.type === 'sheep') {
           const bx = Math.floor(this.x), by = Math.floor(this.y - 0.5), bz = Math.floor(this.z);
           if (world.getBlock(bx, by + 1, bz) === B.TALL_GRASS) world.setBlock(bx, by + 1, bz, B.AIR);
           else if (world.getBlock(bx, by, bz) === B.GRASS) world.setBlock(bx, by, bz, B.DIRT);
@@ -508,7 +508,9 @@ export class Mob extends Entity {
             this.walking = 20 + Math.floor(Math.random() * 60);
           }
           this.moveTimer = 60 + Math.floor(Math.random() * 120);
-          if (this.type === 'sheep' && Math.random() < 0.3) this.eatGrass = 40;
+          // ovelha come a grama; vaca pasta e galinha bica o chão só na animação
+          const grazes = this.type === 'sheep' ? 0.3 : this.type === 'cow' ? 0.25 : this.type === 'chicken' ? 0.35 : 0;
+          if (Math.random() < grazes) this.eatGrass = 40;
         }
         if (this.walking > 0) {
           this.walking--;
@@ -633,7 +635,8 @@ export class Mob extends Entity {
     });
     const b = brightnessAt(this.game.world, x, y + this.h * 0.7, z, env.skyDarken, env.gamma);
     const flash = fuse > 0 && Math.floor(fuse * 30 / 4) % 2 === 0 ? 0.7 : 0;
-    this.model.setLight(b, this.hurtTime > 0 || this.deathTime > 0, flash);
+    const L = this.game.world.getLight(Math.floor(x), Math.floor(y + this.h * 0.7), Math.floor(z));
+    this.model.setLight(b, this.hurtTime > 0 || this.deathTime > 0, flash, L);
   }
 
   remove() {

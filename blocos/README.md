@@ -31,7 +31,7 @@ Aperte **F5** (ou **V**, ou o botão 👁 no celular) para alternar entre:
 
 Nas câmeras de terceira pessoa a câmera se aproxima quando há um bloco no caminho.
 
-### Gráficos: Baixo, Médio, Alto e ULTRA
+### Gráficos: Baixo, Médio, Alto, ULTRA e MAX
 
 Em **Opções → Gráficos** escolha o nível (o celular começa no Baixo):
 
@@ -42,7 +42,9 @@ Em **Opções → Gráficos** escolha o nível (o celular começa no Baixo):
 | **Alto** | **Sombras do sol** de verdade (árvores, casas, criaturas e o próprio jogador fazem sombra), **água com reflexo do céu, ondas e brilho do sol**, grama, flores, plantações e folhas **balançando ao vento**, **folhas caindo** das árvores, brilho (*bloom*) e correção de cor. |
 | **ULTRA** | Tudo do Alto e mais: **texturas realistas em alta resolução** (64×64, 4× mais detalhes) geradas por código, com **relevo** (*normal map*) e **brilho especular** (minérios, metais, gelo, obsidiana, chão molhado na chuva); grama alta com folhas finas; luz do sol calculada pixel a pixel; **sombras suaves**; **céu realista com nuvens volumétricas** iluminadas pelo sol e halo solar; **raios de sol** (*god rays*); e **animações realistas**: personagens com **joelhos e cotovelos articulados**, passos com o corpo subindo e descendo, ombros girando, respiração e agachamento dobrando os joelhos; animais com passo mais pesado. |
 
-O ULTRA exige uma boa placa de vídeo. As texturas realistas levam menos de meio segundo para serem geradas na primeira vez.
+| **MAX** | O ápice. Tudo do ULTRA e mais: **texturas 128×128** (8× mais detalhes) com **relevo 3D de verdade** (*parallax occlusion*: pedras, tijolos e cascalho saltam do bloco e fazem sombra em si mesmos); **céu com atmosfera física** (espalhamento de Rayleigh e Mie: azul profundo no alto, horizonte claro, pôr do sol alaranjado), **nuvens volumétricas em 3D** que se movem com o vento, iluminadas pelo sol por dentro e projetando **sombra no chão**; **sol com escurecimento de borda**, **lua com fases e crateras**, estrelas que cintilam e Via Láctea; **água com reflexo do mundo** (árvores, montanhas e céu refletidos), **refração**, cor que escurece com a profundidade, **espuma na beira** e **cáusticas** no fundo; **sombras suaves com penumbra variável** (nítidas perto do objeto, borradas longe); **oclusão de ambiente** (SSAO); **neblina atmosférica** que funde o horizonte no céu; luz do céu azulada nas sombras e tochas tremulando; reflexos de lente; adaptação do olho ao escurecer; e **animais realistas**: pelo, lã e penas em alta resolução, iluminados pelo sol e recebendo sombras, patas com **joelho e jarrete**, **orelhas** que se mexem, **caudas** espantando moscas, respiração, vacas pastando e galinhas bicando o chão com o balanço de cabeça típico. À noite aparecem **vaga-lumes** sobre a grama. |
+
+O ULTRA exige uma boa placa de vídeo e o MAX uma placa potente (de jogos). As texturas realistas levam menos de um segundo para serem geradas na primeira vez.
 
 ### Controles (PC)
 
@@ -167,7 +169,8 @@ blocos/
   js/terrain.js         gerador de terreno, biomas, cavernas, minérios e árvores
   js/mesher.js          malhas dos chunks (faces visíveis, oclusão, luz suave)
   js/render.js          níveis de gráficos, shaders, sombras, pós-processamento, céu e nuvens
-  js/hdtextures.js      texturas realistas em alta resolução com relevo (ULTRA)
+  js/hdtextures.js      texturas realistas em alta resolução com relevo (ULTRA e MAX)
+  js/maxsky.js          céu do MAX: atmosfera, nuvens volumétricas, sol, lua e estrelas
   js/weather.js         chuva, neve e raios
   js/textures.js        texturas e ícones em pixel art gerados por código
   js/models.js          modelos do jogador e das criaturas, animações, mão em 1ª pessoa

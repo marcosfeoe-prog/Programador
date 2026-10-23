@@ -1,31 +1,38 @@
 // Modelos de personagens e animais feitos de caixas, com texturas pintadas por código e animações.
 import * as THREE from 'three';
-import { mulberry32 } from './noise.js';
+import { mulberry32, hash2 } from './noise.js';
 import { BLOCKS, ITEMS } from './blocks.js';
 import { blockItemGeometry } from './mesher.js';
 import { itemIconPainter, tileImageData, canvasTexture, getAtlasTexture } from './textures.js';
+import { U, SHADOW_GLSL } from './render.js';
+import { CLOUD_GLSL } from './maxsky.js';
 
 // ---------- pintura de skins (layout de caixa: direita, frente, esquerda, trás, topo, base) ----------
+// k: resolução extra (MAX pinta cada pixel da skin em k×k, com pelo, volume e brilho nos olhos)
+// fur: 0 pele/pano, 1 pelo curto, 2 lã, 3 penas
 class Skin {
-  constructor(w, h, seed = 1) {
+  constructor(w, h, seed = 1, k = 1, fur = 0) {
     this.canvas = document.createElement('canvas');
-    this.canvas.width = w;
-    this.canvas.height = h;
+    this.canvas.width = w * k;
+    this.canvas.height = h * k;
     this.ctx = this.canvas.getContext('2d');
-    this.img = this.ctx.createImageData(w, h);
+    this.img = this.ctx.createImageData(w * k, h * k);
     this.w = w;
     this.h = h;
+    this.k = k;
+    this.fur = fur;
+    this.seed = seed;
     this.rnd = mulberry32(seed);
   }
   px(x, y, c) {
     if (!c) return;
-    const i = (y * this.w + x) * 4;
+    const i = (y * this.w * this.k + x) * 4;
     this.img.data[i] = c[0];
     this.img.data[i + 1] = c[1];
     this.img.data[i + 2] = c[2];
     this.img.data[i + 3] = c[3] ?? 255;
   }
-  // fn(face, x, y, larguraFace, alturaFace) → cor
+  // fn(face, x, y, larguraFace, alturaFace, fx, fy) → cor; fx/fy são contínuos (servem para manchas suaves no MAX)
   box(u, v, w, h, d, fn) {
     const rects = {
       top: [u + d, v, w, d],
@@ -35,9 +42,50 @@ class Skin {
       left: [u + d + w, v + d, d, h],
       back: [u + d + w + d, v + d, w, h],
     };
+    const k = this.k;
     for (const [face, [x0, y0, fw, fh]] of Object.entries(rects)) {
-      for (let y = 0; y < fh; y++) for (let x = 0; x < fw; x++) this.px(x0 + x, y0 + y, fn(face, x, y, fw, fh));
+      if (k === 1) {
+        for (let y = 0; y < fh; y++) for (let x = 0; x < fw; x++) this.px(x0 + x, y0 + y, fn(face, x, y, fw, fh, x + 0.5, y + 0.5));
+        continue;
+      }
+      for (let Y = 0; Y < fh * k; Y++) for (let X = 0; X < fw * k; X++) {
+        const fx = (X + 0.5) / k, fy = (Y + 0.5) / k;
+        const c = fn(face, Math.floor(fx), Math.floor(fy), fw, fh, fx, fy);
+        if (c) this.px(x0 * k + X, y0 * k + Y, this.shade(c, face, X, Y, fx, fy, fw, fh));
+      }
     }
+  }
+  // detalhe em alta resolução: volume da caixa, pelo e olhos com brilho
+  shade(c, face, X, Y, fx, fy, fw, fh) {
+    const k = this.k;
+    if (c.eye && X % k === 1 && Y % k === 1) return [235, 238, 240];
+    let s = face === 'top' ? 1.06 : face === 'bottom' ? 0.8 : 1.03 - (fy / fh) * 0.16;
+    const e = Math.min(fx, fw - fx, fy, fh - fy);
+    s *= 0.84 + 0.16 * Math.min(1, e / 0.9);
+    const sd = this.seed * 31 + face.length;
+    const fur = c.fur ?? this.fur;
+    if (fur === 1) {
+      // fios curtos em listras verticais
+      const off = Math.floor(hash2(sd, X, 7) * 3);
+      s *= 0.88 + 0.22 * hash2(sd, X, Math.floor((Y + off) / 3));
+    } else if (fur === 2) {
+      // lã em cachos: o centro de cachinho mais próximo (células de Voronoi) dá o volume
+      const cx = Math.floor(X / 3.5), cy = Math.floor(Y / 3.5);
+      let d1 = 9, id = 0;
+      for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) {
+        const gx = cx + i, gy = cy + j;
+        const dd = Math.hypot(X + 0.5 - (gx + hash2(sd, gx, gy)) * 3.5, Y + 0.5 - (gy + hash2(sd + 1, gx, gy)) * 3.5);
+        if (dd < d1) { d1 = dd; id = hash2(sd + 2, gx, gy); }
+      }
+      const r = Math.min(1, d1 / 2.6);
+      s *= (0.78 + 0.28 * (1 - r * r)) * (0.93 + 0.12 * id);
+    } else if (fur === 3) {
+      // penas em escamas
+      const row = Math.floor(Y / 3), col = Math.floor((X + (row % 2) * 1.5) / 3);
+      const ly = Y - row * 3;
+      s *= (ly >= 2 ? 0.86 : 1.02) * (0.95 + 0.08 * hash2(sd, col, row));
+    } else s *= 0.95 + 0.08 * hash2(sd, X, Y);
+    return [Math.min(255, c[0] * s) | 0, Math.min(255, c[1] * s) | 0, Math.min(255, c[2] * s) | 0, c[3] ?? 255];
   }
   vary(c, amt = 0.08) {
     const f = 1 + (this.rnd() - 0.5) * amt * 2;
@@ -45,13 +93,31 @@ class Skin {
   }
   texture() {
     this.ctx.putImageData(this.img, 0, 0);
-    return canvasTexture(this.canvas);
+    const t = canvasTexture(this.canvas);
+    if (this.k > 1) {
+      // em alta resolução: filtragem suave com mipmaps (sem serrilhado de longe)
+      t.minFilter = THREE.LinearMipmapLinearFilter;
+      t.magFilter = THREE.LinearFilter;
+      t.generateMipmaps = true;
+      t.anisotropy = 4;
+      t.needsUpdate = true;
+    }
+    return t;
   }
+}
+// pixel de olho: ganha um ponto de brilho no MAX
+const eye = (c) => Object.assign(c.slice(), { eye: true });
+// ruído suave para manchas orgânicas
+function smoothNoise(seed, x, y) {
+  const ix = Math.floor(x), iy = Math.floor(y), fx = x - ix, fy = y - iy;
+  const u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy);
+  const a = hash2(seed, ix, iy), b = hash2(seed, ix + 1, iy), c = hash2(seed, ix, iy + 1), d = hash2(seed, ix + 1, iy + 1);
+  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
 }
 
 const SKIN = [199, 140, 106];
-function paintHumanoid(kind) {
-  const s = new Skin(64, 64, kind === 'zombie' ? 7 : 3);
+function paintHumanoid(kind, k = 1) {
+  const s = new Skin(64, 64, kind === 'zombie' ? 7 : 3, k);
   const zombie = kind === 'zombie';
   const skin = zombie ? [92, 148, 82] : SKIN;
   const hair = [66, 42, 22];
@@ -62,7 +128,7 @@ function paintHumanoid(kind) {
   s.box(0, 0, 8, 8, 8, (f, x, y) => {
     if (zombie) {
       if (f === 'front') {
-        if (y === 3 && (x === 1 || x === 2 || x === 5 || x === 6)) return [20, 30, 20];
+        if (y === 3 && (x === 1 || x === 2 || x === 5 || x === 6)) return eye([20, 30, 20]);
         if (y === 5 && x >= 3 && x <= 4) return [60, 100, 55];
         if (y === 6 && x >= 2 && x <= 5) return [50, 80, 45];
       }
@@ -74,7 +140,7 @@ function paintHumanoid(kind) {
       if (y < 2) return s.vary(hair, 0.1);
       if (y === 2 && (x === 0 || x === 7)) return hair;
       if (y === 4 && (x === 1 || x === 6)) return [255, 255, 255];
-      if (y === 4 && (x === 2 || x === 5)) return [74, 60, 150];
+      if (y === 4 && (x === 2 || x === 5)) return eye([74, 60, 150]);
       if (y === 5 && (x === 3 || x === 4)) return [150, 95, 68];
       if (y === 6 && x >= 2 && x <= 5) return [110, 60, 45];
       if (y === 7 && x >= 2 && x <= 5) return [90, 58, 32];
@@ -111,8 +177,8 @@ function paintHumanoid(kind) {
   return s.texture();
 }
 
-function paintSkeleton() {
-  const s = new Skin(64, 32, 21);
+function paintSkeleton(k = 1) {
+  const s = new Skin(64, 32, 21, k);
   const bone = [200, 200, 196];
   const dark = [70, 70, 70];
   s.box(0, 0, 8, 8, 8, (f, x, y) => {
@@ -137,24 +203,26 @@ function paintSkeleton() {
   return s.texture();
 }
 
-function paintChicken() {
-  const s = new Skin(64, 32, 31);
+function paintChicken(k = 1) {
+  const s = new Skin(64, 32, 31, k, 3);
   const white = [240, 240, 236];
-  s.box(0, 0, 4, 6, 3, (f, x, y) => (f === 'front' && y === 1 && (x === 0 || x === 3) ? [20, 20, 20] : s.vary(white, 0.03)));
+  s.box(0, 0, 4, 6, 3, (f, x, y) => (f === 'front' && y === 1 && (x === 0 || x === 3) ? eye([20, 20, 20]) : s.vary(white, 0.03)));
   s.box(14, 0, 4, 2, 2, () => s.vary([236, 150, 40], 0.05));
   s.box(14, 4, 2, 2, 2, () => s.vary([210, 30, 30], 0.05));
   s.box(0, 9, 6, 6, 8, () => s.vary(white, 0.04));
   s.box(26, 0, 3, 5, 3, () => s.vary([230, 160, 40], 0.05));
   s.box(24, 13, 1, 4, 6, () => s.vary([226, 226, 222], 0.04));
+  // cauda (MAX)
+  s.box(40, 0, 4, 4, 1, (f, x, y) => s.vary(y < 1 ? [250, 250, 248] : white, 0.04));
   return s.texture();
 }
 
-function paintSpider() {
-  const s = new Skin(64, 64, 41);
+function paintSpider(k = 1) {
+  const s = new Skin(64, 64, 41, k, 1);
   const hair = () => s.vary([s.rnd() < 0.3 ? 70 : 46, s.rnd() < 0.3 ? 58 : 38, 34], 0.15);
   s.box(32, 4, 8, 8, 8, (f, x, y) => {
     if (f === 'front') {
-      if ((y === 3 && (x === 1 || x === 2 || x === 5 || x === 6)) || (y === 4 && (x === 2 || x === 5)) || (y === 2 && (x === 3 || x === 4))) return [200, 20, 20];
+      if ((y === 3 && (x === 1 || x === 2 || x === 5 || x === 6)) || (y === 4 && (x === 2 || x === 5)) || (y === 2 && (x === 3 || x === 4))) return eye([200, 20, 20]);
       if (y === 4 && (x === 1 || x === 6)) return [120, 10, 10];
     }
     return hair();
@@ -165,8 +233,8 @@ function paintSpider() {
   return s.texture();
 }
 
-function paintCreeper() {
-  const s = new Skin(64, 32, 11);
+function paintCreeper(k = 1) {
+  const s = new Skin(64, 32, 11, k);
   const g = () => s.vary([s.rnd() < 0.3 ? 120 : 80, s.rnd() < 0.3 ? 200 : 170, s.rnd() < 0.5 ? 80 : 60], 0.08);
   s.box(0, 0, 8, 8, 8, (f, x, y) => {
     if (f === 'front') {
@@ -181,48 +249,66 @@ function paintCreeper() {
   return s.texture();
 }
 
-function paintQuad(kind) {
-  const s = new Skin(64, 64, kind.length * 13);
+// fur por pixel (a ovelha tem rosto de pelo curto e corpo de lã)
+const withFur = (c, f) => Object.assign(c, { fur: f });
+
+function paintQuad(kind, k = 1) {
+  const s = new Skin(64, 64, kind.length * 13, k, kind === 'sheep' ? 2 : kind === 'cow' ? 1 : 0);
   if (kind === 'pig') {
     const pink = [240, 165, 165];
     s.box(0, 0, 8, 8, 8, (f, x, y) => {
       if (f === 'front' && y === 3 && (x === 1 || x === 6)) return [255, 255, 255];
-      if (f === 'front' && y === 3 && (x === 2 || x === 5)) return [30, 20, 20];
+      if (f === 'front' && y === 3 && (x === 2 || x === 5)) return eye([30, 20, 20]);
       return s.vary(pink, 0.04);
     });
     s.box(16, 16, 4, 3, 1, (f, x, y) => (f === 'front' && y === 1 && (x === 0 || x === 3) ? [150, 80, 80] : s.vary([235, 140, 140], 0.04)));
-    s.box(0, 32, 10, 8, 16, () => s.vary(pink, 0.05));
+    // manchas de terra no corpo (só aparecem bem no MAX)
+    s.box(0, 32, 10, 8, 16, (f, x, y, fw, fh, fx, fy) => {
+      const dirt = k > 1 && f !== 'top' && smoothNoise(f.length * 5, fx * 0.5, fy * 0.5) > 0.7 && fy > fh * 0.55;
+      return s.vary(dirt ? [196, 140, 120] : pink, 0.05);
+    });
     s.box(0, 16, 4, 6, 4, (f, x, y) => (y >= 5 || f === 'bottom' ? [150, 100, 90] : s.vary(pink, 0.05)));
+    s.box(40, 0, 3, 2, 1, () => s.vary([232, 150, 150], 0.04));
+    s.box(40, 20, 1, 3, 1, () => s.vary(pink, 0.04));
   } else if (kind === 'sheep') {
     const wool = [235, 235, 235];
     const face = [220, 190, 170];
     s.box(0, 0, 6, 6, 8, (f, x, y) => {
       if (f === 'front') {
-        if (y === 2 && (x === 1 || x === 4)) return [30, 30, 30];
+        if (y === 2 && (x === 1 || x === 4)) return withFur(eye([30, 30, 30]), 0);
         if (y < 1) return s.vary(wool, 0.04);
-        return s.vary(face, 0.04);
+        if (y === 4 && (x === 2 || x === 3)) return withFur([150, 110, 100], 0);
+        return withFur(s.vary(face, 0.04), 1);
       }
       return s.vary(wool, 0.05);
     });
     s.box(0, 32, 8, 8, 16, () => s.vary(wool, 0.06));
-    s.box(0, 16, 4, 12, 4, (f, x, y) => (y < 6 ? s.vary(wool, 0.05) : s.vary(face, 0.06)));
+    s.box(0, 16, 4, 12, 4, (f, x, y) => (y < 6 ? s.vary(wool, 0.05) : withFur(s.vary(y >= 11 ? [90, 80, 74] : face, 0.06), 1)));
+    s.box(40, 0, 3, 2, 1, () => withFur(s.vary(face, 0.05), 1));
+    s.box(48, 16, 2, 4, 2, () => s.vary(wool, 0.05));
   } else if (kind === 'cow') {
     const brown = [80, 56, 40];
     const white = [230, 230, 230];
     s.box(0, 0, 8, 8, 6, (f, x, y) => {
       if (f === 'front') {
-        if (y === 3 && (x === 1 || x === 6)) return [20, 20, 20];
-        if (y >= 5 && x >= 2 && x <= 5) return y === 6 && (x === 2 || x === 5) ? [60, 40, 40] : [200, 170, 160];
+        if (y === 3 && (x === 1 || x === 6)) return eye([20, 20, 20]);
+        if (y >= 5 && x >= 2 && x <= 5) return y === 6 && (x === 2 || x === 5) ? withFur([60, 40, 40], 0) : withFur([200, 170, 160], 0);
         if (y < 2 && x > 2 && x < 6) return s.vary(white, 0.03);
       }
       return s.vary(brown, 0.06);
     });
-    s.box(32, 0, 1, 3, 1, () => [220, 210, 190]);
-    s.box(0, 32, 12, 10, 18, (f, x, y) => {
-      const spot = ((Math.floor(x / 4) * 7 + Math.floor(y / 4) * 3 + (f.length * 5)) % 5) === 0;
+    s.box(32, 0, 1, 3, 1, () => withFur([220, 210, 190], 0));
+    // manchas: blocos no modo normal, formas orgânicas no MAX
+    s.box(0, 32, 12, 10, 18, (f, x, y, fw, fh, fx, fy) => {
+      const spot = k > 1
+        ? smoothNoise(f.length * 7, fx * 0.24 + f.length, fy * 0.24) > 0.6
+        : ((Math.floor(x / 4) * 7 + Math.floor(y / 4) * 3 + (f.length * 5)) % 5) === 0;
       return s.vary(spot ? white : brown, 0.05);
     });
-    s.box(0, 16, 4, 12, 4, (f, x, y) => (y >= 10 ? [40, 30, 25] : s.vary(y < 5 ? brown : white, 0.05)));
+    s.box(0, 16, 4, 12, 4, (f, x, y) => (y >= 10 ? withFur([40, 30, 25], 0) : s.vary(y < 5 ? brown : white, 0.05)));
+    s.box(40, 0, 3, 2, 1, (f) => s.vary(f === 'front' ? [150, 110, 100] : brown, 0.05));
+    s.box(40, 8, 1, 8, 1, () => s.vary(brown, 0.05));
+    s.box(48, 8, 2, 2, 2, () => s.vary([40, 30, 24], 0.08));
   }
   return s.texture();
 }
@@ -264,32 +350,156 @@ function limb(parent, geo, mat, pivot, offset) {
 }
 
 const textures = {};
-function skinTexture(kind) {
-  if (!textures[kind]) {
-    if (kind === 'steve' || kind === 'zombie') textures[kind] = paintHumanoid(kind);
-    else if (kind === 'creeper') textures[kind] = paintCreeper();
-    else if (kind === 'skeleton') textures[kind] = paintSkeleton();
-    else if (kind === 'chicken') textures[kind] = paintChicken();
-    else if (kind === 'spider') textures[kind] = paintSpider();
-    else textures[kind] = paintQuad(kind);
+function skinTexture(kind, k = 1) {
+  const key = kind + '@' + k;
+  if (!textures[key]) {
+    if (kind === 'steve' || kind === 'zombie') textures[key] = paintHumanoid(kind, k);
+    else if (kind === 'creeper') textures[key] = paintCreeper(k);
+    else if (kind === 'skeleton') textures[key] = paintSkeleton(k);
+    else if (kind === 'chicken') textures[key] = paintChicken(k);
+    else if (kind === 'spider') textures[key] = paintSpider(k);
+    else textures[key] = paintQuad(kind, k);
   }
-  return textures[kind];
+  return textures[key];
 }
 export function playerSkin() {
   return skinTexture('steve');
 }
 
+// opções dos modelos conforme a qualidade gráfica
+export function modelOptions(q) {
+  const o = { articulated: !!(q && q.articulated), lit: !!(q && q.litModels), skin: (q && q.skinScale) || 1, max: !!(q && q.max) };
+  o.key = `${o.articulated}|${o.lit}|${o.skin}|${o.max}`;
+  return o;
+}
+const normOpts = (o) => (typeof o === 'object' && o ? o : modelOptions({ articulated: !!o }));
+
+// ---------- material iluminado (MAX) ----------
+// Os modelos recebem a mesma luz dos blocos: sol com sombras suaves, sombra das nuvens, luz azulada do céu,
+// tochas, contorno de luz no pelo e a mesma névoa atmosférica.
+const litVert = /* glsl */ `
+  uniform vec3 uCamPos;
+  varying vec2 vUv;
+  varying vec3 vNormal;
+  varying vec3 vWorld;
+  varying float vDist;
+  void main() {
+    vUv = uv;
+    vec4 wp = modelMatrix * vec4(position, 1.0);
+    vWorld = wp.xyz;
+    vNormal = normalize(mat3(modelMatrix) * normal);
+    vDist = length(wp.xyz - uCamPos);
+    gl_Position = projectionMatrix * viewMatrix * wp;
+  }`;
+const litFrag = /* glsl */ `
+  uniform sampler2D uMap;
+  uniform vec3 uTint;
+  uniform float uFlash;
+  uniform float uSkyL;
+  uniform float uBlockL;
+  uniform float uSkyDarken;
+  uniform float uGamma;
+  uniform float uSunAmount;
+  uniform float uTime;
+  uniform float uClipY;
+  uniform float uFogNear;
+  uniform float uFogFar;
+  uniform float uWet;
+  uniform float uCloudCover;
+  uniform vec3 uSunDir;
+  uniform vec3 uSunColor;
+  uniform vec3 uAmbColor;
+  uniform vec3 uCamPos;
+  uniform sampler2D uSkyTex;
+  uniform vec2 uResolution;
+  varying vec2 vUv;
+  varying vec3 vNormal;
+  varying vec3 vWorld;
+  varying float vDist;
+  ${SHADOW_GLSL}
+  ${CLOUD_GLSL}
+  float lb(float L) {
+    float f = 1.0 - L / 15.0;
+    float b = (1.0 - f) / (f * 3.0 + 1.0);
+    return mix(b, sqrt(b), uGamma);
+  }
+  void main() {
+    if (vWorld.y < uClipY) discard;
+    vec4 tex = texture2D(uMap, vUv);
+    if (tex.a < 0.5) discard;
+    vec3 N = normalize(vNormal);
+    float bs = lb(max(0.0, uSkyL - uSkyDarken));
+    float bb = lb(uBlockL);
+    float exposure = smoothstep(9.0, 14.25, uSkyL);
+    float shadow = shadowAt(vWorld + N * 0.03, N);
+    if (uSunDir.y > 0.05) {
+      vec2 p = vWorld.xz + uSunDir.xz / uSunDir.y * (330.0 - vWorld.y);
+      float c = cloudMap(p, uTime) - (1.0 - uCloudCover) * 0.95 + 0.28 - 0.45;
+      shadow *= 1.0 - smoothstep(-0.06, 0.16, c) * 0.72;
+    }
+    float nl = dot(N, uSunDir);
+    float wrap = nl * 0.5 + 0.5;
+    float sunVis = shadow * exposure * uSunAmount;
+    vec3 albedo = tex.rgb * uTint;
+    vec3 ambient = uAmbColor * bs * (0.36 + 0.16 * N.y + 0.06 * wrap + 0.38 * (1.0 - uSunAmount));
+    vec3 torch = bb * vec3(1.15, 0.78, 0.48) * 1.2;
+    // o pelo espalha um pouco a luz para além do terminador
+    vec3 direct = uSunColor * sunVis * max(nl * 0.88 + 0.12, 0.0);
+    vec3 col = albedo * max(ambient + direct + torch, vec3(0.02));
+    // contorno de luz nas bordas (pelo contra o sol)
+    vec3 V = normalize(uCamPos - vWorld);
+    float rim = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+    col += albedo * uSunColor * rim * sunVis * (0.2 + 0.8 * max(dot(-V, uSunDir), 0.0)) * 0.9;
+    col += albedo * uAmbColor * rim * bs * 0.12;
+    col += vec3(uFlash);
+    // mesma névoa dos blocos: some na cor do céu atrás
+    vec3 skyBehind = texture2D(uSkyTex, gl_FragCoord.xy / uResolution).rgb;
+    float haze = 1.0 - exp(-vDist * (0.0035 + exp(-max(vWorld.y - 60.0, 0.0) * 0.05) * 0.004) * (1.0 + uWet * 3.0));
+    float fog = max(smoothstep(uFogNear, uFogFar, vDist), haze * 0.85);
+    if (uClipY > -1e8) fog = smoothstep(uFogNear, uFogFar, vDist);
+    gl_FragColor = vec4(mix(col, skyBehind, fog), 1.0);
+  }`;
+function litMaterial(tex) {
+  const m = new THREE.ShaderMaterial({
+    uniforms: {
+      ...U,
+      uMap: { value: tex },
+      uTint: { value: new THREE.Color(1, 1, 1) },
+      uFlash: { value: 0 },
+      uSkyL: { value: 15 },
+      uBlockL: { value: 0 },
+    },
+    defines: { SHADOWS: '', PCF: 3 },
+    vertexShader: litVert,
+    fragmentShader: litFrag,
+  });
+  m.isLit = true;
+  return m;
+}
+
 // ---------- modelo base ----------
 class Model {
-  constructor(tex) {
+  constructor(tex, opts) {
+    this.opts = opts || modelOptions(null);
+    this.optKey = this.opts.key;
     this.root = new THREE.Group();
     this.inner = new THREE.Group();
     this.root.add(this.inner);
-    this.mat = new THREE.MeshBasicMaterial({ map: tex, alphaTest: 0.5 });
+    this.mat = this.opts.lit ? litMaterial(tex) : new THREE.MeshBasicMaterial({ map: tex, alphaTest: 0.5 });
     this.mats = [this.mat];
   }
-  setLight(b, hurt, flash = 0) {
+  // b: brilho (modelos simples); L: luz do bloco empacotada (céu << 4 | tocha) para os modelos iluminados
+  setLight(b, hurt, flash = 0, L = -1) {
     for (const m of this.mats) {
+      if (m.isLit) {
+        if (L >= 0) {
+          m.uniforms.uSkyL.value = L >> 4;
+          m.uniforms.uBlockL.value = L & 15;
+        }
+        m.uniforms.uFlash.value = flash * 0.6;
+        m.uniforms.uTint.value.setRGB(1, hurt ? 0.4 : 1, hurt ? 0.4 : 1);
+        continue;
+      }
       if (flash > 0) m.color.setRGB(b + flash, b + flash, b + flash);
       else if (hurt) m.color.setRGB(b, b * 0.4, b * 0.4);
       else m.color.setRGB(b, b, b);
@@ -306,9 +516,11 @@ class Model {
 // Humanoide: jogador, zumbi
 export class HumanoidModel extends Model {
   // articulated: braços e pernas com cotovelo e joelho (gráficos ULTRA)
-  constructor(kind = 'steve', articulated = false) {
-    super(skinTexture(kind));
+  constructor(kind = 'steve', opts = false) {
+    const o = normOpts(opts);
+    super(skinTexture(kind, o.skin), o);
     this.kind = kind;
+    const articulated = o.articulated;
     this.articulated = articulated;
     const S = 0.9375 / 16;
     this.inner.scale.setScalar(S);
@@ -493,8 +705,9 @@ export class HumanoidModel extends Model {
 }
 
 export class CreeperModel extends Model {
-  constructor() {
-    super(skinTexture('creeper'));
+  constructor(opts = false) {
+    const o = normOpts(opts);
+    super(skinTexture('creeper', o.skin), o);
     this.inner.scale.setScalar(1 / 16);
     const m = this.mat;
     this.body = limb(this.inner, skinBox(8, 12, 4, 16, 16, 64, 32), m, [0, 6, 0], [0, 6, 0]);
@@ -517,13 +730,17 @@ export class CreeperModel extends Model {
 }
 
 export class QuadrupedModel extends Model {
-  constructor(kind, realistic = false) {
-    super(skinTexture(kind));
+  // MAX: patas com joelho/jarrete, orelhas, cauda, respiração, pastar e espantar moscas com o rabo
+  constructor(kind, opts = false) {
+    const o = normOpts(opts);
+    super(skinTexture(kind, o.skin), o);
     this.kind = kind;
-    this.realistic = realistic;
+    this.realistic = o.articulated;
+    this.full = o.max;
     this.inner.scale.setScalar(1 / 16);
     const m = this.mat;
     this.legs = [];
+    this.knees = [];
     let legH, legPos, bodyGeo, bodyY, headGeo, headPos, headOff;
     if (kind === 'pig') {
       legH = 6;
@@ -550,8 +767,20 @@ export class QuadrupedModel extends Model {
       headPos = [0, 20, 9];
       headOff = [0, 0, 3];
     }
-    const legGeo = skinBox(4, legH, 4, 0, 16, 64, 64);
-    for (const [x, z] of legPos) this.legs.push(limb(this.inner, legGeo, m, [x, legH, z], [0, -legH / 2, 0]));
+    if (this.full) {
+      // perna em dois pedaços: dobra no joelho (frente) e no jarrete (trás)
+      const h2 = legH / 2;
+      const up = skinBox(4, legH, 4, 0, 16, 64, 64, 0, [0, h2]);
+      const low = skinBox(4, legH, 4, 0, 16, 64, 64, -0.05, [h2, legH]);
+      for (const [x, z] of legPos) {
+        const hip = limb(this.inner, up, m, [x, legH, z], [0, -h2 / 2, 0]);
+        this.legs.push(hip);
+        this.knees.push(limb(hip, low, m, [0, -h2, 0], [0, -h2 / 2 + 0.15, 0]));
+      }
+    } else {
+      const legGeo = skinBox(4, legH, 4, 0, 16, 64, 64);
+      for (const [x, z] of legPos) this.legs.push(limb(this.inner, legGeo, m, [x, legH, z], [0, -legH / 2, 0]));
+    }
     this.body = limb(this.inner, bodyGeo, m, [0, bodyY, 0], [0, 0, 0]);
     this.head = limb(this.inner, headGeo, m, headPos, headOff);
     if (kind === 'pig') {
@@ -566,6 +795,41 @@ export class QuadrupedModel extends Model {
         this.head.add(h);
       }
     }
+    this.ears = [];
+    this.tail = null;
+    if (this.full) {
+      const earGeo = skinBox(3, 2, 1, 40, 0, 64, 64);
+      // orelhas: de lado (vaca, ovelha) ou caídas para frente (porco)
+      for (const side of [-1, 1]) {
+        let ear;
+        if (kind === 'pig') {
+          ear = limb(this.head, earGeo, m, [side * 2.5, 4, 4.5], [0, 1, 0]);
+          ear.userData.base = [0.9, 0, side * -0.2];
+        } else {
+          const at = kind === 'cow' ? [side * 4, 2, 2.5] : [side * 3, 2.5, 3.5];
+          ear = limb(this.head, earGeo, m, at, [side * 1.5, 0, 0]);
+          ear.userData.base = [0, 0, side * -0.35];
+        }
+        ear.userData.side = side;
+        this.ears.push(ear);
+      }
+      // cauda presa no alto da traseira
+      const back = kind === 'cow' ? -9 : kind === 'pig' ? -8 : -9.5;
+      const top = bodyY + (kind === 'cow' ? 4.5 : kind === 'pig' ? 3 : 4);
+      if (kind === 'cow') {
+        this.tail = limb(this.inner, skinBox(1, 8, 1, 40, 8, 64, 64), m, [0, top, back - 0.2], [0, -4, 0]);
+        const tuft = new THREE.Mesh(skinBox(2, 2, 2, 48, 8, 64, 64), m);
+        tuft.position.set(0, -8.6, 0);
+        this.tail.add(tuft);
+        this.tail.userData.base = 0.12;
+      } else if (kind === 'pig') {
+        this.tail = limb(this.inner, skinBox(1, 3, 1, 40, 20, 64, 64), m, [0, top, back - 0.2], [0, 1.5, 0]);
+        this.tail.userData.base = -0.9;
+      } else {
+        this.tail = limb(this.inner, skinBox(2, 4, 2, 48, 16, 64, 64), m, [0, top, back], [0, -2, 0]);
+        this.tail.userData.base = 0.35;
+      }
+    }
   }
   animate(st) {
     const ls = st.limbSwing * 0.6662, amt = Math.min(1, st.limbAmount);
@@ -575,20 +839,51 @@ export class QuadrupedModel extends Model {
     this.legs[2].rotation.x = Math.cos(ls + Math.PI) * 1.4 * amt;
     this.legs[3].rotation.x = Math.cos(ls) * 1.4 * amt;
     this.root.rotation.z = st.death ? Math.min(1, st.death / 20) ** 0.6 * (Math.PI / 2) : 0;
-    if (this.realistic) {
+    if (this.realistic || this.full) {
       // passo com peso: o corpo sobe e desce e a cabeça acompanha
       for (const l of this.legs) l.rotation.x *= 0.7;
       this.inner.position.y = Math.abs(Math.sin(ls)) * 0.035 * amt;
       this.body.rotation.z = Math.sin(ls) * 0.04 * amt;
       this.head.rotation.x += Math.sin(ls * 2) * 0.06 * amt + Math.sin(st.age * 0.05) * 0.02;
     }
+    if (this.full) this.animateFull(st, ls, amt);
+  }
+  animateFull(st, ls, amt) {
+    const t = st.age;
+    const ph = [ls, ls + Math.PI, ls + Math.PI, ls];
+    for (let i = 0; i < 4; i++) {
+      // a pata dobra enquanto avança no ar; a da frente dobra para trás, a de trás para frente
+      const lift = Math.max(0, Math.sin(ph[i])) * amt;
+      this.knees[i].rotation.x = (i < 2 ? 1.0 : -0.85) * lift;
+      this.legs[i].rotation.x -= (i < 2 ? 0.25 : -0.2) * lift;
+    }
+    // respiração
+    const br = Math.sin(t * 0.07);
+    this.body.scale.set(1 + br * 0.018, 1 + br * 0.012, 1);
+    // pastando, a cabeça mastiga devagar
+    if (st.eatGrass > 0) this.head.rotation.x += Math.sin(t * 0.9) * 0.08 * st.eatGrass;
+    // orelhas: sacudidas curtas de vez em quando
+    const twitch = Math.max(0, Math.sin(t * 0.031 + this.kind.length) - 0.93) * 14;
+    for (const e of this.ears) {
+      const [bx, by, bz] = e.userData.base;
+      e.rotation.set(bx + Math.sin(t * 0.8) * twitch * 0.15, by + Math.sin(t * 1.1) * twitch * 0.35 * e.userData.side, bz + Math.sin(ls * 2) * 0.08 * amt);
+    }
+    // cauda: balança espantando moscas, com chicotadas rápidas de vez em quando
+    if (this.tail) {
+      const flick = Math.max(0, Math.sin(t * 0.023 + 1.3) - 0.85) * 6;
+      const sway = Math.sin(t * 0.06) * 0.18 + Math.sin(t * 0.37) * flick * 0.5;
+      this.tail.rotation.set(this.tail.userData.base + amt * 0.25, 0, sway + Math.sin(ls) * 0.15 * amt);
+      if (this.kind === 'pig') this.tail.rotation.y = Math.sin(t * 0.2) * 0.4;
+    }
   }
 }
 
 export class ChickenModel extends Model {
-  constructor(realistic = false) {
-    super(skinTexture('chicken'));
-    this.realistic = realistic;
+  constructor(opts = false) {
+    const o = normOpts(opts);
+    super(skinTexture('chicken', o.skin), o);
+    this.realistic = o.articulated;
+    this.full = o.max;
     this.inner.scale.setScalar(1 / 16);
     const m = this.mat;
     this.legs = [-1.5, 1.5].map((x) => limb(this.inner, skinBox(3, 5, 3, 26, 0, 64, 32), m, [x, 5, 0.5], [0, -2.5, 0]));
@@ -601,6 +896,7 @@ export class ChickenModel extends Model {
     wattle.position.set(0, 1.5, 2.5);
     this.head.add(wattle);
     this.wings = [-3.5, 3.5].map((x) => limb(this.inner, skinBox(1, 4, 6, 24, 13, 64, 32), m, [x, 10, 0], [0, -2, 0]));
+    if (this.full) this.tail = limb(this.inner, skinBox(4, 4, 1, 40, 0, 64, 32), m, [0, 10, -4], [0, 1.5, -0.5]);
   }
   animate(st) {
     const ls = st.limbSwing * 0.6662, amt = Math.min(1, st.limbAmount);
@@ -611,13 +907,30 @@ export class ChickenModel extends Model {
     this.wings[0].rotation.z = flap;
     this.wings[1].rotation.z = -flap;
     this.root.rotation.z = st.death ? Math.min(1, st.death / 20) ** 0.6 * (Math.PI / 2) : 0;
+    if (this.full) {
+      const t = st.age;
+      // a galinha "trava" a cabeça e depois a joga para frente a cada passo
+      const u = ((ls / Math.PI) % 1 + 1) % 1;
+      this.head.position.z = 4 + (u < 0.75 ? 0.5 - u / 0.75 : (u - 0.75) / 0.25 - 0.5) * 0.9 * amt;
+      this.head.rotation.x = -st.headPitch;
+      // bicando o chão
+      if (st.eatGrass > 0) this.head.rotation.x += st.eatGrass * (1.0 + Math.abs(Math.sin(t * 0.8)) * 0.6);
+      // asas quietas respiram, a cauda balança
+      if (!st.flap) {
+        this.wings[0].rotation.z = 0.04 + Math.sin(t * 0.1) * 0.03;
+        this.wings[1].rotation.z = -this.wings[0].rotation.z;
+      }
+      this.tail.rotation.set(-0.5 + Math.sin(ls * 2) * 0.1 * amt, Math.sin(t * 0.13) * 0.12, 0);
+      this.body.rotation.x = -0.05 + Math.sin(ls * 2) * 0.04 * amt;
+    }
   }
 }
 
 export class SpiderModel extends Model {
-  constructor(realistic = false) {
-    super(skinTexture('spider'));
-    this.realistic = realistic;
+  constructor(opts = false) {
+    const o = normOpts(opts);
+    super(skinTexture('spider', o.skin), o);
+    this.realistic = o.articulated;
     this.inner.scale.setScalar(1 / 16);
     const m = this.mat;
     this.thorax = limb(this.inner, skinBox(6, 6, 6, 0, 0, 64, 64), m, [0, 9, 0], [0, 0, 0]);

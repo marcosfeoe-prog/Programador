@@ -118,6 +118,11 @@ export class Particles {
     const uv = this.subTile('leaves');
     this.add({ x, y, z, vx: 0, vy: -0.6, vz: 0, life: 5 + Math.random() * 3, uv, size: 0.09, color: tint.map((c) => c * bright), gravity: 0, flutter: Math.random() * 6, collide: true });
   }
+  // vaga-lume: pisca devagar e passeia no ar (cor acima de 1 para brilhar no bloom)
+  firefly(x, y, z) {
+    const uv = tileUV('particle_smoke');
+    this.add({ x, y, z, vx: 0, vy: 0, vz: 0, life: 5 + Math.random() * 5, uv, size: 0.06, color: [0, 0, 0], gravity: 0, keep: true, glow: [2.6, 3.4, 0.7], t: Math.random() * 6, freq: 1.2 + Math.random() * 1.4 });
+  }
   bubble(x, y, z) {
     const uv = tileUV('particle_smoke');
     this.add({ x, y, z, vx: (Math.random() - 0.5) * 0.3, vy: 1.2, vz: (Math.random() - 0.5) * 0.3, life: 0.6 + Math.random() * 0.6, uv, size: 0.05, color: [0.7, 0.85, 1], gravity: 0 });
@@ -136,6 +141,14 @@ export class Particles {
         p.vx = Math.sin(p.flutter * 2.1) * 0.7;
         p.vz = Math.cos(p.flutter * 1.3) * 0.5;
         p.vy = -0.5 - Math.abs(Math.sin(p.flutter * 2.1)) * 0.4;
+      }
+      if (p.glow) {
+        p.t += dt;
+        p.vx = p.vx * 0.97 + (Math.random() - 0.5) * dt * 3;
+        p.vy = p.vy * 0.97 + (Math.random() - 0.5) * dt * 2;
+        p.vz = p.vz * 0.97 + (Math.random() - 0.5) * dt * 3;
+        const pulse = Math.max(0, Math.sin(p.t * p.freq)) ** 2 * Math.min(1, p.life * 0.5);
+        for (let k = 0; k < 3; k++) p.color[k] = p.glow[k] * (0.05 + 0.95 * pulse);
       }
       if (p.drag) {
         const d = Math.pow(p.drag, dt * 20);

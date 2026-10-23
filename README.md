@@ -164,7 +164,8 @@ zero, com câmera em **primeira e terceira pessoa** (F5), mundo infinito com bio
 cavernas, ciclo de dia e noite, iluminação por propagação, sobrevivência (vida, fome,
 ferramentas, criação, fornalha), criativo com voo, criaturas animadas (porco, ovelha,
 vaca, galinha, zumbi, esqueleto, aranha e creeper), agricultura, arco e flecha, clima com
-chuva, neve e raios, gráficos **Baixo, Médio, Alto e ULTRA** (sombras, água com reflexos,
-texturas realistas com relevo e animações articuladas) e controles para celular. Com o servidor rodando (`npm start`), abra
+chuva, neve e raios, gráficos **Baixo, Médio, Alto, ULTRA e MAX** (sombras, água com reflexos,
+texturas realistas com relevo, animações articuladas e, no MAX, céu com atmosfera e nuvens
+volumétricas, água que reflete o mundo e animais realistas) e controles para celular. Com o servidor rodando (`npm start`), abra
 `http://localhost:8080/blocos/`. Detalhes em [`blocos/README.md`](blocos/README.md).
 

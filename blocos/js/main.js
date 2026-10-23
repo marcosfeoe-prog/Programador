@@ -8,7 +8,7 @@ import { Player } from './player.js';
 import { EntityManager, brightnessAt } from './entities.js';
 import { Particles } from './particles.js';
 import { WeatherFx } from './weather.js';
-import { HumanoidModel, ViewModel } from './models.js';
+import { HumanoidModel, ViewModel, modelOptions } from './models.js';
 import { UI } from './ui.js';
 import { Input } from './input.js';
 import { GameAudio } from './audio.js';
@@ -119,17 +119,25 @@ class Game {
   applyQuality() {
     const name = QUALITY[this.settings.graphics] ? this.settings.graphics : 'medium';
     this.appliedGraphics = name;
-    this.renderer.setQuality(name, () => buildHDAtlas());
+    this.renderer.setQuality(name, (size) => buildHDAtlas(size));
+    // o sol está à vista? (para os reflexos de lente)
+    this.renderer.sunProbe = () => {
+      const w = this.world, env = this.renderer.env, cam = this.renderer.camera;
+      if (!w || !env) return 0;
+      const d = env.sunDir;
+      return w.raycast(cam.position.x, cam.position.y, cam.position.z, d.x, d.y, d.z, 64) ? 0 : 1;
+    };
     this.renderer.remeshAll(this.world);
     const q = QUALITY[name];
     this.particles.density = q.particles;
     this.particles.setAtlas(this.renderer.atlas);
     this.quality = q;
-    // modelos com articulações só no ULTRA
-    if (this.playerModel && this.playerModel.articulated !== q.articulated) {
+    // modelos com articulações (ULTRA) e iluminados com skins em alta resolução (MAX)
+    const mo = modelOptions(q);
+    if (this.playerModel && this.playerModel.optKey !== mo.key) {
       this.renderer.scene.remove(this.playerModel.root);
       this.playerModel.dispose();
-      this.playerModel = new HumanoidModel('steve', q.articulated);
+      this.playerModel = new HumanoidModel('steve', mo);
       this.renderer.scene.add(this.playerModel.root);
       this.playerModel.root.visible = this.state === 'playing';
       for (const e of this.entities.list) if (e.rebuildModel) e.rebuildModel(this.entities.group);
@@ -646,6 +654,7 @@ class Game {
       medium: 'Visual clássico, com nuvens em blocos.',
       high: 'Sombras do sol, água com reflexos e ondas, plantas e folhas balançando ao vento, brilho (bloom).',
       ultra: 'Texturas realistas em alta resolução com relevo, sombras suaves, céu com nuvens realistas, raios de sol, folhas caindo e animações realistas dos personagens. Exige uma boa placa de vídeo.',
+      max: 'O ápice: texturas 128×128 com relevo 3D (parallax), céu com atmosfera real e nuvens volumétricas, sol e lua realistas, água com reflexo do mundo, refração e espuma, sombras suaves de penumbra variável, oclusão de ambiente, sombras das nuvens, cáusticas, animais com pelo detalhado e iluminados pelo sol. Exige uma placa de vídeo potente.',
     };
     document.getElementById('graphics-desc').textContent = desc[s.graphics] || '';
   }
@@ -856,6 +865,20 @@ class Game {
         }
       }
     }
+    // vaga-lumes nas noites sem chuva (MAX)
+    if (this.quality && this.quality.fireflies && this.renderer.env && this.renderer.env.daylight < 0.35 && this.renderer.weather.rain < 0.2) {
+      for (let k = 0; k < 3; k++) {
+        if (Math.random() > 0.25) continue;
+        const x = Math.floor(p.x + (Math.random() - 0.5) * 36), z = Math.floor(p.z + (Math.random() - 0.5) * 36);
+        // desce até achar o chão
+        let y = Math.floor(p.y) + 6;
+        while (y > p.y - 8 && this.world.getBlock(x, y - 1, z) === B.AIR) y--;
+        const below = this.world.getBlock(x, y - 1, z);
+        if ((below === B.GRASS || below === B.TALL_GRASS) && (this.world.getLight(x, y, z) >> 4) >= 13) {
+          this.particles.firefly(x + Math.random(), y + 0.2 + Math.random() * 1.6, z + Math.random());
+        }
+      }
+    }
     // fornalhas
     for (const [key, t] of this.world.tileEntities) {
       if (t.slots) continue;
@@ -1058,7 +1081,7 @@ class Game {
         death: p.dead ? Math.min(20, (p.deathAnim || 0) * 20) : 0,
         aim: pull > 0,
       });
-      pm.setLight(brightnessAt(w, x, y + 1, z, envL.skyDarken, gamma), p.hurtTime > 0);
+      pm.setLight(brightnessAt(w, x, y + 1, z, envL.skyDarken, gamma), p.hurtTime > 0, 0, w.getLight(Math.floor(x), Math.floor(y + 1), Math.floor(z)));
       pm.root.traverse((o) => o.layers.enable(2));
     }
     this.entities.render(a, envL);
