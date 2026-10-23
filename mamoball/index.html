@@ -116,6 +116,7 @@ button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 #bSprint { right: 12px; bottom: 116px; width: 64px; height: 64px; background: var(--panel-2); font-size: 13px; border: 2px solid var(--line) !important; }
 #bLong { right: 196px; bottom: 30px; width: 68px; height: 68px; background: #1f9e6a; font-size: 12px; line-height: 1.05; }
 #bLob { right: 102px; bottom: 98px; width: 68px; height: 68px; background: #8a4dff; font-size: 11px; line-height: 1.05; }
+#bSkill { right: 186px; bottom: 110px; width: 62px; height: 62px; background: #ff8a1f; font-size: 13px; }
 #btns button.off { opacity: .45; }
 @media (max-width: 480px) { #btns { transform: scale(.8); transform-origin: bottom right; } }
 
@@ -199,6 +200,7 @@ button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
     <div id="stickZone"><div id="stickBase"><div id="stickKnob"></div></div></div>
     <div id="btns">
       <button id="bSprint">Correr</button>
+      <button id="bSkill">Finta</button>
       <button id="bLob">Lança&shy;mento</button>
       <button id="bLong">Passe longo</button>
       <button id="bPass">Passar</button>
@@ -221,16 +223,18 @@ button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
       <button class="play" id="playBtn">JOGAR</button>
       <div class="help" id="helpTouch">
         <b>Joystick</b><span>conduz a bola (lado esquerdo da tela)</span>
-        <b>Passar</b><span>toca para o companheiro na direção do joystick</span>
+        <b>Passes</b><span>a bola vai exatamente para onde o joystick aponta; segure para dar mais força</span>
         <b>Passe longo</b><span>passe rasteiro forte para quem está longe</span>
         <b>Lançamento</b><span>bola por cima dos adversários</span>
+        <b>Finta</b><span>parado: pedalada · joystick para trás: giro · para o lado: dois toques · para a frente: drible da vaca</span>
         <b>Chutar</b><span>segure e solte; depois mexa o joystick para fazer a curva</span>
         <b>Sem a bola</b><span>Passar vira Trocar jogador e Chutar vira Carrinho</span>
       </div>
       <div class="help" id="helpKeys">
         <b>WASD / setas</b><span>conduzir a bola e mover</span>
         <b>Espaço ou J</b><span>passar · sem a bola: trocar jogador</span>
-        <b>U / I</b><span>passe longo / lançamento por cima</span>
+        <b>U / I</b><span>passe longo / lançamento (segure para mais força; vai para onde as setas apontam)</span>
+        <b>F ou 1–4</b><span>finta pela direção, ou 1 vaca · 2 giro · 3 dois toques · 4 pedalada</span>
         <b>K</b><span>segure e solte para chutar, depois guie a curva com as setas · sem a bola: carrinho</span>
         <b>Shift ou L</b><span>correr (a bola vai mais solta no pé)</span>
         <b>Esc ou P</b><span>pausar</span>
@@ -287,11 +291,11 @@ const NICKS = ['Tião', 'Didico', 'Baiano', 'Juninho', 'Tico', 'Pedrão', 'Nené
   'Fumaça', 'Caju', 'Toquinho', 'Paçoca', 'Gordo', 'Xodó', 'Raio', 'Pipoca', 'Barbudo', 'Careca', 'Foguete',
   'Biscoito', 'Lagarto', 'Trovão', 'Faísca', 'Chiclete', 'Marreta', 'Canela', 'Pirulito', 'Dentinho'];
 const DIFFS = {
-  facil:   { label: 'Fácil',   spd: 0.86, steal: 0.9, gk: 0.72, err: 1.45, think: 0.75, range: -30, slide: 0.35 },
-  normal:  { label: 'Normal',  spd: 0.95, steal: 1.5, gk: 0.86, err: 1.0,  think: 0.5,  range: 0,   slide: 0.8 },
-  dificil: { label: 'Difícil', spd: 1.04, steal: 2.3, gk: 0.98, err: 0.7,  think: 0.3,  range: 40,  slide: 1.3 },
+  facil:   { label: 'Fácil',   spd: 0.86, steal: 0.9, gk: 0.72, err: 1.45, think: 0.75, range: -30, slide: 0.35, moves: 0.3 },
+  normal:  { label: 'Normal',  spd: 0.95, steal: 1.5, gk: 0.86, err: 1.0,  think: 0.5,  range: 0,   slide: 0.8, moves: 0.7 },
+  dificil: { label: 'Difícil', spd: 1.04, steal: 2.3, gk: 0.98, err: 0.7,  think: 0.3,  range: 40,  slide: 1.3, moves: 1.2 },
 };
-const MATE = { spd: 0.97, steal: 1.4, gk: 0.88, err: 0.85, think: 0.45, range: 0, slide: 0 };
+const MATE = { spd: 0.97, steal: 1.4, gk: 0.88, err: 0.85, think: 0.45, range: 0, slide: 0, moves: 0.5 };
 const LENS = [{ s: 120, label: '2 min' }, { s: 240, label: '4 min' }, { s: 360, label: '6 min' }];
 const GK = { role: 'GK', x: 0.03, y: 0.5, n: 1 };
 const FORMS = {
@@ -332,7 +336,7 @@ let state = 'kickoff';      // kickoff | play | goal | paused | end
 let stateT = 0, kickTeam = 0, resumeState = 'play';
 let score = [0, 0], clock = 0;
 let players = [], human = null;
-let charging = false, charge = 0;
+let charging = false, charge = 0, chargeKind = 'shot';
 const ball = { x: W / 2, y: H / 2, z: 0, vx: 0, vy: 0, vz: 0, owner: null, last: null, spin: 0, trail: [] };
 const cam = { x: W / 2, y: H / 2 };
 let shake = 0;
@@ -461,7 +465,7 @@ function makePlayers() {
       players.push({
         team: t, idx: i, role: f.role, num: f.n, name: pool.pop(),
         x: 0, y: 0, vx: 0, vy: 0, dvx: 0, dvy: 0, fx: t ? -1 : 1, fy: 0,
-        kickCd: 0, protect: 0, stun: 0, slide: 0, sdx: 0, sdy: 0, recv: 0, think: Math.random() * 0.5,
+        kickCd: 0, protect: 0, skill: null, skillCd: 0, burst: 0, stun: 0, slide: 0, sdx: 0, sdy: 0, recv: 0, think: Math.random() * 0.5,
         holdT: 0, job: 'form', phase: Math.random() * 6, sprint: false, look: makeLook(),
       });
     });
@@ -484,7 +488,7 @@ function resetKickoff(team) {
     let nx = f.role === 'GK' ? 0.03 : kicker ? 0.5 - (PR + BR + 2) / W : clamp(f.x * 0.62, 0.12, 0.42);
     p.x = fx2w(p.team, nx); p.y = kicker ? H / 2 : f.y * H;
     p.vx = p.vy = p.dvx = p.dvy = 0; p.fx = p.team ? -1 : 1; p.fy = 0;
-    p.kickCd = p.stun = p.slide = p.recv = 0; p.protect = 0;
+    p.kickCd = p.stun = p.slide = p.recv = 0; p.protect = 0; p.skill = null; p.burst = 0;
   }
   ball.x = W / 2; ball.y = H / 2; ball.z = ball.vx = ball.vy = ball.vz = 0; ball.trail.length = 0;
   const taker = kickerOf(team);
@@ -514,7 +518,7 @@ function release(p, dx, dy, speed, vz) {
   ball.x = p.x + dx * (PR + BR + 3); ball.y = p.y + dy * (PR + BR + 3);
   speed *= ballProps().pow;
   ball.vx = dx * speed; ball.vy = dy * speed; ball.vz = vz; ball.z = vz > 0 ? 1 : 0;
-  ball.curve = 0; ball.curveT = 0; ball.guide = null; ball.kind = '';
+  ball.curve = 0; ball.curveT = 0; ball.guide = null; ball.kind = ''; ball.skillT = 0;
   p.kickCd = 0.3; p.fx = dx; p.fy = dy; p.protect = 0;
   if (p.role === 'GK') p.holdT = 0;
 }
@@ -720,9 +724,15 @@ function carrierAI(p, dt, sk) {
     const w = (140 - d) / 140 * 1.5;
     dx += (p.x - q.x) / d * w * 0.6; dy += (p.y - q.y) / d * w;
   }
+  // fintas da IA quando marcada de perto
+  if (nd < 75 && p.skillCd <= 0 && Math.random() < dt * sk.moves) {
+    const t = pick(['toques', 'pedalada', 'giro', 'vaca']);
+    p.fx = dx / (hyp(dx, dy) || 1); p.fy = dy / (hyp(dx, dy) || 1);
+    return startMove(p, t);
+  }
   if (p.y < 60) dy += 0.6; if (p.y > H - 60) dy -= 0.6;
   const l2 = hyp(dx, dy) || 1;
-  const spd = (nd > 85 ? SPRINT : RUN) * sk.spd * 0.95;
+  const spd = (nd > 85 ? SPRINT : RUN) * sk.spd * 0.97 * (p.burst > 0 ? 1.3 : 1);
   p.sprint = nd > 85;
   p.dvx = dx / l2 * spd; p.dvy = dy / l2 * spd;
 }
@@ -795,47 +805,92 @@ function startSlide(p, dx, dy) {
 }
 
 // ---------- Jogador controlado ----------
-let inp = { x: 0, y: 0, mag: 0, a: false, b: false, c: false, d: false, s: false };
-let prevA = false, prevB = false, prevC = false, prevD = false;
+let inp = { x: 0, y: 0, mag: 0, a: false, b: false, c: false, d: false, f: false, s: false, move: '' };
+let prevA = false, prevB = false, prevC = false, prevD = false, prevF = false, prevMove = '';
+const CHARGE_TIME = { shot: 0.85, short: 0.6, long: 0.7, lob: 0.7 };
+const MIN_POWER = { shot: 0.3, short: 0.35, long: 0.4, lob: 0.35 };
+// distância que a bola rasteira percorre até parar, com o atrito da bola escolhida
+function rollDistance(v) {
+  const B = ballProps(); let d = 0;
+  for (let i = 0; i < 400 && v > 6; i++) { v -= (v * B.roll + 70) * 0.02; d += Math.max(0, v) * 0.02; }
+  return d;
+}
+function freePassPlan(kind, power) {
+  if (kind === 'lob') return { d: 220 + power * 720 };
+  const spd = (kind === 'long' ? 640 + power * 680 : 360 + power * 620) * ballProps().pow;
+  return { spd, d: rollDistance(spd) };
+}
+// passe livre: a bola sai exatamente na direção mirada; quem estiver perto da linha corre para receber
+function freePass(h, kind, power, dir) {
+  const l = hyp(dir.x, dir.y) || 1, ux = dir.x / l, uy = dir.y / l;
+  const plan = freePassPlan(kind, power);
+  let recv = null, best = 1e9;
+  for (const m of players) {
+    if (m.team !== h.team || m === h) continue;
+    const rx = m.x - h.x, ry = m.y - h.y, along = rx * ux + ry * uy;
+    if (along < 40 || along > plan.d + 160) continue;
+    const off = Math.abs(rx * uy - ry * ux);
+    if (off < 70 + along * 0.18 && off < best) { best = off; recv = m; }
+  }
+  if (kind === 'lob') kickTo(h, clamp(h.x + ux * plan.d, PR, W - PR), clamp(h.y + uy * plan.d, PR, H - PR), 'lob');
+  else {
+    release(h, ux, uy, plan.spd / ballProps().pow, 0);
+    ball.kind = kind; sfx.kick(kind === 'short' ? 0.35 + power * 0.2 : 0.65);
+  }
+  if (recv) { recv.recv = 2.4; if (recv.role !== 'GK') human = recv; }
+}
+const MOVE_NAMES = { vaca: 'DRIBLE DA VACA', giro: 'GIRO', toques: 'DOIS TOQUES', pedalada: 'PEDALADA' };
+// escolhe a finta pela direção do joystick em relação ao jogador
+function pickMove(h) {
+  if (inp.mag < 0.3) return { type: 'pedalada' };
+  const fwd = inp.x * h.fx + inp.y * h.fy, lat = inp.x * -h.fy + inp.y * h.fx;
+  if (fwd < -0.45) return { type: 'giro', side: lat >= 0 ? 1 : -1 };
+  if (Math.abs(lat) > 0.55 && fwd < 0.55) return { type: 'toques', side: lat > 0 ? 1 : -1 };
+  return { type: 'vaca', side: lat >= 0 ? 1 : -1 };
+}
 function humanFrame(dt) {
   const h = human;
-  const aDown = inp.a && !prevA, bDown = inp.b && !prevB, bUp = !inp.b && prevB;
-  const cDown = inp.c && !prevC, dDown = inp.d && !prevD;
-  prevA = inp.a; prevB = inp.b; prevC = inp.c; prevD = inp.d;
+  const aDown = inp.a && !prevA, bDown = inp.b && !prevB;
+  const cDown = inp.c && !prevC, dDown = inp.d && !prevD, fDown = inp.f && !prevF;
+  const moveDown = inp.move && inp.move !== prevMove ? inp.move : '';
+  prevA = inp.a; prevB = inp.b; prevC = inp.c; prevD = inp.d; prevF = inp.f; prevMove = inp.move;
   if (!h || state !== 'play' || mode !== 'match') { charging = false; charge = 0; return; }
+  if (h.skill) { charging = false; charge = 0; return; }
   const dir = inp.mag > 0.2 ? { x: inp.x, y: inp.y } : { x: h.fx, y: h.fy };
   if (ball.owner === h) {
     const wasGk = h.role === 'GK';
     if (wasGk) {
       // goleiro com a bola: se demorar demais, ele mesmo repõe
       h.holdT -= dt;
-      if (h.holdT <= 0) { gkDistribute(h); if (human === h) switchPlayer(); return; }
+      if (h.holdT <= 0) { gkDistribute(h); if (human === h) switchPlayer(); charging = false; charge = 0; return; }
     }
-    if (wasGk && bUp && charging) {
+    if (!charging && !wasGk && (fDown || moveDown) && h.skillCd <= 0) {
+      const mv = moveDown ? { type: moveDown } : pickMove(h);
+      startMove(h, mv.type, mv.side);
+      return;
+    }
+    if (!charging) {
+      const kind = aDown ? 'short' : cDown ? 'long' : dDown ? 'lob' : bDown ? 'shot' : '';
+      if (kind) { charging = true; chargeKind = kind; charge = 0; }
+    }
+    if (!charging) return;
+    const held = { shot: inp.b, short: inp.a, long: inp.c, lob: inp.d }[chargeKind];
+    if (held) { charge = Math.min(1, charge + dt / CHARGE_TIME[chargeKind]); return; }
+    // soltou o botão: executa
+    const power = Math.max(MIN_POWER[chargeKind], charge);
+    if (chargeKind === 'shot' && wasGk) {
       // tiro de meta / chutão: lançamento alto, mais longe quanto mais força
       const fwd = (h.team === 0 ? dir.x : -dir.x) > 0.1 ? dir : { x: h.team === 0 ? 1 : -1, y: dir.y * 0.5 };
-      const l = hyp(fwd.x, fwd.y) || 1, reach = 420 + Math.max(0.3, charge) * 520;
+      const l = hyp(fwd.x, fwd.y) || 1, reach = 420 + power * 520;
       kickTo(h, clamp(h.x + fwd.x / l * reach, PR, W - PR), clamp(h.y + fwd.y / l * reach, PR, H - PR), 'lob');
-      charging = false; charge = 0; switchPlayer(); return;
-    }
-    const kind = aDown ? 'short' : cDown ? 'long' : dDown ? 'lob' : '';
-    if (kind) {
-      const m = bestPassTarget(h, dir, kind);
-      const dl = hyp(dir.x, dir.y) || 1, u = { x: dir.x / dl, y: dir.y / dl };
-      // passa para o companheiro se ele estiver mais ou menos na direção escolhida
-      if (m && ((m.x - h.x) * u.x + (m.y - h.y) * u.y) / dist(h, m) > 0.35) pass(h, m, kind);
-      else passInto(h, u, kind);
-      if (wasGk && human === h) switchPlayer();
-      charging = false; charge = 0; return;
-    }
-    if (inp.b) { charging = true; charge = Math.min(1, charge + dt / 0.85); }
-    else if (bUp && charging && !wasGk) {
+    } else if (chargeKind === 'shot') {
       // mira: a componente lateral do joystick escolhe o canto
-      let aimY = inp.mag > 0.2 ? H / 2 + clamp(inp.y, -1, 1) * GOAL_W * 0.46 : (h.y < H / 2 ? H / 2 + 40 : H / 2 - 40);
-      shoot(h, Math.max(0.3, charge), aimY, MATE.err * 0.9);
+      const aimY = inp.mag > 0.2 ? H / 2 + clamp(inp.y, -1, 1) * GOAL_W * 0.46 : (h.y < H / 2 ? H / 2 + 40 : H / 2 - 40);
+      shoot(h, power, aimY, MATE.err * 0.9);
       ball.guide = h; ball.curveT = 0.9; ball.curve = 0;
-      charging = false; charge = 0;
-    }
+    } else freePass(h, chargeKind, power, dir);
+    if (wasGk && human === h) switchPlayer();
+    charging = false; charge = 0;
     return;
   }
   charging = false; charge = 0;
@@ -847,21 +902,87 @@ function humanFrame(dt) {
 }
 function humanMove(p) {
   p.sprint = inp.s && inp.mag > 0.3;
-  const base = (p.sprint ? SPRINT : RUN) * (ball.owner === p ? 0.95 : 1) * (charging ? 0.7 : 1);
+  const base = (p.sprint ? SPRINT : RUN) * (charging ? 0.75 : 1) * (p.burst > 0 ? 1.3 : 1);
   if (inp.mag > 0.15) { p.dvx = inp.x * base * inp.mag; p.dvy = inp.y * base * inp.mag; }
   else if (!ball.owner && (p.recv > 0 || dist(p, ball) < 70)) intercept(p, RUN);
   else { p.dvx = p.dvy = 0; }
 }
 
+// ---------- Fintas ----------
+const floats = [];
+function startMove(p, type, side) {
+  side = side || (Math.random() < 0.5 ? -1 : 1);
+  const a0 = Math.atan2(p.fy, p.fx);
+  const out = p === human && inp.mag > 0.3 ? { x: inp.x / inp.mag, y: inp.y / inp.mag } : { x: p.fx, y: p.fy };
+  p.skill = { type, t: 0, side, a0, fx: p.fx, fy: p.fy, out, done: false };
+  p.skillCd = 1.1;
+  floats.push({ p, text: MOVE_NAMES[type], t: 1 });
+  if (type === 'vaca') {
+    // a bola vai por um lado do marcador e o jogador pelo outro
+    const a = a0 - side * 0.38;
+    release(p, Math.cos(a), Math.sin(a), 360, 0);
+    ball.kind = 'skill'; ball.skillT = 0.38; p.kickCd = 0.2; p.skill.dur = 1.0;
+    fool(p, 160, 0.5, side);
+    sfx.touch();
+  } else if (type === 'giro') { p.skill.dur = 0.5; p.protect = Math.max(p.protect, 0.6); }
+  else if (type === 'toques') { p.skill.dur = 0.26; p.protect = Math.max(p.protect, 0.35); sfx.touch(); }
+  else { p.skill.dur = 0.55; p.protect = Math.max(p.protect, 0.45); }
+}
+// marcadores perto podem cair na finta: perdem o equilíbrio para o lado errado
+function fool(p, range, time, side) {
+  const px = -p.fy, py = p.fx;
+  for (const q of players) {
+    if (q.team === p.team || q.role === 'GK' || dist(q, p) > range) continue;
+    const resist = q.team === 1 && mode === 'match' ? DIFFS[cfg.diff].steal / 3.2 : 0.45;
+    if (Math.random() > resist) { q.stun = time; q.vx = px * side * 140; q.vy = py * side * 140; }
+  }
+}
+function skillMove(p, dt) {
+  const s = p.skill; s.t += dt;
+  const px = -s.fy, py = s.fx;
+  const end = () => { p.skill = null; };
+  if (s.type === 'vaca') {
+    if (ball.owner && ball.owner !== p) return end();
+    if (ball.owner === p && s.t > 0.15) return end();
+    if (s.t < 0.22) {
+      // contorna pelo lado oposto ao da bola
+      const a = s.a0 + s.side * 0.7;
+      p.dvx = Math.cos(a) * 380; p.dvy = Math.sin(a) * 380;
+    } else intercept(p, 370);
+    p.sprint = true;
+  } else if (s.type === 'giro') {
+    if (ball.owner !== p) return end();
+    const k = Math.min(1, s.t / s.dur), a = s.a0 + s.side * Math.PI * 2 * k;
+    p.fx = Math.cos(a); p.fy = Math.sin(a);
+    p.dvx = s.out.x * 110 + px * s.side * 60; p.dvy = s.out.y * 110 + py * s.side * 60;
+    if (s.t >= s.dur) { p.fx = s.out.x; p.fy = s.out.y; p.burst = 0.35; }
+  } else if (s.type === 'toques') {
+    if (ball.owner !== p) return end();
+    p.dvx = (px * s.side * 0.92 + s.fx * 0.35) * 400; p.dvy = (py * s.side * 0.92 + s.fy * 0.35) * 400;
+    if (s.t > s.dur * 0.5 && !s.done) { s.done = true; sfx.touch(); }
+  } else {
+    if (ball.owner !== p) return end();
+    p.dvx = s.fx * 40; p.dvy = s.fy * 40;
+    if (s.t > 0.3 && !s.done) {
+      s.done = true;
+      // a pedalada desequilibra quem está marcando de frente
+      fool(p, 140, 0.5, s.side);
+    }
+    if (s.t >= s.dur) p.burst = 0.55;
+  }
+  if (s.t >= s.dur) end();
+}
+
 // ---------- Simulação ----------
 function simStep(dt) {
   for (const p of players) {
-    p.kickCd -= dt; p.protect -= dt; p.stun -= dt; p.recv -= dt;
+    p.kickCd -= dt; p.protect -= dt; p.stun -= dt; p.recv -= dt; p.skillCd -= dt; p.burst -= dt;
   }
   if (state === 'play') {
     assignJobs();
     for (const p of players) {
-      if (p.stun > 0) { p.dvx = p.dvy = 0; continue; }
+      if (p.stun > 0) { p.dvx = p.dvy = 0; p.skill = null; continue; }
+      if (p.skill) { skillMove(p, dt); continue; }
       if (p.slide > 0) {
         p.dvx = p.sdx * 340; p.dvy = p.sdy * 340; p.slide -= dt;
         if (p.slide <= 0 && ball.owner !== p) p.stun = 0.3;
@@ -875,13 +996,14 @@ function simStep(dt) {
   // integra jogadores
   for (const p of players) {
     // inércia: quem conduz acelera e vira mais devagar
-    const acc = p.slide > 0 ? 30 : ball.owner === p ? 5.5 : 7.5;
+    const acc = p.slide > 0 ? 30 : p.skill ? 14 : ball.owner === p ? 8.5 : 8;
     p.vx += (p.dvx - p.vx) * Math.min(1, dt * acc);
     p.vy += (p.dvy - p.vy) * Math.min(1, dt * acc);
     p.x += p.vx * dt; p.y += p.vy * dt;
     const sp = hyp(p.vx, p.vy);
-    if (p === human && mode === 'match' && inp.mag > 0.15 && state === 'play') turn(p, inp.x, inp.y, dt * (ball.owner === p ? (p.sprint ? 6 : 10) : 14));
-    else if (sp > 15 && p.slide <= 0) turn(p, p.vx, p.vy, dt * (ball.owner === p ? 6 : 7));
+    if (p.skill) { /* a finta controla a direção */ }
+    else if (p === human && mode === 'match' && inp.mag > 0.15 && state === 'play') turn(p, inp.x, inp.y, dt * (ball.owner === p ? (p.sprint ? 10 : 15) : 16));
+    else if (sp > 15 && p.slide <= 0) turn(p, p.vx, p.vy, dt * (ball.owner === p ? 9 : 8));
     p.phase += sp * dt * 0.09;
     if (p.role === 'GK') {
       const free = p.sweeping || (p === human && mode === 'match');
@@ -910,10 +1032,10 @@ function updateBall(dt) {
   if (o) {
     // condução: a bola fica no pé mas tem inércia; na corrida o jogador empurra a bola à frente
     const sp = hyp(o.vx, o.vy), f = Math.min(1, sp / RUN);
-    const knock = o.sprint ? 22 : 6 * f;
+    const knock = o.sprint ? 14 : 4 * f;
     const off = PR + BR + 1 + knock * (0.5 + 0.5 * Math.sin(o.phase * 1.6));
     const tx = o.x + o.fx * off, ty = o.y + o.fy * off;
-    const k = o.role === 'GK' && o.protect > 50 ? 30 : o.sprint ? 9 : 15;
+    const k = o.skill ? 35 : o.role === 'GK' && o.protect > 50 ? 30 : o.sprint ? 14 : 22;
     ball.vx = o.vx + (tx - ball.x) * k; ball.vy = o.vy + (ty - ball.y) * k;
     ball.x += ball.vx * dt; ball.y += ball.vy * dt;
     // a bola contorna o corpo em vez de atravessá-lo nas viradas
@@ -929,7 +1051,7 @@ function updateBall(dt) {
     ball.spin += hyp(ball.vx, ball.vy) * dt / BR * 0.5;
     return;
   }
-  ball.shot = (ball.shot || 0) - dt;
+  ball.shot = (ball.shot || 0) - dt; ball.skillT = (ball.skillT || 0) - dt;
   if (ball.curveT > 0) {
     ball.curveT -= dt;
     const sp = hyp(ball.vx, ball.vy);
@@ -967,7 +1089,7 @@ function updateBall(dt) {
     }
   }
   // bola livre bate no corpo de quem não pode dominar agora
-  if (ball.z < 32) {
+  if (ball.z < 32 && !(ball.skillT > 0)) {
     for (const p of players) {
       if (p.kickCd <= 0 && p.stun <= 0) continue;
       const dx = ball.x - p.x, dy = ball.y - p.y, d = hyp(dx, dy), min = PR + BR;
@@ -1042,6 +1164,8 @@ function checkPossession(dt) {
   let best = null, bd = 1e9;
   for (const p of players) {
     if (p.kickCd > 0 || p.stun > 0) continue;
+    // no começo do drible da vaca só quem fez a finta alcança a bola
+    if (ball.skillT > 0 && ball.last && p.team !== ball.last.team) continue;
     const gk = p.role === 'GK' && inOwnBox(p);
     const reach = PR + BR + 3 + (gk ? 10 * skill(p).gk : 0) + (p.slide > 0 ? 6 : 0);
     const zmax = gk ? 62 : 24;
@@ -1134,7 +1258,7 @@ function drawPlayer(p, sx, sy) {
     ctx.beginPath(); ctx.arc(sx, sy, R * 1.24, 0, Math.PI * 2); ctx.stroke();
     if (charging) {
       ctx.lineWidth = 6; ctx.lineCap = 'round';
-      ctx.strokeStyle = charge > 0.86 ? '#ff3b4f' : charge > 0.55 ? '#ffd23f' : '#5be37a';
+      ctx.strokeStyle = chargeKind !== 'shot' ? (chargeKind === 'lob' ? '#b48cff' : '#7ee0ff') : charge > 0.86 ? '#ff3b4f' : charge > 0.55 ? '#ffd23f' : '#5be37a';
       ctx.beginPath(); ctx.arc(sx, sy, R * 1.42, -Math.PI / 2, -Math.PI / 2 + charge * Math.PI * 2); ctx.stroke();
       ctx.lineCap = 'butt';
     }
@@ -1301,6 +1425,41 @@ function drawBall(sx, sy) {
   ctx.lineWidth = Math.max(1, r * 0.14); ctx.strokeStyle = B.id === 'neon' ? '#4dfff0' : 'rgba(0,0,0,.55)'; ellipse(sx, cy, r, r); ctx.stroke();
   ctx.fillStyle = 'rgba(255,255,255,.7)'; ellipse(sx - r * 0.35, cy - r * 0.4, r * 0.25, r * 0.18); ctx.fill();
 }
+// linha de mira do passe: mostra para onde e até onde a bola vai
+function drawAim() {
+  const h = human;
+  if (!charging || chargeKind === 'shot' || !h || ball.owner !== h || mode !== 'match') return;
+  const dir = inp.mag > 0.2 ? { x: inp.x, y: inp.y } : { x: h.fx, y: h.fy };
+  const l = hyp(dir.x, dir.y) || 1, ux = dir.x / l, uy = dir.y / l;
+  const d = freePassPlan(chargeKind, Math.max(MIN_POWER[chargeKind], charge)).d;
+  const [x0, y0] = w2s(h.x + ux * (PR + 6), h.y + uy * (PR + 6)), [x1, y1] = w2s(h.x + ux * d, h.y + uy * d);
+  ctx.save();
+  ctx.strokeStyle = chargeKind === 'lob' ? 'rgba(180,140,255,.9)' : 'rgba(126,224,255,.9)';
+  ctx.lineWidth = 3; ctx.setLineDash([8, 7]); ctx.lineDashOffset = -performance.now() / 30;
+  ctx.beginPath();
+  if (chargeKind === 'lob') {
+    const mx = (x0 + x1) / 2, my = (y0 + y1) / 2 - Math.min(90, hyp(x1 - x0, y1 - y0) * 0.35);
+    ctx.moveTo(x0, y0); ctx.quadraticCurveTo(mx, my, x1, y1);
+  } else { ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); }
+  ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = ctx.strokeStyle; ellipse(x1, y1, 7, 7); ctx.fill();
+  ctx.restore();
+}
+function drawFloats() {
+  for (let i = floats.length - 1; i >= 0; i--) {
+    const f = floats[i];
+    f.t -= 1 / 60;
+    if (f.t <= 0) { floats.splice(i, 1); continue; }
+    if (mode !== 'match') continue;
+    const [x, y] = w2s(f.p.x, f.p.y);
+    ctx.save(); ctx.globalAlpha = Math.min(1, f.t * 2);
+    ctx.font = '20px "Lilita One", Arial Black, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const ty = y - PR * S * 2.2 - (1 - f.t) * 26;
+    ctx.lineWidth = 4; ctx.strokeStyle = '#08110c'; ctx.strokeText(f.text, x, ty);
+    ctx.fillStyle = f.p.team === 0 ? '#ffd23f' : '#ffb0b8'; ctx.fillText(f.text, x, ty);
+    ctx.restore();
+  }
+}
 function drawMinimap() {
   const lw = portrait ? 62 : 104, lh = portrait ? 104 : 64;
   const x0 = cw - lw - 16, y0 = hudBottom + 12;
@@ -1336,6 +1495,8 @@ function render() {
   ents.sort((a, b) => a.y - b.y);
   for (const e of ents) drawPlayer(e.p, e.x, e.y);
   drawBall(bx, by);
+  drawAim();
+  drawFloats();
   if (mode === 'match') drawMinimap();
   if (state === 'kickoff' && mode === 'match') {
     ctx.font = `800 22px "Barlow Condensed", Arial Narrow, sans-serif`; ctx.textAlign = 'center';
@@ -1377,7 +1538,7 @@ function updateButtons() {
   const has = mode === 'match' && ball.owner === human;
   const k = a + b + has; if (k === lastLabels) return; lastLabels = k;
   bPass.textContent = a; bShoot.textContent = b;
-  $('bLong').classList.toggle('off', !has); $('bLob').classList.toggle('off', !has);
+  $('bLong').classList.toggle('off', !has); $('bLob').classList.toggle('off', !has); $('bSkill').classList.toggle('off', !has || human.role === 'GK');
   bShoot.style.fontSize = b.length > 7 ? '14px' : '';
 }
 
@@ -1390,7 +1551,7 @@ window.addEventListener('keydown', e => {
 });
 window.addEventListener('keyup', e => { keys[e.code] = false; });
 window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
-const touch = { id: null, ox: 0, oy: 0, jx: 0, jy: 0, a: false, b: false, c: false, d: false, s: false };
+const touch = { id: null, ox: 0, oy: 0, jx: 0, jy: 0, a: false, b: false, c: false, d: false, f: false, s: false };
 const zone = $('stickZone'), base = $('stickBase'), knob = $('stickKnob');
 zone.addEventListener('pointerdown', e => {
   if (touch.id !== null) return;
@@ -1413,7 +1574,7 @@ const endStick = e => {
   touch.id = null; touch.jx = touch.jy = 0; knob.style.transform = ''; base.classList.remove('on');
 };
 zone.addEventListener('pointerup', endStick); zone.addEventListener('pointercancel', endStick);
-for (const [id, key] of [['bPass', 'a'], ['bShoot', 'b'], ['bLong', 'c'], ['bLob', 'd'], ['bSprint', 's']]) {
+for (const [id, key] of [['bPass', 'a'], ['bShoot', 'b'], ['bLong', 'c'], ['bLob', 'd'], ['bSkill', 'f'], ['bSprint', 's']]) {
   const el = $(id);
   const on = e => { e.preventDefault(); touch[key] = true; el.classList.add('down'); try { el.setPointerCapture(e.pointerId); } catch (_) {} };
   const off = () => { touch[key] = false; el.classList.remove('down'); };
@@ -1438,6 +1599,8 @@ function readInput() {
     c: !!(keys.KeyU || touch.c),
     d: !!(keys.KeyI || touch.d),
     s: !!(keys.ShiftLeft || keys.ShiftRight || keys.KeyL || touch.s),
+    f: !!(keys.KeyF || touch.f),
+    move: keys.Digit1 ? 'vaca' : keys.Digit2 ? 'giro' : keys.Digit3 ? 'toques' : keys.Digit4 ? 'pedalada' : '',
   };
 }
 
