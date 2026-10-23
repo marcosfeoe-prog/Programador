@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { mulberry32 } from './noise.js';
 import { BLOCKS, ITEMS } from './blocks.js';
 import { blockItemGeometry } from './mesher.js';
-import { itemIconPainter, tileCanvas, canvasTexture, getAtlasTexture } from './textures.js';
+import { itemIconPainter, tileImageData, canvasTexture, getAtlasTexture } from './textures.js';
 
 // ---------- pintura de skins (layout de caixa: direita, frente, esquerda, trás, topo, base) ----------
 class Skin {
@@ -111,6 +111,60 @@ function paintHumanoid(kind) {
   return s.texture();
 }
 
+function paintSkeleton() {
+  const s = new Skin(64, 32, 21);
+  const bone = [200, 200, 196];
+  const dark = [70, 70, 70];
+  s.box(0, 0, 8, 8, 8, (f, x, y) => {
+    if (f === 'front') {
+      if ((y === 3 || y === 4) && (x === 1 || x === 2 || x === 5 || x === 6)) return [30, 30, 30];
+      if (y === 5 && (x === 3 || x === 4)) return [60, 60, 60];
+      if (y === 6 && x >= 1 && x <= 6) return x % 2 ? [40, 40, 40] : bone;
+    }
+    return s.vary(bone, 0.06);
+  });
+  s.box(16, 16, 8, 12, 4, (f, x, y) => {
+    if (f === 'front' || f === 'back') {
+      if (x === 3 || x === 4) return s.vary(bone, 0.05);
+      if (y < 8 && y % 2 === 0) return s.vary(bone, 0.06);
+      if (y >= 9) return y === 9 ? s.vary(bone, 0.05) : dark;
+      return dark;
+    }
+    return y % 2 === 0 && y < 8 ? s.vary(bone, 0.05) : dark;
+  });
+  s.box(40, 16, 2, 12, 2, (f, x, y) => (y === 5 || y === 6 ? [150, 150, 146] : s.vary(bone, 0.06)));
+  s.box(0, 16, 2, 12, 2, (f, x, y) => (y === 5 || y === 6 ? [150, 150, 146] : s.vary(bone, 0.06)));
+  return s.texture();
+}
+
+function paintChicken() {
+  const s = new Skin(64, 32, 31);
+  const white = [240, 240, 236];
+  s.box(0, 0, 4, 6, 3, (f, x, y) => (f === 'front' && y === 1 && (x === 0 || x === 3) ? [20, 20, 20] : s.vary(white, 0.03)));
+  s.box(14, 0, 4, 2, 2, () => s.vary([236, 150, 40], 0.05));
+  s.box(14, 4, 2, 2, 2, () => s.vary([210, 30, 30], 0.05));
+  s.box(0, 9, 6, 6, 8, () => s.vary(white, 0.04));
+  s.box(26, 0, 3, 5, 3, () => s.vary([230, 160, 40], 0.05));
+  s.box(24, 13, 1, 4, 6, () => s.vary([226, 226, 222], 0.04));
+  return s.texture();
+}
+
+function paintSpider() {
+  const s = new Skin(64, 64, 41);
+  const hair = () => s.vary([s.rnd() < 0.3 ? 70 : 46, s.rnd() < 0.3 ? 58 : 38, 34], 0.15);
+  s.box(32, 4, 8, 8, 8, (f, x, y) => {
+    if (f === 'front') {
+      if ((y === 3 && (x === 1 || x === 2 || x === 5 || x === 6)) || (y === 4 && (x === 2 || x === 5)) || (y === 2 && (x === 3 || x === 4))) return [200, 20, 20];
+      if (y === 4 && (x === 1 || x === 6)) return [120, 10, 10];
+    }
+    return hair();
+  });
+  s.box(0, 0, 6, 6, 6, () => hair());
+  s.box(0, 32, 10, 8, 12, (f, x, y) => ((f === 'top' && (x + y * 3) % 7 === 0) ? [110, 30, 20] : hair()));
+  s.box(0, 20, 16, 2, 2, () => hair());
+  return s.texture();
+}
+
 function paintCreeper() {
   const s = new Skin(64, 32, 11);
   const g = () => s.vary([s.rnd() < 0.3 ? 120 : 80, s.rnd() < 0.3 ? 200 : 170, s.rnd() < 0.5 ? 80 : 60], 0.08);
@@ -174,16 +228,18 @@ function paintQuad(kind) {
 }
 
 // ---------- geometria de caixa com UV de skin ----------
-function skinBox(w, h, d, u, v, tw, th, inflate = 0) {
-  const g = new THREE.BoxGeometry(w + inflate * 2, h + inflate * 2, d + inflate * 2);
+// rows = [y0, y1]: usa só uma faixa das laterais (para membros com articulação)
+function skinBox(w, h, d, u, v, tw, th, inflate = 0, rows = null) {
+  const y0 = rows ? rows[0] : 0, hh = rows ? rows[1] - rows[0] : h;
+  const g = new THREE.BoxGeometry(w + inflate * 2, hh + inflate * 2, d + inflate * 2);
   const uv = g.attributes.uv;
   const rects = [
-    [u + d + w, v + d, d, h], // +x (esquerda do personagem)
-    [u, v + d, d, h], // -x (direita do personagem)
+    [u + d + w, v + d + y0, d, hh], // +x (esquerda do personagem)
+    [u, v + d + y0, d, hh], // -x (direita do personagem)
     [u + d, v, w, d], // topo
     [u + d + w, v, w, d], // base
-    [u + d, v + d, w, h], // frente (+z)
-    [u + d + w + d, v + d, w, h], // trás
+    [u + d, v + d + y0, w, hh], // frente (+z)
+    [u + d + w + d, v + d + y0, w, hh], // trás
   ];
   for (let f = 0; f < 6; f++) {
     const [x0, y0, fw, fh] = rects[f];
@@ -212,6 +268,9 @@ function skinTexture(kind) {
   if (!textures[kind]) {
     if (kind === 'steve' || kind === 'zombie') textures[kind] = paintHumanoid(kind);
     else if (kind === 'creeper') textures[kind] = paintCreeper();
+    else if (kind === 'skeleton') textures[kind] = paintSkeleton();
+    else if (kind === 'chicken') textures[kind] = paintChicken();
+    else if (kind === 'spider') textures[kind] = paintSpider();
     else textures[kind] = paintQuad(kind);
   }
   return textures[kind];
@@ -246,9 +305,11 @@ class Model {
 
 // Humanoide: jogador, zumbi
 export class HumanoidModel extends Model {
-  constructor(kind = 'steve') {
+  // articulated: braços e pernas com cotovelo e joelho (gráficos ULTRA)
+  constructor(kind = 'steve', articulated = false) {
     super(skinTexture(kind));
     this.kind = kind;
+    this.articulated = articulated;
     const S = 0.9375 / 16;
     this.inner.scale.setScalar(S);
     const m = this.mat;
@@ -257,15 +318,40 @@ export class HumanoidModel extends Model {
     this.upper = new THREE.Group();
     this.upper.position.set(0, 12, 0);
     this.inner.add(this.upper);
-    this.body = limb(this.upper, skinBox(8, 12, 4, 16, 16, 64, 64), m, [0, 0, 0], [0, 6, 0]);
-    this.head = limb(this.upper, skinBox(8, 8, 8, 0, 0, 64, 64), m, [0, 12, 0], [0, 4, 0]);
-    this.rightArm = limb(this.upper, skinBox(4, 12, 4, 40, 16, 64, 64), m, [-6, 10, 0], [0, -4, 0]);
-    this.leftArm = limb(this.upper, skinBox(4, 12, 4, 32, 48, 64, 64), m, [6, 10, 0], [0, -4, 0]);
-    this.rightLeg = limb(this.legsRoot, skinBox(4, 12, 4, 0, 16, 64, 64), m, [-2, 12, 0], [0, -6, 0]);
-    this.leftLeg = limb(this.legsRoot, skinBox(4, 12, 4, 16, 48, 64, 64), m, [2, 12, 0], [0, -6, 0]);
+    const sk = kind === 'skeleton';
+    const TH = sk ? 32 : 64; // altura da textura
+    const lw = sk ? 2 : 4; // largura dos membros
+    const UV = sk ? { ra: [40, 16], la: [40, 16], rl: [0, 16], ll: [0, 16] } : { ra: [40, 16], la: [32, 48], rl: [0, 16], ll: [16, 48] };
+    const ax = 4 + lw / 2;
+    this.body = limb(this.upper, skinBox(8, 12, 4, 16, 16, 64, TH), m, [0, 0, 0], [0, 6, 0]);
+    this.head = limb(this.upper, skinBox(8, 8, 8, 0, 0, 64, TH), m, [0, 12, 0], [0, 4, 0]);
     this.hand = new THREE.Group();
-    this.hand.position.set(0, -9, 1);
-    this.rightArm.add(this.hand);
+    if (!articulated) {
+      this.rightArm = limb(this.upper, skinBox(lw, 12, lw, ...UV.ra, 64, TH), m, [-ax, 10, 0], [0, -4, 0]);
+      this.leftArm = limb(this.upper, skinBox(lw, 12, lw, ...UV.la, 64, TH), m, [ax, 10, 0], [0, -4, 0]);
+      this.rightLeg = limb(this.legsRoot, skinBox(lw, 12, lw, ...UV.rl, 64, TH), m, [-2, 12, 0], [0, -6, 0]);
+      this.leftLeg = limb(this.legsRoot, skinBox(lw, 12, lw, ...UV.ll, 64, TH), m, [2, 12, 0], [0, -6, 0]);
+      this.hand.position.set(0, -9, 1);
+      this.rightArm.add(this.hand);
+    } else {
+      // braço: ombro (6 px de cima) + antebraço; perna: coxa + canela
+      const arm = (u, v, x) => {
+        const up = limb(this.upper, skinBox(lw, 12, lw, u, v, 64, TH, 0, [0, 6]), m, [x, 10, 0], [0, -1, 0]);
+        const low = limb(up, skinBox(lw, 12, lw, u, v, 64, TH, 0, [6, 12]), m, [0, -4, 0], [0, -3, 0]);
+        return [up, low];
+      };
+      const leg = (u, v, x) => {
+        const up = limb(this.legsRoot, skinBox(lw, 12, lw, u, v, 64, TH, 0, [0, 6]), m, [x, 12, 0], [0, -3, 0]);
+        const low = limb(up, skinBox(lw, 12, lw, u, v, 64, TH, 0, [6, 12]), m, [0, -6, 0], [0, -3, 0]);
+        return [up, low];
+      };
+      [this.rightArm, this.rightElbow] = arm(...UV.ra, -ax);
+      [this.leftArm, this.leftElbow] = arm(...UV.la, ax);
+      [this.rightLeg, this.rightKnee] = leg(...UV.rl, -2);
+      [this.leftLeg, this.leftKnee] = leg(...UV.ll, 2);
+      this.hand.position.set(0, -5, 1);
+      this.rightElbow.add(this.hand);
+    }
     this.heldId = 0;
     this.heldMesh = null;
   }
@@ -312,10 +398,15 @@ export class HumanoidModel extends Model {
       this.rightArm.rotation.x = -Math.PI / 2 + Math.sin(t * 0.067) * 0.05;
       this.leftArm.rotation.x = -Math.PI / 2 - Math.sin(t * 0.067) * 0.05;
     }
+    if (st.aim) {
+      // mirando com o arco: os dois braços para frente, seguindo o olhar
+      this.rightArm.rotation.set(-Math.PI / 2 - st.headPitch, -0.1 + st.headYaw, 0);
+      this.leftArm.rotation.set(-Math.PI / 2 - st.headPitch, 0.5 + st.headYaw, 0);
+    }
     if (st.eating > 0) {
       this.rightArm.rotation.x = -1.2 + Math.abs(Math.sin(st.eating * 0.9)) * 0.25;
       this.rightArm.rotation.y = -0.4;
-    } else this.rightArm.rotation.y = 0;
+    } else if (!st.aim) this.rightArm.rotation.y = 0;
     // golpe do braço direito
     this.body.rotation.y = 0;
     if (st.swing > 0) {
@@ -344,6 +435,60 @@ export class HumanoidModel extends Model {
       this.legsRoot.position.z = 0;
     }
     this.root.rotation.z = st.death ? Math.min(1, st.death / 20) ** 0.6 * (Math.PI / 2) : 0;
+    if (this.articulated) this.animateRealistic(st, ls, amt, t);
+  }
+
+  // Caminhada mais natural: joelhos e cotovelos dobram, o tronco gira e o corpo sobe e desce a cada passo.
+  animateRealistic(st, ph, amt, t) {
+    const run = Math.min(1, amt * 1.15);
+    const swingL = Math.cos(ph) * 0.85 * run, swingR = Math.cos(ph + Math.PI) * 0.85 * run;
+    // pernas: a canela dobra enquanto a perna avança (fase de balanço)
+    this.rightLeg.rotation.x = Math.cos(ph) * 0.8 * run;
+    this.leftLeg.rotation.x = Math.cos(ph + Math.PI) * 0.8 * run;
+    this.rightKnee.rotation.x = Math.max(0, Math.sin(ph)) * 1.25 * run + 0.04;
+    this.leftKnee.rotation.x = Math.max(0, Math.sin(ph + Math.PI)) * 1.25 * run + 0.04;
+    // braços balançam ao contrário das pernas, com o cotovelo levemente dobrado
+    if (st.aim) {
+      this.rightElbow.rotation.x = 0;
+      this.leftElbow.rotation.x = -0.2;
+    } else if (!st.zombieArms && !(st.eating > 0)) {
+      const keepR = this.rightArm.rotation.x - Math.cos(ph + Math.PI) * amt;
+      this.rightArm.rotation.x = keepR + swingL * 0.75;
+      this.leftArm.rotation.x = this.leftArm.rotation.x - Math.cos(ph) * amt + swingR * 0.75;
+      this.rightElbow.rotation.x = -(0.12 + 0.45 * run * (0.5 + 0.5 * Math.sin(ph + Math.PI)));
+      this.leftElbow.rotation.x = -(0.12 + 0.45 * run * (0.5 + 0.5 * Math.sin(ph)));
+      if (this.heldId) this.rightElbow.rotation.x = -0.35;
+    } else {
+      this.rightElbow.rotation.x = st.eating > 0 ? -1.1 : 0;
+      this.leftElbow.rotation.x = 0;
+    }
+    if (st.swing > 0) this.rightElbow.rotation.x *= 1 - Math.sin(st.swing * Math.PI);
+    // tronco: sobe e desce, gira os ombros e inclina para frente ao correr
+    this.inner.position.y += Math.abs(Math.cos(ph)) * 0.055 * run - 0.02 * run;
+    this.upper.rotation.y = Math.cos(ph) * 0.14 * run;
+    this.head.rotation.y -= this.upper.rotation.y * 0.8;
+    this.head.rotation.x += Math.sin(ph * 2) * 0.03 * run;
+    if (!st.sneak) this.upper.rotation.x = 0.07 * run;
+    // respiração
+    const breath = Math.sin(t * 0.08);
+    this.body.scale.set(1 + breath * 0.012, 1, 1 + breath * 0.03);
+    this.head.position.y = 12 + breath * 0.15;
+    // agachado: dobra os joelhos em vez de só recuar as pernas
+    if (st.sneak) {
+      this.legsRoot.position.z = 0;
+      this.rightLeg.rotation.x -= 0.55;
+      this.leftLeg.rotation.x -= 0.55;
+      this.rightKnee.rotation.x += 0.9;
+      this.leftKnee.rotation.x += 0.9;
+      this.inner.position.y = -0.2;
+      this.upper.position.z = 1.5;
+    } else this.upper.position.z = 0;
+    // morte: os joelhos cedem
+    if (st.death) {
+      const k = Math.min(1, st.death / 20);
+      this.rightKnee.rotation.x += k * 0.8;
+      this.leftKnee.rotation.x += k * 0.6;
+    }
   }
 }
 
@@ -372,9 +517,10 @@ export class CreeperModel extends Model {
 }
 
 export class QuadrupedModel extends Model {
-  constructor(kind) {
+  constructor(kind, realistic = false) {
     super(skinTexture(kind));
     this.kind = kind;
+    this.realistic = realistic;
     this.inner.scale.setScalar(1 / 16);
     const m = this.mat;
     this.legs = [];
@@ -429,7 +575,91 @@ export class QuadrupedModel extends Model {
     this.legs[2].rotation.x = Math.cos(ls + Math.PI) * 1.4 * amt;
     this.legs[3].rotation.x = Math.cos(ls) * 1.4 * amt;
     this.root.rotation.z = st.death ? Math.min(1, st.death / 20) ** 0.6 * (Math.PI / 2) : 0;
+    if (this.realistic) {
+      // passo com peso: o corpo sobe e desce e a cabeça acompanha
+      for (const l of this.legs) l.rotation.x *= 0.7;
+      this.inner.position.y = Math.abs(Math.sin(ls)) * 0.035 * amt;
+      this.body.rotation.z = Math.sin(ls) * 0.04 * amt;
+      this.head.rotation.x += Math.sin(ls * 2) * 0.06 * amt + Math.sin(st.age * 0.05) * 0.02;
+    }
   }
+}
+
+export class ChickenModel extends Model {
+  constructor(realistic = false) {
+    super(skinTexture('chicken'));
+    this.realistic = realistic;
+    this.inner.scale.setScalar(1 / 16);
+    const m = this.mat;
+    this.legs = [-1.5, 1.5].map((x) => limb(this.inner, skinBox(3, 5, 3, 26, 0, 64, 32), m, [x, 5, 0.5], [0, -2.5, 0]));
+    this.body = limb(this.inner, skinBox(6, 6, 8, 0, 9, 64, 32), m, [0, 8, 0], [0, 0, 0]);
+    this.head = limb(this.inner, skinBox(4, 6, 3, 0, 0, 64, 32), m, [0, 10, 4], [0, 3, 0.5]);
+    const beak = new THREE.Mesh(skinBox(4, 2, 2, 14, 0, 64, 32), m);
+    beak.position.set(0, 3.5, 3);
+    this.head.add(beak);
+    const wattle = new THREE.Mesh(skinBox(2, 2, 2, 14, 4, 64, 32), m);
+    wattle.position.set(0, 1.5, 2.5);
+    this.head.add(wattle);
+    this.wings = [-3.5, 3.5].map((x) => limb(this.inner, skinBox(1, 4, 6, 24, 13, 64, 32), m, [x, 10, 0], [0, -2, 0]));
+  }
+  animate(st) {
+    const ls = st.limbSwing * 0.6662, amt = Math.min(1, st.limbAmount);
+    this.head.rotation.set(-st.headPitch + (this.realistic ? Math.sin(ls * 2) * 0.15 * amt : 0), st.headYaw, 0);
+    this.legs[0].rotation.x = Math.cos(ls) * 1.4 * amt;
+    this.legs[1].rotation.x = Math.cos(ls + Math.PI) * 1.4 * amt;
+    const flap = st.flap ? Math.sin(st.age * 1.6) * 0.9 + 0.9 : 0;
+    this.wings[0].rotation.z = flap;
+    this.wings[1].rotation.z = -flap;
+    this.root.rotation.z = st.death ? Math.min(1, st.death / 20) ** 0.6 * (Math.PI / 2) : 0;
+  }
+}
+
+export class SpiderModel extends Model {
+  constructor(realistic = false) {
+    super(skinTexture('spider'));
+    this.realistic = realistic;
+    this.inner.scale.setScalar(1 / 16);
+    const m = this.mat;
+    this.thorax = limb(this.inner, skinBox(6, 6, 6, 0, 0, 64, 64), m, [0, 9, 0], [0, 0, 0]);
+    this.head = limb(this.inner, skinBox(8, 8, 8, 32, 4, 64, 64), m, [0, 9, 3], [0, 0, 4]);
+    this.abdomen = limb(this.inner, skinBox(10, 8, 12, 0, 32, 64, 64), m, [0, 9, -3], [0, 1, -6]);
+    this.legs = [];
+    for (let i = 0; i < 8; i++) {
+      const side = i % 2 ? 1 : -1;
+      const row = Math.floor(i / 2);
+      const g = limb(this.inner, skinBox(16, 2, 2, 0, 20, 64, 64), m, [side * 3, 9, 2 - row * 1.5], [side * 8, 0, 0]);
+      g.userData = { side, row };
+      this.legs.push(g);
+    }
+  }
+  animate(st) {
+    const ls = st.limbSwing * 0.6662, amt = Math.min(1, st.limbAmount);
+    this.head.rotation.set(-st.headPitch, st.headYaw, 0);
+    for (const g of this.legs) {
+      const { side, row } = g.userData;
+      const spread = [0.75, 0.3, -0.3, -0.75][row];
+      const ph = row % 2 === (side > 0 ? 0 : 1) ? 0 : Math.PI;
+      g.rotation.set(0, side * spread + Math.cos(ls * 2 + ph) * 0.4 * amt, side * (0.6 - Math.abs(Math.sin(ls + ph)) * 0.4 * amt), 'YZX');
+    }
+    if (this.realistic) this.abdomen.rotation.x = Math.sin(st.age * 0.15) * 0.04 + Math.sin(ls * 2) * 0.05 * amt;
+    this.root.rotation.z = st.death ? Math.min(1, st.death / 20) ** 0.6 * Math.PI : 0;
+  }
+}
+
+// flecha: haste + penas (modelo pequeno, alinhado com a velocidade)
+export function arrowMesh() {
+  const g = new THREE.Group();
+  const shaft = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 0.55), new THREE.MeshBasicMaterial({ color: 0x8a6a40 }));
+  const tip = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.09), new THREE.MeshBasicMaterial({ color: 0x9a9a9a }));
+  tip.position.z = 0.3;
+  const f1 = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.01, 0.14), new THREE.MeshBasicMaterial({ color: 0xeeeeee }));
+  f1.position.z = -0.22;
+  const f2 = f1.clone();
+  f2.rotation.z = Math.PI / 2;
+  g.add(shaft, tip, f1, f2);
+  g.userData.mats = [shaft.material, tip.material, f1.material];
+  g.userData.base = [new THREE.Color(0x8a6a40), new THREE.Color(0x9a9a9a), new THREE.Color(0xeeeeee)];
+  return g;
 }
 
 // ---------- itens 3D ----------
@@ -467,9 +697,7 @@ function extrudedGeometry(key, painter) {
 }
 
 function tilePainter(name) {
-  const c = tileCanvas(name);
-  const img = c.getContext('2d').getImageData(0, 0, 16, 16);
-  return { img };
+  return { img: { data: tileImageData(name) } };
 }
 
 // Malha 3D de um item (bloco = cubo; resto = sprite extrudado). Material próprio para receber a luz.
@@ -477,10 +705,10 @@ export function heldItemMesh(id) {
   let mesh;
   if (id < 256) {
     const b = BLOCKS[id];
-    if (b.render === 'cube' || b.render === 'liquid') {
+    if (['cube', 'liquid', 'slab', 'fence', 'layer', 'bed'].includes(b.render)) {
       const mat = new THREE.ShaderMaterial({
         uniforms: { uAtlas: { value: getAtlasTexture() }, uBright: { value: 1 }, uTint: { value: new THREE.Color(1, 1, 1) } },
-        vertexShader: `attribute vec3 aLight; attribute vec3 aTint; varying vec2 vUv; varying float vS; varying vec3 vT;
+        vertexShader: `attribute vec4 aLight; attribute vec3 aTint; varying vec2 vUv; varying float vS; varying vec3 vT;
           void main(){ vUv = uv; vS = aLight.z; vT = aTint; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
         fragmentShader: `uniform sampler2D uAtlas; uniform float uBright; uniform vec3 uTint; varying vec2 vUv; varying float vS; varying vec3 vT;
           void main(){ vec4 t = texture2D(uAtlas, vUv); if (t.a < 0.3) discard; gl_FragColor = vec4(t.rgb * vT * vS * uBright * uTint, 1.0); }`,
@@ -574,10 +802,20 @@ export class ViewModel {
       it.rotation.set(0.3, Math.PI / 4 - 0.35, 0);
     } else {
       g.rotation.set(-sr * 1.2, Math.PI / 4 - sq * 0.35, -sr * 0.35);
-      it.scale.setScalar(it.userData.flat ? 0.45 : 0.55);
+      it.scale.setScalar(it.userData.flat ? 0.45 : this.heldId === 275 ? 0.42 : 0.55);
       it.position.set(0, 0.05, 0);
       it.rotation.order = 'YXZ';
       it.rotation.set(0, 1.86, 0.15);
+    }
+    // arco sendo puxado: vai para o centro, fica de pé e treme quando está no máximo
+    if (st.bowPull > 0 && this.heldId === 275) {
+      const k = st.bowPull;
+      const shake = k >= 1 ? Math.sin(performance.now() * 0.06) * 0.006 : 0;
+      g.position.set(0.3 - k * 0.08, -0.28 + shake, -0.68 + k * 0.12);
+      g.rotation.set(0, 0, 0);
+      it.rotation.order = 'XYZ';
+      it.rotation.set(0, -0.45, Math.PI / 4 + 0.08);
+      it.scale.setScalar(0.5);
     }
   }
 }

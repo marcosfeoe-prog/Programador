@@ -1,11 +1,13 @@
 // Blocos — ponto de entrada: liga mundo, renderização, jogador, entidades e interface.
 import * as THREE from 'three';
 import { initTextures, animateAtlas } from './textures.js';
-import { Renderer } from './render.js';
+import { Renderer, QUALITY, QUALITY_ORDER } from './render.js';
+import { buildHDAtlas } from './hdtextures.js';
 import { World, SOLID } from './world.js';
 import { Player } from './player.js';
 import { EntityManager, brightnessAt } from './entities.js';
 import { Particles } from './particles.js';
+import { WeatherFx } from './weather.js';
 import { HumanoidModel, ViewModel } from './models.js';
 import { UI } from './ui.js';
 import { Input } from './input.js';
@@ -13,7 +15,7 @@ import { GameAudio } from './audio.js';
 import { B, BLOCKS, I, info, itemName } from './blocks.js';
 import { newFurnace, newChest, tickFurnace, serializeTile, loadTile } from './inventory.js';
 import { seedFrom } from './noise.js';
-import { CH, TPS, BIOME_NAMES, CS } from './consts.js';
+import { CH, TPS, BIOME_NAMES, CS, FOLIAGE_TINT } from './consts.js';
 import * as Save from './save.js';
 
 const DEFAULTS = {
@@ -28,6 +30,7 @@ const DEFAULTS = {
   guiScale: 0,
   fps: false,
   playerName: 'Jogador',
+  graphics: 'medium',
 };
 
 class Game {
@@ -35,7 +38,10 @@ class Game {
     this.canvas = document.getElementById('game');
     this.input = new Input(this.canvas);
     const def = { ...DEFAULTS };
-    if (this.input.isTouch) def.dist = 5;
+    if (this.input.isTouch) {
+      def.dist = 5;
+      def.graphics = 'low';
+    }
     this.settings = Save.loadSettings(def);
     this.atlas = initTextures();
     this.renderer = new Renderer(this.canvas, this.atlas);
@@ -43,6 +49,7 @@ class Game {
     this.audio.volume = this.settings.vol / 100;
     this.audio.musicVolume = this.settings.music / 100;
     this.particles = new Particles(this.renderer.scene, this.atlas);
+    this.weatherFx = new WeatherFx(this.renderer.scene);
     this.viewModel = new ViewModel();
     this.player = new Player(this);
     this.entities = new EntityManager(this);
@@ -99,6 +106,7 @@ class Game {
 
   applySettings() {
     const s = this.settings;
+    if (s.graphics !== this.appliedGraphics) this.applyQuality();
     this.renderer.radius = s.dist;
     this.renderer.uniforms.uGamma.value = s.bright / 100;
     this.audio.setVolume(s.vol / 100);
@@ -107,12 +115,34 @@ class Game {
     Save.saveSettings(s);
   }
 
+  // Aplica o nível de gráficos (Baixo, Médio, Alto, ULTRA)
+  applyQuality() {
+    const name = QUALITY[this.settings.graphics] ? this.settings.graphics : 'medium';
+    this.appliedGraphics = name;
+    this.renderer.setQuality(name, () => buildHDAtlas());
+    this.renderer.remeshAll(this.world);
+    const q = QUALITY[name];
+    this.particles.density = q.particles;
+    this.particles.setAtlas(this.renderer.atlas);
+    this.quality = q;
+    // modelos com articulações só no ULTRA
+    if (this.playerModel && this.playerModel.articulated !== q.articulated) {
+      this.renderer.scene.remove(this.playerModel.root);
+      this.playerModel.dispose();
+      this.playerModel = new HumanoidModel('steve', q.articulated);
+      this.renderer.scene.add(this.playerModel.root);
+      this.playerModel.root.visible = this.state === 'playing';
+      for (const e of this.entities.list) if (e.rebuildModel) e.rebuildModel(this.entities.group);
+    }
+  }
+
   // ---------- mundos ----------
   setupWorld(seed, data) {
     this.disposeWorld();
     const w = new World(seed, data ? data.edits : null);
     w.hooks = {
-      onBreakDrop: (x, y, z, id) => this.dropBlockItems(x, y, z, id),
+      onBreakDrop: (x, y, z, id, meta) => this.dropBlockItems(x, y, z, id, meta),
+      onLightning: (x, y, z) => this.lightning(x, y, z),
       onFalling: (x, y, z, id) => this.entities.spawnFalling(x, y, z, id),
       onUnload: (c) => this.renderer.disposeChunk(c),
       onTileRemoved: (x, y, z, te) => {
@@ -128,6 +158,7 @@ class Game {
     if (data) {
       w.time = data.time ?? 1000;
       for (const [k, t] of data.tiles || []) w.tileEntities.set(k, loadTile(t));
+      if (data.weather) Object.assign(w.weather, data.weather);
     }
     this.world = w;
     this.renderer.radius = this.settings.dist;
@@ -242,6 +273,7 @@ class Game {
       },
       edits: this.world.serializeEdits(),
       tiles: [...this.world.tileEntities].map(([k, t]) => [k, serializeTile(t)]),
+      weather: this.world.weather,
     };
     if (p.dead) Object.assign(data.player, p.spawn);
     const ok = Save.saveWorldData(this.meta.id, data);
@@ -298,14 +330,86 @@ class Game {
   newFurnace() {
     return newFurnace();
   }
+
+  // baú gerado no mundo (masmorra): tesouro sorteado pela posição
+  chestLoot(x, y, z) {
+    const c = newChest();
+    let h = (x * 73856093) ^ (y * 19349663) ^ (z * 83492791) ^ this.world.seed;
+    const rnd = () => ((h = (Math.imul(h ^ (h >>> 15), 2246822507) + 0x9e3779b9) | 0) >>> 0) / 4294967296;
+    const table = [
+      [I.BREAD, 1, 4, 10], [I.APPLE, 1, 3, 8], [I.WHEAT_ITEM, 2, 6, 8], [I.SEEDS, 2, 6, 6], [I.IRON_INGOT, 1, 5, 9], [I.GOLD_INGOT, 1, 4, 5],
+      [I.DIAMOND, 1, 2, 2], [I.BONE, 2, 6, 8], [I.GUNPOWDER, 1, 5, 7], [I.STRING, 1, 4, 6], [I.ARROW, 4, 12, 6], [I.BUCKET, 1, 1, 4],
+      [I.COAL, 3, 8, 8], [I.BOW, 1, 1, 2], [I.IRON_PICKAXE, 1, 1, 1], [I.FEATHER, 1, 3, 3], [I.EGG, 1, 3, 3],
+    ];
+    const total = table.reduce((a, t) => a + t[3], 0);
+    const n = 4 + Math.floor(rnd() * 5);
+    for (let k = 0; k < n; k++) {
+      let r = rnd() * total;
+      const t = table.find((e) => (r -= e[3]) < 0) || table[0];
+      const slot = Math.floor(rnd() * 27);
+      if (!c.slots[slot]) c.slots[slot] = { id: t[0], count: t[1] + Math.floor(rnd() * (t[2] - t[1] + 1)), damage: 0 };
+    }
+    return c;
+  }
+
+  // dormir: só à noite e sem monstros por perto; pula para a manhã
+  trySleep(x, y, z) {
+    const w = this.world, p = this.player;
+    p.spawn = { x: x + 0.5, y: y + 0.6, z: z + 0.5 };
+    if (!w.isNight() && w.weather.rain < 0.8) return this.ui.addChat('Você só pode dormir à noite ou durante tempestades. Ponto de nascimento definido.', '#ffff55');
+    const near = this.entities.list.some((e) => e.hostile && !e.deathTime && Math.hypot(e.x - x, e.y - y, e.z - z) < 8);
+    if (near) return this.ui.addChat('Você não pode dormir agora: há monstros por perto.', '#ff5555');
+    this.sleeping = { t: 0, x, y, z };
+    p.setPosition(x + 0.5, y + 0.6, z + 0.5);
+    this.ui.addChat('Dormindo...', '#aaaaaa');
+  }
+  updateSleep(dt) {
+    const el = document.getElementById('sleep-overlay');
+    if (!this.sleeping) {
+      el.style.opacity = 0;
+      return;
+    }
+    this.sleeping.t += dt;
+    el.style.opacity = Math.min(1, this.sleeping.t / 2);
+    if (this.sleeping.t > 2.6) {
+      this.world.time = 0;
+      this.world.setWeather('clear');
+      this.sleeping = null;
+      this.ui.addChat('Bom dia! Seu ponto de nascimento é a cama.', '#ffff55');
+    }
+  }
+
+  lightning(x, y, z) {
+    this.weatherFx.bolt(x, y, z);
+    const d = Math.hypot(x - this.player.x, z - this.player.z);
+    setTimeout(() => this.audio.play('thunder', { volume: Math.max(0.25, 1 - d / 120) }), Math.min(3000, d * 8));
+    const p = this.player;
+    if (Math.hypot(p.x - x, p.y - y, p.z - z) < 3) p.damage(5, null, 'lightning');
+    for (const e of this.entities.list) if (e.damage && Math.hypot(e.x - x, e.y - y, e.z - z) < 3) e.damage(5, null);
+  }
   newChest() {
     return newChest();
   }
 
-  dropBlockItems(x, y, z, id) {
+  dropBlockItems(x, y, z, id, meta = 0) {
     const b = BLOCKS[id];
     if (!b) return;
     const spawn = (iid, n = 1) => this.entities.spawnItem(x + 0.5, y + 0.5, z + 0.5, iid, n);
+    if (id === B.WHEAT) {
+      if (meta >= 7) {
+        spawn(I.WHEAT_ITEM, 1);
+        spawn(I.SEEDS, 1 + Math.floor(Math.random() * 3));
+      } else spawn(I.SEEDS, 1);
+      return;
+    }
+    if (id === B.TALL_GRASS) {
+      if (Math.random() < 0.125) spawn(I.SEEDS, 1);
+      return;
+    }
+    if (id === B.GRAVEL && Math.random() < 0.1) return spawn(I.FLINT, 1);
+    if (id === B.DOOR) return meta & 8 ? undefined : spawn(I.DOOR_ITEM, 1);
+    if (id === B.BED) return spawn(I.BED_ITEM, 1);
+    if (id === B.SNOW_LAYER) return;
     if (id === B.LEAVES || id === B.BIRCH_LEAVES || id === B.SPRUCE_LEAVES) {
       if (Math.random() < 0.06) spawn(B.SAPLING);
       if (id === B.LEAVES && Math.random() < 0.01) spawn(I.APPLE);
@@ -459,12 +563,23 @@ class Game {
       }
       case 'spawn':
       case 'summon': {
-        const map = { porco: 'pig', pig: 'pig', ovelha: 'sheep', sheep: 'sheep', vaca: 'cow', cow: 'cow', zumbi: 'zombie', zombie: 'zombie', creeper: 'creeper' };
+        const map = {
+          porco: 'pig', pig: 'pig', ovelha: 'sheep', sheep: 'sheep', vaca: 'cow', cow: 'cow', zumbi: 'zombie', zombie: 'zombie', creeper: 'creeper',
+          galinha: 'chicken', chicken: 'chicken', esqueleto: 'skeleton', skeleton: 'skeleton', aranha: 'spider', spider: 'spider',
+        };
         const type = map[(args[0] || '').toLowerCase()];
-        if (!type) return err('Uso: /spawn porco|ovelha|vaca|zumbi|creeper');
+        if (!type) return err('Uso: /spawn porco|ovelha|vaca|galinha|zumbi|esqueleto|aranha|creeper');
         const d = p.lookDir();
         this.entities.spawnMob(type, p.x + d[0] * 3, p.y + 0.5, p.z + d[2] * 3);
         return ok(`Criado: ${args[0]}`);
+      }
+      case 'weather':
+      case 'clima': {
+        const a = (args[0] || '').toLowerCase();
+        const kind = { clear: 'clear', limpo: 'clear', sol: 'clear', rain: 'rain', chuva: 'rain', thunder: 'thunder', tempestade: 'thunder' }[a];
+        if (!kind) return err('Uso: /weather clear|rain|thunder');
+        w.setWeather(kind);
+        return ok(`Clima: ${{ clear: 'limpo', rain: 'chuva', thunder: 'tempestade' }[kind]}`);
       }
       case 'seed':
         return ok(`Semente: ${w.seed}`);
@@ -476,7 +591,7 @@ class Game {
         return ok('Ponto de nascimento definido');
       case 'help':
       case 'ajuda':
-        return ok('/gamemode, /time set, /tp, /give, /spawn, /seed, /kill, /spawnpoint');
+        return ok('/gamemode, /time set, /weather, /tp, /give, /spawn, /seed, /kill, /spawnpoint');
       default:
         return err('Comando desconhecido. Digite /help');
     }
@@ -524,6 +639,15 @@ class Game {
     document.getElementById('opt-bob').textContent = `Balanço da visão: ${s.bob ? 'Sim' : 'Não'}`;
     document.getElementById('opt-gui').textContent = `Tamanho da interface: ${s.guiScale ? s.guiScale : 'Auto'}`;
     document.getElementById('opt-fps').textContent = `Mostrar FPS: ${s.fps ? 'Sim' : 'Não'}`;
+    const q = QUALITY[s.graphics] || QUALITY.medium;
+    document.getElementById('opt-graphics').textContent = `Gráficos: ${q.label}`;
+    const desc = {
+      low: 'Mais leve: menos pixels, folhas opacas e sem nuvens. Bom para celulares.',
+      medium: 'Visual clássico, com nuvens em blocos.',
+      high: 'Sombras do sol, água com reflexos e ondas, plantas e folhas balançando ao vento, brilho (bloom).',
+      ultra: 'Texturas realistas em alta resolução com relevo, sombras suaves, céu com nuvens realistas, raios de sol, folhas caindo e animações realistas dos personagens. Exige uma boa placa de vídeo.',
+    };
+    document.getElementById('graphics-desc').textContent = desc[s.graphics] || '';
   }
 
   showScreen(id) {
@@ -622,6 +746,11 @@ class Game {
       case 'opt-gui':
         this.settings.guiScale = (this.settings.guiScale + 1) % 5;
         break;
+      case 'opt-graphics': {
+        const i = QUALITY_ORDER.indexOf(this.settings.graphics);
+        this.settings.graphics = QUALITY_ORDER[(i + 1) % QUALITY_ORDER.length];
+        break;
+      }
       case 'opt-fps':
         this.settings.fps = !this.settings.fps;
         break;
@@ -709,8 +838,24 @@ class Game {
       inv.selected = (((inv.selected + wheel) % 9) + 9) % 9;
       inv.changed();
     }
+    if (this.sleeping) {
+      st.moveX = st.moveY = 0;
+      st.attack = st.use = st.usePressed = st.attackPressed = false;
+    }
     p.tick(st);
     this.world.tick(p.x, p.z);
+    // folhas caindo das árvores (gráficos Alto e ULTRA)
+    if (this.quality && this.quality.fallingLeaves) {
+      for (let k = 0; k < 14; k++) {
+        const x = Math.floor(p.x + (Math.random() - 0.5) * 28), y = Math.floor(p.y + (Math.random() - 0.3) * 16), z = Math.floor(p.z + (Math.random() - 0.5) * 28);
+        const id = this.world.getBlock(x, y, z);
+        if ((id === B.LEAVES || id === B.BIRCH_LEAVES) && this.world.getBlock(x, y - 1, z) === B.AIR && Math.random() < 0.08) {
+          const c = this.world.getChunk(x >> 4, z >> 4);
+          const tint = id === B.LEAVES && c ? FOLIAGE_TINT[c.biomes[(z & 15) * 16 + (x & 15)]] : [1.1, 1.1, 0.9];
+          this.particles.leaf(x + Math.random(), y - 0.05, z + Math.random(), tint, this.brightnessAt(x + 0.5, y - 0.5, z + 0.5));
+        }
+      }
+    }
     // fornalhas
     for (const [key, t] of this.world.tileEntities) {
       if (t.slots) continue;
@@ -776,10 +921,12 @@ class Game {
     cam.position.set(pan.x, pan.y, pan.z);
     cam.rotation.order = 'YXZ';
     cam.rotation.set(-0.15, pan.t * 0.04, 0);
+    this.renderer.weather.rain = 0;
+    this.weatherFx.update(dt, null, cam, 0, this.particles, false);
     const env = this.renderer.updateEnvironment(w, cam, { clouds: this.settings.clouds });
     this.envLight = { skyDarken: (1 - env.daylight) * 11 };
     this.particles.update(dt, w, cam, window.innerHeight, this.renderer.uniforms.uFogColor.value, this.renderer.uniforms.uFogFar.value);
-    this.renderer.render();
+    this.renderer.render(null, null, new THREE.Vector3(pan.x, pan.y - 12, pan.z));
   }
 
   frameLoading() {
@@ -865,7 +1012,8 @@ class Game {
       else cam.rotation.set(-p.pitch, p.yaw + Math.PI, -roll);
     }
     const fovMod = p.prevFovMod + (p.fovMod - p.prevFovMod) * a;
-    const fov = s.fov * fovMod * (p.eyesInWater ? 0.92 : 1);
+    const pull = p.bowCharge > 0 ? Math.min(1, (p.bowCharge + a) / 20) : 0;
+    const fov = s.fov * fovMod * (p.eyesInWater ? 0.92 : 1) * (1 - pull * pull * 0.15);
     if (Math.abs(cam.fov - fov) > 0.01) {
       cam.fov = fov;
       cam.updateProjectionMatrix();
@@ -908,8 +1056,10 @@ class Game {
         age: p.ticks + a,
         eating: p.eatTicks > 0 ? p.eatTicks + a : 0,
         death: p.dead ? Math.min(20, (p.deathAnim || 0) * 20) : 0,
+        aim: pull > 0,
       });
       pm.setLight(brightnessAt(w, x, y + 1, z, envL.skyDarken, gamma), p.hurtTime > 0);
+      pm.root.traverse((o) => o.layers.enable(2));
     }
     this.entities.render(a, envL);
     this.particles.update(dt, w, cam, window.innerHeight, r.uniforms.uFogColor.value, r.uniforms.uFogFar.value);
@@ -925,6 +1075,7 @@ class Game {
       const swayX = Math.max(-0.08, Math.min(0.08, (p.yaw - this.sway.yaw) * 0.12));
       const swayY = Math.max(-0.08, Math.min(0.08, -(p.pitch - this.sway.pitch) * 0.12));
       v.update({
+        bowPull: pull,
         swing, equip, light: L,
         bobX: Math.sin(walk * Math.PI) * bob * 0.5,
         bobY: -Math.abs(Math.cos(walk * Math.PI) * bob),
@@ -933,8 +1084,9 @@ class Game {
       });
       vm = v;
     }
-    if (vm) r.render(vm.scene, vm.camera);
-    else r.render();
+    const shadowCenter = new THREE.Vector3(x, y + 1, z);
+    if (vm) r.render(vm.scene, vm.camera, shadowCenter);
+    else r.render(null, null, shadowCenter);
 
     // HUD
     const hud = document.getElementById('hud');
@@ -953,6 +1105,14 @@ class Game {
         dbg.innerHTML = `<span>${this.fps} fps</span>`;
       } else document.getElementById('debug').classList.add('hidden');
     }
+    // clima: chuva, neve e raios
+    const rain = w.weather.rain;
+    r.weather.rain = rain;
+    this.weatherFx.update(dt, w, cam, rain, this.particles, this.quality && this.quality.post);
+    r.weather.flash = this.weatherFx.flash;
+    const roof = (w.getLight(Math.floor(p.x), Math.floor(p.y + 1.6), Math.floor(p.z)) >> 4) / 15;
+    this.audio.setRain(rain * (0.25 + 0.75 * roof));
+    this.updateSleep(dt);
     // ouvinte do áudio
     Object.assign(this.audio.listener, { x: p.x, y: p.y + 1.6, z: p.z, yaw: p.yaw });
   }

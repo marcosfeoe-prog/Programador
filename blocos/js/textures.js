@@ -12,6 +12,7 @@ atlasCanvas.width = atlasCanvas.height = SIZE;
 const actx = atlasCanvas.getContext('2d', { willReadFrequently: true });
 const tileIndex = new Map();
 const tileCanvases = new Map();
+const tileImages = new Map(); // pixels de cada textura (para não ler o canvas de volta)
 let nextTile = 0;
 
 // ---------- utilidades de cor ----------
@@ -97,6 +98,7 @@ function registerTile(name, painter) {
   const x = (idx % COLS) * T, y = Math.floor(idx / COLS) * T;
   actx.putImageData(painter.img, x, y);
   tileCanvases.set(name, painter.canvas());
+  tileImages.set(name, painter.img);
 }
 
 function tile(name, fn, seed) {
@@ -122,6 +124,9 @@ export function tileUV(name) {
   uv = [cx / COLS + e, 1 - (cy + 1) / COLS + e, (cx + 1) / COLS - e, 1 - cy / COLS - e];
   uvCache.set(name, uv);
   return uv;
+}
+export function tileImageData(name) {
+  return tileImages.get(name).data;
 }
 export function tileCanvas(name) {
   return tileCanvases.get(name);
@@ -569,6 +574,124 @@ function buildTiles() {
   tile('chest_side', (p) => chest(p, 'side'));
   tile('chest_front', (p) => chest(p, 'front'));
 
+
+  // ---------- blocos novos ----------
+  const farm = (p, wet) => {
+    p.fill((x, y) => {
+      const ridge = y % 4 === 0 || y % 4 === 3;
+      const base = wet ? [74, 48, 30] : [118, 82, 54];
+      return shade(base, (ridge ? 0.82 : 1.0) + (p.rnd() - 0.5) * 0.16);
+    });
+  };
+  tile('farmland', (p) => farm(p, false));
+  tile('farmland_wet', (p) => farm(p, true));
+  for (let st = 0; st < 8; st++) {
+    tile('wheat_' + st, (p) => {
+      p.fill(() => [0, 0, 0, 0]);
+      const h = 3 + Math.round((st / 7) * 12);
+      const green = mix([70, 140, 40], [190, 165, 70], st / 7);
+      for (const sx of [2, 5, 8, 11, 13]) {
+        let x = sx + 0.5;
+        for (let k = 0; k < h; k++) {
+          const yy = 15 - k;
+          p.set(Math.round(x), yy, shade(green, 0.8 + (k / h) * 0.3));
+          x += (p.rnd() - 0.5) * 0.4;
+        }
+        if (st >= 5) for (let k = 0; k < 3; k++) p.set(Math.round(x) + (k % 2), 15 - h + k, st === 7 ? [210, 180, 80] : [170, 160, 70]);
+      }
+    });
+  }
+  tile('ladder', (p) => {
+    p.fill((x, y) => {
+      if (x === 2 || x === 3 || x === 12 || x === 13) return shade([140, 106, 60], x % 2 ? 0.85 : 1.05);
+      if ((y === 2 || y === 6 || y === 10 || y === 14) && x > 3 && x < 12) return shade([160, 124, 72], 1 - (y === 14 ? 0.1 : 0));
+      if ((y === 3 || y === 7 || y === 11 || y === 15) && x > 3 && x < 12) return [96, 70, 40];
+      return [0, 0, 0, 0];
+    });
+  });
+  const door = (p, top) => {
+    paintPlanks(p, [150, 116, 66]);
+    p.fill((x, y) => {
+      if (x === 0 || x === 15 || (top ? y === 0 : y === 15)) return [92, 66, 36];
+      if (top && y > 2 && y < 12 && x > 2 && x < 13) {
+        if (x === 7 || x === 8 || y === 7) return [110, 82, 46];
+        return [0, 0, 0, 0];
+      }
+      if (!top && (x === 3 || x === 12) && y > 1 && y < 14) return [116, 86, 48];
+      if (!top && x === 13 && (y === 1)) return [60, 60, 60];
+      return null;
+    });
+    if (top) { p.set(12, 14, [70, 70, 70]); p.set(12, 15, [70, 70, 70]); }
+  };
+  tile('door_bottom', (p) => door(p, false));
+  tile('door_top', (p) => door(p, true));
+  tile('bed_top_foot', (p) => p.fill((x, y) => (x === 0 || x === 15 ? [130, 22, 22] : shade([178, 30, 30], 0.92 + p.rnd() * 0.12 - (y % 5 === 0 ? 0.08 : 0)))));
+  tile('bed_top_head', (p) => p.fill((x, y) => {
+    if (y < 7 && x > 1 && x < 14) return shade([236, 236, 236], 0.95 + p.rnd() * 0.06 - (y === 6 ? 0.1 : 0));
+    return x === 0 || x === 15 ? [130, 22, 22] : shade([178, 30, 30], 0.92 + p.rnd() * 0.12);
+  }));
+  tile('bed_side', (p) => p.fill((x, y) => {
+    if (y < 3) return [0, 0, 0, 0];
+    if (y < 9) return shade([168, 28, 28], 0.9 + p.rnd() * 0.12);
+    if (y < 12) return shade([150, 116, 66], 0.9 + p.rnd() * 0.1);
+    return x < 3 || x > 12 ? [110, 82, 46] : [0, 0, 0, 0];
+  }));
+  tile('red_mushroom', (p) => {
+    p.fill(() => [0, 0, 0, 0]);
+    for (let y = 9; y < 15; y++) { p.set(7, y, [226, 214, 196]); p.set(8, y, [200, 190, 170]); }
+    for (let y = 4; y < 9; y++) for (let x = 3; x < 13; x++) {
+      const d = ((x - 7.5) / 5) ** 2 + ((y - 8.5) / 4.5) ** 2;
+      if (d < 1) p.set(x, y, (x * 3 + y * 5) % 7 === 0 ? [240, 240, 240] : shade([210, 30, 30], 1 - (y - 4) * 0.05));
+    }
+  });
+  tile('brown_mushroom', (p) => {
+    p.fill(() => [0, 0, 0, 0]);
+    for (let y = 10; y < 15; y++) { p.set(7, y, [216, 204, 186]); p.set(8, y, [190, 180, 160]); }
+    for (let y = 7; y < 11; y++) for (let x = 4; x < 12; x++) {
+      const d = ((x - 7.5) / 4) ** 2 + ((y - 10) / 3) ** 2;
+      if (d < 1) p.set(x, y, shade([150, 110, 80], 1.05 - (y - 7) * 0.06));
+    }
+  });
+  const stoneBricks = (p) => {
+    paintStone(p, [122, 122, 122]);
+    p.fill((x, y) => {
+      if (y === 7 || y === 15) return [72, 72, 72];
+      if ((y < 7 && x === 15) || (y > 7 && x === 7)) return [72, 72, 72];
+      if (y === 0 || y === 8) return [150, 150, 150];
+      return null;
+    });
+  };
+  tile('mossy_stone_bricks', (p) => {
+    stoneBricks(p);
+    const n = p.vnoise(4);
+    p.fill((x, y) => (n(x, y) > 0.55 ? shade([84, 118, 62], 0.85 + p.rnd() * 0.3) : null));
+  });
+  tile('cracked_stone_bricks', (p) => {
+    stoneBricks(p);
+    let x = 3, y = 0;
+    while (y < 16) { p.set(x, y, [50, 50, 50]); y++; x += p.rnd() < 0.4 ? 1 : p.rnd() < 0.3 ? -1 : 0; }
+    x = 11; y = 8;
+    while (y < 16) { p.set(x, y, [50, 50, 50]); y++; x += p.rnd() < 0.5 ? -1 : 0; }
+  });
+  tile('hay_top', (p) => p.fill((x, y) => {
+    const d = Math.hypot(x - 7.5, y - 7.5);
+    return shade([196, 160, 40], 0.85 + (Math.floor(d * 1.5) % 2) * 0.12 + (p.rnd() - 0.5) * 0.1);
+  }));
+  tile('hay_side', (p) => p.fill((x, y) => {
+    if (y === 3 || y === 12) return [120, 70, 30];
+    return shade([200, 165, 45], 0.82 + ((x * 7 + y) % 5) * 0.05 + (p.rnd() - 0.5) * 0.1);
+  }));
+  // folhas opacas (gráficos baixos)
+  for (const n of ['leaves', 'birch_leaves', 'spruce_leaves']) {
+    const src = tileImages.get(n).data;
+    tile(n + '_opaque', (p) => p.fill((x, y) => {
+      const i = (y * 16 + x) * 4;
+      return src[i + 3] ? [src[i], src[i + 1], src[i + 2]] : shade([src[i] || 40, src[i + 1] || 80, src[i + 2] || 30], 0.35);
+    }));
+  }
+  tile('particle_rain', (p) => p.fill((x, y) => (x >= 7 && x <= 8 ? [170, 190, 255, 220] : [0, 0, 0, 0])));
+  tile('particle_leaf', (p) => p.fill((x, y) => (Math.hypot(x - 7.5, (y - 7.5) * 1.6) < 6 ? [255, 255, 255, 255] : [0, 0, 0, 0])));
+
   // partículas
   tile('particle_smoke', (p) => {
     p.fill((x, y) => {
@@ -651,6 +774,9 @@ function toolShape(type) {
     if (type === 'axe') {
       if (a >= 10 && a <= 16.5 && b <= -0.5 && b >= -5.6 + Math.abs(a - 13.2) * 0.35) return b < -4.5 ? 'L' : 'M';
     }
+    if (type === 'hoe') {
+      if (a >= 13.6 && a <= 16 && b <= 0.8 && b >= -5) return b < -3.8 ? 'L' : 'M';
+    }
     if (type === 'shovel') {
       const e = ((a - 15) / 4) ** 2 + (b / 2.6) ** 2;
       if (e <= 1) return b < -1 ? 'L' : 'M';
@@ -726,8 +852,81 @@ function buildIcons() {
     }
     for (const x of [4, 7, 10]) p.set(x, 7, [240, 200, 120]);
   });
+
+  icon('seeds', (p) => {
+    for (const [x, y] of [[5, 6], [9, 5], [7, 9], [11, 9], [4, 10], [8, 12], [10, 7]]) { p.set(x, y, [90, 150, 50]); p.set(x + 1, y, [60, 110, 30]); }
+  });
+  icon('wheat', (p) => {
+    for (let i = 0; i < 9; i++) { p.set(4 + i, 13 - i, [150, 120, 50]); }
+    for (let k = 0; k < 5; k++) for (const [dx, dy] of [[0, 0], [1, 0], [0, 1]]) p.set(9 + dx + (k % 2), 2 + k * 2 + dy - (k > 2 ? 1 : 0), [220, 190, 80]);
+    for (let k = 0; k < 4; k++) p.set(11 + (k % 2), 3 + k * 2, [240, 220, 120]);
+  });
+  icon('bone', (p) => {
+    for (let i = 0; i < 9; i++) { p.set(4 + i, 11 - i, [235, 232, 220]); p.set(5 + i, 11 - i, [210, 206, 190]); }
+    for (const [x, y] of [[2, 11], [3, 13], [3, 12], [13, 2], [12, 3], [14, 3], [13, 4], [4, 13]]) p.set(x, y, [235, 232, 220]);
+  });
+  icon('bone_meal', (p) => blob(p, 8, 9, 5, 4, [235, 235, 230], [255, 255, 255]));
+  icon('arrow', (p) => {
+    for (let i = 0; i < 10; i++) p.set(3 + i, 12 - i, [120, 90, 50]);
+    for (const [x, y] of [[12, 3], [13, 2], [13, 3], [12, 2], [11, 2], [13, 4]]) p.set(x, y, [200, 200, 200]);
+    for (const [x, y] of [[2, 12], [3, 13], [2, 13], [4, 13], [2, 11], [1, 13]]) p.set(x, y, [240, 240, 240]);
+  });
+  const bow = (p, pull) => {
+    for (let t = 0; t <= 20; t++) {
+      const a = (t / 20) * Math.PI;
+      const x = Math.round(8 + Math.cos(a - Math.PI / 4) * 0 + (t - 10) * 0.55 + 0), y = Math.round(8 - (t - 10) * 0.55);
+      const bend = Math.sin(a) * (3.2 - pull);
+      p.set(Math.round(x - bend * 0.7), Math.round(y - bend * 0.7), t % 4 === 0 ? [80, 56, 30] : [130, 96, 54]);
+    }
+    for (let t = 0; t <= 14; t++) p.set(Math.round(2.5 + t * 0.78 + pull * 0.6), Math.round(13.5 - t * 0.78 + pull * 0.6), [220, 220, 220]);
+  };
+  icon('bow', (p) => bow(p, 0));
+  const bucket = (p, fill) => {
+    for (let y = 5; y < 14; y++) {
+      const w = 5 - (y - 5) * 0.25;
+      for (let x = Math.round(8 - w); x <= Math.round(7 + w); x++) p.set(x, y, shade([190, 190, 196], 1.1 - (x - 3) * 0.04));
+    }
+    for (let x = 3; x <= 12; x++) p.set(x, 5, fill || [70, 70, 76]);
+    for (let x = 4; x <= 11; x++) p.set(x, 6, fill ? shade(fill, 0.85) : [90, 90, 96]);
+    for (let x = 4; x <= 11; x++) if (x < 5 || x > 10) p.set(x, 2 + Math.round(Math.abs(x - 7.5) * 0.3), [150, 150, 156]);
+    for (let x = 5; x <= 10; x++) p.set(x, 2, [150, 150, 156]);
+  };
+  icon('bucket', (p) => bucket(p, null));
+  icon('water_bucket', (p) => bucket(p, [60, 100, 230]));
+  icon('lava_bucket', (p) => bucket(p, [240, 120, 20]));
+  icon('chicken', (p) => { blob(p, 8, 8.5, 5.5, 4.5, [235, 190, 170], [250, 220, 210]); blob(p, 3.5, 12, 1.5, 1.6, [240, 235, 220], null); });
+  icon('cooked_chicken', (p) => { blob(p, 8, 8.5, 5.5, 4.5, [190, 120, 60], [220, 160, 90]); blob(p, 3.5, 12, 1.5, 1.6, [240, 235, 220], null); });
+  icon('feather', (p) => {
+    for (let i = 0; i < 11; i++) {
+      const x = 3 + i, y = 13 - i;
+      p.set(x, y, [200, 200, 200]);
+      if (i > 2) { p.set(x - 1, y - 1, [245, 245, 245]); p.set(x + 1, y + 1, [230, 230, 230]); p.set(x - 2, y - 1, [250, 250, 250]); }
+    }
+  });
+  icon('string', (p) => {
+    let x = 3, y = 12;
+    for (let i = 0; i < 14; i++) { p.set(x, y, [230, 230, 230]); x += 0.75; y -= Math.sin(i * 0.9) * 0.9 + 0.3; x = Math.min(13, x); y = Math.max(2, y); }
+  });
+  icon('flint', (p) => blob(p, 8, 8, 4.5, 5.5, [60, 60, 66], [120, 120, 130]));
+  icon('gunpowder', (p) => {
+    blob(p, 8, 10, 6, 3.5, [80, 80, 80], null);
+    for (let i = 0; i < 18; i++) p.set(3 + ((p.rnd() * 10) | 0), 7 + ((p.rnd() * 6) | 0), [p.rnd() < 0.5 ? 50 : 120, 50, 50]);
+  });
+  icon('egg', (p) => blob(p, 8, 9, 4, 5, [230, 214, 180], [250, 245, 230]));
+  icon('door', (p) => {
+    for (let y = 1; y < 15; y++) for (let x = 4; x < 12; x++) {
+      const edge = x === 4 || x === 11 || y === 1 || y === 14 || y === 7;
+      const win = y > 1 && y < 7 && x > 4 && x < 11 && x !== 7 && y !== 4;
+      if (!win) p.set(x, y, edge ? [100, 72, 40] : [150, 116, 66]);
+    }
+    p.set(10, 9, [60, 60, 60]);
+  });
+  icon('bed', (p) => {
+    for (let y = 6; y < 11; y++) for (let x = 1; x < 15; x++) p.set(x, y, x < 5 && y < 9 ? [240, 240, 240] : y < 9 ? [190, 30, 30] : [150, 116, 66]);
+    for (const x of [1, 2, 13, 14]) for (let y = 11; y < 13; y++) p.set(x, y, [110, 82, 46]);
+  });
   for (const [mat, m] of Object.entries(TOOL_MATERIALS)) {
-    for (const type of ['pickaxe', 'axe', 'shovel', 'sword']) icon(`${mat}_${type}`, (p) => paintTool(p, type, m.colors));
+    for (const type of ['pickaxe', 'axe', 'shovel', 'sword', 'hoe']) icon(`${mat}_${type}`, (p) => paintTool(p, type, m.colors));
   }
 }
 
@@ -754,8 +953,17 @@ export function renderIconCanvas(id, size = 48) {
     return c;
   }
   const b = BLOCKS[id];
-  if (b.render === 'cross' || b.render === 'torch') {
+  if (['cross', 'torch', 'crop', 'ladder', 'door'].includes(b.render)) {
     ctx.drawImage(tileCanvas(b.tex), 0, 0, size, size);
+    return c;
+  }
+  if (b.render === 'bed') {
+    ctx.drawImage(itemIcons.get('bed').canvas(), 0, 0, size, size);
+    return c;
+  }
+  if (b.render === 'fence') {
+    const t = tileCanvas('planks');
+    for (const [x, y, w, h] of [[10, 4, 7, 40], [31, 4, 7, 40], [4, 12, 40, 5], [4, 26, 40, 5]]) ctx.drawImage(t, 0, 0, 16, 16, (x * size) / 48, (y * size) / 48, (w * size) / 48, (h * size) / 48);
     return c;
   }
   const f = blockFaces(id);
@@ -770,10 +978,13 @@ export function renderIconCanvas(id, size = 48) {
     }
     ctx.restore();
   };
-  const k = 22 / 16, h = 11 / 16, v = 23 / 16;
-  face(f.side, [k, h, 0, v, 2, 13], 0.22);
-  face(b.oriented ? f.front : f.side, [k, -h, 0, v, 24, 24], 0.42);
-  face(f.top, [k, -h, k, h, 2, 13], 0);
+  const k = 22 / 16, h = 11 / 16;
+  // lajes e camadas: cubo achatado
+  const frac = b.render === 'slab' ? 0.5 : b.render === 'layer' ? 0.125 : 1;
+  const v = (23 / 16) * frac, drop = 22 * (1 - frac);
+  face(f.side, [k, h, 0, v, 2, 13 + drop], 0.22);
+  face(b.oriented ? f.front : f.side, [k, -h, 0, v, 24, 24 + drop], 0.42);
+  face(f.top, [k, -h, k, h, 2, 13 + drop], 0);
   return c;
 }
 export function iconDataURL(id) {
@@ -811,3 +1022,9 @@ export function canvasTexture(canvas) {
 }
 
 export { Painter, hex, mix };
+
+// lista de texturas registradas: [nome, índice]
+export function tileEntries() {
+  return [...tileIndex.entries()];
+}
+export const ATLAS_COLS = COLS;

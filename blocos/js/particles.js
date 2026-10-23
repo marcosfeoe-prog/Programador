@@ -37,7 +37,11 @@ export class Particles {
     this.list = [];
   }
 
+  setAtlas(t) {
+    this.mat.uniforms.uAtlas.value = t;
+  }
   add(p) {
+    if (this.density !== undefined && this.density < 1 && !p.keep && Math.random() > this.density) return;
     if (this.list.length >= MAX) this.list.shift();
     this.list.push(p);
   }
@@ -101,6 +105,19 @@ export class Particles {
   splash(x, y, z, n = 12) {
     for (let i = 0; i < n; i++) this.add({ x: x + (Math.random() - 0.5), y, z: z + (Math.random() - 0.5), vx: (Math.random() - 0.5) * 2, vy: 2 + Math.random() * 3, vz: (Math.random() - 0.5) * 2, life: 0.5 + Math.random() * 0.4, uv: this.subTile('water'), size: 0.06, color: [0.6, 0.75, 1], gravity: 16, collide: true });
   }
+  rainSplash(x, y, z) {
+    const uv = this.subTile('water');
+    for (let i = 0; i < 2; i++) this.add({ x, y, z, vx: (Math.random() - 0.5) * 1.5, vy: 1.5 + Math.random() * 1.5, vz: (Math.random() - 0.5) * 1.5, life: 0.25 + Math.random() * 0.2, uv, size: 0.04, color: [0.7, 0.8, 1], gravity: 14 });
+  }
+  happy(x, y, z) {
+    const uv = tileUV('particle_smoke');
+    this.add({ x, y, z, vx: (Math.random() - 0.5) * 0.4, vy: 0.4 + Math.random() * 0.4, vz: (Math.random() - 0.5) * 0.4, life: 0.8 + Math.random() * 0.6, uv, size: 0.07, color: [0.4, 1, 0.4], gravity: 0, shrink: true, keep: true });
+  }
+  // folha caindo: balança de um lado para o outro
+  leaf(x, y, z, tint, bright) {
+    const uv = this.subTile('leaves');
+    this.add({ x, y, z, vx: 0, vy: -0.6, vz: 0, life: 5 + Math.random() * 3, uv, size: 0.09, color: tint.map((c) => c * bright), gravity: 0, flutter: Math.random() * 6, collide: true });
+  }
   bubble(x, y, z) {
     const uv = tileUV('particle_smoke');
     this.add({ x, y, z, vx: (Math.random() - 0.5) * 0.3, vy: 1.2, vz: (Math.random() - 0.5) * 0.3, life: 0.6 + Math.random() * 0.6, uv, size: 0.05, color: [0.7, 0.85, 1], gravity: 0 });
@@ -114,6 +131,12 @@ export class Particles {
       p.life -= dt;
       if (p.life <= 0) continue;
       p.vy -= p.gravity * dt;
+      if (p.flutter !== undefined) {
+        p.flutter += dt;
+        p.vx = Math.sin(p.flutter * 2.1) * 0.7;
+        p.vz = Math.cos(p.flutter * 1.3) * 0.5;
+        p.vy = -0.5 - Math.abs(Math.sin(p.flutter * 2.1)) * 0.4;
+      }
       if (p.drag) {
         const d = Math.pow(p.drag, dt * 20);
         p.vx *= d;

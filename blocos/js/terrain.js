@@ -152,6 +152,7 @@ export class Terrain {
       // grama sem nada acima depois de cavernas: se o topo foi escavado, nada a fazer
     }
     this.decorate(chunk);
+    this.undergroundFeatures(chunk);
   }
 
   ore(x, y, z) {
@@ -255,6 +256,7 @@ export class Terrain {
         } else if (biome === BIOME.PLAINS ? r < 0.2 : r < 0.07) setLocal(wx, h + 1, wz, B.TALL_GRASS, true);
         else if (r < (biome === BIOME.PLAINS ? 0.215 : 0.08)) setLocal(wx, h + 1, wz, hash2(seed + 43, wx, wz) < 0.6 ? B.DANDELION : B.POPPY, true);
         else if (biome === BIOME.PLAINS && r > 0.9993) setLocal(wx, h + 1, wz, B.PUMPKIN, true);
+        else if ((biome === BIOME.FOREST || biome === BIOME.BIRCH_FOREST) && r > 0.996) setLocal(wx, h + 1, wz, r > 0.998 ? B.RED_MUSHROOM : B.BROWN_MUSHROOM, true);
       } else if (ground === B.SAND && biome === BIOME.DESERT) {
         if (r < 0.004 && h + 3 < CH) {
           let free = true;
@@ -271,6 +273,49 @@ export class Terrain {
         const n = 1 + Math.floor(hash2(seed + 42, wx, wz) * 3);
         for (let k = 1; k <= n; k++) setLocal(wx, h + k, wz, B.SUGAR_CANE, true);
       }
+    }
+  }
+
+  // Cogumelos no chão das cavernas e masmorras com baús
+  undergroundFeatures(chunk) {
+    const { blocks, meta } = chunk;
+    const x0 = chunk.cx * CS, z0 = chunk.cz * CS;
+    const seed = this.seed;
+    for (let z = 0; z < CS; z++) for (let x = 0; x < CS; x++) {
+      const h = chunk.heights[z * CS + x];
+      for (let y = 6; y < h - 3; y++) {
+        const i = idx(x, y, z);
+        if (blocks[i] !== B.AIR || blocks[idx(x, y - 1, z)] !== B.STONE) continue;
+        const r = hash3(seed + 51, x0 + x, y, z0 + z);
+        if (r < 0.012) blocks[i] = r < 0.008 ? B.BROWN_MUSHROOM : B.RED_MUSHROOM;
+      }
+    }
+    // masmorra: sala de pedregulho musgoso com 1 ou 2 baús
+    const r = hash2(seed + 61, chunk.cx, chunk.cz);
+    if (r > 0.1) return;
+    const cx = 4 + Math.floor(hash2(seed + 62, chunk.cx, chunk.cz) * 8);
+    const cz = 4 + Math.floor(hash2(seed + 63, chunk.cx, chunk.cz) * 8);
+    const minH = Math.min(chunk.heights[cz * CS + cx], 60);
+    if (minH < 24) return;
+    const cy = 12 + Math.floor(hash2(seed + 64, chunk.cx, chunk.cz) * (minH - 24));
+    // precisa estar em rocha (não no meio de uma caverna grande)
+    let air = 0;
+    for (let dy = -1; dy <= 4; dy++) for (let dz = -3; dz <= 3; dz++) for (let dx = -3; dx <= 3; dx++) if (blocks[idx(cx + dx, cy + dy, cz + dz)] === B.AIR) air++;
+    if (air > 40) return;
+    for (let dy = -1; dy <= 4; dy++) for (let dz = -3; dz <= 3; dz++) for (let dx = -3; dx <= 3; dx++) {
+      const i = idx(cx + dx, cy + dy, cz + dz);
+      const wall = Math.abs(dx) === 3 || Math.abs(dz) === 3 || dy === -1 || dy === 4;
+      if (wall) {
+        if (blocks[i] === B.AIR && dy !== -1) continue; // deixa aberturas onde já havia caverna
+        blocks[i] = hash3(seed + 65, x0 + cx + dx, cy + dy, z0 + cz + dz) < 0.4 ? B.MOSSY_COBBLE : B.COBBLE;
+      } else blocks[i] = B.AIR;
+    }
+    const chests = 1 + (hash2(seed + 66, chunk.cx, chunk.cz) < 0.4 ? 1 : 0);
+    const spots = [[0, -2, 0], [0, 2, 2], [-2, 0, 3], [2, 0, 1]];
+    for (let k = 0; k < chests; k++) {
+      const [dx, dz, m] = spots[(Math.floor(r * 100) + k) % 4];
+      blocks[idx(cx + dx, cy, cz + dz)] = B.CHEST;
+      meta[idx(cx + dx, cy, cz + dz)] = m;
     }
   }
 

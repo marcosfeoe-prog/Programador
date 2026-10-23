@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { B, BLOCKS, info } from './blocks.js';
 import { moveBox, liquidIn } from './physics.js';
-import { HumanoidModel, QuadrupedModel, CreeperModel, heldItemMesh } from './models.js';
+import { HumanoidModel, QuadrupedModel, CreeperModel, ChickenModel, SpiderModel, arrowMesh, heldItemMesh } from './models.js';
 import { blockItemGeometry } from './mesher.js';
 import { OPAQUE, SOLID, LIQUID } from './world.js';
 import { CH } from './consts.js';
@@ -197,13 +197,121 @@ class PrimedTNT extends Entity {
   }
 }
 
+// ---------- flechas ----------
+class Arrow extends Entity {
+  constructor(game, x, y, z, vx, vy, vz, shooter, crit) {
+    super(game, x, y, z, 0.1, 0.1);
+    this.vx = vx;
+    this.vy = vy;
+    this.vz = vz;
+    this.shooter = shooter;
+    this.fromPlayer = shooter === game.player;
+    this.crit = crit;
+    this.stuck = false;
+    this.object = arrowMesh();
+  }
+  tick() {
+    this.savePrev();
+    this.age++;
+    const game = this.game;
+    if (this.stuck) {
+      if (this.age > 1200) this.remove();
+      // o jogador recolhe as próprias flechas
+      const p = game.player;
+      if (this.fromPlayer && this.age > 10 && Math.hypot(p.x - this.x, p.y + 0.8 - this.y, p.z - this.z) < 1.3) {
+        if (p.mode === 'creative' || !p.inventory.add(274, 1)) {
+          game.audio.play('pop');
+          this.remove();
+        }
+      }
+      // bloco removido: cai
+      if (!game.world.isSolid(Math.floor(this.sx), Math.floor(this.sy), Math.floor(this.sz))) this.stuck = false;
+      return;
+    }
+    const sp = Math.hypot(this.vx, this.vy, this.vz);
+    const dx = this.vx / sp, dy = this.vy / sp, dz = this.vz / sp;
+    const hit = game.world.raycast(this.x, this.y, this.z, dx, dy, dz, sp);
+    // criaturas e jogador no caminho
+    let target = null, tDist = hit ? hit.dist : sp;
+    const m = game.entities.raycastMobs(this.x, this.y, this.z, dx, dy, dz, tDist);
+    if (m && (m.mob !== this.shooter || this.age > 5)) {
+      target = m.mob;
+      tDist = m.dist;
+    }
+    const p = game.player;
+    if (!this.fromPlayer && !p.dead) {
+      const t = rayAABB(this.x, this.y, this.z, dx, dy, dz, [p.x - 0.35, p.y, p.z - 0.35, p.x + 0.35, p.y + 1.8, p.z + 0.35], tDist);
+      if (t !== null) {
+        target = p;
+        tDist = t;
+      }
+    }
+    if (target) {
+      const dmg = Math.ceil(sp * 2 + (this.crit ? Math.random() * 3 : 0));
+      const src = { x: this.x - dx, z: this.z - dz };
+      if (target === p) p.damage(dmg, src, 'arrow');
+      else target.damage(dmg, src);
+      game.audio.play('arrow_hit', target);
+      this.remove();
+      return;
+    }
+    if (hit) {
+      this.x += dx * hit.dist;
+      this.y += dy * hit.dist;
+      this.z += dz * hit.dist;
+      this.stuck = true;
+      this.sx = hit.x + 0.5;
+      this.sy = hit.y + 0.5;
+      this.sz = hit.z + 0.5;
+      this.age = 0;
+      game.audio.play('arrow_hit', this);
+      return;
+    }
+    this.x += this.vx;
+    this.y += this.vy;
+    this.z += this.vz;
+    this.vx *= 0.99;
+    this.vy = this.vy * 0.99 - 0.05;
+    this.vz *= 0.99;
+    if (this.crit && this.age % 2 === 0) game.particles.smoke(this.x, this.y, this.z, 1, 0.02, true);
+    if (this.y < -20 || this.age > 400) this.remove();
+  }
+  render(a, env) {
+    const [x, y, z] = this.lerpPos(a);
+    this.object.position.set(x, y, z);
+    if (!this.stuck) this.object.lookAt(x + this.vx, y + this.vy, z + this.vz);
+    const b = brightnessAt(this.game.world, x, y, z, env.skyDarken, env.gamma);
+    const mats = this.object.userData.mats, base = this.object.userData.base;
+    for (let i = 0; i < mats.length; i++) mats[i].color.copy(base[i]).multiplyScalar(b);
+  }
+}
+function rayAABB(ox, oy, oz, dx, dy, dz, b, maxDist) {
+  let tmin = 0, tmax = maxDist;
+  const o = [ox, oy, oz], d = [dx, dy, dz];
+  for (let a = 0; a < 3; a++) {
+    if (Math.abs(d[a]) < 1e-9) {
+      if (o[a] < b[a] || o[a] > b[a + 3]) return null;
+    } else {
+      let t1 = (b[a] - o[a]) / d[a], t2 = (b[a + 3] - o[a]) / d[a];
+      if (t1 > t2) [t1, t2] = [t2, t1];
+      tmin = Math.max(tmin, t1);
+      tmax = Math.min(tmax, t2);
+      if (tmin > tmax) return null;
+    }
+  }
+  return tmin;
+}
+
 // ---------- mobs ----------
 const MOBS = {
   pig: { w: 0.45, h: 0.9, health: 10, speed: 0.07, hostile: false, sound: 'pig', drops: [[262, 1, 3]] },
   sheep: { w: 0.45, h: 1.3, health: 8, speed: 0.065, hostile: false, sound: 'sheep', drops: [[B.WOOL_WHITE, 1, 1], [267, 1, 2]] },
   cow: { w: 0.45, h: 1.4, health: 10, speed: 0.06, hostile: false, sound: 'cow', drops: [[264, 1, 3]] },
   zombie: { w: 0.3, h: 1.95, health: 20, speed: 0.115, hostile: true, sound: 'zombie', drops: [[266, 0, 2]] },
-  creeper: { w: 0.3, h: 1.7, health: 20, speed: 0.1, hostile: true, sound: null, drops: [] },
+  creeper: { w: 0.3, h: 1.7, health: 20, speed: 0.1, hostile: true, sound: null, drops: [[284, 0, 2]] },
+  chicken: { w: 0.2, h: 0.7, health: 4, speed: 0.05, hostile: false, sound: 'chicken', drops: [[279, 1, 1], [281, 0, 2]] },
+  skeleton: { w: 0.3, h: 1.95, health: 20, speed: 0.1, hostile: true, sound: 'skeleton', drops: [[272, 0, 2], [274, 0, 2]] },
+  spider: { w: 0.7, h: 0.9, health: 16, speed: 0.13, hostile: true, sound: 'spider', drops: [[282, 0, 2]] },
 };
 
 export class Mob extends Entity {
@@ -235,10 +343,29 @@ export class Mob extends Entity {
     this.eatGrass = 0;
     this.soundTimer = 100 + Math.random() * 300;
     this.burnTimer = 0;
-    if (type === 'zombie') this.model = new HumanoidModel('zombie');
-    else if (type === 'creeper') this.model = new CreeperModel();
-    else this.model = new QuadrupedModel(type);
+    this.eggTimer = 6000 + Math.floor(Math.random() * 6000);
+    this.buildModel();
+  }
+
+  buildModel() {
+    const real = !!(this.game.quality && this.game.quality.articulated);
+    const t = this.type;
+    if (t === 'zombie') this.model = new HumanoidModel('zombie', real);
+    else if (t === 'skeleton') {
+      this.model = new HumanoidModel('skeleton', real);
+      this.model.setHeld(275);
+    } else if (t === 'creeper') this.model = new CreeperModel();
+    else if (t === 'chicken') this.model = new ChickenModel(real);
+    else if (t === 'spider') this.model = new SpiderModel(real);
+    else this.model = new QuadrupedModel(t, real);
     this.object = this.model.root;
+  }
+  // troca o modelo ao mudar a qualidade gráfica
+  rebuildModel(group) {
+    group.remove(this.object);
+    this.model.dispose();
+    this.buildModel();
+    group.add(this.object);
   }
 
   get hostile() {
@@ -247,6 +374,7 @@ export class Mob extends Entity {
 
   damage(amount, from) {
     if (this.deathTime || this.invuln > 0) return false;
+    this.provoked = 400;
     this.health -= amount;
     this.hurtTime = 10;
     this.invuln = 10;
@@ -299,12 +427,46 @@ export class Mob extends Entity {
     const targetable = !p.dead && p.mode === 'survival';
     let speed = 0, moveYaw = this.yaw, jump = false;
 
-    if (this.hostile && targetable && distP < 32) {
+    // aranhas só atacam no escuro (ou se forem atacadas)
+    const angry = this.type !== 'spider' || this.provoked > 0 || world.daylight() < 0.5 || (world.getLight(Math.floor(this.x), Math.floor(this.y + 0.5), Math.floor(this.z)) >> 4) < 10;
+    if (this.provoked > 0) this.provoked--;
+    this.aim = 0;
+    if (this.hostile && targetable && distP < 32 && angry) {
       moveYaw = Math.atan2(-dxp, -dzp);
       speed = this.def.speed;
       this.headYaw = moveYaw;
       this.pitch = Math.atan2(dyp + 1.6 - this.h * 0.85, Math.hypot(dxp, dzp));
-      if (this.type === 'zombie') {
+      if (this.type === 'skeleton') {
+        // mantém distância e atira flechas
+        const dh = Math.hypot(dxp, dzp);
+        const sees = distP < 18 && !world.raycast(this.x, this.y + 1.6, this.z, dxp / distP, (dyp + 1.5 - 1.6) / distP, dzp / distP, distP);
+        if (dh < 5) moveYaw += Math.PI;
+        else if (dh < 11 && sees) speed = 0;
+        if (sees) {
+          this.aimTimer = (this.aimTimer || 0) + 1;
+          this.aim = Math.min(1, this.aimTimer / 20);
+          if (this.aimTimer >= 30 + Math.random() * 20) {
+            this.aimTimer = 0;
+            const tx = dxp, ty = dyp + 1.4 - 1.5 + dh * 0.12, tz = dzp;
+            const l = Math.hypot(tx, ty, tz);
+            const spread = 0.06;
+            game.entities.spawnArrow(this.x, this.y + 1.5, this.z, (tx / l + (Math.random() - 0.5) * spread) * 1.6, (ty / l + (Math.random() - 0.5) * spread) * 1.6, (tz / l + (Math.random() - 0.5) * spread) * 1.6, this, false);
+            game.audio.play('bow', this);
+          }
+        } else this.aimTimer = 0;
+      } else if (this.type === 'spider') {
+        if (this.attackCool > 0) this.attackCool--;
+        const dh = Math.hypot(dxp, dzp);
+        if (dh < 3.2 && dh > 1.2 && this.onGround && Math.random() < 0.1) {
+          this.vx += (dxp / dh) * 0.35;
+          this.vz += (dzp / dh) * 0.35;
+          this.vy = 0.4;
+        }
+        if (dh < 1.3 && Math.abs(dyp) < 1.2 && this.attackCool <= 0) {
+          p.damage(2, this, 'spider');
+          this.attackCool = 20;
+        }
+      } else if (this.type === 'zombie') {
         if (this.attackCool > 0) this.attackCool--;
         if (Math.hypot(dxp, dzp) < 1.2 && Math.abs(dyp) < 1.6 && this.attackCool <= 0) {
           p.damage(3, this, 'zombie');
@@ -381,6 +543,7 @@ export class Mob extends Entity {
 
     if (speed) {
       if (this.hitH && this.onGround) jump = true;
+      if (this.type === 'spider' && this.hitH) this.vy = 0.2; // escala paredes
       this.bodyYaw = approachAngle(this.bodyYaw, moveYaw, 0.35);
     }
     // limita a cabeça em relação ao corpo
@@ -415,6 +578,15 @@ export class Mob extends Entity {
         this.fallDistance = 0;
       }
     }
+    if (this.type === 'chicken') {
+      if (!this.onGround && this.vy < 0) this.vy *= 0.6;
+      this.flap = !this.onGround;
+      if (--this.eggTimer <= 0) {
+        this.eggTimer = 6000 + Math.floor(Math.random() * 6000);
+        game.entities.spawnItem(this.x, this.y + 0.3, this.z, 285, 1);
+        game.audio.play('pop', this);
+      }
+    }
     if (this.y < -20) this.remove();
 
     const moved = Math.hypot(this.x - this.px, this.z - this.pz);
@@ -423,7 +595,7 @@ export class Mob extends Entity {
     if (this.swing > 0) this.swing = Math.max(0, this.swing - 1 / 6);
 
     // queimar ao sol
-    if (this.type === 'zombie' && world.daylight() > 0.75 && !liq) {
+    if ((this.type === 'zombie' || this.type === 'skeleton') && world.daylight() > 0.75 && !liq && world.weather.rain < 0.5) {
       const L = world.getLight(Math.floor(this.x), Math.floor(this.y + 1.6), Math.floor(this.z));
       if (L >> 4 >= 15) {
         if (++this.burnTimer % 20 === 0) this.damage(1, null);
@@ -453,6 +625,8 @@ export class Mob extends Entity {
       swing: this.swing ? 1 - this.swing : 0,
       age: this.age + a,
       zombieArms: this.type === 'zombie',
+      aim: this.type === 'skeleton' && this.aim > 0,
+      flap: this.flap,
       death: this.deathTime ? this.deathTime + a : 0,
       fuse,
       eatGrass: this.eatGrass > 0 ? Math.min(1, Math.min(this.eatGrass, 40 - this.eatGrass) / 6) * 0.9 : 0,
@@ -498,6 +672,9 @@ export class EntityManager {
   spawnTNT(x, y, z, fuse) {
     return this.add(new PrimedTNT(this.game, x, y, z, fuse));
   }
+  spawnArrow(x, y, z, vx, vy, vz, shooter, crit) {
+    return this.add(new Arrow(this.game, x, y, z, vx, vy, vz, shooter, crit));
+  }
   spawnMob(type, x, y, z) {
     return this.add(new Mob(this.game, type, x, y, z));
   }
@@ -517,6 +694,13 @@ export class EntityManager {
   render(alpha, env) {
     for (const e of this.list) {
       e.render(alpha, env);
+      // camada 2: projeta sombra do sol
+      if (e.object && (e._layered !== e.object || e._layerKids !== e.object.children.length || (e.model && e.model.heldId !== e._layerHeld))) {
+        e._layered = e.object;
+        e._layerKids = e.object.children.length;
+        e._layerHeld = e.model && e.model.heldId;
+        e.object.traverse((o) => o.layers.enable(2));
+      }
     }
   }
 
@@ -596,8 +780,8 @@ export class EntityManager {
         let y = CH - 2;
         while (y > 1 && !OPAQUE[world.getBlock(x, y, z)] && !LIQUID[world.getBlock(x, y, z)]) y--;
         if (world.getBlock(x, y, z) === B.GRASS && (world.getLight(x, y + 1, z) >> 4) >= 9) {
-          const types = ['pig', 'sheep', 'cow'];
-          const type = types[Math.floor(Math.random() * 3)];
+          const types = ['pig', 'sheep', 'cow', 'chicken'];
+          const type = types[Math.floor(Math.random() * 4)];
           const n = 2 + Math.floor(Math.random() * 3);
           for (let i = 0; i < n; i++) {
             const sx = x + Math.floor(Math.random() * 5) - 2, sz = z + Math.floor(Math.random() * 5) - 2;
@@ -620,7 +804,8 @@ export class EntityManager {
           const L = world.getLight(x, y, z);
           const skyEff = (L >> 4) - (1 - world.daylight()) * 11;
           if ((L & 15) < 7 && skyEff < 7) {
-            this.spawnMob(Math.random() < 0.75 ? 'zombie' : 'creeper', x + 0.5, y, z + 0.5);
+            const r = Math.random();
+            this.spawnMob(r < 0.45 ? 'zombie' : r < 0.7 ? 'skeleton' : r < 0.85 ? 'spider' : 'creeper', x + 0.5, y, z + 0.5);
           }
           break;
         }

@@ -707,7 +707,7 @@ export class UI {
   openChest(x, y, z) {
     const w = this.game.world;
     const key = `${x},${y},${z}`;
-    if (!w.tileEntities.has(key)) w.tileEntities.set(key, this.game.newChest());
+    if (!w.tileEntities.has(key)) w.tileEntities.set(key, this.game.chestLoot(x, y, z));
     this.game.audio.play('chest', { x, y, z });
     this.openContainer('chest', { tile: w.tileEntities.get(key), pos: [x, y, z] });
   }

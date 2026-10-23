@@ -222,7 +222,67 @@ export class GameAudio {
         this.tone(input, t, 0.25, 180, 120, { type: 'triangle', gain: 0.2 });
         this.noise(input, t, 0.2, { freq: 400, q: 2, gain: 0.2 });
         break;
+      case 'bow':
+        this.tone(input, t, 0.18, 320 * r, 140, { type: 'triangle', gain: 0.25 });
+        this.noise(input, t, 0.12, { type: 'highpass', freq: 2500, gain: 0.2 });
+        break;
+      case 'arrow_hit':
+        this.noise(input, t, 0.08, { freq: 900, q: 3, gain: 0.4 });
+        this.tone(input, t, 0.1, 260, 120, { type: 'triangle', gain: 0.2 });
+        break;
+      case 'door_open':
+      case 'door_close':
+        this.tone(input, t, 0.35, name === 'door_open' ? 300 : 220, name === 'door_open' ? 420 : 140, { type: 'sawtooth', gain: 0.07, lp: 900 });
+        this.noise(input, t + (name === 'door_close' ? 0.25 : 0), 0.12, { freq: 500, q: 2, gain: 0.35 });
+        break;
+      case 'bucket_fill':
+      case 'bucket_empty':
+        this.noise(input, t, 0.45, { type: 'lowpass', freq: name === 'bucket_fill' ? 1400 : 900, gain: 0.45, attack: 0.03 });
+        for (let i = 0; i < 4; i++) this.tone(input, t + i * 0.07, 0.08, 500 + Math.random() * 400, 300, { gain: 0.06 });
+        break;
+      case 'chicken':
+        for (let i = 0; i < 3; i++) this.tone(input, t + i * 0.09, 0.07, 900 * r, 1300 * r, { type: 'square', gain: 0.05, lp: 2500 });
+        break;
+      case 'spider':
+        this.noise(input, t, 0.5, { type: 'bandpass', freq: 3000, q: 2, gain: 0.25, attack: 0.05 });
+        break;
+      case 'skeleton':
+        for (let i = 0; i < 5; i++) this.noise(input, t + i * 0.045, 0.03, { freq: 2200 + Math.random() * 800, q: 6, gain: 0.35 });
+        break;
+      case 'thunder': {
+        const v = pos && pos.volume !== undefined ? pos.volume : 1;
+        const g = this.ctx.createGain();
+        g.gain.value = v;
+        g.connect(this.master);
+        this.noise(g, t, 3.5, { type: 'lowpass', freq: 220, gain: 1.2, attack: 0.02 });
+        this.noise(g, t + 0.05, 1.2, { type: 'lowpass', freq: 900, gain: 0.6, attack: 0.01 });
+        this.tone(g, t, 2.5, 60, 30, { gain: 0.5 });
+        break;
+      }
     }
+  }
+
+  // Som contínuo de chuva (volume conforme a intensidade e se há teto por cima)
+  setRain(level) {
+    if (!this.ctx) return;
+    if (!this.rainSrc) {
+      const src = this.ctx.createBufferSource();
+      src.buffer = this.noiseBuf;
+      src.loop = true;
+      const f = this.ctx.createBiquadFilter();
+      f.type = 'bandpass';
+      f.frequency.value = 1800;
+      f.Q.value = 0.4;
+      const g = this.ctx.createGain();
+      g.gain.value = 0;
+      src.connect(f);
+      f.connect(g);
+      g.connect(this.master);
+      src.start();
+      this.rainSrc = src;
+      this.rainGain = g;
+    }
+    this.rainGain.gain.setTargetAtTime(level * 0.35, this.ctx.currentTime, 0.3);
   }
 
   // Música ambiente: notas de piano suaves geradas ao acaso

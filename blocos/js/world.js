@@ -3,6 +3,7 @@ import { CS, CH, idx, chunkKey, SEA } from './consts.js';
 import { BLOCKS, B } from './blocks.js';
 import { Terrain } from './terrain.js';
 import { mulberry32 } from './noise.js';
+import { shapeBoxes } from './physics.js';
 
 // Tabelas rápidas por id de bloco
 export const OPAQUE = new Uint8Array(256);
@@ -162,6 +163,8 @@ function unpropagate(rq, aq, sky) {
   rq.reset();
 }
 
+export const BED_DIRS = [[0, 1], [-1, 0], [0, -1], [1, 0]];
+
 export class World {
   constructor(seed, saved = null) {
     this.seed = seed;
@@ -174,6 +177,8 @@ export class World {
     this.tickCount = 0;
     this.hooks = {}; // callbacks do jogo: onBreakDrop, onFalling, onUnload, onBlockChanged
     this.rnd = mulberry32(seed ^ 0x9e3779b9);
+    // clima: chuva/neve (0..1) e trovoada
+    this.weather = { rain: 0, target: 0, thunder: false, timer: 6000 + Math.floor(Math.random() * 12000), boltTimer: 200 };
     if (saved) this.loadEdits(saved);
   }
 
@@ -442,6 +447,42 @@ export class World {
       }
     }
     this.randomTicks(px, pz);
+    this.weatherTick(px, pz);
+  }
+
+  weatherTick(px, pz) {
+    const w = this.weather;
+    if (--w.timer <= 0) {
+      const raining = w.target > 0;
+      w.target = raining ? 0 : 1;
+      w.thunder = !raining && this.rnd() < 0.35;
+      w.timer = raining ? 9000 + Math.floor(this.rnd() * 15000) : 3000 + Math.floor(this.rnd() * 6000);
+    }
+    w.rain += Math.sign(w.target - w.rain) * Math.min(Math.abs(w.target - w.rain), 0.0015);
+    if (w.thunder && w.rain > 0.8 && --w.boltTimer <= 0) {
+      w.boltTimer = 100 + Math.floor(this.rnd() * 400);
+      const a = this.rnd() * Math.PI * 2, d = 10 + this.rnd() * 60;
+      const x = Math.floor(px + Math.cos(a) * d), z = Math.floor(pz + Math.sin(a) * d);
+      if (this.isReady(x, z)) {
+        let y = CH - 1;
+        while (y > 0 && !SOLID[this.getBlock(x, y, z)] && !LIQUID[this.getBlock(x, y, z)]) y--;
+        this.hooks.onLightning?.(x + 0.5, y + 1, z + 0.5);
+      }
+    }
+  }
+  setWeather(kind) {
+    const w = this.weather;
+    w.target = kind === 'clear' ? 0 : 1;
+    w.rain = w.target;
+    w.thunder = kind === 'thunder';
+    w.timer = 6000 + Math.floor(this.rnd() * 12000);
+  }
+  // está nevando ou chovendo nesta coluna?
+  isCold(x, z) {
+    const c = this.chunks.get(chunkKey(x >> 4, z >> 4));
+    if (!c) return false;
+    const bm = c.biomes[(z & 15) * CS + (x & 15)];
+    return bm === 6 || bm === 8 || (bm === 7 && c.heights[(z & 15) * CS + (x & 15)] > 96);
   }
 
   blockUpdate(x, y, z) {
@@ -462,12 +503,33 @@ export class World {
       return;
     }
     if (b.needsSupport && !this.supported(x, y, z, id)) {
-      this.breakBlock(x, y, z, true);
+      // a metade de cima da porta não solta item (a de baixo já solta)
+      const m = this.getMeta(x, y, z);
+      this.breakBlock(x, y, z, id !== B.DOOR || (!(m & 8) && !SOLID[this.getBlock(x, y - 1, z)]));
+      return;
+    }
+    if (id === B.BED) {
+      const m = this.getMeta(x, y, z);
+      const [dx, dz] = BED_DIRS[m & 3];
+      const s = m & 4 ? -1 : 1;
+      if (this.getBlock(x + dx * s, y, z + dz * s) !== B.BED) this.setBlock(x, y, z, B.AIR);
     }
   }
 
   supported(x, y, z, id) {
     const below = this.getBlock(x, y - 1, z);
+    const m = this.getMeta(x, y, z);
+    if (id === B.WHEAT) return below === B.FARMLAND;
+    if (id === B.LADDER) {
+      const off = [[0, 0], [-1, 0], [1, 0], [0, -1], [0, 1]][m] || [0, 0];
+      return OPAQUE[this.getBlock(x + off[0], y, z + off[1])] === 1;
+    }
+    if (id === B.DOOR) {
+      if (m & 8) return below === B.DOOR;
+      return SOLID[below] === 1 && this.getBlock(x, y + 1, z) === B.DOOR;
+    }
+    if (id === B.SNOW_LAYER) return OPAQUE[below] === 1 || below === B.LEAVES || below === B.SPRUCE_LEAVES;
+    if (id === B.RED_MUSHROOM || id === B.BROWN_MUSHROOM) return OPAQUE[below] === 1;
     if (id === B.TORCH) {
       const m = this.getMeta(x, y, z);
       if (m === 0) return SOLID[below] && OPAQUE[below] || below === B.GLASS;
@@ -493,8 +555,9 @@ export class World {
   breakBlock(x, y, z, drop) {
     const id = this.getBlock(x, y, z);
     if (!id) return;
+    const meta = this.getMeta(x, y, z);
     this.setBlock(x, y, z, B.AIR);
-    if (drop) this.hooks.onBreakDrop?.(x, y, z, id);
+    if (drop) this.hooks.onBreakDrop?.(x, y, z, id, meta);
   }
 
   flowLiquid(x, y, z, id) {
@@ -573,12 +636,31 @@ export class World {
     return false;
   }
 
+  // neve acumulando durante nevascas e gelo derretendo com tochas
+  snowTick(c, rnd) {
+    const x = (rnd() * 16) | 0, z = (rnd() * 16) | 0;
+    const wx = c.cx * CS + x, wz = c.cz * CS + z;
+    if (!this.isCold(wx, wz)) return;
+    let y = CH - 2;
+    while (y > 0 && c.blocks[(y << 8) | (z << 4) | x] === B.AIR) y--;
+    const top = c.blocks[(y << 8) | (z << 4) | x];
+    if (top === B.SNOW_LAYER) {
+      const m = c.meta[(y << 8) | (z << 4) | x];
+      if (m < 2 && rnd() < 0.3) this.setBlock(wx, y, wz, B.SNOW_LAYER, m + 1, { noUpdate: true, priority: false });
+    } else if (OPAQUE[top] || top === B.LEAVES || top === B.SPRUCE_LEAVES) {
+      if ((this.getLight(wx, y + 1, wz) >> 4) >= 15) this.setBlock(wx, y + 1, wz, B.SNOW_LAYER, 0, { noUpdate: true, priority: false });
+    } else if (top === B.WATER && this.getMeta(wx, y, wz) === 0) {
+      this.setBlock(wx, y, wz, B.ICE, 0, { noUpdate: true, priority: false });
+    }
+  }
+
   randomTicks(px, pz) {
     const pcx = Math.floor(px / CS), pcz = Math.floor(pz / CS);
     const rnd = this.rnd;
     for (let dz = -4; dz <= 4; dz++) for (let dx = -4; dx <= 4; dx++) {
       const c = this.chunks.get(chunkKey(pcx + dx, pcz + dz));
       if (!c || !c.lit) continue;
+      if (this.weather.rain > 0.6 && rnd() < 0.08) this.snowTick(c, rnd);
       for (let k = 0; k < 12; k++) {
         const x = (rnd() * 16) | 0, z = (rnd() * 16) | 0, y = 1 + ((rnd() * (CH - 2)) | 0);
         const i = (y << 8) | (z << 4) | x;
@@ -597,6 +679,20 @@ export class World {
           }
         } else if (id === B.GRASS) {
           if (OPACITY[this.getBlock(wx, y + 1, wz)] > 1) this.setBlock(wx, y, wz, B.DIRT, 0, { noUpdate: true, priority: false });
+        } else if (id === B.FARMLAND) {
+          // umidade: água a até 4 blocos
+          let wet = false;
+          for (let dz = -4; dz <= 4 && !wet; dz++) for (let dx = -4; dx <= 4 && !wet; dx++) for (let dy = 0; dy <= 1; dy++) if (this.getBlock(wx + dx, y + dy, wz + dz) === B.WATER) { wet = true; break; }
+          if (!wet && this.weather.rain > 0.5 && (this.getLight(wx, y + 1, wz) >> 4) >= 15) wet = true;
+          const m = c.meta[i];
+          if (wet !== (m === 1)) this.setBlock(wx, y, wz, B.FARMLAND, wet ? 1 : 0, { noUpdate: true, priority: false });
+          else if (!wet && this.getBlock(wx, y + 1, wz) !== B.WHEAT && rnd() < 0.2) this.setBlock(wx, y, wz, B.DIRT, 0, { priority: false });
+        } else if (id === B.WHEAT) {
+          const m = c.meta[i];
+          if (m < 7 && (this.getLight(wx, y, wz) >> 4) >= 9) {
+            const wet = this.getMeta(wx, y - 1, wz) === 1;
+            if (rnd() < (wet ? 0.45 : 0.18)) this.setBlock(wx, y, wz, B.WHEAT, m + 1, { noUpdate: true, priority: false });
+          }
         } else if (id === B.SAPLING) {
           if (rnd() < 0.12 && (this.getLight(wx, y + 1, wz) >> 4) >= 9) this.growTree(wx, y, wz);
         } else if (id === B.SUGAR_CANE || id === B.CACTUS) {
@@ -662,13 +758,17 @@ export class World {
       const id = this.getBlock(x, y, z);
       if (id !== B.AIR && (hitLiquid || !LIQUID[id])) {
         const b = BLOCKS[id];
-        let hit = true;
-        if (b.render === 'cross' || b.render === 'torch') {
-          // caixas menores para plantas e tochas
-          const box = b.render === 'torch' ? [0.38, 0, 0.38, 0.62, 0.65, 0.62] : [0.15, 0, 0.15, 0.85, 0.8, 0.85];
-          hit = rayBox(ox - x, oy - y, oz - z, dx, dy, dz, box, maxDist);
+        let best = { t, face };
+        if ((b.render !== 'cube' && b.render !== 'liquid') || b.boxes) {
+          // blocos menores que o cubo: testa as caixas da forma
+          best = null;
+          for (const box of shapeBoxes(this, x, y, z, id)) {
+            const r = rayBox(ox - x, oy - y, oz - z, dx, dy, dz, box, maxDist);
+            if (r && (!best || r.t < best.t)) best = r;
+          }
+          if (best && best.t === 0) best.face = face;
         }
-        if (hit) return { x, y, z, id, face, dist: t };
+        if (best) return { x, y, z, id, face: best.face, dist: best.t, point: [ox + dx * best.t, oy + dy * best.t, oz + dz * best.t] };
       }
       if (tmx < tmy && tmx < tmz) {
         if (tmx > maxDist) break;
@@ -715,20 +815,25 @@ export class World {
 }
 
 function rayBox(ox, oy, oz, dx, dy, dz, b, maxDist) {
-  let tmin = 0, tmax = maxDist;
+  let tmin = 0, tmax = maxDist, axis = -1;
   const o = [ox, oy, oz], d = [dx, dy, dz];
   for (let a = 0; a < 3; a++) {
     if (Math.abs(d[a]) < 1e-9) {
-      if (o[a] < b[a] || o[a] > b[a + 3]) return false;
+      if (o[a] < b[a] || o[a] > b[a + 3]) return null;
     } else {
       let t1 = (b[a] - o[a]) / d[a], t2 = (b[a + 3] - o[a]) / d[a];
       if (t1 > t2) [t1, t2] = [t2, t1];
-      tmin = Math.max(tmin, t1);
+      if (t1 > tmin) {
+        tmin = t1;
+        axis = a;
+      }
       tmax = Math.min(tmax, t2);
-      if (tmin > tmax) return false;
+      if (tmin > tmax) return null;
     }
   }
-  return true;
+  const face = [0, 0, 0];
+  if (axis >= 0) face[axis] = -Math.sign(d[axis]);
+  return { t: tmin, face };
 }
 
 export { DX, DY, DZ, SEA };

@@ -1,0 +1,467 @@
+// Texturas realistas de alta resolução (gráficos ULTRA): 64×64 por bloco, com mapa de relevo
+// (normal map) e brilho especular. Tudo gerado por código a partir de ruído.
+import * as THREE from 'three';
+import { mulberry32 } from './noise.js';
+import { tileEntries, tileCanvas, tileImageData, ATLAS_COLS } from './textures.js';
+
+const S = 64; // pixels por textura em alta resolução
+
+// ---------- ferramentas de pintura ----------
+class HD {
+  constructor(seed) {
+    this.rnd = mulberry32(seed);
+    this.r = new Float32Array(S * S);
+    this.g = new Float32Array(S * S);
+    this.b = new Float32Array(S * S);
+    this.a = new Float32Array(S * S).fill(1);
+    this.h = new Float32Array(S * S).fill(0.5); // altura (relevo)
+    this.gloss = new Float32Array(S * S).fill(0.05);
+    this.noises = new Map();
+  }
+  set(x, y, c, h, gl) {
+    x = ((x % S) + S) % S;
+    y = ((y % S) + S) % S;
+    const i = y * S + x;
+    this.r[i] = c[0];
+    this.g[i] = c[1];
+    this.b[i] = c[2];
+    if (c[3] !== undefined) this.a[i] = c[3];
+    if (h !== undefined) this.h[i] = h;
+    if (gl !== undefined) this.gloss[i] = gl;
+  }
+  get(x, y) {
+    x = ((x % S) + S) % S;
+    y = ((y % S) + S) % S;
+    const i = y * S + x;
+    return [this.r[i], this.g[i], this.b[i], this.a[i]];
+  }
+  fill(fn) {
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+      const v = fn(x, y);
+      if (v) this.set(x, y, v[0], v[1], v[2]);
+    }
+  }
+  // ruído de valor periódico (repete a cada 64 px)
+  vn(freq, key = 0) {
+    const k = freq + ':' + key;
+    let grid = this.noises.get(k);
+    if (!grid) {
+      grid = new Float32Array(freq * freq);
+      for (let i = 0; i < grid.length; i++) grid[i] = this.rnd();
+      this.noises.set(k, grid);
+    }
+    return (x, y) => {
+      const fx = (x / S) * freq, fy = (y / S) * freq;
+      const x0 = Math.floor(fx), y0 = Math.floor(fy);
+      const tx = fx - x0, ty = fy - y0;
+      const sx = tx * tx * (3 - 2 * tx), sy = ty * ty * (3 - 2 * ty);
+      const at = (i, j) => grid[(((j % freq) + freq) % freq) * freq + (((i % freq) + freq) % freq)];
+      const a = at(x0, y0) + (at(x0 + 1, y0) - at(x0, y0)) * sx;
+      const b = at(x0, y0 + 1) + (at(x0 + 1, y0 + 1) - at(x0, y0 + 1)) * sx;
+      return a + (b - a) * sy;
+    };
+  }
+  fbm(base = 4, oct = 4, key = 0) {
+    const ns = [];
+    for (let o = 0; o < oct; o++) ns.push(this.vn(base << o, key * 10 + o));
+    return (x, y) => {
+      let s = 0, amp = 1, n = 0;
+      for (const f of ns) {
+        s += f(x, y) * amp;
+        n += amp;
+        amp *= 0.5;
+      }
+      return s / n;
+    };
+  }
+  // Voronoi periódico: devolve [d1, d2, índice da célula, dx, dy]
+  voronoi(n) {
+    const pts = [];
+    for (let i = 0; i < n; i++) pts.push([this.rnd() * S, this.rnd() * S, this.rnd()]);
+    return (x, y) => {
+      let d1 = 1e9, d2 = 1e9, best = 0, bx = 0, by = 0;
+      for (let i = 0; i < n; i++) {
+        const p = pts[i];
+        for (let ox = -S; ox <= S; ox += S) for (let oy = -S; oy <= S; oy += S) {
+          const dx = x + 0.5 - (p[0] + ox), dy = y + 0.5 - (p[1] + oy);
+          const d = dx * dx + dy * dy;
+          if (d < d1) { d2 = d1; d1 = d; best = i; bx = dx; by = dy; } else if (d < d2) d2 = d;
+        }
+      }
+      return [Math.sqrt(d1), Math.sqrt(d2), best, bx, by, pts[best][2]];
+    };
+  }
+}
+
+const lerp = (a, b, t) => a + (b - a) * t;
+const mixc = (a, b, t) => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
+const mul = (c, f) => [c[0] * f, c[1] * f, c[2] * f];
+const clamp01 = (v) => Math.max(0, Math.min(1, v));
+const C = (r, g, b) => [r / 255, g / 255, b / 255];
+
+// ---------- materiais ----------
+function rock(p, base, dark, opts = {}) {
+  const f = p.fbm(4, 5, 1), d = p.fbm(8, 3, 2), crack = p.fbm(6, 3, 3);
+  p.fill((x, y) => {
+    const v = f(x, y), w = d(x, y);
+    const c = Math.abs(crack(x, y) - 0.5);
+    let col = mixc(dark, base, clamp01(v * 1.3 - 0.1));
+    col = mul(col, 0.88 + w * 0.24);
+    let h = v * 0.7 + w * 0.3;
+    if (c < 0.018 && !opts.noCracks) { col = mul(col, 0.62); h -= 0.25; }
+    if (p.rnd() < 0.03) col = mul(col, 1.15);
+    return [col, h, opts.gloss ?? 0.06];
+  });
+}
+function dirt(p) {
+  const f = p.fbm(4, 5, 4), v = p.voronoi(28);
+  p.fill((x, y) => {
+    const n = f(x, y);
+    let col = mixc(C(88, 60, 40), C(140, 100, 68), n);
+    let h = n * 0.6;
+    const [d1, , , , , r] = v(x, y);
+    if (d1 < 2.2 && r < 0.45) { // pedrinhas
+      col = mixc(C(120, 110, 100), C(160, 150, 136), r * 2);
+      h = 0.7 + (2.2 - d1) * 0.15;
+    }
+    col = mul(col, 0.9 + p.rnd() * 0.2);
+    return [col, h, 0.04];
+  });
+}
+function grassBlades(p, y0 = 0, y1 = S, colors, density = 900) {
+  for (let i = 0; i < density; i++) {
+    let x = p.rnd() * S, y = y0 + p.rnd() * (y1 - y0);
+    const len = 2 + p.rnd() * 5, ang = p.rnd() * Math.PI * 2;
+    const c = colors[Math.floor(p.rnd() * colors.length)];
+    const shadeK = 0.8 + p.rnd() * 0.4;
+    for (let k = 0; k < len; k++) {
+      const t = k / len;
+      p.set(Math.floor(x), Math.floor(y), mul(c, shadeK * (0.75 + t * 0.35)), 0.4 + t * 0.6, 0.12);
+      x += Math.cos(ang) * 0.8;
+      y += Math.sin(ang) * 0.8;
+    }
+  }
+}
+const GRASS = [C(72, 124, 38), C(86, 142, 44), C(98, 156, 52), C(64, 110, 34), C(110, 168, 60)];
+function grassTop(p) {
+  const f = p.fbm(4, 4, 5);
+  p.fill((x, y) => [mixc(C(48, 84, 26), C(70, 112, 36), f(x, y)), 0.2]);
+  grassBlades(p, 0, S, GRASS, 1100);
+}
+function grassSide(p, snow) {
+  dirt(p);
+  const edge = p.fbm(8, 3, 6);
+  for (let x = 0; x < S; x++) {
+    const depth = 10 + edge(x, 0) * 14;
+    for (let y = 0; y < depth; y++) {
+      const t = y / depth;
+      const col = snow ? mul(C(236, 242, 248), 0.92 + p.rnd() * 0.08) : mul(GRASS[Math.floor(p.rnd() * GRASS.length)], 1.05 - t * 0.35);
+      p.set(x, y, col, 0.7 - t * 0.2, snow ? 0.15 : 0.1);
+    }
+    // fiapos pendurados
+    if (!snow && p.rnd() < 0.5) for (let y = Math.floor(depth); y < depth + 2 + p.rnd() * 4; y++) p.set(x, y, mul(GRASS[0], 0.75), 0.6);
+  }
+}
+function sand(p, base) {
+  const f = p.fbm(4, 4, 7), r = p.fbm(2, 2, 8);
+  p.fill((x, y) => {
+    const rip = Math.sin((y + r(x, y) * 30) * 0.45) * 0.5 + 0.5;
+    const col = mul(base, 0.86 + f(x, y) * 0.14 + rip * 0.05 + (p.rnd() - 0.5) * 0.12);
+    return [col, rip * 0.3 + p.rnd() * 0.2, 0.05];
+  });
+}
+function pebbles(p, n, palette, mortar) {
+  const v = p.voronoi(n), tex = p.fbm(8, 3, 9);
+  p.fill((x, y) => {
+    const [d1, d2, idx, , , r] = v(x, y);
+    const edge = d2 - d1;
+    const pc = palette[idx % palette.length];
+    if (edge < 1.6) return [mul(mortar, 0.8 + p.rnd() * 0.2), 0.05, 0.02];
+    const dome = clamp01(edge / 8);
+    const col = mul(pc, 0.7 + dome * 0.35 + (tex(x, y) - 0.5) * 0.25 + r * 0.1);
+    return [col, 0.3 + dome * 0.7, 0.08];
+  });
+}
+function bricks(p, bw, bh, color, mortar, opts = {}) {
+  const f = p.fbm(8, 3, 10);
+  const rows = S / bh;
+  const tints = [];
+  for (let i = 0; i < 64; i++) tints.push(0.82 + p.rnd() * 0.3);
+  p.fill((x, y) => {
+    const row = Math.floor(y / bh);
+    const off = row % 2 ? bw / 2 : 0;
+    const col = Math.floor((x + off) / bw);
+    const lx = (x + off) % bw, ly = y % bh;
+    const m = 2;
+    if (lx < m || ly < m) return [mul(mortar, 0.85 + f(x, y) * 0.25), 0.05, 0.02];
+    const bevel = Math.min(lx - m, ly - m, bw - 1 - lx, bh - 1 - ly);
+    const h = 0.5 + Math.min(bevel, 3) * 0.15;
+    const t = tints[(row * 7 + col * 3) % 64];
+    let c = mul(color, t * (0.85 + f(x, y) * 0.3));
+    if (bevel === 0) c = mul(c, 1.12);
+    if (opts.moss && f(x * 0.5, y * 0.5) > 0.6) c = mixc(c, C(70, 104, 44), 0.7);
+    return [c, h, 0.07];
+  });
+  void rows;
+}
+function wood(p, base, dark, boards = 4) {
+  const warp = p.fbm(2, 3, 11), fine = p.fbm(16, 2, 12);
+  const bh = S / boards;
+  const seams = [];
+  for (let i = 0; i < boards; i++) seams.push(Math.floor(p.rnd() * S));
+  p.fill((x, y) => {
+    const b = Math.floor(y / bh), ly = y % bh;
+    if (ly === bh - 1) return [mul(dark, 0.55), 0.05];
+    if (x === seams[b]) return [mul(dark, 0.6), 0.1];
+    const g = Math.sin((x * 0.06 + warp(x, y + b * 17) * 6 + ly * 0.35) * 5) * 0.5 + 0.5;
+    const col = mixc(dark, base, 0.55 + g * 0.35 + (fine(x, y) - 0.5) * 0.2);
+    const edge = ly === 0 ? 1.1 : 1;
+    return [mul(col, edge * (0.95 + b * 0.02)), 0.4 + g * 0.2, 0.1];
+  });
+  for (let b = 0; b < boards; b++) for (const nx of [4, S - 6]) { p.set(nx, b * bh + 3, C(60, 60, 60), 0.6, 0.4); }
+}
+function bark(p, base, dark) {
+  const f = p.fbm(4, 4, 13);
+  const ridges = p.vn(16, 14);
+  p.fill((x, y) => {
+    const r = ridges(x, y * 0.18);
+    const furrow = Math.abs(Math.sin((x + f(x, y) * 14) * 0.45));
+    const t = clamp01(furrow * 0.7 + r * 0.4);
+    return [mul(mixc(dark, base, t), 0.85 + p.rnd() * 0.2), t, 0.04];
+  });
+}
+function birchBark(p) {
+  const f = p.fbm(4, 4, 15);
+  p.fill((x, y) => [mul(C(222, 220, 210), 0.9 + f(x, y) * 0.12), 0.6, 0.08]);
+  for (let i = 0; i < 26; i++) {
+    const y = Math.floor(p.rnd() * S), x0 = Math.floor(p.rnd() * S), len = 3 + Math.floor(p.rnd() * 12);
+    for (let k = 0; k < len; k++) for (let t = 0; t < 2; t++) p.set(x0 + k, y + t, mul(C(40, 38, 34), 0.8 + p.rnd() * 0.4), 0.2);
+  }
+}
+function rings(p, inner, bark) {
+  const f = p.fbm(4, 3, 16);
+  p.fill((x, y) => {
+    const dx = x - 31.5, dy = y - 31.5;
+    const edge = Math.max(Math.abs(dx), Math.abs(dy));
+    if (edge > 28) return [mul(bark, 0.8 + p.rnd() * 0.3), 0.3];
+    const d = Math.sqrt(dx * dx + dy * dy) + f(x, y) * 4;
+    const ring = Math.sin(d * 1.3) * 0.5 + 0.5;
+    return [mul(inner, 0.8 + ring * 0.22), 0.5 + ring * 0.1, 0.08];
+  });
+}
+function leaves(p, base) {
+  p.fill(() => [[0, 0, 0, 0], 0]);
+  for (let i = 0; i < 230; i++) {
+    const cx = p.rnd() * S, cy = p.rnd() * S, ang = p.rnd() * Math.PI, L = 3 + p.rnd() * 3.5, W = 1.4 + p.rnd() * 1.2;
+    const col = mul(base, 0.6 + p.rnd() * 0.6);
+    const ca = Math.cos(ang), sa = Math.sin(ang);
+    for (let y = -6; y <= 6; y++) for (let x = -6; x <= 6; x++) {
+      const u = x * ca + y * sa, v = -x * sa + y * ca;
+      const e = (u / L) ** 2 + (v / W) ** 2;
+      if (e <= 1) p.set(Math.floor(cx + x), Math.floor(cy + y), [...mul(col, 1.1 - e * 0.35 + (v > 0 ? -0.08 : 0.05)), 1], 1 - e, 0.25);
+    }
+  }
+}
+function ore(p, a, b, metallic) {
+  rock(p, C(132, 132, 134), C(92, 92, 96));
+  const v = p.voronoi(9);
+  p.fill((x, y) => {
+    const [d1, , , , , r] = v(x, y);
+    if (r < 0.55 && d1 < 4 + r * 4) {
+      const t = 1 - d1 / (4 + r * 4);
+      return [mixc(a, b, t), 0.6 + t * 0.4, metallic];
+    }
+    return null;
+  });
+}
+function wool(p, base) {
+  const f = p.fbm(8, 3, 17);
+  p.fill((x, y) => {
+    const weave = (Math.sin((x + y) * 0.9) + Math.sin((x - y) * 0.9)) * 0.06;
+    return [mul(base, 0.86 + f(x, y) * 0.2 + weave + (p.rnd() - 0.5) * 0.08), 0.5 + weave * 3, 0.03];
+  });
+}
+function metal(p, base) {
+  const f = p.fbm(2, 3, 18);
+  p.fill((x, y) => {
+    const brush = Math.sin(y * 2.3 + f(x, y) * 3) * 0.04 + (p.rnd() - 0.5) * 0.05;
+    const border = Math.min(x, y, S - 1 - x, S - 1 - y);
+    let k = 1 + brush;
+    if (border < 2) k *= x < 2 || y < 2 ? 1.2 : 0.7;
+    return [mul(base, k), border < 2 ? 0.2 : 0.7, 0.85];
+  });
+}
+
+// plantas finas em alta resolução: folhas compridas e curvas
+function blades(p, colors, n, minH, maxH, extra) {
+  p.fill(() => [[0, 0, 0, 0], 0]);
+  for (let i = 0; i < n; i++) {
+    let x = 6 + p.rnd() * (S - 12);
+    const h = minH + p.rnd() * (maxH - minH);
+    const lean = (p.rnd() - 0.5) * 0.9;
+    const w0 = 1.6 + p.rnd() * 1.4;
+    const c = colors[Math.floor(p.rnd() * colors.length)];
+    for (let k = 0; k < h; k++) {
+      const t = k / h;
+      const w = w0 * (1 - t * 0.85);
+      const y = S - 1 - k;
+      for (let dx = -w; dx <= w; dx += 0.5) p.set(Math.round(x + dx), y, [...mul(c, 0.7 + t * 0.45 + dx * 0.05), 1], t, 0.15);
+      x += lean * (0.3 + t * 1.2);
+    }
+  }
+  if (extra) extra(p);
+}
+const PAINTERS = {
+  tall_grass: (p) => blades(p, GRASS, 16, 20, 58),
+  sugar_cane: (p) => {
+    p.fill(() => [[0, 0, 0, 0], 0]);
+    for (const sx of [12, 32, 50]) for (let y = 0; y < S; y++) for (let dx = -2; dx <= 2; dx++) {
+      const seg = (y + sx) % 20 < 2;
+      p.set(sx + dx, y, [...mul(seg ? C(150, 200, 110) : C(104, 166, 74), 0.85 + dx * 0.06), 1], seg ? 0.3 : 0.7, 0.2);
+    }
+  },
+  stone: (p) => rock(p, C(140, 140, 142), C(98, 98, 102)),
+  dirt,
+  grass_top: grassTop,
+  grass_side: (p) => grassSide(p, false),
+  snow_grass_side: (p) => grassSide(p, true),
+  snow: (p) => { const f = p.fbm(4, 4, 19); p.fill((x, y) => [mul(C(240, 246, 252), 0.93 + f(x, y) * 0.08), f(x, y), 0.3]); },
+  sand: (p) => sand(p, C(222, 206, 160)),
+  sandstone_top: (p) => sand(p, C(220, 204, 156)),
+  sandstone_bottom: (p) => sand(p, C(206, 190, 142)),
+  sandstone_side: (p) => {
+    sand(p, C(214, 198, 148));
+    const f = p.fbm(4, 3, 20);
+    p.fill((x, y) => { const band = Math.sin((y + f(x, y) * 6) * 0.5); return band > 0.85 ? [mul(C(186, 168, 118), 0.95), 0.2] : null; });
+  },
+  gravel: (p) => pebbles(p, 70, [C(130, 124, 120), C(100, 96, 92), C(160, 154, 148), C(124, 108, 96), C(84, 82, 80)], C(60, 56, 52)),
+  cobblestone: (p) => pebbles(p, 22, [C(126, 126, 128), C(110, 110, 112), C(146, 146, 148), C(98, 98, 100)], C(52, 52, 54)),
+  mossy_cobblestone: (p) => {
+    pebbles(p, 22, [C(126, 126, 128), C(110, 110, 112), C(146, 146, 148)], C(52, 52, 54));
+    const m = p.fbm(4, 4, 21);
+    p.fill((x, y) => (m(x, y) > 0.55 ? [mul(C(74, 110, 46), 0.75 + p.rnd() * 0.4), 0.7, 0.1] : null));
+  },
+  bedrock: (p) => pebbles(p, 30, [C(60, 60, 60), C(40, 40, 42), C(90, 90, 90), C(28, 28, 30)], C(14, 14, 14)),
+  bricks: (p) => bricks(p, 32, 16, C(150, 72, 56), C(180, 172, 164)),
+  stone_bricks: (p) => bricks(p, 32, 32, C(132, 132, 134), C(70, 70, 72)),
+  mossy_stone_bricks: (p) => bricks(p, 32, 32, C(132, 132, 134), C(70, 70, 72), { moss: true }),
+  cracked_stone_bricks: (p) => {
+    bricks(p, 32, 32, C(126, 126, 128), C(70, 70, 72));
+    for (const sx of [12, 44]) { let x = sx; for (let y = 0; y < S; y++) { p.set(x, y, C(40, 40, 40), 0, 0); x += p.rnd() < 0.3 ? 1 : p.rnd() < 0.3 ? -1 : 0; } }
+  },
+  planks: (p) => wood(p, C(176, 140, 86), C(112, 82, 46)),
+  birch_planks: (p) => wood(p, C(214, 196, 140), C(160, 140, 92)),
+  spruce_planks: (p) => wood(p, C(128, 92, 54), C(74, 52, 30)),
+  log_side: (p) => bark(p, C(112, 86, 52), C(52, 38, 22)),
+  spruce_log_side: (p) => bark(p, C(80, 56, 32), C(36, 24, 14)),
+  birch_log_side: birchBark,
+  log_top: (p) => rings(p, C(186, 150, 96), C(80, 60, 36)),
+  birch_log_top: (p) => rings(p, C(210, 192, 136), C(220, 218, 208)),
+  spruce_log_top: (p) => rings(p, C(150, 112, 68), C(60, 42, 24)),
+  leaves: (p) => leaves(p, C(62, 120, 34)),
+  birch_leaves: (p) => leaves(p, C(100, 148, 58)),
+  spruce_leaves: (p) => leaves(p, C(44, 86, 52)),
+  coal_ore: (p) => ore(p, C(20, 20, 22), C(54, 54, 58), 0.3),
+  iron_ore: (p) => ore(p, C(170, 130, 100), C(226, 190, 160), 0.6),
+  gold_ore: (p) => ore(p, C(210, 160, 30), C(255, 236, 110), 0.9),
+  diamond_ore: (p) => ore(p, C(30, 170, 180), C(190, 255, 255), 1.0),
+  obsidian: (p) => { const f = p.fbm(4, 5, 22); p.fill((x, y) => { const v = f(x, y); return [mixc(C(14, 10, 24), C(70, 46, 110), v * v * 1.4), v, 0.9]; }); },
+  clay: (p) => { const f = p.fbm(4, 4, 23); p.fill((x, y) => [mul(C(162, 168, 182), 0.9 + f(x, y) * 0.15), f(x, y) * 0.4, 0.15]); },
+  ice: (p) => {
+    const f = p.fbm(4, 4, 24), c = p.fbm(8, 3, 25);
+    p.fill((x, y) => { const cr = Math.abs(c(x, y) - 0.5) < 0.02; return [[...mul(cr ? C(230, 240, 255) : C(150, 186, 250), 0.9 + f(x, y) * 0.15), 0.78], cr ? 0.3 : 0.6, 1.0]; });
+  },
+  glass: (p) => {
+    p.fill((x, y) => {
+      const e = Math.min(x, y, S - 1 - x, S - 1 - y);
+      if (e < 2) return [[0.8, 0.9, 0.94, 1], 0.6, 0.9];
+      const streak = (x - y > 14 && x - y < 20 && x < 40) || (x - y > -30 && x - y < -27 && x < 20);
+      return [[0.9, 0.97, 1, streak ? 0.85 : 0], 0.5, 1];
+    });
+  },
+  iron_block: (p) => metal(p, C(226, 226, 228)),
+  gold_block: (p) => metal(p, C(250, 212, 64)),
+  diamond_block: (p) => metal(p, C(110, 226, 220)),
+  wool_white: (p) => wool(p, C(236, 238, 238)),
+  wool_red: (p) => wool(p, C(160, 38, 34)),
+  wool_blue: (p) => wool(p, C(52, 58, 160)),
+  wool_green: (p) => wool(p, C(84, 110, 28)),
+  wool_yellow: (p) => wool(p, C(248, 198, 40)),
+  wool_black: (p) => wool(p, C(30, 30, 34)),
+  farmland: (p) => { const f = p.fbm(4, 4, 26); p.fill((x, y) => { const r = Math.sin(y * 0.4) * 0.5 + 0.5; return [mul(C(120, 84, 54), 0.75 + r * 0.25 + f(x, y) * 0.15), r, 0.04]; }); },
+  farmland_wet: (p) => { const f = p.fbm(4, 4, 26); p.fill((x, y) => { const r = Math.sin(y * 0.4) * 0.5 + 0.5; return [mul(C(70, 46, 30), 0.75 + r * 0.25 + f(x, y) * 0.15), r, 0.35]; }); },
+  hay_side: (p) => { grassBlades(p, 0, S, [C(206, 170, 50), C(186, 150, 40), C(226, 196, 80)], 1600); p.fill((x, y) => (y >= 12 && y <= 14) || (y >= 49 && y <= 51) ? [C(120, 70, 30), 0.8] : null); },
+};
+
+// textura sem pintor próprio: amplia a de 16 px e acrescenta detalhe fino
+function upscale(p, name) {
+  const src = tileImageData(name);
+  const f = p.fbm(16, 2, 27);
+  p.fill((x, y) => {
+    const i = ((y >> 2) * 16 + (x >> 2)) * 4;
+    if (src[i + 3] === 0) return [[0, 0, 0, 0], 0, 0];
+    const k = 0.92 + f(x, y) * 0.16;
+    const col = [(src[i] / 255) * k, (src[i + 1] / 255) * k, (src[i + 2] / 255) * k, src[i + 3] / 255];
+    const lum = (col[0] + col[1] + col[2]) / 3;
+    return [col, lum, 0.05];
+  });
+}
+
+// grama alta e flores: suaviza as bordas da arte de 16 px
+const KEEP_PIXELS = new Set(['torch', 'tnt_side', 'tnt_top', 'crafting_front', 'crafting_side', 'crafting_top', 'furnace_front', 'furnace_front_on', 'chest_front', 'pumpkin_face']);
+
+export function buildHDAtlas() {
+  const N = ATLAS_COLS * S;
+  const albedo = document.createElement('canvas');
+  albedo.width = albedo.height = N;
+  const normal = document.createElement('canvas');
+  normal.width = normal.height = N;
+  const actx = albedo.getContext('2d');
+  const nctx = normal.getContext('2d');
+  const aimg = actx.createImageData(S, S), nimg = nctx.createImageData(S, S);
+  for (const [name, idx] of tileEntries()) {
+    if (name.startsWith('crack_')) {
+      // rachaduras: amplia sem suavizar
+      actx.imageSmoothingEnabled = false;
+      actx.drawImage(tileCanvas(name), (idx % ATLAS_COLS) * S, Math.floor(idx / ATLAS_COLS) * S, S, S);
+      nctx.fillStyle = 'rgb(128,128,255)';
+      nctx.fillRect((idx % ATLAS_COLS) * S, Math.floor(idx / ATLAS_COLS) * S, S, S);
+      continue;
+    }
+    let seed = 7;
+    for (let i = 0; i < name.length; i++) seed = (seed * 31 + name.charCodeAt(i)) | 0;
+    const p = new HD(seed);
+    const painter = PAINTERS[name.replace(/_opaque$/, '')];
+    if (painter) painter(p);
+    else upscale(p, name);
+    if (name.endsWith('_opaque')) for (let i = 0; i < S * S; i++) if (p.a[i] < 0.5) { p.r[i] *= 0.3; p.g[i] *= 0.3; p.b[i] *= 0.3; p.a[i] = 1; }
+    const strength = painter ? 3.2 : KEEP_PIXELS.has(name) ? 1.2 : 2.0;
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+      const i = y * S + x, o = i * 4;
+      aimg.data[o] = Math.min(255, p.r[i] * 255);
+      aimg.data[o + 1] = Math.min(255, p.g[i] * 255);
+      aimg.data[o + 2] = Math.min(255, p.b[i] * 255);
+      aimg.data[o + 3] = Math.min(255, p.a[i] * 255);
+      const hx = p.h[y * S + ((x + 1) % S)] - p.h[y * S + ((x + S - 1) % S)];
+      const hy = p.h[((y + 1) % S) * S + x] - p.h[((y + S - 1) % S) * S + x];
+      let nx = -hx * strength, ny = hy * strength, nz = 1;
+      const l = Math.hypot(nx, ny, nz);
+      nimg.data[o] = ((nx / l) * 0.5 + 0.5) * 255;
+      nimg.data[o + 1] = ((ny / l) * 0.5 + 0.5) * 255;
+      nimg.data[o + 2] = ((nz / l) * 0.5 + 0.5) * 255;
+      nimg.data[o + 3] = clamp01(p.gloss[i]) * 255;
+    }
+    actx.putImageData(aimg, (idx % ATLAS_COLS) * S, Math.floor(idx / ATLAS_COLS) * S);
+    nctx.putImageData(nimg, (idx % ATLAS_COLS) * S, Math.floor(idx / ATLAS_COLS) * S);
+  }
+  const mk = (c) => {
+    const t = new THREE.CanvasTexture(c);
+    t.magFilter = THREE.LinearFilter;
+    t.minFilter = THREE.LinearMipmapLinearFilter;
+    t.anisotropy = 4;
+    t.generateMipmaps = true;
+    t.colorSpace = THREE.NoColorSpace;
+    return t;
+  };
+  return { albedo: mk(albedo), normal: mk(normal), albedoCanvas: albedo };
+}

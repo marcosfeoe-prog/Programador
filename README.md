@@ -163,6 +163,8 @@ Terceiro jogo do repositório: um mundo aberto em blocos no estilo **Minecraft**
 zero, com câmera em **primeira e terceira pessoa** (F5), mundo infinito com biomas e
 cavernas, ciclo de dia e noite, iluminação por propagação, sobrevivência (vida, fome,
 ferramentas, criação, fornalha), criativo com voo, criaturas animadas (porco, ovelha,
-vaca, zumbi e creeper) e controles para celular. Com o servidor rodando (`npm start`), abra
+vaca, galinha, zumbi, esqueleto, aranha e creeper), agricultura, arco e flecha, clima com
+chuva, neve e raios, gráficos **Baixo, Médio, Alto e ULTRA** (sombras, água com reflexos,
+texturas realistas com relevo e animações articuladas) e controles para celular. Com o servidor rodando (`npm start`), abra
 `http://localhost:8080/blocos/`. Detalhes em [`blocos/README.md`](blocos/README.md).
 

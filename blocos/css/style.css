@@ -160,6 +160,7 @@ html, body {
 #debug span { background: rgba(80, 80, 80, 0.5); padding: 0 3px; }
 #vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.45)); }
 #hurt-flash { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 40%, rgba(200, 0, 0, 0.5)); opacity: 0; }
+#sleep-overlay { position: absolute; inset: 0; background: #000; opacity: 0; transition: opacity 0.2s; }
 #water-overlay { position: absolute; inset: 0; background: rgba(20, 40, 160, 0.25); opacity: 0; }
 #chat { position: fixed; left: 2px; right: 2px; bottom: 2px; z-index: 20; }
 #chat input { width: 100%; height: calc(var(--s) * 12); background: rgba(0, 0, 0, 0.55); border: none; color: #fff; font-family: var(--font); font-weight: bold; font-size: calc(var(--s) * 7); padding: 0 6px; outline: none; user-select: text; -webkit-user-select: text; }

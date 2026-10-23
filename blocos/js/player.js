@@ -1,8 +1,8 @@
 // Jogador: movimento, sobrevivência, interação com blocos e mobs.
-import { B, BLOCKS, info, isBlock, breakTicks, canHarvest } from './blocks.js';
-import { moveBox, hasGround, liquidIn, touchesBlock, boxIntersectsBlock } from './physics.js';
+import { B, BLOCKS, I, info, isBlock, breakTicks, canHarvest } from './blocks.js';
+import { moveBox, hasGround, liquidIn, touchesBlock, boxIntersectsBlock, onClimbable, tryStepUp } from './physics.js';
 import { Inventory } from './inventory.js';
-import { SOLID, LIQUID } from './world.js';
+import { SOLID, LIQUID, BED_DIRS } from './world.js';
 import { CH } from './consts.js';
 
 const REACH_SURVIVAL = 4.5, REACH_CREATIVE = 5;
@@ -255,14 +255,41 @@ export class Player {
         this.vx = dx;
         this.vz = dz;
       }
+      // escada de mão: desce devagar, sobe ao empurrar contra ela ou pular
+      const climb = onClimbable(world, this);
+      if (climb) {
+        this.vx = Math.max(-0.15, Math.min(0.15, this.vx));
+        this.vz = Math.max(-0.15, Math.min(0.15, this.vz));
+        if (this.vy < -0.15) this.vy = -0.15;
+        if (this.sneaking && this.vy < 0) this.vy = 0;
+        this.fallDistance = 0;
+      }
+      const wasGround = this.onGround;
+      const sx = this.x, sz = this.z, ivx = this.vx, ivz = this.vz;
       const r = moveBox(world, this, this.vx, this.vy, this.vz);
       this.collide(r);
+      // sobe meio bloco (lajes) sem pular
+      if ((r.hitX || r.hitZ) && wasGround && !climb) {
+        const rx = sx + ivx - this.x, rz = sz + ivz - this.z;
+        if (tryStepUp(world, this, rx, rz)) {
+          this.hitH = false;
+          this.onGround = true;
+          this.vx = ivx;
+          this.vz = ivz;
+        }
+      }
+      if (climb && (this.hitH || input.jump)) this.vy = 0.2;
       this.vy = (this.vy - 0.08) * 0.98;
       const fr = this.onGround ? 0.546 : 0.91;
       this.vx *= fr;
       this.vz *= fr;
       if (this.y < prevY) this.fallDistance += prevY - this.y;
       if (this.onGround) {
+        // pular em terra arada estraga a plantação
+        if (this.fallDistance > 0.75) {
+          const bx = Math.floor(this.x), by = Math.floor(this.y - 0.2), bz = Math.floor(this.z);
+          if (world.getBlock(bx, by, bz) === B.FARMLAND) world.setBlock(bx, by, bz, B.DIRT);
+        }
         if (this.fallDistance > 3 && this.mode === 'survival') {
           this.damage(Math.ceil(this.fallDistance - 3), null, 'fall');
           const below = world.getBlock(Math.floor(this.x), Math.floor(this.y - 0.2), Math.floor(this.z));
@@ -361,6 +388,9 @@ export class Player {
       explosion: 'explodiu',
       void: 'caiu para fora do mundo',
       zombie: 'foi morto por um zumbi',
+      arrow: 'foi alvejado por uma flecha',
+      spider: 'foi morto por uma aranha',
+      lightning: 'foi atingido por um raio',
     };
     this.deathMessage = `${this.game.settings.playerName || 'Jogador'} ${msgs[cause] || 'morreu'}`;
     // espalha os itens
@@ -470,6 +500,19 @@ export class Player {
       }
     } else this.breaking = null;
 
+    // arco: segure para puxar, solte para atirar
+    if (heldId === I.BOW) {
+      if (input.use && (creative || inv.count(I.ARROW) > 0)) {
+        this.bowCharge = (this.bowCharge || 0) + 1;
+        return;
+      }
+      if (this.bowCharge > 0) {
+        this.shootBow(creative);
+        this.bowCharge = 0;
+        return;
+      }
+    } else this.bowCharge = 0;
+
     // usar / colocar
     const wantsUse = input.usePressed || (input.use && this.useCooldown === 0);
     if (heldInfo && heldInfo.food && input.use && this.food < 20 && !(hit && this.isInteractive(hit.id) && !this.sneaking)) {
@@ -491,6 +534,11 @@ export class Player {
     }
     this.eatTicks = 0;
     if (!wantsUse) return;
+    // baldes
+    if (heldId === I.BUCKET) {
+      this.useCooldown = 4;
+      return this.fillBucket(creative);
+    }
     if (hit) {
       this.useCooldown = 4;
       if (!this.sneaking || !heldId) {
@@ -499,12 +547,160 @@ export class Player {
           return;
         }
       }
+      if (heldId && this.useItemOn(hit, heldId, heldInfo, creative)) {
+        this.startSwing();
+        return;
+      }
       if (heldId && isBlock(heldId)) this.placeBlock(hit, heldId, creative);
     }
   }
 
+  shootBow(creative) {
+    const game = this.game, inv = this.inventory;
+    let f = this.bowCharge / 20;
+    f = Math.min(1, (f * f + f * 2) / 3);
+    if (f < 0.1) return;
+    const d = this.lookDir();
+    game.entities.spawnArrow(this.x + d[0] * 0.3, this.y + this.eyeHeight - 0.1, this.z + d[2] * 0.3, d[0] * f * 3, d[1] * f * 3, d[2] * f * 3, this, f >= 1);
+    game.audio.play('bow');
+    this.startSwing();
+    if (!creative) {
+      const i = inv.slots.findIndex((s) => s && s.id === I.ARROW);
+      if (i >= 0) {
+        inv.slots[i].count--;
+        if (!inv.slots[i].count) inv.slots[i] = null;
+      }
+      inv.damageHeld(1);
+    }
+  }
+
+  fillBucket(creative) {
+    const game = this.game, world = game.world, inv = this.inventory;
+    const d = this.lookDir();
+    const hit = world.raycast(this.x, this.y + this.eyeHeight, this.z, d[0], d[1], d[2], this.reach, true);
+    if (!hit || (hit.id !== B.WATER && hit.id !== B.LAVA) || world.getMeta(hit.x, hit.y, hit.z) !== 0) return;
+    world.setBlock(hit.x, hit.y, hit.z, B.AIR);
+    game.audio.play('bucket_fill');
+    const full = hit.id === B.WATER ? I.WATER_BUCKET : I.LAVA_BUCKET;
+    if (creative) return;
+    const held = inv.held;
+    if (held.count === 1) inv.slots[inv.selected] = { id: full, count: 1, damage: 0 };
+    else {
+      held.count--;
+      if (inv.add(full, 1)) game.entities.spawnItem(this.x, this.y + 1, this.z, full, 1);
+    }
+    inv.changed();
+    this.startSwing();
+  }
+
+  // Itens usados num bloco: enxada, sementes, farinha de osso, balde cheio, porta e cama
+  useItemOn(hit, id, it, creative) {
+    const game = this.game, world = game.world, inv = this.inventory;
+    const above = world.getBlock(hit.x, hit.y + 1, hit.z);
+    if (it.tool && it.tool.type === 'hoe') {
+      if ((hit.id === B.GRASS || hit.id === B.DIRT) && hit.face[1] >= 0 && (above === B.AIR || above === B.TALL_GRASS)) {
+        if (above === B.TALL_GRASS) world.setBlock(hit.x, hit.y + 1, hit.z, B.AIR);
+        world.setBlock(hit.x, hit.y, hit.z, B.FARMLAND, 0);
+        game.audio.material('step', 'gravel', { x: hit.x + 0.5, y: hit.y + 1, z: hit.z + 0.5 });
+        if (!creative) inv.damageHeld(1);
+        return true;
+      }
+      return false;
+    }
+    if (id === I.SEEDS) {
+      if (hit.id === B.FARMLAND && hit.face[1] === 1 && above === B.AIR) {
+        world.setBlock(hit.x, hit.y + 1, hit.z, B.WHEAT, 0);
+        game.audio.material('place', 'grass', { x: hit.x + 0.5, y: hit.y + 1, z: hit.z + 0.5 });
+        if (!creative) inv.consumeSelected(1);
+        return true;
+      }
+      return false;
+    }
+    if (id === I.BONE_MEAL) {
+      let used = false;
+      if (hit.id === B.WHEAT) {
+        const m = world.getMeta(hit.x, hit.y, hit.z);
+        if (m < 7) {
+          world.setBlock(hit.x, hit.y, hit.z, B.WHEAT, Math.min(7, m + 2 + Math.floor(Math.random() * 3)));
+          used = true;
+        }
+      } else if (hit.id === B.SAPLING) {
+        if (Math.random() < 0.45) world.growTree(hit.x, hit.y, hit.z);
+        used = true;
+      } else if (hit.id === B.GRASS) {
+        for (let k = 0; k < 14; k++) {
+          const x = hit.x + Math.floor(Math.random() * 7) - 3, z = hit.z + Math.floor(Math.random() * 7) - 3;
+          if (world.getBlock(x, hit.y, z) === B.GRASS && world.getBlock(x, hit.y + 1, z) === B.AIR) {
+            const r = Math.random();
+            world.setBlock(x, hit.y + 1, z, r < 0.75 ? B.TALL_GRASS : r < 0.88 ? B.DANDELION : B.POPPY);
+          }
+        }
+        used = true;
+      }
+      if (used) {
+        for (let k = 0; k < 10; k++) game.particles.happy(hit.x + Math.random(), hit.y + 0.6 + Math.random() * 0.8, hit.z + Math.random());
+        if (!creative) inv.consumeSelected(1);
+      }
+      return used;
+    }
+    if (id === I.WATER_BUCKET || id === I.LAVA_BUCKET) {
+      const hb = BLOCKS[hit.id];
+      const x = hb.replaceable ? hit.x : hit.x + hit.face[0], y = hb.replaceable ? hit.y : hit.y + hit.face[1], z = hb.replaceable ? hit.z : hit.z + hit.face[2];
+      const cur = world.getBlock(x, y, z);
+      if (cur !== B.AIR && !BLOCKS[cur].replaceable) return false;
+      world.setBlock(x, y, z, id === I.WATER_BUCKET ? B.WATER : B.LAVA, 0);
+      game.audio.play('bucket_empty', { x, y, z });
+      if (!creative) {
+        inv.slots[inv.selected] = { id: I.BUCKET, count: 1, damage: 0 };
+        inv.changed();
+      }
+      return true;
+    }
+    if (it.places === B.DOOR) return this.placeDoor(hit, creative);
+    if (it.places === B.BED) return this.placeBed(hit, creative);
+    return false;
+  }
+
+  facingMeta() {
+    const sx = Math.sin(this.yaw), cz = Math.cos(this.yaw);
+    return Math.abs(cz) > Math.abs(sx) ? (cz > 0 ? 0 : 2) : sx > 0 ? 3 : 1;
+  }
+
+  placeDoor(hit, creative) {
+    const world = this.game.world;
+    if (hit.face[1] !== 1) return false;
+    const x = hit.x, y = hit.y + 1, z = hit.z;
+    if (!SOLID[hit.id] || world.getBlock(x, y, z) !== B.AIR || world.getBlock(x, y + 1, z) !== B.AIR) return false;
+    // a folha da porta fica do lado oposto ao jogador
+    const m = (this.facingMeta() + 2) % 4;
+    if (boxIntersectsBlock(this, x, y, z) || boxIntersectsBlock(this, x, y + 1, z)) {
+      // deixa colocar mesmo encostado: a porta é fina
+    }
+    world.setBlock(x, y + 1, z, B.DOOR, m | 8, { noUpdate: true });
+    world.setBlock(x, y, z, B.DOOR, m);
+    this.game.audio.material('place', 'wood', { x: x + 0.5, y: y + 0.5, z: z + 0.5 });
+    if (!creative) this.inventory.consumeSelected(1);
+    return true;
+  }
+
+  placeBed(hit, creative) {
+    const world = this.game.world;
+    if (hit.face[1] !== 1) return false;
+    const m = (this.facingMeta() + 2) % 4; // cabeceira para longe do jogador
+    const [dx, dz] = BED_DIRS[m];
+    const x = hit.x, y = hit.y + 1, z = hit.z;
+    const hx = x + dx, hz = z + dz;
+    if (world.getBlock(x, y, z) !== B.AIR || world.getBlock(hx, y, hz) !== B.AIR || !SOLID[world.getBlock(hx, y - 1, hz)]) return false;
+    if (boxIntersectsBlock(this, x, y, z) || boxIntersectsBlock(this, hx, y, hz)) return false;
+    world.setBlock(hx, y, hz, B.BED, m | 4, { noUpdate: true });
+    world.setBlock(x, y, z, B.BED, m);
+    this.game.audio.material('place', 'cloth', { x: x + 0.5, y: y + 0.5, z: z + 0.5 });
+    if (!creative) this.inventory.consumeSelected(1);
+    return true;
+  }
+
   isInteractive(id) {
-    return id === B.CRAFTING_TABLE || id === B.FURNACE || id === B.FURNACE_LIT || id === B.CHEST || id === B.TNT;
+    return id === B.CRAFTING_TABLE || id === B.FURNACE || id === B.FURNACE_LIT || id === B.CHEST || id === B.TNT || id === B.DOOR || id === B.BED;
   }
 
   useBlock(hit) {
@@ -518,6 +714,18 @@ export class Player {
       game.entities.spawnTNT(hit.x, hit.y, hit.z, 80);
       return true;
     }
+    if (id === B.DOOR) {
+      // abre/fecha as duas metades
+      const w = game.world;
+      const m = w.getMeta(hit.x, hit.y, hit.z);
+      const by = m & 8 ? hit.y - 1 : hit.y;
+      const mb = w.getMeta(hit.x, by, hit.z);
+      w.setBlock(hit.x, by, hit.z, B.DOOR, mb ^ 4, { noUpdate: true });
+      w.setBlock(hit.x, by + 1, hit.z, B.DOOR, (mb ^ 4) | 8, { noUpdate: true });
+      game.audio.play(mb & 4 ? 'door_close' : 'door_open', { x: hit.x, y: by, z: hit.z });
+      return true;
+    }
+    if (id === B.BED) return game.trySleep(hit.x, hit.y, hit.z), true;
     return false;
   }
 
@@ -530,11 +738,12 @@ export class Player {
       if (hit.y === 0) return;
     }
     const heldId = inv.heldId();
+    const meta = world.getMeta(hit.x, hit.y, hit.z);
     world.setBlock(hit.x, hit.y, hit.z, B.AIR);
     game.audio.material('break', b.sound, { x: hit.x + 0.5, y: hit.y + 0.5, z: hit.z + 0.5 });
     game.particles.blockBreak(hit.x, hit.y, hit.z, id, game.brightnessAt(hit.x + 0.5, hit.y + 0.5, hit.z + 0.5));
     if (survival) {
-      if (canHarvest(id, heldId)) game.dropBlockItems(hit.x, hit.y, hit.z, id);
+      if (canHarvest(id, heldId)) game.dropBlockItems(hit.x, hit.y, hit.z, id, meta);
       const hi = heldId ? info(heldId) : null;
       if (hi && hi.tool && b.hardness > 0) {
         if (inv.damageHeld(hi.tool.type === 'sword' ? 2 : 1)) game.audio.play('break_tool');
@@ -546,6 +755,25 @@ export class Player {
   placeBlock(hit, id, creative) {
     const game = this.game, world = game.world;
     const hb = BLOCKS[hit.id];
+    const b0 = BLOCKS[id];
+    // laje sobre laje igual vira bloco inteiro
+    if (b0.render === 'slab' && hit.id === id) {
+      const m = world.getMeta(hit.x, hit.y, hit.z);
+      if ((m === 0 && hit.face[1] === 1) || (m === 1 && hit.face[1] === -1)) {
+        world.setBlock(hit.x, hit.y, hit.z, b0.base);
+        game.audio.material('place', b0.sound, { x: hit.x + 0.5, y: hit.y + 0.5, z: hit.z + 0.5 });
+        this.startSwing();
+        if (!creative) this.inventory.consumeSelected(1);
+        return;
+      }
+    }
+    if (id === B.SNOW_LAYER && hit.id === B.SNOW_LAYER) {
+      const m = world.getMeta(hit.x, hit.y, hit.z);
+      world.setBlock(hit.x, hit.y, hit.z, m >= 6 ? B.SNOW : B.SNOW_LAYER, m >= 6 ? 0 : m + 1);
+      this.startSwing();
+      if (!creative) this.inventory.consumeSelected(1);
+      return;
+    }
     let x = hit.x, y = hit.y, z = hit.z;
     let face = hit.face;
     if (!hb.replaceable || hit.id === id) {
@@ -562,14 +790,23 @@ export class Player {
       if (face[1] < 0) return;
       if (face[1] === 0) meta = face[0] === 1 ? 1 : face[0] === -1 ? 2 : face[2] === 1 ? 3 : 4;
     }
+    if (id === B.LADDER) {
+      if (face[1] !== 0) return;
+      meta = face[0] === 1 ? 1 : face[0] === -1 ? 2 : face[2] === 1 ? 3 : 4;
+    }
+    if (b.render === 'slab') {
+      // metade de cima quando mira na parte de cima da face ou por baixo de um bloco
+      const fy = hit.point ? hit.point[1] - Math.floor(hit.point[1]) : 0;
+      if (face[1] === -1 || (face[1] === 0 && fy > 0.5)) meta = 1;
+    }
     if (b.oriented) {
       const sx = Math.sin(this.yaw), cz = Math.cos(this.yaw);
       meta = Math.abs(cz) > Math.abs(sx) ? (cz > 0 ? 0 : 2) : sx > 0 ? 3 : 1;
     }
     if (b.solid) {
-      if (boxIntersectsBlock(this, x, y, z) && !this.flying) return;
-      if (boxIntersectsBlock(this, x, y, z)) return;
-      for (const e of game.entities.list) if (e.def && !e.deathTime && boxIntersectsBlock(e, x, y, z)) return;
+      const box = b.boxes ? b.boxes(meta)[0] : undefined;
+      if (boxIntersectsBlock(this, x, y, z, box)) return;
+      for (const e of game.entities.list) if (e.def && !e.deathTime && boxIntersectsBlock(e, x, y, z, box)) return;
     }
     world.setBlock(x, y, z, id, meta);
     if (b.needsSupport && !world.supported(x, y, z, id)) {
@@ -587,7 +824,7 @@ export class Player {
     const hit = this.target;
     if (!hit || this.mode !== 'creative') return;
     let id = hit.id;
-    if (id === B.FURNACE_LIT) id = B.FURNACE;
+    id = { [B.FURNACE_LIT]: B.FURNACE, [B.DOOR]: I.DOOR_ITEM, [B.BED]: I.BED_ITEM, [B.WHEAT]: I.SEEDS, [B.FARMLAND]: B.DIRT }[id] || id;
     const inv = this.inventory;
     const idx = inv.slots.findIndex((s, i) => i < 9 && s && s.id === id);
     if (idx >= 0) inv.selected = idx;

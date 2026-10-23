@@ -94,6 +94,48 @@ def(55, 'FURNACE_LIT', { name: 'Fornalha acesa', tex: { top: 'furnace_top', bott
 def(56, 'CHEST', { name: 'Baú', tex: { top: 'chest_top', bottom: 'chest_top', side: 'chest_side', front: 'chest_front' }, hardness: 2.5, tool: 'axe', sound: 'wood', oriented: true });
 def(57, 'SAPLING', { name: 'Muda de carvalho', tex: 'sapling', render: 'cross', solid: false, opaque: false, cutout: true, hardness: 0, sound: 'grass', needsSupport: true });
 
+// caixas de colisão para blocos que não ocupam o cubo inteiro (dependem do meta)
+const H = (n) => n / 16;
+const doorSide = (m) => (m & 4 ? ((m & 3) + 1) % 4 : m & 3);
+const SIDE_BOX = [
+  [0, 0, H(13), 1, 1, 1], // +z
+  [0, 0, 0, H(3), 1, 1], // -x
+  [0, 0, 0, 1, 1, H(3)], // -z
+  [H(13), 0, 0, 1, 1, 1], // +x
+];
+def(58, 'FARMLAND', { name: 'Terra arada', tex: { top: 'farmland', bottom: 'dirt', side: 'dirt' }, hardness: 0.6, tool: 'shovel', sound: 'gravel', drop: 3 });
+def(59, 'WHEAT', { name: 'Trigo (plantação)', tex: 'wheat_7', render: 'crop', solid: false, opaque: false, cutout: true, hardness: 0, sound: 'grass', needsSupport: true, drop: 270 });
+def(60, 'LADDER', { name: 'Escada de mão', tex: 'ladder', render: 'ladder', solid: false, opaque: false, cutout: true, hardness: 0.4, tool: 'axe', sound: 'wood', needsSupport: true, climbable: true });
+def(61, 'DOOR', {
+  name: 'Porta de carvalho', tex: 'door_bottom', render: 'door', opaque: false, cutout: true, hardness: 3, tool: 'axe', sound: 'wood', needsSupport: true,
+  boxes: (m) => [SIDE_BOX[doorSide(m)]],
+});
+def(62, 'BED', { name: 'Cama', tex: { top: 'bed_top_foot', bottom: 'planks', side: 'bed_side' }, render: 'bed', opaque: false, hardness: 0.2, sound: 'cloth', boxes: () => [[0, 0, 0, 1, H(9), 1]] });
+def(63, 'FENCE', {
+  name: 'Cerca de carvalho', tex: 'planks', render: 'fence', opaque: false, hardness: 2, tool: 'axe', sound: 'wood',
+  boxes: (m, conn) => {
+    const b = [[H(6), 0, H(6), H(10), 1.5, H(10)]];
+    if (conn) {
+      if (conn[0]) b.push([H(10), 0, H(6), 1, 1.5, H(10)]);
+      if (conn[1]) b.push([0, 0, H(6), H(6), 1.5, H(10)]);
+      if (conn[2]) b.push([H(6), 0, H(10), H(10), 1.5, 1]);
+      if (conn[3]) b.push([H(6), 0, 0, H(10), 1.5, H(6)]);
+    }
+    return b;
+  },
+});
+const slab = (id, key, name, base, tex, extra) =>
+  def(id, key, { name, tex, render: 'slab', opaque: false, base, hardness: 2, tool: 'pickaxe', tier: 1, ...extra, boxes: (m) => [m ? [0, 0.5, 0, 1, 1, 1] : [0, 0, 0, 1, 0.5, 1]] });
+slab(64, 'STONE_SLAB', 'Laje de pedra', 1, 'stone');
+slab(65, 'PLANK_SLAB', 'Laje de carvalho', 5, 'planks', { tool: 'axe', tier: 0, sound: 'wood' });
+slab(66, 'COBBLE_SLAB', 'Laje de pedregulho', 4, 'cobblestone');
+def(67, 'SNOW_LAYER', { name: 'Camada de neve', tex: 'snow', render: 'layer', solid: false, opaque: false, hardness: 0.1, tool: 'shovel', sound: 'snow', replaceable: true, needsSupport: true, drop: 0 });
+def(68, 'RED_MUSHROOM', { name: 'Cogumelo vermelho', tex: 'red_mushroom', render: 'cross', solid: false, opaque: false, cutout: true, hardness: 0, sound: 'grass', needsSupport: true });
+def(69, 'BROWN_MUSHROOM', { name: 'Cogumelo marrom', tex: 'brown_mushroom', render: 'cross', solid: false, opaque: false, cutout: true, hardness: 0, sound: 'grass', needsSupport: true, light: 1 });
+def(70, 'MOSSY_STONE_BRICKS', { name: 'Tijolos de pedra musgosos', tex: 'mossy_stone_bricks', hardness: 1.5, tool: 'pickaxe', tier: 1 });
+def(71, 'CRACKED_STONE_BRICKS', { name: 'Tijolos de pedra rachados', tex: 'cracked_stone_bricks', hardness: 1.5, tool: 'pickaxe', tier: 1 });
+def(72, 'HAY', { name: 'Fardo de feno', tex: { top: 'hay_top', bottom: 'hay_top', side: 'hay_side' }, hardness: 0.5, sound: 'grass' });
+
 export const BLOCK_COUNT = BLOCKS.length;
 
 // ---------- Itens ----------
@@ -121,6 +163,24 @@ item(266, 'ROTTEN_FLESH', { name: 'Carne podre', icon: 'rotten_flesh', food: 4, 
 item(267, 'MUTTON', { name: 'Carne de carneiro crua', icon: 'mutton', food: 2, sat: 1.2 });
 item(268, 'COOKED_MUTTON', { name: 'Carne de carneiro assada', icon: 'cooked_mutton', food: 6, sat: 9.6 });
 item(269, 'BREAD', { name: 'Pão', icon: 'bread', food: 5, sat: 6 });
+item(270, 'SEEDS', { name: 'Sementes de trigo', icon: 'seeds' });
+item(271, 'WHEAT_ITEM', { name: 'Trigo', icon: 'wheat' });
+item(272, 'BONE', { name: 'Osso', icon: 'bone' });
+item(273, 'BONE_MEAL', { name: 'Farinha de osso', icon: 'bone_meal' });
+item(274, 'ARROW', { name: 'Flecha', icon: 'arrow' });
+item(275, 'BOW', { name: 'Arco', icon: 'bow', stack: 1, durability: 385, damage: 1, fuel: 300 });
+item(276, 'BUCKET', { name: 'Balde', icon: 'bucket', stack: 16 });
+item(277, 'WATER_BUCKET', { name: 'Balde de água', icon: 'water_bucket', stack: 1 });
+item(278, 'LAVA_BUCKET', { name: 'Balde de lava', icon: 'lava_bucket', stack: 1, fuel: 20000 });
+item(279, 'CHICKEN', { name: 'Frango cru', icon: 'chicken', food: 2, sat: 1.2 });
+item(280, 'COOKED_CHICKEN', { name: 'Frango assado', icon: 'cooked_chicken', food: 6, sat: 7.2 });
+item(281, 'FEATHER', { name: 'Pena', icon: 'feather' });
+item(282, 'STRING', { name: 'Linha', icon: 'string' });
+item(283, 'FLINT', { name: 'Pederneira', icon: 'flint' });
+item(284, 'GUNPOWDER', { name: 'Pólvora', icon: 'gunpowder' });
+item(285, 'EGG', { name: 'Ovo', icon: 'egg', stack: 16 });
+item(286, 'DOOR_ITEM', { name: 'Porta de carvalho', icon: 'door', places: 61 });
+item(287, 'BED_ITEM', { name: 'Cama', icon: 'bed', stack: 1, places: 62 });
 
 export const TOOL_MATERIALS = {
   wood: { name: 'madeira', tier: 1, speed: 2, durability: 60, damage: 0, colors: ['#5d4320', '#8b6a38', '#b08d55'] },
@@ -151,6 +211,20 @@ for (const mat of Object.keys(TOOL_MATERIALS)) {
   }
 }
 
+let nextHoe = 320;
+for (const mat of Object.keys(TOOL_MATERIALS)) {
+  const m = TOOL_MATERIALS[mat];
+  item(nextHoe++, `${mat.toUpperCase()}_HOE`, {
+    name: `Enxada de ${m.name}`,
+    icon: `${mat}_hoe`,
+    stack: 1,
+    tool: { type: 'hoe', material: mat, tier: m.tier, speed: 1 },
+    durability: m.durability,
+    damage: 1,
+    fuel: mat === 'wood' ? 200 : 0,
+  });
+}
+
 export function info(id) {
   return id < 256 ? BLOCKS[id] : ITEMS[id];
 }
@@ -168,11 +242,12 @@ export function itemName(id) {
 
 // Itens que aparecem no inventário do criativo, em ordem.
 export const CREATIVE_LIST = [
-  1, 4, 42, 41, 2, 3, 19, 7, 26, 8, 45, 20, 44, 6, 43,
-  9, 22, 24, 5, 51, 52, 10, 23, 25, 57,
-  14, 15, 16, 17, 48, 49, 50, 18, 33, 11, 47, 34, 46, 31, 32, 56, 30,
-  35, 36, 37, 38, 39, 40, 21, 54, 27, 28, 29, 53, 12, 13,
-  256, 257, 258, 259, 260, 261, 269, 262, 263, 264, 265, 267, 268, 266,
+  1, 4, 42, 41, 70, 71, 64, 66, 2, 3, 58, 19, 7, 26, 8, 45, 20, 67, 44, 6, 43,
+  9, 22, 24, 5, 51, 52, 65, 63, 60, 10, 23, 25, 57,
+  14, 15, 16, 17, 48, 49, 50, 18, 33, 11, 47, 34, 46, 72, 31, 32, 56, 30,
+  35, 36, 37, 38, 39, 40, 21, 54, 27, 28, 29, 53, 68, 69, 12, 13,
+  286, 287, 275, 274, 276, 277, 278, 270, 271, 272, 273, 281, 282, 283, 284, 285,
+  256, 257, 258, 259, 260, 261, 269, 262, 263, 264, 265, 267, 268, 279, 280, 266,
   ...Object.keys(ITEMS).map(Number).filter((id) => ITEMS[id].tool),
 ];
 
@@ -215,6 +290,7 @@ export const SMELTING = {
   262: 263,
   264: 265,
   267: 268,
+  279: 280,
 };
 export function fuelTicks(id) {
   if (id < 256) {

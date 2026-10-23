@@ -107,6 +107,23 @@ for (const [blk, it] of [[B.IRON_BLOCK, I.IRON_INGOT], [B.GOLD_BLOCK, I.GOLD_ING
   r(['XXX', 'XXX', 'XXX'], { X: it }, blk);
   r(['X'], { X: blk }, it, 9);
 }
+const WOOL = [B.WOOL_WHITE, B.WOOL_RED, B.WOOL_BLUE, B.WOOL_GREEN, B.WOOL_YELLOW, B.WOOL_BLACK];
+r(['PP', 'PP', 'PP'], { P: PLANKS }, I.DOOR_ITEM, 3);
+r(['WWW', 'PPP'], { W: WOOL, P: PLANKS }, I.BED_ITEM);
+r(['S S', 'SSS', 'S S'], { S: I.STICK }, B.LADDER, 3);
+r(['PSP', 'PSP'], { P: PLANKS, S: I.STICK }, B.FENCE, 3);
+r(['SSS'], { S: B.STONE }, B.STONE_SLAB, 6);
+r(['SSS'], { S: B.COBBLE }, B.COBBLE_SLAB, 6);
+r(['SSS'], { S: PLANKS }, B.PLANK_SLAB, 6);
+r(['I I', ' I '], { I: I.IRON_INGOT }, I.BUCKET);
+r([' TS', 'T S', ' TS'], { T: I.STICK, S: I.STRING }, I.BOW);
+r(['F', 'S', 'E'], { F: I.FLINT, S: I.STICK, E: I.FEATHER }, I.ARROW, 4);
+r(['B'], { B: I.BONE }, I.BONE_MEAL, 3);
+r(['GSG', 'SGS', 'GSG'], { G: I.GUNPOWDER, S: B.SAND }, B.TNT);
+r(['WWW'], { W: I.WHEAT_ITEM }, I.BREAD);
+r(['WWW', 'WWW', 'WWW'], { W: I.WHEAT_ITEM }, B.HAY);
+r(['H'], { H: B.HAY }, I.WHEAT_ITEM, 9);
+r(['SS', 'SS'], { S: I.STRING }, B.WOOL_WHITE);
 const toolMats = { wood: PLANKS, stone: [B.COBBLE], iron: [I.IRON_INGOT], gold: [I.GOLD_INGOT], diamond: [I.DIAMOND] };
 for (const [mat, ing] of Object.entries(toolMats)) {
   const k = { M: ing, S: I.STICK };
@@ -115,6 +132,7 @@ for (const [mat, ing] of Object.entries(toolMats)) {
   r(['MM', 'MS', ' S'], k, id('AXE'));
   r(['M', 'S', 'S'], k, id('SHOVEL'));
   r(['M', 'M', 'S'], k, id('SWORD'));
+  r(['MM', ' S', ' S'], k, id('HOE'));
 }
 
 function trim(grid, size) {
