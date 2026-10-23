@@ -116,6 +116,8 @@ button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 #bSprint { right: 12px; bottom: 116px; width: 64px; height: 64px; background: var(--panel-2); font-size: 13px; border: 2px solid var(--line) !important; }
 #bLong { right: 196px; bottom: 30px; width: 68px; height: 68px; background: #1f9e6a; font-size: 12px; line-height: 1.05; }
 #bLob { right: 102px; bottom: 98px; width: 68px; height: 68px; background: #8a4dff; font-size: 11px; line-height: 1.05; }
+#diffSeg .chip { justify-content: center; }
+#bSkill { touch-action: none; }
 #bSkill { right: 186px; bottom: 110px; width: 62px; height: 62px; background: #ff8a1f; font-size: 13px; }
 #btns button.off { opacity: .45; }
 @media (max-width: 480px) { #btns { transform: scale(.8); transform-origin: bottom right; } }
@@ -216,7 +218,7 @@ button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
       </div>
       <div class="group"><div class="label">Seu time</div><div class="chips" id="homeChips"></div></div>
       <div class="group"><div class="label">Adversário</div><div class="chips" id="awayChips"></div></div>
-      <div class="group"><div class="label">Dificuldade</div><div class="seg" id="diffSeg"></div></div>
+      <div class="group"><div class="label">Dificuldade</div><div class="chips" id="diffSeg"></div></div>
       <div class="group"><div class="label">Modo de jogo</div><div class="seg" id="sizeSeg"></div></div>
       <div class="group"><div class="label">Bola</div><div class="chips" id="ballChips"></div></div>
       <div class="group"><div class="label">Duração da partida</div><div class="seg" id="lenSeg"></div></div>
@@ -226,7 +228,7 @@ button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
         <b>Passes</b><span>a bola vai exatamente para onde o joystick aponta; segure para dar mais força</span>
         <b>Passe longo</b><span>passe rasteiro forte para quem está longe</span>
         <b>Lançamento</b><span>bola por cima dos adversários</span>
-        <b>Finta</b><span>parado: pedalada · joystick para trás: giro · para o lado: dois toques · para a frente: drible da vaca</span>
+        <b>Finta</b><span>arraste o dedo no botão: para cima dois toques · para baixo giro · para a esquerda pedalada · para a direita drible da vaca</span>
         <b>Chutar</b><span>segure e solte; depois mexa o joystick para fazer a curva</span>
         <b>Sem a bola</b><span>Passar vira Trocar jogador e Chutar vira Carrinho</span>
       </div>
@@ -234,7 +236,7 @@ button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
         <b>WASD / setas</b><span>conduzir a bola e mover</span>
         <b>Espaço ou J</b><span>passar · sem a bola: trocar jogador</span>
         <b>U / I</b><span>passe longo / lançamento (segure para mais força; vai para onde as setas apontam)</span>
-        <b>F ou 1–4</b><span>finta pela direção, ou 1 vaca · 2 giro · 3 dois toques · 4 pedalada</span>
+        <b>1–4</b><span>fintas: 1 dois toques · 2 giro · 3 pedalada · 4 drible da vaca (F escolhe pela direção das setas)</span>
         <b>K</b><span>segure e solte para chutar, depois guie a curva com as setas · sem a bola: carrinho</span>
         <b>Shift ou L</b><span>correr (a bola vai mais solta no pé)</span>
         <b>Esc ou P</b><span>pausar</span>
@@ -291,10 +293,16 @@ const NICKS = ['Tião', 'Didico', 'Baiano', 'Juninho', 'Tico', 'Pedrão', 'Nené
   'Fumaça', 'Caju', 'Toquinho', 'Paçoca', 'Gordo', 'Xodó', 'Raio', 'Pipoca', 'Barbudo', 'Careca', 'Foguete',
   'Biscoito', 'Lagarto', 'Trovão', 'Faísca', 'Chiclete', 'Marreta', 'Canela', 'Pirulito', 'Dentinho'];
 const DIFFS = {
-  facil:   { label: 'Fácil',   spd: 0.86, steal: 0.9, gk: 0.72, err: 1.45, think: 0.75, range: -30, slide: 0.35, moves: 0.3 },
-  normal:  { label: 'Normal',  spd: 0.95, steal: 1.5, gk: 0.86, err: 1.0,  think: 0.5,  range: 0,   slide: 0.8, moves: 0.7 },
-  dificil: { label: 'Difícil', spd: 1.04, steal: 2.3, gk: 0.98, err: 0.7,  think: 0.3,  range: 40,  slide: 1.3, moves: 1.2 },
+  iniciante:     { label: 'Iniciante',     spd: 0.80, steal: 0.6, gk: 0.62, err: 1.8,  think: 0.95, range: -60, slide: 0.15, moves: 0.15 },
+  amador:        { label: 'Amador',        spd: 0.87, steal: 1.0, gk: 0.74, err: 1.4,  think: 0.72, range: -30, slide: 0.4,  moves: 0.35 },
+  intermediario: { label: 'Intermediário', spd: 0.95, steal: 1.5, gk: 0.86, err: 1.0,  think: 0.5,  range: 0,   slide: 0.8,  moves: 0.7 },
+  profissional:  { label: 'Profissional',  spd: 1.02, steal: 2.1, gk: 0.94, err: 0.78, think: 0.36, range: 30,  slide: 1.15, moves: 1.0 },
+  craque:        { label: 'Craque',        spd: 1.07, steal: 2.6, gk: 0.99, err: 0.62, think: 0.27, range: 50,  slide: 1.45, moves: 1.3 },
+  superastro:    { label: 'Super astro',   spd: 1.12, steal: 3.2, gk: 1.04, err: 0.48, think: 0.2,  range: 70,  slide: 1.8,  moves: 1.7 },
 };
+// nomes das versões antigas do jogo
+const OLD_DIFF = { facil: 'amador', normal: 'intermediario', dificil: 'profissional' };
+const fixDiff = c => { if (OLD_DIFF[c.diff]) c.diff = OLD_DIFF[c.diff]; if (!DIFFS[c.diff]) c.diff = 'intermediario'; return c; };
 const MATE = { spd: 0.97, steal: 1.4, gk: 0.88, err: 0.85, think: 0.45, range: 0, slide: 0, moves: 0.5 };
 const LENS = [{ s: 120, label: '2 min' }, { s: 240, label: '4 min' }, { s: 360, label: '6 min' }];
 const GK = { role: 'GK', x: 0.03, y: 0.5, n: 1 };
@@ -326,9 +334,9 @@ const dist = (a, b) => hyp(a.x - b.x, a.y - b.y);
 const inMouth = y => y > GY0 && y < GY1;
 
 // ---------- Estado ----------
-const DEFAULT_CFG = { home: 0, away: 1, diff: 'normal', len: 240, size: 3, ball: 0 };
+const DEFAULT_CFG = { home: 0, away: 1, diff: 'intermediario', len: 240, size: 3, ball: 0 };
 let cfg = Object.assign({}, DEFAULT_CFG);
-try { const s = JSON.parse(localStorage.getItem('mamoball-cfg') || 'null'); if (s && TEAMS[s.home] && TEAMS[s.away] && DIFFS[s.diff]) cfg = Object.assign(cfg, s); if (!FORMS[cfg.size]) cfg.size = 3; if (!BALLS[cfg.ball]) cfg.ball = 0; } catch (e) {}
+try { const s = JSON.parse(localStorage.getItem('mamoball-cfg') || 'null'); if (s && TEAMS[s.home] && TEAMS[s.away]) cfg = fixDiff(Object.assign(cfg, s)); if (!FORMS[cfg.size]) cfg.size = 3; if (!BALLS[cfg.ball]) cfg.ball = 0; } catch (e) {}
 setGoal();
 
 let mode = 'demo';          // demo (fundo do menu) | match
@@ -852,7 +860,8 @@ function humanFrame(dt) {
   const h = human;
   const aDown = inp.a && !prevA, bDown = inp.b && !prevB;
   const cDown = inp.c && !prevC, dDown = inp.d && !prevD, fDown = inp.f && !prevF;
-  const moveDown = inp.move && inp.move !== prevMove ? inp.move : '';
+  const moveDown = pendingMove || (inp.move && inp.move !== prevMove ? inp.move : '');
+  pendingMove = '';
   prevA = inp.a; prevB = inp.b; prevC = inp.c; prevD = inp.d; prevF = inp.f; prevMove = inp.move;
   if (!h || state !== 'play' || mode !== 'match') { charging = false; charge = 0; return; }
   if (h.skill) { charging = false; charge = 0; return; }
@@ -933,7 +942,7 @@ function fool(p, range, time, side) {
   const px = -p.fy, py = p.fx;
   for (const q of players) {
     if (q.team === p.team || q.role === 'GK' || dist(q, p) > range) continue;
-    const resist = q.team === 1 && mode === 'match' ? DIFFS[cfg.diff].steal / 3.2 : 0.45;
+    const resist = q.team === 1 && mode === 'match' ? Math.min(0.8, DIFFS[cfg.diff].steal / 3.6) : 0.45;
     if (Math.random() > resist) { q.stun = time; q.vx = px * side * 140; q.vy = py * side * 140; }
   }
 }
@@ -1574,7 +1583,39 @@ const endStick = e => {
   touch.id = null; touch.jx = touch.jy = 0; knob.style.transform = ''; base.classList.remove('on');
 };
 zone.addEventListener('pointerup', endStick); zone.addEventListener('pointercancel', endStick);
-for (const [id, key] of [['bPass', 'a'], ['bShoot', 'b'], ['bLong', 'c'], ['bLob', 'd'], ['bSkill', 'f'], ['bSprint', 's']]) {
+// botão de finta: a direção do arrasto escolhe o drible
+const SWIPE_MOVES = { up: 'toques', down: 'giro', left: 'pedalada', right: 'vaca' };
+const SWIPE_LABELS = { toques: 'Dois toques', giro: 'Giro', pedalada: 'Pedalada', vaca: 'Vaca' };
+let pendingMove = '';
+(() => {
+  const el = $('bSkill');
+  let sx = 0, sy = 0, id = null;
+  const swipeOf = e => {
+    const dx = e.clientX - sx, dy = e.clientY - sy;
+    if (hyp(dx, dy) < 16) return '';
+    return Math.abs(dx) > Math.abs(dy) ? SWIPE_MOVES[dx > 0 ? 'right' : 'left'] : SWIPE_MOVES[dy > 0 ? 'down' : 'up'];
+  };
+  el.addEventListener('pointerdown', e => {
+    e.preventDefault(); id = e.pointerId; sx = e.clientX; sy = e.clientY;
+    el.classList.add('down'); try { el.setPointerCapture(e.pointerId); } catch (_) {}
+  });
+  el.addEventListener('pointermove', e => {
+    if (e.pointerId !== id) return;
+    const m = swipeOf(e); el.textContent = m ? SWIPE_LABELS[m] : 'Finta';
+  });
+  const finish = (e, fire) => {
+    if (e.pointerId !== id) return;
+    id = null; el.classList.remove('down'); el.textContent = 'Finta';
+    if (!fire) return;
+    const m = swipeOf(e);
+    if (m) pendingMove = m;
+    else floats.push({ p: human || players[0], text: 'ARRASTE NO BOTÃO', t: 1 });
+  };
+  el.addEventListener('pointerup', e => finish(e, true));
+  el.addEventListener('pointercancel', e => finish(e, false));
+  el.addEventListener('contextmenu', e => e.preventDefault());
+})();
+for (const [id, key] of [['bPass', 'a'], ['bShoot', 'b'], ['bLong', 'c'], ['bLob', 'd'], ['bSprint', 's']]) {
   const el = $(id);
   const on = e => { e.preventDefault(); touch[key] = true; el.classList.add('down'); try { el.setPointerCapture(e.pointerId); } catch (_) {} };
   const off = () => { touch[key] = false; el.classList.remove('down'); };
@@ -1600,7 +1641,7 @@ function readInput() {
     d: !!(keys.KeyI || touch.d),
     s: !!(keys.ShiftLeft || keys.ShiftRight || keys.KeyL || touch.s),
     f: !!(keys.KeyF || touch.f),
-    move: keys.Digit1 ? 'vaca' : keys.Digit2 ? 'giro' : keys.Digit3 ? 'toques' : keys.Digit4 ? 'pedalada' : '',
+    move: keys.Digit1 ? 'toques' : keys.Digit2 ? 'giro' : keys.Digit3 ? 'pedalada' : keys.Digit4 ? 'vaca' : '',
   };
 }
 
@@ -1784,7 +1825,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden && mod
 function start(data) {
   resize(); buildField(); buildMenu();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(buildField);
-  if (data && data.cfg && TEAMS[data.cfg.home] && FORMS[data.cfg.size]) { cfg = Object.assign({}, DEFAULT_CFG, data.cfg); setGoal(); buildField(); buildMenu(); }
+  if (data && data.cfg && TEAMS[data.cfg.home] && FORMS[data.cfg.size]) { cfg = fixDiff(Object.assign({}, DEFAULT_CFG, data.cfg)); setGoal(); buildField(); buildMenu(); }
   makePlayers(); resetKickoff(0);
   if (data && data.cfg && TEAMS[data.cfg.home] && FORMS[data.cfg.size]) {
     if (data.mode === 'match' && data.state !== 'end') {
