@@ -160,4 +160,4 @@ controles feitos para **celular**. Com o servidor rodando (`npm start`), abra
 Futebol estilo MamoBall nos modos 2v2, 3v3, 4v4 e 5v5, num campo grande com câmera que segue a bola. Os jogadores são fichas redondas com rosto e aro do time. A bola
 gruda no pé: dá para conduzir, tocar e chutar (segure para carregar a força). Funciona no
 celular (joystick + botões, em pé ou deitado) e no PC (WASD/setas, Espaço passa, K chuta,
-Shift corre). Abra `mamoball/index.html` direto no navegador — é um arquivo único.
+Shift corre, U passe longo, I lançamento por cima; depois do chute as setas curvam a bola). Abra `mamoball/index.html` direto no navegador — é um arquivo único.

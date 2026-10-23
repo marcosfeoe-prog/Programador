@@ -93,7 +93,7 @@ button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 #stickBase {
   position: absolute; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%;
   border: 2px solid rgba(243,247,239,.35); background: rgba(11,23,18,.3);
-  left: 90px; bottom: 30px; top: auto; opacity: .55; transition: opacity .15s;
+  left: 76px; bottom: 120px; top: auto; opacity: .45; transition: opacity .15s;
 }
 #stickBase.on { opacity: 1; }
 #stickKnob {
@@ -102,7 +102,7 @@ button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 }
 #btns {
   position: absolute; right: max(14px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
-  width: 210px; height: 190px; pointer-events: none;
+  width: 270px; height: 200px; pointer-events: none;
 }
 #btns button {
   position: absolute; pointer-events: auto; border-radius: 50%; border: 0;
@@ -113,7 +113,11 @@ button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 #btns button.down { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0,0,0,.45); }
 #bShoot { right: 0; bottom: 0; width: 98px; height: 98px; background: var(--away); font-size: 17px; }
 #bPass { right: 112px; bottom: 6px; width: 76px; height: 76px; background: var(--home); font-size: 15px; }
-#bSprint { right: 30px; bottom: 112px; width: 64px; height: 64px; background: var(--panel-2); font-size: 13px; border: 2px solid var(--line) !important; }
+#bSprint { right: 12px; bottom: 116px; width: 64px; height: 64px; background: var(--panel-2); font-size: 13px; border: 2px solid var(--line) !important; }
+#bLong { right: 196px; bottom: 30px; width: 68px; height: 68px; background: #1f9e6a; font-size: 12px; line-height: 1.05; }
+#bLob { right: 102px; bottom: 98px; width: 68px; height: 68px; background: #8a4dff; font-size: 11px; line-height: 1.05; }
+#btns button.off { opacity: .45; }
+@media (max-width: 480px) { #btns { transform: scale(.8); transform-origin: bottom right; } }
 
 /* Telas sobrepostas */
 .overlay {
@@ -193,6 +197,8 @@ button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
     <div id="stickZone"><div id="stickBase"><div id="stickKnob"></div></div></div>
     <div id="btns">
       <button id="bSprint">Correr</button>
+      <button id="bLob">Lança&shy;mento</button>
+      <button id="bLong">Passe longo</button>
       <button id="bPass">Passar</button>
       <button id="bShoot">Chutar</button>
     </div>
@@ -213,13 +219,16 @@ button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
       <div class="help" id="helpTouch">
         <b>Joystick</b><span>conduz a bola (lado esquerdo da tela)</span>
         <b>Passar</b><span>toca para o companheiro na direção do joystick</span>
-        <b>Chutar</b><span>segure para carregar a força e solte para chutar</span>
+        <b>Passe longo</b><span>passe rasteiro forte para quem está longe</span>
+        <b>Lançamento</b><span>bola por cima dos adversários</span>
+        <b>Chutar</b><span>segure e solte; depois mexa o joystick para fazer a curva</span>
         <b>Sem a bola</b><span>Passar vira Trocar jogador e Chutar vira Carrinho</span>
       </div>
       <div class="help" id="helpKeys">
         <b>WASD / setas</b><span>conduzir a bola e mover</span>
         <b>Espaço ou J</b><span>passar · sem a bola: trocar jogador</span>
-        <b>K</b><span>segure e solte para chutar · sem a bola: carrinho</span>
+        <b>U / I</b><span>passe longo / lançamento por cima</span>
+        <b>K</b><span>segure e solte para chutar, depois guie a curva com as setas · sem a bola: carrinho</span>
         <b>Shift ou L</b><span>correr (a bola vai mais solta no pé)</span>
         <b>Esc ou P</b><span>pausar</span>
       </div>
@@ -483,6 +492,7 @@ function release(p, dx, dy, speed, vz) {
   ball.owner = null; ball.last = p;
   ball.x = p.x + dx * (PR + BR + 3); ball.y = p.y + dy * (PR + BR + 3);
   ball.vx = dx * speed; ball.vy = dy * speed; ball.vz = vz; ball.z = vz > 0 ? 1 : 0;
+  ball.curve = 0; ball.curveT = 0; ball.guide = null; ball.kind = '';
   p.kickCd = 0.3; p.fx = dx; p.fy = dy; p.protect = 0;
   if (p.role === 'GK') p.holdT = 0;
 }
@@ -502,15 +512,18 @@ function laneBlock(p, m) {
   }
   return best;
 }
-function bestPassTarget(p, hint) {
+function bestPassTarget(p, hint, kind) {
   const sign = p.team === 0 ? 1 : -1;
   let best = null, bs = -1e9;
-  for (const m of players) {
-    if (m.team !== p.team || m === p || m.role === 'GK') continue;
+  const mates = players.filter(m => m.team === p.team && m !== p);
+  const onlyGk = !mates.some(m => m.role !== 'GK');
+  for (const m of mates) {
+    if (m.role === 'GK' && !onlyGk) continue;
     const d = dist(p, m); if (d < 35) continue;
     const ux = (m.x - p.x) / d, uy = (m.y - p.y) / d;
-    let sc = Math.min(openness(m), 150) * 0.6 + (m.x - p.x) * sign * 0.35 - d * 0.12;
-    if (laneBlock(p, m) < 24) sc -= 140;
+    let sc = Math.min(openness(m), 150) * 0.6 + (m.x - p.x) * sign * 0.35;
+    sc += kind === 'long' || kind === 'lob' ? Math.min(d, 700) * 0.25 : -d * 0.12;
+    if (kind !== 'lob' && laneBlock(p, m) < 26) sc -= 140;
     if (hint) {
       const hl = hyp(hint.x, hint.y) || 1, dot = (ux * hint.x + uy * hint.y) / hl;
       sc += dot * 320;
@@ -519,18 +532,35 @@ function bestPassTarget(p, hint) {
   }
   return best;
 }
-function pass(p, m) {
-  const d = dist(p, m);
-  const lob = d > 480;
-  let spd = clamp(260 + d * 1.1, 320, 820);
-  if (lob) spd *= 0.72;
-  const t = d / spd;
-  const tx = clamp(m.x + m.vx * t * 0.8, PR, W - PR), ty = clamp(m.y + m.vy * t * 0.8, PR, H - PR);
-  const sound = p.role === 'GK' ? 0.55 : 0.35;
-  release(p, tx - p.x, ty - p.y, spd, lob ? clamp(d * 0.55, 160, 300) : 0);
-  m.recv = 1.8;
-  if (mode === 'match' && p.team === 0) human = m;
-  sfx.kick(sound);
+// kind: 'short' (passe rasteiro forte), 'long' (passe longo rasteiro) ou 'lob' (lançamento por cima)
+function passSpeed(d, kind) {
+  if (kind === 'long') return clamp(560 + d * 1.15, 760, 1250);
+  if (kind === 'lob') return d / clamp(0.6 + d / 1500, 0.62, 1.25);
+  return clamp(420 + d * 1.25, 520, 980);
+}
+function kickTo(p, tx, ty, kind) {
+  const d = hyp(tx - p.x, ty - p.y), spd = passSpeed(d, kind);
+  // lançamento: sobe o bastante para passar por cima e cai no alvo
+  const vz = kind === 'lob' ? GRAV * (d / spd) / 2 : 0;
+  release(p, tx - p.x, ty - p.y, spd, vz);
+  ball.kind = kind;
+  sfx.kick(kind === 'short' ? 0.4 : 0.65);
+}
+function pass(p, m, kind) {
+  if (!kind) {
+    const d0 = dist(p, m);
+    kind = d0 > 520 && laneBlock(p, m) < 30 ? 'lob' : d0 > 420 ? 'long' : 'short';
+  }
+  const d = dist(p, m), t = d / passSpeed(d, kind) * (kind === 'lob' ? 1 : 0.8);
+  const tx = clamp(m.x + m.vx * t, PR, W - PR), ty = clamp(m.y + m.vy * t, PR, H - PR);
+  kickTo(p, tx, ty, kind);
+  m.recv = kind === 'short' ? 1.6 : 2.2;
+  if (mode === 'match' && p.team === 0 && m.role !== 'GK') human = m;
+}
+function passInto(p, dir, kind) {
+  // sem companheiro: lança no espaço vazio
+  const reach = kind === 'short' ? 220 : 420;
+  kickTo(p, clamp(p.x + dir.x * reach, PR, W - PR), clamp(p.y + dir.y * reach, PR, H - PR), kind);
 }
 function shoot(p, power, aimY, errMul) {
   const gx = attackX(p.team) + (p.team === 0 ? 10 : -10);
@@ -538,9 +568,11 @@ function shoot(p, power, aimY, errMul) {
   let err = (6 + d * 0.055 + Math.max(0, power - 0.86) * 140) * errMul;
   for (const q of players) if (q.team !== p.team && dist(q, p) < 42) { err *= 1.5; break; }
   const ty = aimY + randn() * err;
-  const spd = 470 + power * 600;
-  release(p, gx - p.x, ty - p.y, spd, 50 + Math.pow(power, 3) * 300);
-  ball.shot = 0.9;
+  const spd = 680 + power * 760;
+  // só o finalzinho da barra de força arrisca mandar por cima do travessão
+  release(p, gx - p.x, ty - p.y, spd, 30 + Math.max(0, power - 0.9) * 3800);
+  ball.shot = 0.9; ball.kind = 'shot';
+  ball.curve = randn() * 320; ball.curveT = 0.6;
   shake = 3 + power * 5;
   sfx.kick(0.6 + power * 0.4);
 }
@@ -704,20 +736,31 @@ function startSlide(p, dx, dy) {
 }
 
 // ---------- Jogador controlado ----------
-let inp = { x: 0, y: 0, mag: 0, a: false, b: false, s: false }, prevA = false, prevB = false;
+let inp = { x: 0, y: 0, mag: 0, a: false, b: false, c: false, d: false, s: false };
+let prevA = false, prevB = false, prevC = false, prevD = false;
 function humanFrame(dt) {
   const h = human;
   const aDown = inp.a && !prevA, bDown = inp.b && !prevB, bUp = !inp.b && prevB;
-  prevA = inp.a; prevB = inp.b;
+  const cDown = inp.c && !prevC, dDown = inp.d && !prevD;
+  prevA = inp.a; prevB = inp.b; prevC = inp.c; prevD = inp.d;
   if (!h || state !== 'play' || mode !== 'match') { charging = false; charge = 0; return; }
   const dir = inp.mag > 0.2 ? { x: inp.x, y: inp.y } : { x: h.fx, y: h.fy };
   if (ball.owner === h) {
-    if (aDown) { const m = bestPassTarget(h, dir); if (m) pass(h, m); charging = false; charge = 0; return; }
+    const kind = aDown ? 'short' : cDown ? 'long' : dDown ? 'lob' : '';
+    if (kind) {
+      const m = bestPassTarget(h, dir, kind);
+      const dl = hyp(dir.x, dir.y) || 1, u = { x: dir.x / dl, y: dir.y / dl };
+      // passa para o companheiro se ele estiver mais ou menos na direção escolhida
+      if (m && ((m.x - h.x) * u.x + (m.y - h.y) * u.y) / dist(h, m) > 0.35) pass(h, m, kind);
+      else passInto(h, u, kind);
+      charging = false; charge = 0; return;
+    }
     if (inp.b) { charging = true; charge = Math.min(1, charge + dt / 0.85); }
     else if (bUp && charging) {
       // mira: a componente lateral do joystick escolhe o canto
       let aimY = inp.mag > 0.2 ? H / 2 + clamp(inp.y, -1, 1) * GOAL_W * 0.46 : (h.y < H / 2 ? H / 2 + 40 : H / 2 - 40);
       shoot(h, Math.max(0.3, charge), aimY, MATE.err * 0.9);
+      ball.guide = h; ball.curveT = 0.9; ball.curve = 0;
       charging = false; charge = 0;
     }
     return;
@@ -800,6 +843,21 @@ function updateBall(dt) {
     return;
   }
   ball.shot = (ball.shot || 0) - dt;
+  if (ball.curveT > 0) {
+    ball.curveT -= dt;
+    const sp = hyp(ball.vx, ball.vy);
+    if (sp < 250) ball.curveT = 0;
+    else {
+      const px = -ball.vy / sp, py = ball.vx / sp;
+      // teleguiado: o joystick empurra a bola para o lado durante o voo
+      if (ball.guide === human && mode === 'match' && inp.mag > 0.2) {
+        const side = inp.x * px + inp.y * py;
+        ball.curve += (side * 1700 - ball.curve) * Math.min(1, dt * 10);
+      }
+      ball.vx += px * ball.curve * dt; ball.vy += py * ball.curve * dt;
+      const k = sp / hyp(ball.vx, ball.vy); ball.vx *= k; ball.vy *= k;
+    }
+  }
   ball.x += ball.vx * dt; ball.y += ball.vy * dt;
   if (ball.z > 0 || ball.vz !== 0) {
     ball.vz -= GRAV * dt; ball.z += ball.vz * dt;
@@ -848,7 +906,7 @@ function updateBall(dt) {
       }
     }
   }
-  if (hyp(ball.vx, ball.vy) > 480) { ball.trail.push({ x: ball.x, y: ball.y, z: ball.z }); if (ball.trail.length > 10) ball.trail.shift(); }
+  if (hyp(ball.vx, ball.vy) > 480) { ball.trail.push({ x: ball.x, y: ball.y, z: ball.z }); if (ball.trail.length > 16) ball.trail.shift(); }
   else if (ball.trail.length) ball.trail.shift();
 }
 function inOwnBox(p) {
@@ -887,7 +945,7 @@ function checkPossession(dt) {
   const sp = hyp(ball.vx, ball.vy);
   if (best.role === 'GK' && inOwnBox(best)) {
     const sk = skill(best);
-    if (sp > 560 && Math.random() > sk.gk * 0.7) {
+    if (sp > 760 && Math.random() > sk.gk * 0.72) {
       // espalma
       ball.vx = -ball.vx * 0.35; ball.vy = (Math.random() < 0.5 ? -1 : 1) * rand(180, 300); ball.vz = 120;
       ball.last = best; best.kickCd = 0.45; sfx.touch(); shake = 4;
@@ -895,7 +953,7 @@ function checkPossession(dt) {
     }
     return take(best);
   }
-  if (sp > 700 && ball.last && ball.last.team !== best.team) {
+  if (sp > 900 && ball.last && ball.last.team !== best.team) {
     // bola forte demais: desvia no corpo
     ball.vx *= -0.3; ball.vy = ball.vy * 0.3 + rand(-160, 160); ball.last = best; best.kickCd = 0.25; sfx.touch();
     return;
@@ -1143,7 +1201,7 @@ function render() {
   // rastro do chute
   for (let i = 0; i < ball.trail.length; i++) {
     const t = ball.trail[i], [tx, ty] = w2s(t.x, t.y);
-    ctx.fillStyle = `rgba(255,240,200,${(i + 1) / ball.trail.length * 0.35})`;
+    ctx.fillStyle = `rgba(${ball.guide && ball.curveT > 0 ? '120,230,255' : '255,240,200'},${(i + 1) / ball.trail.length * 0.45})`;
     ellipse(tx, ty - t.z * S * 0.6, BR * S * (0.4 + i / ball.trail.length * 0.6), BR * S * (0.4 + i / ball.trail.length * 0.6)); ctx.fill();
   }
   const ents = players.map(p => { const [x, y] = w2s(p.x, p.y); return { p, x, y }; });
@@ -1189,8 +1247,10 @@ function updateButtons() {
     if (ball.owner && ball.owner.team === 0) { a = 'Pedir'; b = '—'; }
     else { a = 'Trocar'; b = 'Carrinho'; }
   }
-  const k = a + b; if (k === lastLabels) return; lastLabels = k;
+  const has = mode === 'match' && ball.owner === human;
+  const k = a + b + has; if (k === lastLabels) return; lastLabels = k;
   bPass.textContent = a; bShoot.textContent = b;
+  $('bLong').classList.toggle('off', !has); $('bLob').classList.toggle('off', !has);
   bShoot.style.fontSize = b.length > 7 ? '14px' : '';
 }
 
@@ -1203,7 +1263,7 @@ window.addEventListener('keydown', e => {
 });
 window.addEventListener('keyup', e => { keys[e.code] = false; });
 window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
-const touch = { id: null, ox: 0, oy: 0, jx: 0, jy: 0, a: false, b: false, s: false };
+const touch = { id: null, ox: 0, oy: 0, jx: 0, jy: 0, a: false, b: false, c: false, d: false, s: false };
 const zone = $('stickZone'), base = $('stickBase'), knob = $('stickKnob');
 zone.addEventListener('pointerdown', e => {
   if (touch.id !== null) return;
@@ -1226,7 +1286,7 @@ const endStick = e => {
   touch.id = null; touch.jx = touch.jy = 0; knob.style.transform = ''; base.classList.remove('on');
 };
 zone.addEventListener('pointerup', endStick); zone.addEventListener('pointercancel', endStick);
-for (const [id, key] of [['bPass', 'a'], ['bShoot', 'b'], ['bSprint', 's']]) {
+for (const [id, key] of [['bPass', 'a'], ['bShoot', 'b'], ['bLong', 'c'], ['bLob', 'd'], ['bSprint', 's']]) {
   const el = $(id);
   const on = e => { e.preventDefault(); touch[key] = true; el.classList.add('down'); try { el.setPointerCapture(e.pointerId); } catch (_) {} };
   const off = () => { touch[key] = false; el.classList.remove('down'); };
@@ -1248,6 +1308,8 @@ function readInput() {
     x: wx, y: wy, mag: Math.min(1, hyp(wx, wy)),
     a: !!(keys.Space || keys.KeyJ || touch.a),
     b: !!(keys.KeyK || touch.b),
+    c: !!(keys.KeyU || touch.c),
+    d: !!(keys.KeyI || touch.d),
     s: !!(keys.ShiftLeft || keys.ShiftRight || keys.KeyL || touch.s),
   };
 }
