@@ -154,3 +154,10 @@ Segundo jogo do repositório: exploração em primeira pessoa pelos **Níveis 0,
 noturna, câmera térmica…), qualidade gráfica **Baixa, Média, Alta e Ultra** e
 controles feitos para **celular**. Com o servidor rodando (`npm start`), abra
 `http://localhost:8080/liminar/`. Detalhes em [`liminar/README.md`](liminar/README.md).
+
+## MamoBall Craque (`mamoball/`)
+
+Futebol 5 contra 5 no estilo MamoBall, com câmera de transmissão e placar de TV. A bola
+gruda no pé: dá para conduzir, tocar e chutar (segure para carregar a força). Funciona no
+celular (joystick + botões, em pé ou deitado) e no PC (WASD/setas, Espaço passa, K chuta,
+Shift corre). Abra `mamoball/index.html` direto no navegador — é um arquivo único.
