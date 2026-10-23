@@ -540,6 +540,8 @@ export function loadSettings() {
         saved.reached = Math.max(0, LEVELS.findIndex((l) => l.key === k));
       }
       Object.assign(s, saved);
+      // progresso inválido (índice fora da lista, salvo por outra versão) volta ao início
+      if (!Number.isInteger(s.reached) || !LEVELS[s.reached]) s.reached = START;
     }
   } catch (e) {
     /* armazenamento indisponível */

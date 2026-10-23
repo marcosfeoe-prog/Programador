@@ -439,7 +439,7 @@ export class Menu {
     this.root = $('menu');
     this.ingame = false;
     this.panels = ['m-main', 'm-levels', 'm-filters', 'm-settings', 'm-help'];
-    $('b-play').onclick = () => (this.ingame ? cb.resume() : cb.play(this.s.reached ?? START));
+    $('b-play').onclick = () => (this.ingame ? cb.resume() : cb.play(LEVELS[this.s.reached] ? this.s.reached : START));
     $('b-new').onclick = () => cb.play(START);
     $('b-levels').onclick = () => this.open('m-levels');
     $('b-filters').onclick = () => this.open('m-filters');
@@ -477,7 +477,7 @@ export class Menu {
       const L = LEVELS[i];
       const b = document.createElement('button');
       b.className = 'lcard' + (L.secret ? ' secret' : '');
-      const seen = L.secret ? ' · secreto' : orderPos(L) <= orderPos(LEVELS[this.s.reached || 0]) ? ' · visitado' : '';
+      const seen = L.secret ? ' · secreto' : orderPos(L) <= orderPos(LEVELS[this.s.reached] || LEVELS[START]) ? ' · visitado' : '';
       b.innerHTML = `<div class="ln">${L.num}</div><div class="lt">${L.name}</div><div class="ld">${L.desc}</div><div class="lk">${L.danger}${seen}</div>`;
       b.onclick = () => this.cb.play(i);
       list.appendChild(b);
@@ -551,7 +551,7 @@ export class Menu {
 
   setMode(ingame) {
     this.ingame = ingame;
-    const r = this.s.reached ?? START;
+    const r = LEVELS[this.s.reached] ? this.s.reached : START;
     const play = $('b-play');
     play.disabled = false;
     if (ingame) {
@@ -560,7 +560,7 @@ export class Menu {
       play.textContent = 'Continuar';
     } else {
       $('menu-title').textContent = 'LIMINAR';
-      $('menu-sub').textContent = 'espaços liminares · 10 níveis';
+      $('menu-sub').textContent = `espaços liminares · ${ORDER.length} níveis`;
       play.textContent = r !== START ? `Continuar — ${LEVELS[r].tag}` : 'Começar';
     }
     $('b-new').classList.toggle('hidden', ingame || r === START);
