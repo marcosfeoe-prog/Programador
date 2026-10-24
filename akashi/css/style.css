@@ -1,0 +1,336 @@
+/* AKASHI — player do episódio. Tela 16:9 centralizada com barras pretas. */
+:root {
+  --red: #d0101e;
+  --red2: #ff5a4a;
+  --fg: #f4ece8;
+  --dim: #b8a8a8;
+  --panel: rgba(14, 8, 10, 0.92);
+  --line: rgba(255, 220, 220, 0.18);
+  --sans: 'Helvetica Neue', Arial, 'Liberation Sans', system-ui, sans-serif;
+  --display: 'Arial Black', 'Helvetica Neue', Impact, sans-serif;
+}
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: #000;
+  color: var(--fg);
+  font-family: var(--sans);
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hidden {
+  display: none !important;
+}
+#screen {
+  position: relative;
+  background: #000;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+#gl,
+#ov {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+#ov {
+  pointer-events: none;
+}
+body.idle #controls {
+  opacity: 0;
+  pointer-events: none;
+}
+body.idle {
+  cursor: none;
+}
+body.shot #controls {
+  display: none;
+}
+
+/* ------------------------------------------------------------ tela inicial */
+#start,
+.panel-full {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: radial-gradient(ellipse at 50% 40%, rgba(120, 10, 20, 0.85), rgba(8, 2, 4, 0.97) 70%);
+  z-index: 20;
+  padding: 16px;
+}
+.start-inner,
+.end-inner {
+  max-width: 760px;
+}
+.logo {
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: clamp(48px, 12vw, 140px);
+  letter-spacing: 2px;
+  line-height: 1;
+  color: var(--red);
+  -webkit-text-stroke: 3px #fff;
+  text-shadow: 6px 6px 0 #000;
+  transform: skewX(-10deg) rotate(-3deg);
+}
+.logo.small {
+  font-size: clamp(40px, 8vw, 90px);
+}
+.ep {
+  margin-top: 14px;
+  font-size: clamp(16px, 2.4vw, 24px);
+  letter-spacing: 1px;
+}
+.blurb {
+  color: var(--dim);
+  font-size: clamp(13px, 1.8vw, 17px);
+  line-height: 1.5;
+  margin: 18px auto;
+  max-width: 600px;
+}
+.hint {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--dim);
+}
+#start-btn,
+#replay {
+  font: 800 clamp(16px, 2.4vw, 22px) var(--sans);
+  padding: 14px 34px;
+  border-radius: 999px;
+  border: 2px solid #fff;
+  background: var(--red);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 6px 0 #4a0006;
+  margin-top: 8px;
+}
+#start-btn:disabled {
+  opacity: 0.45;
+  cursor: wait;
+}
+#start-btn:not(:disabled):hover,
+#replay:hover {
+  background: var(--red2);
+}
+#loading {
+  margin: 10px auto 16px;
+  max-width: 420px;
+}
+.load-track {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+#load-bar {
+  height: 100%;
+  width: 0;
+  background: var(--red2);
+  transition: width 0.2s;
+}
+#load-msg {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--dim);
+}
+
+/* ------------------------------------------------------------ controles */
+#controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 26px 12px 8px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+  transition: opacity 0.35s;
+  z-index: 10;
+}
+#seek-wrap {
+  position: relative;
+  height: 18px;
+}
+#seek-bg {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 7px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 2px;
+}
+#seek-fill {
+  height: 100%;
+  width: 0;
+  background: var(--red2);
+  border-radius: 2px;
+}
+#ticks .tick {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.6);
+}
+#seek {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.ctl-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+.ctl-row button,
+.panel button {
+  font: 700 14px var(--sans);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 10px;
+  min-height: 34px;
+  cursor: pointer;
+}
+.ctl-row button:hover,
+.panel button:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+#play {
+  min-width: 46px;
+  background: var(--red);
+}
+#cc.on {
+  background: #fff;
+  color: #000;
+}
+#vol {
+  width: 80px;
+  accent-color: var(--red2);
+}
+#time {
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  margin-left: 4px;
+}
+#chapter {
+  font-size: 13px;
+  color: var(--dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 30%;
+}
+.grow {
+  flex: 1;
+}
+
+/* ------------------------------------------------------------ painéis */
+.panel {
+  position: absolute;
+  right: 12px;
+  bottom: 84px;
+  width: min(420px, calc(100% - 24px));
+  max-height: calc(100% - 110px);
+  overflow: auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  z-index: 15;
+}
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+.chap {
+  display: flex !important;
+  width: 100%;
+  text-align: left;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.chap span {
+  color: var(--red2);
+  font-variant-numeric: tabular-nums;
+  min-width: 42px;
+}
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+}
+.row.col {
+  flex-direction: column;
+  align-items: stretch;
+}
+.row small {
+  color: var(--dim);
+}
+.seg {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.seg button.on {
+  background: var(--red);
+  border-color: #fff;
+}
+.wide {
+  width: 100%;
+}
+#rec-badge {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  font: 800 13px var(--sans);
+  color: #fff;
+  background: rgba(200, 0, 20, 0.85);
+  padding: 4px 10px;
+  border-radius: 6px;
+  z-index: 12;
+}
+#fps {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font: 12px monospace;
+  z-index: 12;
+}
+
+@media (max-width: 640px) {
+  #vol,
+  #chapter,
+  #back,
+  #fwd {
+    display: none;
+  }
+}

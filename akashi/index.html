@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0a0608" />
+    <meta name="description" content="AKASHI — Episódio 1: animação 3D estilo anime feita inteiramente em código (three.js + Web Audio)." />
+    <title>AKASHI — Episódio 1</title>
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/style.css" />
+    <script type="importmap">
+      { "imports": { "three": "../vendor/three/three.module.min.js" } }
+    </script>
+  </head>
+  <body>
+    <div id="screen">
+      <canvas id="gl"></canvas>
+      <canvas id="ov"></canvas>
+      <div id="rec-badge" class="hidden">● GRAVANDO</div>
+      <div id="fps" class="hidden"></div>
+
+      <!-- tela inicial -->
+      <div id="start">
+        <div class="start-inner">
+          <div class="logo">AKASHI</div>
+          <div class="ep">Episódio 1 — <b>O Delinquente de Kōyō</b></div>
+          <p class="blurb">
+            Todo mundo no Colégio Kōyō foge do Akashi. Ele se irrita fácil, nunca desiste e é
+            completamente viciado em rosbife. Só a aluna nova, a Hana, parece enxergar algo diferente nele…
+          </p>
+          <div id="loading">
+            <div class="load-track"><div id="load-bar"></div></div>
+            <div id="load-msg">Montando cenários, personagens e trilha…</div>
+          </div>
+          <button id="start-btn" disabled>▶ Assistir (9:50)</button>
+          <div class="hint">Tudo é gerado em tempo real: modelos, cenários, música e efeitos. Use fones de ouvido.</div>
+        </div>
+      </div>
+
+      <!-- fim -->
+      <div id="end" class="hidden panel-full">
+        <div class="end-inner">
+          <div class="logo small">AKASHI</div>
+          <div class="ep">Fim do episódio 1</div>
+          <button id="replay">↻ Assistir de novo</button>
+        </div>
+      </div>
+
+      <!-- capítulos -->
+      <div id="chapters" class="panel hidden">
+        <div class="panel-head">Cenas <button id="chap-close" aria-label="Fechar">✕</button></div>
+        <div id="chap-list"></div>
+      </div>
+
+      <!-- configurações -->
+      <div id="settings" class="panel hidden">
+        <div class="panel-head">Configurações <button id="cfg-close" aria-label="Fechar">✕</button></div>
+        <div class="row">
+          <span>Qualidade</span>
+          <div class="seg"><button id="q-low">Baixa</button><button id="q-medium">Média</button><button id="q-high">Alta</button></div>
+        </div>
+        <div class="row">
+          <span>Vozes</span>
+          <div class="seg"><button id="v-blips">Bipes</button><button id="v-tts">Sintetizada</button><button id="v-off">Sem</button></div>
+        </div>
+        <div class="row">
+          <span>Animação “em dois” (12 poses/s, como no anime)</span>
+          <div class="seg"><button id="twos">Ligado</button></div>
+        </div>
+        <div class="row col">
+          <button id="rec" class="wide">● Gravar o episódio em vídeo (WebM)</button>
+          <small>Reproduz do início e baixa o arquivo ao final (9:50, em tempo real).</small>
+        </div>
+      </div>
+
+      <!-- controles -->
+      <div id="controls">
+        <div id="seek-wrap">
+          <div id="seek-bg"><div id="seek-fill"></div><div id="ticks"></div></div>
+          <input id="seek" type="range" min="0" max="1000" value="0" aria-label="Posição" />
+        </div>
+        <div class="ctl-row">
+          <button id="play" aria-label="Reproduzir">▶</button>
+          <button id="back" aria-label="Voltar 10 segundos">⟲10</button>
+          <button id="fwd" aria-label="Avançar 10 segundos">10⟳</button>
+          <input id="vol" type="range" min="0" max="100" value="90" aria-label="Volume" />
+          <span id="time">0:00 / 9:50</span>
+          <span id="chapter"></span>
+          <span class="grow"></span>
+          <button id="chap-btn">Cenas</button>
+          <button id="cc" aria-label="Legendas">CC</button>
+          <button id="cfg-btn" aria-label="Configurações">⚙</button>
+          <button id="fs" aria-label="Tela cheia">⛶</button>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
