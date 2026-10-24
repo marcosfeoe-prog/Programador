@@ -340,7 +340,8 @@ class Game {
     this.input.enabled = true;
     if (!this.settings.mobile) this.input.lock();
     this.ui.message(`Você é um filhote de ${SPECIES[id].name}. Coma, beba e cresça!`, 6);
-    this.ui.message(SPECIES[id].diet === 'carnivore' ? 'Dica: cace presas menores e coma a carcaça (E).' : 'Dica: arbustos com frutas vermelhas são comida (E).', 7);
+    const key = this.settings.mobile ? 'botão Ação' : 'E';
+    this.ui.message(SPECIES[id].diet === 'carnivore' ? `Dica: cace presas menores e coma a carcaça (${key}).` : `Dica: arbustos com frutas vermelhas são comida (${key}).`, 7);
   }
 
   pause() {
