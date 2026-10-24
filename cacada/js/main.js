@@ -353,6 +353,8 @@ class Game {
 
   pause() {
     if (this.state !== 'play') return;
+    $('lockhint').classList.add('hidden');
+    this.lockHint = false;
     this.state = 'paused';
     document.body.classList.remove('playing');
     this.input.enabled = false;
@@ -695,6 +697,12 @@ class Game {
       height: p.pos.y,
     });
     this.hud.update(dt, this);
+    // no PC, o mouse só controla a mira depois de um clique (trava do ponteiro)
+    const needLock = this.state === 'play' && !this.settings.mobile && !this.input.locked;
+    if (needLock !== this.lockHint) {
+      this.lockHint = needLock;
+      $('lockhint').classList.toggle('hidden', !needLock);
+    }
   }
 
   render() {

@@ -313,6 +313,7 @@ export class Vegetation {
     }
     void rnd;
     this.lastPos = new THREE.Vector3(1e9, 0, 1e9);
+    this.lastFarPos = new THREE.Vector3(1e9, 0, 1e9);
     this.populate();
   }
 
@@ -452,13 +453,16 @@ export class Vegetation {
     return n;
   }
 
+  // Monta as listas de instâncias em volta da câmera. As árvores próximas (LOD 0 e 1)
+  // são refeitas a cada 3 m andados; as distantes (LOD 2), só a cada 30 m.
   update(dt, camPos, force = false) {
     this.time.value += dt;
-    const moved = this.lastPos.distanceToSquared(camPos);
-    if (!force && moved < 9) return;
+    const doFar = force || this.lastFarPos.distanceToSquared(camPos) > 900;
+    if (!doFar && this.lastPos.distanceToSquared(camPos) < 9) return;
     this.lastPos.copy(camPos);
+    if (doFar) this.lastFarPos.copy(camPos);
     const counts = this.types.map(() => [0, 0, 0]);
-    const maxD = Math.max(...this.types.map((t) => Math.max(...t.dist)));
+    const maxD = doFar ? Math.max(...this.types.map((t) => Math.max(...t.dist))) : Math.max(...this.types.map((t) => t.dist[1]));
     const c0 = Math.floor((camPos.x - maxD + HALF) / CELL);
     const c1 = Math.floor((camPos.x + maxD + HALF) / CELL);
     const r0 = Math.floor((camPos.z - maxD + HALF) / CELL);
@@ -473,37 +477,41 @@ export class Vegetation {
           const T = this.types[t];
           const data = cell.data[t];
           if (!data.length) continue;
-          const far = T.dist[2] || T.dist[1];
+          const far = doFar ? T.dist[2] || T.dist[1] : T.dist[1];
           if (cd > far) continue;
           for (let k = 0; k < data.length; k += 5) {
             const dx = data[k] - camPos.x;
             const dz = data[k + 2] - camPos.z;
             const d = Math.sqrt(dx * dx + dz * dz) / Math.max(0.7, data[k + 3] * 0.6 + 0.4);
-            let l = d < T.dist[0] ? 0 : d < T.dist[1] ? 1 : d < T.dist[2] ? 2 : -1;
-            if (l < 0) continue;
-            const im = T.inst[l];
-            if (!im) continue;
-            const i = counts[t][l];
-            if (i >= im.instanceMatrix.count) continue;
-            const s = data[k + 3];
-            _q4.setFromAxisAngle(_up, data[k + 4]);
-            _p4.set(data[k], data[k + 1], data[k + 2]);
-            _s4.set(s, s, s);
-            if (t === 5) _s4.set(s * (0.8 + ((k * 7) % 5) * 0.1), s * 0.8, s);
-            _m4.compose(_p4, _q4, _s4);
-            _m4.toArray(im.instanceMatrix.array, i * 16);
-            counts[t][l] = i + 1;
+            if (d < T.dist[1]) this.put(T, t, d < T.dist[0] ? 0 : 1, counts, data, k);
+            // faixa de sobreposição: evita buracos entre as passadas próxima e distante
+            if (doFar && d >= T.dist[1] - 35 && d < T.dist[2]) this.put(T, t, 2, counts, data, k);
           }
         }
       }
     for (let t = 0; t < this.types.length; t++)
       for (let l = 0; l < 3; l++) {
         const im = this.types[t].inst[l];
-        if (!im) continue;
+        if (!im || (l === 2 && !doFar)) continue;
         im.count = counts[t][l];
         im.instanceMatrix.needsUpdate = true;
         im.instanceMatrix.clearUpdateRanges();
         im.instanceMatrix.addUpdateRange(0, Math.max(1, counts[t][l]) * 16);
       }
+  }
+
+  put(T, t, l, counts, data, k) {
+    const im = T.inst[l];
+    if (!im) return;
+    const i = counts[t][l];
+    if (i >= im.instanceMatrix.count) return;
+    const s = data[k + 3];
+    _q4.setFromAxisAngle(_up, data[k + 4]);
+    _p4.set(data[k], data[k + 1], data[k + 2]);
+    _s4.set(s, s, s);
+    if (t === 5) _s4.set(s * (0.8 + ((k * 7) % 5) * 0.1), s * 0.8, s);
+    _m4.compose(_p4, _q4, _s4);
+    _m4.toArray(im.instanceMatrix.array, i * 16);
+    counts[t][l] = i + 1;
   }
 }
