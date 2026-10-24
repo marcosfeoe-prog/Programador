@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>teste mundo</title>
+<style>html,body{margin:0;background:#000;overflow:hidden}#info{position:fixed;left:6px;top:6px;color:#fff;font:12px monospace;text-shadow:0 0 3px #000}</style>
+<script type="importmap">{ "imports": { "three": "../../vendor/three/three.module.min.js" } }</script>
+</head><body><div id="info">carregando</div>
+<script type="module">
+import * as THREE from 'three';
+import { World } from '../js/world/world.js';
+const P = new URLSearchParams(location.search);
+const q = P.get('q') || 'medium';
+const renderer = new THREE.WebGLRenderer({ antialias: false, preserveDrawingBuffer: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+const cam = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 12000);
+const w = new World(scene, q);
+const t0 = performance.now();
+const info = document.getElementById('info');
+window.onerror = (m) => { info.textContent = 'ERRO ' + m; };
+await w.init((p, m) => { info.textContent = (p * 100).toFixed(0) + '% ' + (m || ''); });
+const tInit = performance.now() - t0;
+const x = +(P.get('x') ?? 40), z = +(P.get('z') ?? 700), yaw = +(P.get('yaw') ?? 0), pitch = +(P.get('pitch') ?? 0), up = +(P.get('up') ?? 1.7);
+w.sky.setHour(+(P.get('h') ?? 9));
+cam.position.set(x, w.height(x, z) + up, z);
+cam.rotation.set(pitch, yaw, 0, 'YXZ');
+w.terrain.warmup(cam.position);
+w.veg.update(0, cam.position, true);
+for (let i = 0; i < 3; i++) w.update(1 / 60, cam, cam.position, renderer);
+const t1 = performance.now();
+renderer.render(scene, cam);
+const info2 = renderer.info.render;
+info.textContent = `init ${tInit.toFixed(0)}ms frame ${(performance.now() - t1).toFixed(0)}ms tris ${info2.triangles} calls ${info2.calls} h=${w.height(x,z).toFixed(1)} ${w.hf.regionName(x,z)}`;
+window.__ready = true;
+</script></body></html>

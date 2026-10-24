@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>teste rig</title>
+<style>html,body{margin:0;background:#888;overflow:hidden}#info{position:fixed;left:6px;top:6px;color:#fff;font:12px monospace;text-shadow:0 0 3px #000}</style>
+<script type="importmap">{ "imports": { "three": "../../vendor/three/three.module.min.js" } }</script>
+</head><body><div id="info"></div>
+<script type="module">
+import * as THREE from 'three';
+import { SPECIES } from '../js/dino/species.js';
+import { loadDinoAsset } from '../js/dino/rig.js';
+import { DinoModel } from '../js/dino/model.js';
+const P = new URLSearchParams(location.search);
+const sp = SPECIES[P.get('sp') || 'raptor'];
+const mode = P.get('mode') || 'idle';
+const T = +(P.get('t') || 0);
+const view = P.get('view') || 'side';
+const bones = P.get('bones') === '1';
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x9fb7c9);
+const cam = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, 0.05, 500);
+scene.add(new THREE.HemisphereLight(0xdfefff, 0x5a4a30, 1.4));
+const sun = new THREE.DirectionalLight(0xfff2dd, 2.6);
+sun.position.set(20, 30, 15); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -15, right: 15, top: 15, bottom: -15, far: 100 });
+scene.add(sun); scene.add(sun.target);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(400, 400, 40, 40).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x6d7f45, roughness: 1, wireframe: false }));
+ground.receiveShadow = true; scene.add(ground);
+const grid = new THREE.GridHelper(400, 400, 0x334422, 0x556633); grid.position.y = 0.01; scene.add(grid);
+const t0 = performance.now();
+const asset = await loadDinoAsset(sp);
+const tBuild = performance.now() - t0;
+const m = new DinoModel(asset, P.get('q') || 'high');
+scene.add(m.group);
+const g = (x, z) => 0;
+let speed = { idle: 0, walk: sp.velAndar, trot: sp.velTrote, run: sp.velCorrer, roar: 0, bite: 0, die: 0, turn: 0 }[mode] ?? 0;
+let heading = 0;
+const vel = new THREE.Vector3();
+m.anim.resetFeet(m.group, g);
+let helper = null;
+if (bones) {
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(asset.bones.length * 6), 3));
+  helper = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: 0xff00ff, depthTest: false })); helper.renderOrder = 9; scene.add(helper);
+  m.material.transparent = true; m.material.opacity = 0.55;
+}
+const _a = new THREE.Vector3(), _b = new THREE.Vector3();
+function updHelper() { if (!helper) return; const arr = helper.geometry.attributes.position.array;
+  for (let i = 0; i < asset.bones.length; i++) { _a.copy(m.skel.pos[i]).applyMatrix4(m.mesh.matrixWorld); m.skel.endOf(i, _b).applyMatrix4(m.mesh.matrixWorld); arr.set([_a.x,_a.y,_a.z,_b.x,_b.y,_b.z], i*6); }
+  helper.geometry.attributes.position.needsUpdate = true; }
+const hipH = m.anim.hipH;
+const dist = { raptor: 5.5, trex: 19, sombrio: 23 }[sp.id];
+function step(dt, time) {
+  const turn = mode === 'turn' ? 1.0 : 0;
+  heading += turn * dt;
+  vel.set(Math.sin(heading) * speed, 0, Math.cos(heading) * speed);
+  m.group.position.addScaledVector(vel, dt);
+  m.group.rotation.y = heading;
+  m.group.updateMatrixWorld();
+  m.anim.setMotion(speed, turn);
+  if (mode === 'roar' && time > 0.3 && !m.anim.busy && !m._done) { m.anim.play('roar'); m._done = true; }
+  if (mode === 'bite' && time > 0.3 && !m.anim.busy && !m._done) { m.anim.play('bite'); m._done = true; }
+  if (mode === 'die' && time > 0.3) m.anim.die(1);
+  if (mode === 'look') m.anim.lookAt(new THREE.Vector3(3, 1.2, 4).add(m.group.position));
+  m.anim.update(dt, m.group, g, vel);
+}
+let time = 0;
+const sheetN = +(P.get('sheet') || 0);
+if (sheetN) {
+  const t0 = +(P.get('t0') || 1), t1 = +(P.get('t1') || 2), cols = +(P.get('cols') || 4);
+  const W = innerWidth, H = innerHeight, rows = Math.ceil(sheetN / cols);
+  const cw = Math.floor(W / cols), ch = Math.floor(H / rows);
+  renderer.setSize(cw, ch); cam.aspect = cw / ch; cam.updateProjectionMatrix();
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const cx = cv.getContext('2d');
+  for (let k = 0; k < sheetN; k++) {
+    const tt = t0 + (t1 - t0) * k / Math.max(1, sheetN - 1);
+    while (time < tt) { step(1 / 60, time); time += 1 / 60; }
+    place(); m.group.updateMatrixWorld(true); updHelper(); renderer.render(scene, cam);
+    cx.drawImage(renderer.domElement, (k % cols) * cw, Math.floor(k / cols) * ch);
+    cx.fillStyle = '#fff'; cx.font = '12px monospace'; cx.fillText(tt.toFixed(2), (k % cols) * cw + 4, Math.floor(k / cols) * ch + 14);
+  }
+  renderer.domElement.style.display = 'none'; document.body.appendChild(cv);
+  document.getElementById('info').textContent = `${sp.nome} ${mode}`;
+  window.__ready = true;
+  throw 0;
+}
+const fixed = T > 0;
+if (fixed) { while (time < T) { step(1 / 60, time); time += 1 / 60; } }
+function place() {
+  const c = m.group.position;
+  const yaw = { side: Math.PI / 2, front: 0, back: Math.PI, q: Math.PI / 4, top: Math.PI / 2 }[view];
+  const elev = view === 'top' ? 1.4 : view === 'q' ? 0.35 : 0.08;
+  const r = dist;
+  cam.position.set(c.x + Math.sin(heading + yaw) * Math.cos(elev) * r, hipH * 0.9 + Math.sin(elev) * r, c.z + Math.cos(heading + yaw) * Math.cos(elev) * r);
+  cam.lookAt(c.x, hipH * 0.8, c.z);
+  if (view === 'head' || view === 'headf') {
+    const hp = m.skel.pos[asset.boneIndex.head].clone().lerp(asset.joint.snout, 0.3).applyMatrix4(m.mesh.matrixWorld);
+    const yy = view === 'head' ? Math.PI / 2 : Math.PI / 4;
+    cam.position.set(hp.x + Math.sin(heading + yy) * dist * 0.22, hp.y + dist * 0.03, hp.z + Math.cos(heading + yy) * dist * 0.22);
+    cam.lookAt(hp);
+  }
+  sun.target.position.copy(c); sun.position.copy(c).add(new THREE.Vector3(20, 30, 15));
+}
+function frame() {
+  if (!fixed) { step(1 / 60, time); time += 1 / 60; }
+  place();
+  m.group.updateMatrixWorld(true); updHelper();
+  renderer.render(scene, cam);
+  document.getElementById('info').textContent = `${sp.nome} v=${asset.vertices} t=${asset.triangles} build=${tBuild.toFixed(0)}ms time=${time.toFixed(2)} mode=${mode}`;
+  window.__ready = true;
+  if (!fixed) requestAnimationFrame(frame);
+}
+frame();
+window.__stretch = () => {
+  const g = asset.geometry, P = g.attributes.position.array, SI = g.attributes.skinIndex.array, SW = g.attributes.skinWeight.array, I = g.index.array;
+  const n = P.length / 3, out = new Float32Array(n * 3), M = m.skel.bones.map((b, i) => new THREE.Matrix4().compose(m.skel.pos[i], m.skel.rot[i], new THREE.Vector3(1,1,1)).multiply(new THREE.Matrix4().makeTranslation(-asset.restPos[i].x, -asset.restPos[i].y, -asset.restPos[i].z)));
+  const v = new THREE.Vector3(), acc = new THREE.Vector3();
+  for (let i = 0; i < n; i++) { acc.set(0,0,0); for (let k = 0; k < 4; k++) { const w = SW[i*4+k]; if (!w) continue; v.set(P[i*3],P[i*3+1],P[i*3+2]).applyMatrix4(M[SI[i*4+k]]); acc.addScaledVector(v, w); } out.set([acc.x,acc.y,acc.z], i*3); }
+  const res = []; const d = (A, a, b) => Math.hypot(A[a*3]-A[b*3], A[a*3+1]-A[b*3+1], A[a*3+2]-A[b*3+2]);
+  for (let t = 0; t < I.length; t += 3) { const a = I[t], b = I[t+1], c = I[t+2]; const r0 = Math.max(d(P,a,b), d(P,b,c), d(P,a,c)) + 1e-4; const r1 = Math.max(d(out,a,b), d(out,b,c), d(out,a,c)); if (r1 / r0 > 4 && r1 > 0.05) res.push({ t: t/3, ratio: +(r1/r0).toFixed(1), len: +r1.toFixed(3), verts: [a,b,c].map(i => ({ src: [P[i*3]/sp.scale, P[i*3+1]/sp.scale, -P[i*3+2]/sp.scale + sp.joints.pelvis[1]].map(x=>+x.toFixed(1)), bones: [0,1,2,3].filter(k=>SW[i*4+k]>0.01).map(k => asset.bones[SI[i*4+k]].name + ':' + SW[i*4+k].toFixed(2)) })) }); }
+  res.sort((a, b) => b.len - a.len); return res.slice(0, 12);
+};
+</script></body></html>
