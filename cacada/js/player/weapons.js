@@ -599,9 +599,9 @@ export class WeaponSystem {
     if (leftOff) fp.add(leftOff);
     const wR = gp.applyMatrix4(h.matrix);
     const wL = fp.applyMatrix4(h.matrix);
-    const elbowR = _eR.set(0.32, -0.38, 0.12);
-    const elbowL = _eL.set(-0.26, -0.4, -0.05);
-    if (sp > 0.5) elbowL.set(-0.1, -0.45, 0.0);
+    const elbowR = _eR.set(0.3, -0.42, 0.1);
+    const elbowL = _eL.set(-0.12, -0.55, -0.12);
+    if (sp > 0.5) elbowL.set(-0.05, -0.5, 0.0);
     _q.setFromEuler(_eu.set(rx + 0.2, ry, rz - 0.3, 'YXZ'));
     this.armR.place(wR, elbowR, _q);
     _q2.setFromEuler(_eu.set(rx - 0.3, ry, rz + 0.9, 'YXZ'));

@@ -1,0 +1,10 @@
+{
+  "name": "Caçada Jurássica",
+  "short_name": "Caçada",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#10140f",
+  "theme_color": "#10140f",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

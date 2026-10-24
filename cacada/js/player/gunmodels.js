@@ -14,11 +14,11 @@ function mats() {
   const wt2 = makeWoodTexture(256, [150, 102, 60]);
   wt2.repeat.set(3, 1);
   MATS = {
-    steel: new THREE.MeshStandardMaterial({ color: 0x2b2e33, metalness: 0.85, roughness: 0.36 }),
-    steelLight: new THREE.MeshStandardMaterial({ color: 0x6a6e74, metalness: 0.9, roughness: 0.3 }),
+    steel: new THREE.MeshStandardMaterial({ color: 0x3a3e44, metalness: 0.7, roughness: 0.38 }),
+    steelLight: new THREE.MeshStandardMaterial({ color: 0x8a8e94, metalness: 0.75, roughness: 0.3 }),
     poly: new THREE.MeshStandardMaterial({ color: 0x1d1e20, metalness: 0.15, roughness: 0.62 }),
     polyTan: new THREE.MeshStandardMaterial({ color: 0x6e5f45, metalness: 0.1, roughness: 0.7 }),
-    alu: new THREE.MeshStandardMaterial({ color: 0x3a3d40, metalness: 0.7, roughness: 0.45 }),
+    alu: new THREE.MeshStandardMaterial({ color: 0x45494d, metalness: 0.55, roughness: 0.45 }),
     wood: new THREE.MeshStandardMaterial({ map: wt, color: 0xd9a77a, roughness: 0.5, metalness: 0.0 }),
     woodLight: new THREE.MeshStandardMaterial({ map: wt2, color: 0xe0b890, roughness: 0.55 }),
     scope: new THREE.MeshStandardMaterial({ color: 0x121315, metalness: 0.5, roughness: 0.4 }),
@@ -397,8 +397,9 @@ export class Arm {
     thumb.position.set(left ? -0.02 : 0.02, 0.012, -0.02);
     thumb.rotation.set(0.9, 0, left ? 0.6 : -0.6);
     this.hand.add(thumb);
-    this.fore = new THREE.Mesh(new THREE.CylinderGeometry(0.034, 0.03, 1, 10), M.sleeve);
-    this.cuff = new THREE.Mesh(new THREE.CylinderGeometry(0.031, 0.031, 0.03, 10), M.glove);
+    // antebraço afinando no punho, manga com dobra
+    this.fore = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.026, 1, 12).translate(0, 0, 0), M.sleeve);
+    this.cuff = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.026, 0.035, 12), M.glove);
     this.group.add(this.hand, this.fore, this.cuff);
     this.group.traverse((o) => (o.frustumCulled = false));
     parent.add(this.group);

@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#10140f" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="description" content="Caçada Jurássica: jogo 3D de mundo aberto para caçar dinossauros, com florestas, campos e montanhas, armas e animações procedurais." />
+    <title>Caçada Jurássica</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/style.css" />
+    <script type="importmap">
+      { "imports": { "three": "../vendor/three/three.module.min.js" } }
+    </script>
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+
+    <!-- HUD -->
+    <div id="hud" class="hidden">
+      <div id="compass"><canvas id="compass-c" width="560" height="40"></canvas></div>
+      <div id="tl">
+        <div id="clock">☀ 07:30</div>
+        <div id="region"></div>
+        <div id="contracts"></div>
+      </div>
+      <div id="tr">
+        <div id="minimap"><canvas id="mini-c" width="176" height="176"></canvas></div>
+        <div id="score"></div>
+      </div>
+      <div id="crosshair"><i class="t"></i><i class="b"></i><i class="l"></i><i class="r"></i><b></b></div>
+      <div id="hitmarker"><i></i><i></i><i></i><i></i></div>
+      <div id="dmgdir"></div>
+      <div id="bl">
+        <div class="bar"><span>VIDA</span><div class="track"><div id="hp-bar"></div></div></div>
+        <div class="bar thin"><span>FÔLEGO</span><div class="track"><div id="st-bar"></div></div></div>
+      </div>
+      <div id="br">
+        <div id="wname"></div>
+        <div id="ammo"><b id="mag">5</b> <span id="res">/ 30</span></div>
+        <div id="wslots"></div>
+      </div>
+      <div id="breath" class="hidden"><span>RESPIRAÇÃO (Shift)</span><div class="track"><div id="breath-bar"></div></div></div>
+      <div id="prompt" class="hidden"></div>
+      <div id="feed"></div>
+      <div id="center-msg"></div>
+    </div>
+
+    <!-- luneta e binóculo -->
+    <div id="scope" class="hidden">
+      <svg viewBox="-100 -100 200 200" preserveAspectRatio="xMidYMid meet">
+        <g class="rifle-ret">
+          <line x1="-100" y1="0" x2="-14" y2="0" stroke-width="2.2" />
+          <line x1="14" y1="0" x2="100" y2="0" stroke-width="2.2" />
+          <line x1="0" y1="14" x2="0" y2="100" stroke-width="2.2" />
+          <line x1="0" y1="-100" x2="0" y2="-14" stroke-width="2.2" />
+          <line x1="-14" y1="0" x2="14" y2="0" stroke-width="0.35" />
+          <line x1="0" y1="-14" x2="0" y2="14" stroke-width="0.35" />
+          <circle cx="0" cy="5" r="0.6" /><circle cx="0" cy="10" r="0.6" /><circle cx="5" cy="0" r="0.6" /><circle cx="-5" cy="0" r="0.6" /><circle cx="10" cy="0" r="0.6" /><circle cx="-10" cy="0" r="0.6" />
+        </g>
+        <g class="bow-ret">
+          <circle cx="0" cy="0" r="1" />
+          <line x1="-40" y1="0" x2="-6" y2="0" stroke-width="0.6" />
+          <line x1="6" y1="0" x2="40" y2="0" stroke-width="0.6" />
+          <line x1="0" y1="-40" x2="0" y2="-6" stroke-width="0.6" />
+          <path d="M-4 6 L0 8 L4 6 M-4 13 L0 15 L4 13 M-4 22 L0 24 L4 22" fill="none" stroke-width="0.5" />
+          <text x="7" y="9">30</text><text x="7" y="16">45</text><text x="7" y="25">60 m</text>
+        </g>
+      </svg>
+    </div>
+    <div id="binoc" class="hidden"><canvas id="binoc-c"></canvas><div class="ret"></div><span>BINÓCULO 6x · mire num dinossauro para marcá-lo</span></div>
+    <div id="vignette"></div>
+    <div id="water-ov"></div>
+    <div id="mapscreen" class="hidden">
+      <canvas id="map-c"></canvas>
+      <div class="legend">⛺ Acampamento · ▲ Torre (munição) · ☠ Vale das Sombras · <span style="color:#ff4a3a">●</span> dinossauro marcado · M ou Esc para fechar</div>
+    </div>
+
+    <!-- controles de toque -->
+    <div id="touch">
+      <div class="joy-zone"><div class="joy-base"><div class="joy-knob"></div></div></div>
+      <div class="look-zone"></div>
+      <div class="tbtns">
+        <button data-act="fire" class="big">🎯</button>
+        <button data-act="aimToggle" class="mid">MIRA</button>
+        <button data-act="reload">R</button>
+        <button data-act="lastWeapon">⇆</button>
+        <button data-act="jump">⤒</button>
+        <button data-act="crouch">⤓</button>
+        <button data-act="sprint">»</button>
+        <button data-act="interact">E</button>
+        <button data-act="binoculars">👁</button>
+        <button data-act="flashlight">🔦</button>
+        <button data-act="map">🗺</button>
+      </div>
+      <div class="twsel">
+        <button data-act="w1">1</button><button data-act="w2">2</button><button data-act="w3">3</button><button data-act="w4">4</button>
+      </div>
+      <button id="t-menu">❚❚</button>
+    </div>
+
+    <!-- menu principal / pausa -->
+    <div id="menu" class="screen">
+      <div class="menu-panel" id="menu-main">
+        <h1>CAÇADA<span>JURÁSSICA</span></h1>
+        <p class="tag">Mundo aberto de 16 km² · florestas, campos e montanhas · 3 espécies · 4 armas</p>
+        <button id="btn-play" class="primary">Jogar</button>
+        <button id="btn-best">Bestiário</button>
+        <button id="btn-settings">Configurações</button>
+        <button id="btn-help">Como jogar</button>
+        <p id="records"></p>
+      </div>
+      <div class="menu-panel hidden" id="menu-settings">
+        <h2>Configurações</h2>
+        <label>Qualidade gráfica
+          <select id="set-quality">
+            <option value="low">Baixa (celular)</option>
+            <option value="medium">Média</option>
+            <option value="high">Alta</option>
+            <option value="ultra">Ultra</option>
+          </select>
+        </label>
+        <p id="set-note" class="note"></p>
+        <label>Sensibilidade <span id="set-sens-v"></span><input id="set-sens" type="range" min="0.2" max="3" step="0.05" /></label>
+        <label>Campo de visão <span id="set-fov-v"></span><input id="set-fov" type="range" min="60" max="100" step="1" /></label>
+        <label>Volume <span id="set-vol-v"></span><input id="set-vol" type="range" min="0" max="1" step="0.05" /></label>
+        <label class="row"><input id="set-inv" type="checkbox" /> Inverter eixo Y</label>
+        <label class="row"><input id="set-fps" type="checkbox" /> Mostrar FPS</label>
+        <button data-back>Voltar</button>
+      </div>
+      <div class="menu-panel hidden wide" id="menu-help">
+        <h2>Como jogar</h2>
+        <p>Você é um caçador numa ilha cercada de montanhas. Cumpra os <b>contratos</b>: abata raptores, um Tiranossauro e o lendário Rex Sombrio. Os dinossauros ouvem tiros e passos, enxergam você e atacam. Cuidado.</p>
+        <table class="keys">
+          <tr><td>WASD</td><td>Andar</td><td>Mouse</td><td>Olhar</td></tr>
+          <tr><td>Shift</td><td>Correr / prender a respiração na luneta</td><td>Espaço</td><td>Pular</td></tr>
+          <tr><td>C / Ctrl</td><td>Agachar (mais silencioso)</td><td>Botão esq.</td><td>Atirar</td></tr>
+          <tr><td>Botão dir.</td><td>Mirar</td><td>R</td><td>Recarregar</td></tr>
+          <tr><td>1 2 3 4</td><td>Rifle, Calibre 12, Fuzil, Besta</td><td>Q / roda</td><td>Trocar arma</td></tr>
+          <tr><td>B</td><td>Binóculo (marca presas)</td><td>E</td><td>Interagir / coletar troféu</td></tr>
+          <tr><td>F</td><td>Lanterna</td><td>M</td><td>Mapa</td></tr>
+          <tr><td>H</td><td>Esconder HUD</td><td>Esc</td><td>Pausa</td></tr>
+        </table>
+        <p><b>Dicas:</b> a cabeça é o ponto fraco. O T-Rex gira devagar e não entra na mata fechada. Torres de observação são seguras e têm munição. A besta é silenciosa e faz sangrar: siga o rastro.</p>
+        <button data-back>Voltar</button>
+      </div>
+    </div>
+
+    <!-- bestiário -->
+    <div id="bestiary" class="screen hidden">
+      <div id="best-species">
+        <button data-sp="raptor">Raptor Esmeralda</button>
+        <button data-sp="trex">Tiranossauro Rex</button>
+        <button data-sp="sombrio">Rex Sombrio</button>
+      </div>
+      <div id="best-info"></div>
+      <div id="best-modes">
+        <button data-mode="idle">Parado</button>
+        <button data-mode="walk">Andar</button>
+        <button data-mode="trot">Trotar</button>
+        <button data-mode="run">Correr</button>
+        <button data-mode="roar">Rugir</button>
+        <button data-mode="bite">Morder</button>
+        <button data-mode="jump" id="best-jump">Saltar</button>
+        <button data-mode="die">Morrer</button>
+      </div>
+      <button id="best-back">Voltar</button>
+      <p class="best-hint">Arraste para girar a câmera</p>
+    </div>
+
+    <!-- carregamento -->
+    <div id="loading" class="screen hidden">
+      <h2>CAÇADA JURÁSSICA</h2>
+      <div class="bar"><div id="load-bar"></div></div>
+      <p id="load-msg">Preparando…</p>
+      <p class="tip" id="load-tip"></p>
+    </div>
+
+    <!-- morte -->
+    <div id="death" class="screen hidden">
+      <h1 id="death-title">VOCÊ FOI DEVORADO</h1>
+      <p id="death-sub"></p>
+      <button id="btn-respawn" class="primary">Voltar ao acampamento</button>
+      <button id="btn-death-menu">Menu</button>
+    </div>
+
+    <div id="fps" class="hidden"></div>
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>

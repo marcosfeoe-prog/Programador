@@ -13,7 +13,6 @@ const damp = (a, b, k, dt) => a + (b - a) * (1 - Math.exp(-k * dt));
 const env = (t, a, b, c, d) => (t <= a || t >= d ? 0 : t < b ? smooth((t - a) / (b - a)) : t <= c ? 1 : smooth(1 - (t - c) / (d - c)));
 
 const _q = new THREE.Quaternion();
-const _q2 = new THREE.Quaternion();
 const _e = new THREE.Euler(0, 0, 0, 'YXZ');
 const _v1 = new THREE.Vector3();
 const _v2 = new THREE.Vector3();
@@ -24,7 +23,6 @@ const _m2 = new THREE.Matrix4();
 const _invQ = new THREE.Quaternion();
 const _objPos = new THREE.Vector3();
 const _objQ = new THREE.Quaternion();
-const X = new THREE.Vector3(1, 0, 0);
 
 function quatEuler(q, pitch, yaw, roll) {
   _e.set(pitch, yaw, roll, 'YXZ');
@@ -256,7 +254,6 @@ export class DinoAnimator {
       else freq = 0;
     } else this.parked = false;
     if (this.dead) freq = 0;
-    const prevPhase = this.phase;
     this.phase = (this.phase + freq * dt) % 1;
     const Tstance = freq > 0 ? duty / freq : 0;
     const Tswing = freq > 0 ? (1 - duty) / freq : 0;
@@ -299,7 +296,6 @@ export class DinoAnimator {
 
     // ---- ações (rugido, mordida)
     let roar = 0;
-    let bite = 0;
     let headUp = 0;
     let headShake = 0;
     let jaw = 0;

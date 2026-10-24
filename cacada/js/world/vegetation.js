@@ -3,7 +3,7 @@
 // floresta, a altitude e a inclinação. Três níveis de detalhe atualizados em torno da
 // câmera com InstancedMesh, vento no shader e colisão dos troncos/rochas.
 import * as THREE from 'three';
-import { HALF, WATER, CAMP, TOWERS, LAIR } from './heightfield.js';
+import { HALF, WATER, CAMP, TOWERS } from './heightfield.js';
 import { mulberry32, Simplex } from '../util/noise.js';
 
 const CELL = 128;
