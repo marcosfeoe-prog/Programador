@@ -64,6 +64,9 @@ export class Input {
       this.held.clear();
       this.held.delete('fire');
     });
+    // se o navegador recusar a trava do ponteiro, o mouse passa a mirar sem ela
+    this.lockFailed = false;
+    document.addEventListener('pointerlockerror', () => (this.lockFailed = true));
     document.addEventListener('pointerlockchange', () => {
       const was = this.locked;
       this.locked = document.pointerLockElement === canvas;
@@ -71,7 +74,7 @@ export class Input {
     });
     canvas.addEventListener('mousedown', (e) => {
       if (!this.enabled || settings.mobile) return;
-      if (!this.locked) {
+      if (!this.locked && !this.lockFailed) {
         this.lock();
         return;
       }
@@ -89,7 +92,7 @@ export class Input {
     });
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
     window.addEventListener('mousemove', (e) => {
-      if (!this.locked) return;
+      if (!this.locked && !(this.lockFailed && this.enabled && !settings.mobile)) return;
       // ignora saltos gigantes (bug de alguns navegadores ao travar o mouse)
       if (Math.abs(e.movementX) > 300 || Math.abs(e.movementY) > 300) return;
       this.lookDX += e.movementX;
@@ -110,7 +113,7 @@ export class Input {
     if (this.settings.mobile) return;
     try {
       const p = this.canvas.requestPointerLock();
-      if (p && p.catch) p.catch(() => {});
+      if (p && p.catch) p.catch(() => (this.lockFailed = true));
     } catch (e) {
       /* ignorado */
     }

@@ -69,7 +69,14 @@ function lerpLine(line, y) {
 export async function loadDinoAsset(sp, onProgress) {
   const res = await fetch(new URL('../../' + sp.file, import.meta.url));
   if (!res.ok) throw new Error('Não foi possível carregar ' + sp.file);
-  const buf = await res.arrayBuffer();
+  let buf;
+  if (sp.file.endsWith('.txt')) {
+    // STL em base64 (para hospedagens que só servem arquivos de texto)
+    const bin = atob((await res.text()).trim());
+    const u8 = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    buf = u8.buffer;
+  } else buf = await res.arrayBuffer();
   onProgress && onProgress(0.3);
   return buildDinoAsset(sp, buf);
 }

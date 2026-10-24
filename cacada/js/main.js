@@ -698,7 +698,7 @@ class Game {
     });
     this.hud.update(dt, this);
     // no PC, o mouse só controla a mira depois de um clique (trava do ponteiro)
-    const needLock = this.state === 'play' && !this.settings.mobile && !this.input.locked;
+    const needLock = this.state === 'play' && !this.settings.mobile && !this.input.locked && !this.input.lockFailed;
     if (needLock !== this.lockHint) {
       this.lockHint = needLock;
       $('lockhint').classList.toggle('hidden', !needLock);
