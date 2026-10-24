@@ -263,7 +263,7 @@ function buildRifleAR() {
   g.add(tube);
   const glass = mesh(new THREE.CircleGeometry(0.018, 20), M.glassDot, 0, sy, -0.075);
   g.add(glass);
-  const dot = mesh(new THREE.SphereGeometry(0.0011, 8, 6), M.redDot, 0, sy, -0.074);
+  const dot = mesh(new THREE.SphereGeometry(0.0019, 8, 6), M.redDot, 0, sy, -0.074);
   g.add(dot);
   g.userData = { by, sightY: sy, muzzle: new THREE.Vector3(0, by, -0.59), mag, grip: new THREE.Vector3(0.004, by - 0.095, 0.06), fore: new THREE.Vector3(-0.004, by - 0.03, -0.27), port: new THREE.Vector3(0.02, by + 0.005, -0.02), dot };
   return g;

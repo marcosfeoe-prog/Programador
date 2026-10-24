@@ -73,6 +73,13 @@ class Game {
     this.frameTimes = [];
     this.fps = 0;
     this.setupMenus();
+    if (this.settings.mobile) document.body.classList.add('mobile');
+    // toque nas armas do HUD para trocar; toque no aviso para interagir
+    $('wslots').addEventListener('pointerdown', (e) => {
+      const i = [...$('wslots').children].indexOf(e.target.closest('span'));
+      if (i >= 0) this.input.pressedSet.add('w' + (i + 1));
+    });
+    $('prompt').addEventListener('pointerdown', () => this.input.pressedSet.add('interact'));
     window.addEventListener('resize', () => this.resize());
     document.addEventListener('pointerdown', () => this.audio.init(), { once: false });
     this.loadAssets();

@@ -88,6 +88,9 @@ export class Bestiary {
     const m = this.cur;
     if (!m) return;
     this.camera.aspect = w / h;
+    // em telas largas, desloca a imagem para a direita (o painel de informações fica à esquerda)
+    if (w > 760) this.camera.setViewOffset(w, h, -w * 0.14, 0, w, h);
+    else this.camera.clearViewOffset();
     this.camera.updateProjectionMatrix();
     const sp = m.asset.species;
     const speed = this.speedFor(this.mode, sp);

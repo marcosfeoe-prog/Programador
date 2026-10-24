@@ -154,3 +154,16 @@ Segundo jogo do repositório: exploração em primeira pessoa pelos **Níveis 0,
 noturna, câmera térmica…), qualidade gráfica **Baixa, Média, Alta e Ultra** e
 controles feitos para **celular**. Com o servidor rodando (`npm start`), abra
 `http://localhost:8080/liminar/`. Detalhes em [`liminar/README.md`](liminar/README.md).
+
+---
+
+# Caçada Jurássica — caça de dinossauros em mundo aberto (pasta `cacada/`)
+
+Terceiro jogo do repositório: caça em primeira pessoa num **mundo aberto de 4 km × 4 km**
+com florestas, campos, montanhas nevadas, lagos e um rio, ciclo de dia e noite e quatro armas
+modeladas do zero (rifle de ferrolho com luneta, espingarda calibre 12, fuzil de assalto e
+besta). Os dinossauros — **Raptor Esmeralda**, **Tiranossauro Rex** e **Rex Sombrio
+Espinhoso** — são lidos dos arquivos **STL** em `cacada/assets/models/`, recebem um esqueleto
+montado automaticamente e animação procedural (passada com cinemática inversa, rugido,
+mordida, salto e morte). Com o servidor rodando (`npm start`), abra
+`http://localhost:8080/cacada/`. Detalhes em [`cacada/README.md`](cacada/README.md).
