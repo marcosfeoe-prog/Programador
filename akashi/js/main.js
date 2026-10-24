@@ -59,8 +59,8 @@ let W = 0;
 let H = 0;
 function resize() {
   const box = $('screen');
-  const ww = window.innerWidth;
-  const wh = window.innerHeight;
+  const ww = document.body.clientWidth || window.innerWidth;
+  const wh = document.body.clientHeight || window.innerHeight;
   let w = ww;
   let h = Math.round((ww * 9) / 16);
   if (h > wh) {
@@ -289,6 +289,8 @@ function updateUI(force = false) {
 
 let seeking = false;
 function buildUI() {
+  // onde o navegador não permite baixar arquivos, a gravação fica escondida
+  if (window.AKASHI_NO_DOWNLOAD) $('rec').closest('.row').hidden = true;
   const ticks = $('ticks');
   for (const ch of CHAPTERS) {
     const d = document.createElement('div');
