@@ -16,6 +16,28 @@ npm start              # servidor sem dependências em http://localhost:8080
 
 Abra `http://localhost:8080/dinos/`. Escolha uma espécie no menu e clique em **Jogar**.
 
+## Realismo
+
+**Pele**: escamas de tamanhos diferentes por região (miúdas nos flancos e nas pernas,
+graúdas no dorso, placas transversais na barriga), duas fileiras de osteodermos ao longo
+da espinha, dobras de pele, sujeira nas frestas, barro nos pés, contra-sombra (barriga
+clara), mapa de rugosidade, um segundo mapa normal de microdetalhe e brilho aveludado
+(*sheen*) nas qualidades Alta e Extra Alta. As escamas ficam proporcionais ao corpo
+(a textura acompanha o perímetro local, então afinam na cauda e nos dedos). Placas,
+escudo e crista têm sulcos de vasos sanguíneos; os olhos têm íris com fibras, pupila em
+fenda, verniz (*clearcoat*), pálpebras que piscam e narinas.
+
+**Animação**: cada pé fica preso no chão enquanto apoia (sem escorregar) e o próximo passo
+é planejado para onde o corpo vai estar; parado, o dinossauro só reposiciona o pé que ficou
+torto, então dá passinhos ao girar no lugar. Calcanhar que levanta no fim do apoio,
+quadrúpedes passando do passo ao trote, quadril que desce em terreno irregular, peso que
+passa de uma perna para a outra, inclinação ao acelerar e frear, cauda e pescoço com
+inércia (molas), cabeça estabilizada, tórax que expande ao respirar (ofegante quando
+cansado), piscadas, olhos e cabeça que acompanham presas, ameaças, comida e a câmera,
+gestos ociosos (olhar em volta, sacudir a cabeça, abanar a cauda, farejar), carnívoros que
+chacoalham a presa ao morder e arrancam pedaços ao comer, herbívoros que mastigam de lado,
+recuo para o lado oposto ao golpe e morte em etapas (joelhos cedem, o corpo tomba e assenta).
+
 ## Espécies
 
 | Espécie | Dieta | Estilo |
@@ -64,7 +86,10 @@ quem é atacado revida ou foge conforme o tamanho. Espécies que somem são repo
 
 **Celular**: joystick à esquerda, arraste à direita para girar a câmera (pinça para zoom)
 e botões de Atacar, Ação, Correr, Rugir, Deitar e Dormir. A qualidade **Baixa** é escolhida
-automaticamente em celulares; dá para mudar em Configurações ou com `?quality=low|medium|high`.
+automaticamente em celulares; dá para mudar em Configurações ou com
+`?quality=low|medium|high|ultra`. **Extra Alta** (`ultra`) usa peles de 1024 px, malhas mais
+detalhadas, sombras de 4096 px, mais vegetação e alcance de visão maior. As peles são geradas
+em paralelo em Web Workers durante o carregamento.
 
 ## Como é feito
 
@@ -75,8 +100,10 @@ js/dinoModel.js  "esculpe" o corpo com anéis ao longo da coluna, tubos nas pern
                  e monta uma SkinnedMesh com esqueleto próprio por instância
 js/animator.js   animações procedurais: passada com IK de 2 ossos (os pés pisam no relevo),
                  respiração, cauda, olhar, comer, beber, rugir, atacar, dano, deitar, morrer
-js/textures.js   texturas em canvas: escamas (Voronoi periódico), listras/manchas,
-                 contra-sombra, mapas normais, terreno, casca, folhas, água e olhos
+js/skingen.js    pele dos dinossauros em arrays puros (escamas por região, padrões,
+                 dobras, rugosidade, mapa normal); roda em js/texworker.js
+js/textures.js   demais texturas em canvas: microdetalhe, placas, olhos, marfim,
+                 terreno, casca, folhas e água
 js/world.js      relevo, lagos, rio, mistura de texturas no shader, vegetação instanciada
 js/sky.js        céu com sol, lua, estrelas e nuvens; luz e neblina do dia e da noite
 js/creature.js   sobrevivência, movimento, combate, comer e beber

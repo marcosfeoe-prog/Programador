@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { SPECIES } from './species.js';
 import { createDinoModel } from './dinoModel.js';
 import { DinoAnimator } from './animator.js';
-import { clamp, lerp, damp, dampAngle, turnToward, wrapAngle } from './util.js';
+import { clamp, lerp, damp, turnToward, wrapAngle } from './util.js';
 import { PLAY_RADIUS, WATER_Y } from './world.js';
 
 const tmp = new THREE.Vector3();
@@ -25,7 +25,7 @@ export class Creature {
     this.id = id;
     this.spec = SPECIES[id];
     this.isPlayer = !!opts.player;
-    this.model = createDinoModel(id, game.quality.model);
+    this.model = createDinoModel(id, game.quality.name);
     this.anim = new DinoAnimator(this.model);
     this.root = this.model.root;
     this.data = this.model.data;
@@ -56,6 +56,8 @@ export class Creature {
     this.cause = '';
     // comando de movimento: velocidade desejada (m/s) e direção (rad)
     this.ctrl = { speed: 0, yaw: this.yaw, run: false };
+    this.lookAt = null; // ponto que a cabeça e os olhos acompanham
+    this.groundFn = (x, z) => this.world.height(x, z);
     this.detail = 2;
     this.root.position.copy(this.pos);
     this.root.rotation.order = 'YXZ';
@@ -173,7 +175,10 @@ export class Creature {
         hits++;
       }
     }
-    if (hits) this.game.audio.attack(this, true);
+    if (hits) {
+      this.game.audio.attack(this, true);
+      if (this.spec.diet === 'carnivore') this.anim.thrash();
+    }
     return hits;
   }
 
@@ -190,7 +195,10 @@ export class Creature {
       this.pos.addScaledVector(tmp, push);
     }
     if (this.action) this.action = null;
-    this.anim.hurt();
+    // recua para o lado oposto ao do golpe
+    let side = Math.random() < 0.5 ? 1 : -1;
+    if (from) side = (from.pos.x - this.pos.x) * Math.cos(this.yaw) - (from.pos.z - this.pos.z) * Math.sin(this.yaw) > 0 ? -1 : 1;
+    this.anim.hurt(side);
     this.game.onHurt(this, amount, from);
     if (this.health <= 0) this.die(cause || (from ? `Morto por um ${from.spec.name}` : 'Ferimentos'));
   }
@@ -416,10 +424,14 @@ export class Creature {
       sleep: this.action === 'sleep',
       dead: this.dead,
       pant: this.exhausted || this.stamina < 0.2,
-      ground: (x, z) => w.height(x, z),
+      ground: this.groundFn,
       detail: this.detail,
       attackTime: this.spec.stats.attackTime,
       roarTime: this.spec.voice.length,
+      yaw: this.yaw,
+      pitch: this.pitch,
+      pos: this.pos,
+      look: this.lookAt,
     });
   }
 

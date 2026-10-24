@@ -2,6 +2,7 @@
 // mapas normais, terreno, casca, folhagem, água e olhos. Nenhuma imagem externa.
 import * as THREE from 'three';
 import { clamp, lerp, smoothstep, makeTileNoise, makeTileWorley, tileFbm, hash2, TAU } from './util.js';
+import { genSkin, dome } from './skingen.js';
 
 let SIZE = 512;
 export function setTextureSize(s) {
@@ -73,92 +74,141 @@ function writePixels(w, h, fn) {
 }
 
 // ---------------------------------------------------------------------------
-// Pele de dinossauro. u = volta em torno do corpo (0 = barriga, 0.5 = dorso),
-// v = comprimento. A textura já traz a contra-sombra (barriga clara) e o padrão.
+// Pele de dinossauro: gerada em js/skingen.js (em paralelo nos Web Workers).
 // ---------------------------------------------------------------------------
-export function makeSkin(skin, seed = 1) {
-  const w = SIZE;
-  const h = SIZE;
-  const noise = makeTileNoise(seed);
-  const scalesA = makeTileWorley(seed + 11, 64, 64); // escamas pequenas
-  const scalesB = makeTileWorley(seed + 23, 22, 22); // escamas grandes do dorso
-  const spots = makeTileWorley(seed + 37, 7, 9, 0.9);
-  const base = hex(skin.base);
-  const dark = hex(skin.dark);
-  const belly = hex(skin.belly);
-  const accent = hex(skin.accent ?? skin.dark);
-  const hgt = new Float32Array(w * h);
-  const stripes = skin.stripes ?? 8;
-
-  const c = writePixels(w, h, (x, y) => {
-    const u = x / w;
-    const v = y / h;
-    const dorsal = 0.5 - 0.5 * Math.cos(TAU * u); // 0 barriga → 1 dorso
-    const n1 = tileFbm(noise, u, v, 4, 4);
-    const n2 = tileFbm(noise, u + 0.37, v + 0.71, 16, 3);
-
-    // contra-sombra: barriga clara, dorso com a cor base
-    let col = mix3(belly, base, smoothstep(0.18, 0.62, dorsal + n1 * 0.12));
-
-    // padrão da espécie (só no dorso e laterais)
-    const patMask = smoothstep(0.3, 0.65, dorsal + n1 * 0.15);
-    let pat = 0;
-    if (skin.pattern === 'stripes' || skin.pattern === 'tiger') {
-      const warp = n1 * 0.9 + n2 * 0.15;
-      const s = Math.sin(TAU * (v * stripes + warp) + Math.cos(TAU * u) * 0.6);
-      pat = smoothstep(skin.pattern === 'tiger' ? 0.35 : 0.55, 0.85, s);
-    } else if (skin.pattern === 'spots') {
-      const wv = spots(u, v);
-      pat = 1 - smoothstep(0.18, 0.3, wv.f1 + n2 * 0.08);
-    } else if (skin.pattern === 'mottled') {
-      pat = smoothstep(0.05, 0.25, tileFbm(noise, u + 0.5, v, 8, 4));
-    } else if (skin.pattern === 'bands') {
-      const s = Math.sin(TAU * (v * stripes + n1 * 0.4));
-      pat = smoothstep(0.2, 0.6, s) * smoothstep(0.55, 0.8, dorsal);
-    }
-    col = mix3(col, dark, pat * patMask * (skin.patternStrength ?? 0.85));
-
-    // faixa de cor de destaque ao longo da espinha
-    if (skin.accent) {
-      const ridge = smoothstep(0.86, 0.98, dorsal + n2 * 0.04);
-      col = mix3(col, accent, ridge * 0.8);
-    }
-
-    // escamas: pequenas na barriga, grandes no dorso
-    const a = scalesA(u, v);
-    const edgeA = smoothstep(0.0, 0.12, a.f2 - a.f1);
-    const b = scalesB(u, v);
-    const edgeB = smoothstep(0.0, 0.1, b.f2 - b.f1);
-    const big = smoothstep(0.55, 0.85, dorsal);
-    const bumpA = edgeA * (1 - a.f1 * 0.8);
-    const bumpB = edgeB * (1 - b.f1 * 0.7);
-    const bump = lerp(bumpA, Math.max(bumpA * 0.5, bumpB), big);
-    hgt[y * w + x] = bump + n2 * 0.25;
-    const cellVar = (hash2(a.id, 3, seed) - 0.5) * 0.16 + (hash2(b.id, 7, seed) - 0.5) * 0.12 * big;
-    const shade = 0.72 + 0.28 * lerp(edgeA, edgeB, big) + cellVar + n2 * 0.06;
-    return [col[0] * shade, col[1] * shade, col[2] * shade];
-  });
-
-  return { map: toTexture(c), normalMap: normalFromHeight(hgt, w, h, 2.2) };
+function dataTexture(arr, w, srgb) {
+  const t = new THREE.DataTexture(arr, w, w, THREE.RGBAFormat);
+  if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.magFilter = THREE.LinearFilter;
+  t.minFilter = THREE.LinearMipmapLinearFilter;
+  t.generateMipmaps = true;
+  t.anisotropy = 4;
+  t.needsUpdate = true;
+  return t;
 }
 
-// Olho: íris colorida com pupila em fenda. Mapeado pela face frontal da esfera.
+export function skinFromData(r) {
+  return {
+    map: dataTexture(r.color, r.w, true),
+    normalMap: dataTexture(r.normal, r.w, false),
+    roughnessMap: dataTexture(r.rough, r.w, false),
+  };
+}
+
+export function makeSkin(skin, seed = 1, limb = false) {
+  return skinFromData(genSkin({ skin, seed, limb, size: SIZE }));
+}
+
+// Gera várias peles em paralelo; cai para a thread principal se não houver workers.
+export async function makeSkinsParallel(jobs, onProgress = () => {}) {
+  const sized = jobs.map((j) => ({ ...j, size: SIZE }));
+  const results = new Array(sized.length);
+  let done = 0;
+  const finish = (i, r) => {
+    results[i] = r;
+    onProgress(++done / sized.length);
+  };
+  let workers = [];
+  try {
+    const n = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1, sized.length));
+    for (let k = 0; k < n; k++) workers.push(new Worker(new URL('./texworker.js', import.meta.url), { type: 'module' }));
+  } catch (e) {
+    workers = [];
+  }
+  if (workers.length) {
+    let next = 0;
+    try {
+      await Promise.all(
+        workers.map(
+          (wk) =>
+            new Promise((resolve, reject) => {
+              wk.onerror = (e) => reject(e);
+              const send = () => {
+                if (next >= sized.length) return resolve();
+                const i = next++;
+                wk.onmessage = (e) => {
+                  finish(i, e.data);
+                  send();
+                };
+                wk.postMessage(sized[i]);
+              };
+              send();
+            }),
+        ),
+      );
+    } catch (e) {
+      // algum worker falhou: o que faltar é feito aqui mesmo
+    }
+    workers.forEach((wk) => wk.terminate());
+  }
+  for (let i = 0; i < sized.length; i++) {
+    if (results[i]) continue;
+    finish(i, genSkin(sized[i]));
+    await new Promise((r) => setTimeout(r, 0));
+  }
+  return results;
+}
+
+// Microdetalhe (poros e escamas minúsculas) repetido por cima do mapa normal.
+export function makeDetailNormal(seed = 9) {
+  const s = 256;
+  const noise = makeTileNoise(seed);
+  const cells = makeTileWorley(seed + 1, 22, 22);
+  const hgt = new Float32Array(s * s);
+  for (let y = 0; y < s; y++) {
+    for (let x = 0; x < s; x++) {
+      const u = x / s;
+      const v = y / s;
+      hgt[y * s + x] = dome(cells(u, v), 0.5) + tileFbm(noise, u, v, 16, 3) * 0.3;
+    }
+  }
+  return normalFromHeight(hgt, s, s, 2.2);
+}
+
+// Placas, escudo e crista: sulcos de vasos sanguíneos e degradê da base à borda.
+export function makePlate(baseHex, edgeHex, darkHex, seed = 21) {
+  const w = Math.min(SIZE, 512);
+  const noise = makeTileNoise(seed);
+  const base = hex(baseHex);
+  const edge = hex(edgeHex);
+  const dark = hex(darkHex);
+  const hgt = new Float32Array(w * w);
+  const c = writePixels(w, w, (x, y) => {
+    const u = x / w;
+    const v = 1 - y / w; // 0 base → 1 borda
+    const n = tileFbm(noise, u, v, 4, 4);
+    // vasos correm da base para a borda (ruído esticado ao longo de v)
+    const r1 = Math.abs(noise(u * 18 + n * 1.2, v * 2.5, 18, 4));
+    const r2 = Math.abs(noise((u + 0.31) * 40 + n * 2, (v + 0.17) * 5, 40, 8));
+    const veins = (Math.max(1 - smoothstep(0.0, 0.07, r1), (1 - smoothstep(0.0, 0.08, r2)) * 0.5)) * smoothstep(0.05, 0.3, v);
+    hgt[y * w + x] = -veins * 0.8 + n * 0.35;
+    let col = mix3(base, edge, smoothstep(0.3, 1.0, v + n * 0.18));
+    col = mix3(col, dark, veins * 0.32 + (1 - smoothstep(0.0, 0.25, v)) * 0.3);
+    const s = 0.88 + n * 0.18;
+    return [col[0] * s, col[1] * s, col[2] * s];
+  });
+  return { map: toTexture(c), normalMap: normalFromHeight(hgt, w, w, 2.0) };
+}
+
+// Olho: íris com fibras radiais, anel escuro e pupila em fenda.
 export function makeEye(irisHex, seed = 3) {
-  const s = 128;
+  const s = 256;
   const iris = hex(irisHex);
+  const noise = makeTileNoise(seed);
   const c = writePixels(s, s, (x, y) => {
     const dx = (x + 0.5) / s - 0.5;
     const dy = (y + 0.5) / s - 0.5;
     const r = Math.sqrt(dx * dx + dy * dy) * 2;
-    const ang = Math.atan2(dy, dx);
-    const streak = 0.85 + 0.15 * Math.sin(ang * 23 + hash2(Math.floor(ang * 10), 1, seed) * 6);
-    let col = mix3(iris, [iris[0] * 0.35, iris[1] * 0.3, iris[2] * 0.2], smoothstep(0.2, 0.62, r));
-    col = col.map((cc) => cc * streak);
-    const slit = Math.abs(dx) / 0.07 + Math.abs(dy) / 0.42;
-    col = mix3([0.02, 0.02, 0.02], col, smoothstep(0.85, 1.05, slit));
-    col = mix3(col, [0.05, 0.04, 0.03], smoothstep(0.62, 0.72, r));
-    const hl = Math.hypot(dx + 0.12, dy + 0.14);
-    col = mix3(col, [1, 1, 1], (1 - smoothstep(0.02, 0.06, hl)) * 0.9);
+    const ang = Math.atan2(dy, dx) / TAU + 0.5;
+    const fib = noise(ang * 48, r * 3, 48, 64) * 0.5 + noise(ang * 120, r * 8, 120, 64) * 0.3;
+    let col = mix3([iris[0] * 1.3, iris[1] * 1.25, iris[2] * 1.1], [iris[0] * 0.45, iris[1] * 0.38, iris[2] * 0.3], smoothstep(0.12, 0.8, r));
+    col = col.map((cc) => cc * (0.82 + fib * 0.45));
+    // colarete claro em volta da pupila
+    col = mix3(col, [iris[0] * 1.5, iris[1] * 1.4, iris[2] * 1.1], (1 - smoothstep(0.0, 0.08, Math.abs(r - 0.3))) * 0.35);
+    const slit = Math.abs(dx) / 0.055 + Math.abs(dy) / 0.4;
+    col = mix3([0.01, 0.01, 0.01], col, smoothstep(0.82, 1.08, slit));
+    col = mix3(col, [0.04, 0.03, 0.02], smoothstep(0.66, 0.8, r));
     return col;
   });
   return toTexture(c, { repeat: false });
@@ -172,9 +222,9 @@ export function makeIvory(seed = 5) {
     const u = x / s;
     const v = y / s;
     const n = tileFbm(noise, u, v * 0.25, 4, 3);
-    const g = 0.78 + n * 0.12 + Math.sin(v * 40 + n * 6) * 0.03;
-    const tip = v;
-    return mix3([0.85 * g, 0.8 * g, 0.66 * g], [0.32, 0.27, 0.22], smoothstep(0.55, 1, tip) * 0.6);
+    const g = 0.7 + n * 0.12 + Math.sin(v * 40 + n * 6) * 0.03;
+    // marfim amarelado, mais escuro e manchado na base
+    return mix3([0.82 * g, 0.74 * g, 0.58 * g], [0.36, 0.28, 0.2], smoothstep(0.5, 1, v) * 0.7);
   });
   return toTexture(c);
 }

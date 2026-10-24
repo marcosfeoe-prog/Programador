@@ -365,6 +365,17 @@ export class Brain {
       }
     }
 
+    // para onde a cabeça e os olhos apontam
+    const tg = this.target;
+    const st = this.state;
+    if (tg && (st === 'flee' || st === 'fight' || st === 'hunt' || st === 'eat')) {
+      c.lookAt = c.lookAt || new THREE.Vector3();
+      c.lookAt.set(tg.pos.x, tg.pos.y + tg.data.hipY * tg.scale * (tg.dead ? 0.3 : 1), tg.pos.z);
+    } else if (this.goal && (st === 'graze' || st === 'drink')) {
+      c.lookAt = c.lookAt || new THREE.Vector3();
+      c.lookAt.set(this.goal.x, game.world.height(this.goal.x, this.goal.z) + 0.4, this.goal.z);
+    } else c.lookAt = null;
+
     if (tx !== null) {
       let yaw = Math.atan2(tx - c.pos.x, tz - c.pos.z);
       yaw = this.avoidTerrain(game, yaw, speed);

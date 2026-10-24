@@ -180,7 +180,7 @@ export function makeTileWorley(seed, cx, cy, jitter = 0.85) {
         const py = cyj + pts[k * 2 + 1];
         const dx = px - x;
         const dy = py - y;
-        const d = Math.sqrt(dx * dx + dy * dy);
+        const d = dx * dx + dy * dy; // distância ao quadrado (raiz só no fim)
         if (d < f1) {
           f2 = f1;
           f1 = d;
@@ -190,8 +190,8 @@ export function makeTileWorley(seed, cx, cy, jitter = 0.85) {
         } else if (d < f2) f2 = d;
       }
     }
-    out.f1 = f1;
-    out.f2 = f2;
+    out.f1 = Math.sqrt(f1);
+    out.f2 = Math.sqrt(f2);
     out.id = id;
     out.dx = bdx;
     out.dy = bdy;

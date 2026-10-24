@@ -3,8 +3,8 @@
 // vira uma única SkinnedMesh com esqueleto próprio (pesos calculados aqui).
 import * as THREE from 'three';
 import { SPECIES } from './species.js';
-import { makeSkin, makeEye, makeIvory } from './textures.js';
-import { clamp, lerp, smooth, TAU } from './util.js';
+import { makeSkin, makeEye, makeIvory, makePlate, makeDetailNormal, makeSkinsParallel, skinFromData } from './textures.js';
+import { clamp, lerp, smooth, smoothstep, TAU } from './util.js';
 
 const V3 = THREE.Vector3;
 const AXIS_X = new V3(1, 0, 0);
@@ -12,6 +12,8 @@ const G_SKIN = 0;
 const G_IVORY = 1;
 const G_EYE = 2;
 const G_ACCENT = 3;
+const G_LIMB = 4; // pernas, braços e dedos: pele própria, repetindo em volta
+const LID_OPEN = 1.7; // pálpebra guardada (rad) — gira até 0 para fechar
 
 // ---------------------------------------------------------------------------
 // Construtor de geometria com pesos de esqueleto e grupos de material
@@ -23,7 +25,7 @@ class SkinGeo {
     this.col = [];
     this.si = [];
     this.sw = [];
-    this.groups = [[], [], [], []];
+    this.groups = [[], [], [], [], []];
     this.seams = [];
     this.n = 0;
   }
@@ -99,17 +101,36 @@ class SkinGeo {
   }
 }
 
-// Gera os anéis de um tubo e conecta. Cada anel: {c, t, w, ht, hb, weights}.
-function loft(geo, g, rings, seg, vScale, colorFn, capStart = true, capEnd = true, uMap = null) {
+// Perímetro aproximado de uma elipse (Ramanujan).
+function ellipseCirc(a, b) {
+  return Math.PI * (3 * (a + b) - Math.sqrt((3 * a + b) * (a + 3 * b)));
+}
+const ringCirc = (R) => ellipseCirc(R.w, (R.ht + R.hb) / 2);
+
+// Gera os anéis de um tubo e conecta. Cada anel: {c, t, w, ht, hb, weights, shade?}.
+// A coordenada v avança em "voltas": uma repetição da textura por perímetro
+// local, então as escamas ficam proporcionais (e menores na cauda e nos dedos).
+function loft(geo, g, rings, seg, opts = {}) {
+  const { colorFn = null, uMap = null, vK = 1, cMin = 0, capStart = true, capEnd = true } = opts;
   const base = geo.n;
   const row = seg + 1;
-  let arc = 0;
+  let v = 0;
   const up = new V3();
   const side = new V3();
   const p = new V3();
+  const colorOf = (R, sn, cs) => {
+    const c = colorFn ? colorFn(R, sn, cs) : null;
+    const k = R.shade ?? 1;
+    if (k === 1) return c;
+    const cc = c || [1, 1, 1];
+    return [cc[0] * k, cc[1] * k, cc[2] * k];
+  };
   for (let r = 0; r < rings.length; r++) {
     const R = rings[r];
-    if (r > 0) arc += R.c.distanceTo(rings[r - 1].c);
+    if (r > 0) {
+      const C = Math.max(cMin, (ringCirc(R) + ringCirc(rings[r - 1])) / 2);
+      v += (R.c.distanceTo(rings[r - 1].c) / C) * vK;
+    }
     up.crossVectors(R.t, AXIS_X);
     if (up.lengthSq() < 1e-6) up.set(0, 1, 0);
     up.normalize();
@@ -120,7 +141,7 @@ function loft(geo, g, rings, seg, vScale, colorFn, capStart = true, capEnd = tru
       const cs = Math.cos(th);
       const hh = cs > 0 ? R.hb : R.ht;
       p.copy(R.c).addScaledVector(side, R.w * sn).addScaledVector(up, -cs * hh);
-      geo.add(p, uMap ? uMap(s / seg) : s / seg, arc / vScale, R.weights, colorFn ? colorFn(R, sn, cs) : null);
+      geo.add(p, uMap ? uMap(s / seg) : s / seg, v, R.weights, colorOf(R, sn, cs));
     }
     geo.seams.push([base + r * row, base + r * row + seg]);
     if (r > 0) {
@@ -134,13 +155,13 @@ function loft(geo, g, rings, seg, vScale, colorFn, capStart = true, capEnd = tru
   }
   if (capStart) {
     const R = rings[0];
-    const c = geo.add(R.c.clone().addScaledVector(R.t, -Math.min(R.w, R.ht) * 0.4), 0.5, 0, R.weights, colorFn ? colorFn(R, 0, 0) : null);
+    const c = geo.add(R.c.clone().addScaledVector(R.t, -Math.min(R.w, R.ht) * 0.4), 0.5, 0, R.weights, colorOf(R, 0, 0));
     for (let s = 0; s < seg; s++) geo.tri(g, c, base + s + 1, base + s);
   }
   if (capEnd) {
     const R = rings[rings.length - 1];
     const e = base + (rings.length - 1) * row;
-    const c = geo.add(R.c.clone().addScaledVector(R.t, Math.min(R.w, R.ht) * 0.4), 0.5, arc / vScale, R.weights, colorFn ? colorFn(R, 0, 0) : null);
+    const c = geo.add(R.c.clone().addScaledVector(R.t, Math.min(R.w, R.ht) * 0.4), 0.5, v, R.weights, colorOf(R, 0, 0));
     for (let s = 0; s < seg; s++) geo.tri(g, c, e + s, e + s + 1);
   }
 }
@@ -227,22 +248,29 @@ function ringsFromProfile(samples, weightFn) {
 }
 
 // Tubo ao longo de uma cadeia de nós {p, r} (r = raio, achatado em x).
-function chainTube(geo, g, nodes, owners, seg, vScale, spacing, flat = 0.82, jointScale = []) {
+// "ao" escurece o começo do tubo (dobra onde a perna encontra o corpo).
+function chainTube(geo, g, nodes, owners, seg, spacing, flat = 0.82, opts = {}) {
+  const { cMin = 0, ao = 0 } = opts;
   const lengths = [];
   for (let k = 0; k < nodes.length - 1; k++) lengths.push(nodes[k].p.distanceTo(nodes[k + 1].p));
-  const wf = chainWeightFn(lengths, owners, jointScale);
+  const wf = chainWeightFn(lengths, owners);
   const rings = [];
   const dir = (k) => nodes[k + 1].p.clone().sub(nodes[k].p).normalize();
+  const aoLen = (lengths[0] + (lengths[1] ?? 0)) * 1.1;
+  let dist = 0;
+  const shadeAt = (d) => (ao ? lerp(1 - ao, 1, smoothstep(0, aoLen, d)) : 1);
   for (let k = 0; k < nodes.length - 1; k++) {
     const n = Math.max(2, Math.ceil(lengths[k] / spacing));
     const dk = dir(k);
     for (let i = 0; i < n; i++) {
       const s = i / n;
-      let t = dk.clone();
+      const t = dk.clone();
       if (i === 0 && k > 0) t.add(dir(k - 1)).normalize();
       const r = lerp(nodes[k].r, nodes[k + 1].r, smooth(s));
-      rings.push({ c: nodes[k].p.clone().lerp(nodes[k + 1].p, s), t, w: r * flat, ht: r, hb: r, weights: wf(k, s) });
+      const d = dist + lengths[k] * s;
+      rings.push({ c: nodes[k].p.clone().lerp(nodes[k + 1].p, s), t, w: r * flat, ht: r, hb: r, weights: wf(k, s), shade: shadeAt(d) });
     }
+    dist += lengths[k];
   }
   const last = nodes.length - 1;
   rings.push({
@@ -252,9 +280,9 @@ function chainTube(geo, g, nodes, owners, seg, vScale, spacing, flat = 0.82, joi
     ht: nodes[last].r,
     hb: nodes[last].r,
     weights: wf(last - 1, 1),
+    shade: shadeAt(dist),
   });
-  // u espelhado: membros usam a faixa lateral/dorsal da pele, sem costura
-  loft(geo, g, rings, seg, vScale, null, true, true, (u) => 0.3 + 0.4 * (1 - Math.abs(2 * u - 1)));
+  loft(geo, g, rings, seg, { cMin });
 }
 
 // Cone orientado (dente, garra, chifre, espinho) de "base" até "base + dir*len".
@@ -283,10 +311,25 @@ function buildSpecies(spec, quality) {
   const prof = spec.body;
   const len = prof[prof.length - 1][0] - prof[0][0];
   const cy = (z) => profileAt(prof, z)[1];
-  const seg = quality === 'low' ? 12 : 18;
-  const legSeg = quality === 'low' ? 8 : 12;
-  const spacing = len / (quality === 'low' ? 50 : 80);
-  const vScale = spec.texRepeat;
+  const seg = quality === 'low' ? 12 : quality === 'ultra' ? 26 : 18;
+  const legSeg = quality === 'low' ? 8 : quality === 'ultra' ? 16 : 12;
+  const spacing = len / (quality === 'low' ? 50 : quality === 'ultra' ? 120 : 80);
+  const maxC = Math.max(...prof.map((p) => ellipseCirc(p[2], (p[3] + p[4]) / 2)));
+  const cMinBody = maxC * 0.2;
+  const cMinLimb = maxC * 0.1;
+
+  // olhos (posição na superfície da cabeça)
+  const eyeInfo = [];
+  {
+    const e = spec.eye;
+    const pr = profileAt(prof, e.z);
+    const y = pr[1] + pr[3] * e.yFrac;
+    const x = pr[2] * Math.sqrt(Math.max(0.05, 1 - e.yFrac * e.yFrac)) - e.r * 0.35;
+    for (const sd of [1, -1]) {
+      const q = new THREE.Quaternion().setFromUnitVectors(new V3(0, 0, 1), new V3(sd, 0.12, 0.3).normalize());
+      eyeInfo.push({ sd, sfx: sd > 0 ? 'L' : 'R', center: new V3(x * sd, y, e.z), q });
+    }
+  }
 
   // ---- ossos ----
   const bones = [];
@@ -314,6 +357,10 @@ function buildSpecies(spec, quality) {
   });
   addBone('head', prev, [0, cy(spec.head), spec.head]);
   addBone('jaw', 'head', [0, spec.jawHinge[0], spec.jawHinge[1]]);
+  for (const e of eyeInfo) {
+    addBone('eye' + e.sfx, 'head', e.center.toArray());
+    addBone('lid' + e.sfx, 'head', e.center.toArray());
+  }
 
   const legs = [];
   const sides = [1, -1];
@@ -392,23 +439,26 @@ function buildSpecies(spec, quality) {
   const snoutZ = prof[prof.length - 1][0];
   const headLen = snoutZ - headStart;
   const mouthCol = [0.55, 0.2, 0.2];
+  const lipCol = [0.5, 0.44, 0.4];
   const beakCol = [0.32, 0.28, 0.24];
   const bodyColor = (R, sn, cs) => {
-    if (R.z > headStart + headLen * 0.25 && cs > 0.62) return mouthCol;
+    if (R.z > headStart + headLen * 0.25 && cs > 0.86) return mouthCol;
     if (spec.beak && R.z > snoutZ - headLen * 0.22) return beakCol;
+    if (R.z > headStart + headLen * 0.2 && cs > 0.5) return lipCol;
     return null;
   };
-  loft(geo, G_SKIN, ringsFromProfile(sampleProfile(prof, spacing), bodyWeights), seg, vScale, bodyColor);
+  loft(geo, G_SKIN, ringsFromProfile(sampleProfile(prof, spacing), bodyWeights), seg, { colorFn: bodyColor, cMin: cMinBody });
 
   // ---- mandíbula ----
   const jaw = spec.jaw;
   const jawEnd = jaw[jaw.length - 1][0];
   const jawColor = (R, sn, cs) => {
-    if (cs < -0.45) return mouthCol;
+    if (cs < -0.8) return mouthCol;
     if (spec.beak && R.z > jawEnd - headLen * 0.22) return beakCol;
+    if (cs < -0.4) return lipCol;
     return null;
   };
-  loft(geo, G_SKIN, ringsFromProfile(sampleProfile(jaw, spacing * 0.7), () => [[B.jaw, 1]]), seg, vScale, jawColor);
+  loft(geo, G_SKIN, ringsFromProfile(sampleProfile(jaw, spacing * 0.7), () => [[B.jaw, 1]]), seg, { colorFn: jawColor, cMin: cMinBody });
 
   // ---- pernas ----
   for (const leg of legs) {
@@ -426,7 +476,7 @@ function buildSpecies(spec, quality) {
     ];
     const n = L.names.map((nm) => B[nm + sfx]);
     const parentBone = B[L.parent];
-    chainTube(geo, G_SKIN, nodes, [parentBone, n[0], n[0], n[1], n[1], n[2]], legSeg, vScale, spacing * 0.8, L.front ? 0.9 : 0.78);
+    chainTube(geo, G_LIMB, nodes, [parentBone, n[0], n[0], n[1], n[1], n[2]], legSeg, spacing * 0.8, L.front ? 0.9 : 0.78, { cMin: cMinLimb, ao: 0.3 });
     // dedos
     const toeAngles = d.toeLen < 0.3 && spec.quadruped ? [-0.5, -0.17, 0.17, 0.5] : [-0.38, 0, 0.38];
     for (const a of toeAngles) {
@@ -439,7 +489,7 @@ function buildSpecies(spec, quality) {
       const mid = start.clone().lerp(tip, 0.5);
       chainTube(
         geo,
-        G_SKIN,
+        G_LIMB,
         [
           { p: start, r: r[7] * 1.15 },
           { p: mid, r: r[7] * 0.85 },
@@ -447,9 +497,9 @@ function buildSpecies(spec, quality) {
         ],
         [n[3], n[3]],
         Math.max(6, legSeg - 4),
-        vScale,
         spacing,
         1.1,
+        { cMin: cMinLimb },
       );
       if (d.claws) {
         addCone(geo, G_IVORY, tip.clone().addScaledVector(dir, -r[7] * 0.2), dir.clone().add(new V3(0, -0.35, 0)), r[7] * 2.4, r[7] * 0.45, [[n[3], 1]], 6, 0.25);
@@ -473,7 +523,7 @@ function buildSpecies(spec, quality) {
     const top = P[0].clone().add(new V3(-sd * r[0] * 0.8, r[0] * 0.6, 0));
     chainTube(
       geo,
-      G_SKIN,
+      G_LIMB,
       [
         { p: top, r: r[0] * 1.15 },
         { p: P[0], r: r[0] },
@@ -483,9 +533,9 @@ function buildSpecies(spec, quality) {
       ],
       [B[chest], ua, fa, ha],
       legSeg - 2,
-      vScale,
       spacing * 0.6,
       0.85,
+      { cMin: cMinLimb, ao: 0.22 },
     );
     const handDir = P[3].clone().sub(P[2]).normalize();
     const nFingers = spec.diet === 'carnivore' && spec.id === 'trex' ? 2 : 3;
@@ -511,27 +561,40 @@ function buildSpecies(spec, quality) {
     }
   }
 
-  // ---- olhos ----
-  {
+  // ---- olhos, pálpebras e narinas ----
+  for (const { sd, sfx, center, q } of eyeInfo) {
     const e = spec.eye;
-    const pr = profileAt(prof, e.z);
-    const y = pr[1] + pr[3] * e.yFrac;
-    const x = pr[2] * Math.sqrt(Math.max(0.05, 1 - e.yFrac * e.yFrac)) - e.r * 0.35;
+    const geom = new THREE.SphereGeometry(e.r, 16, 12);
+    const p = geom.attributes.position;
+    const uv = geom.attributes.uv;
+    for (let i = 0; i < p.count; i++) uv.setXY(i, (p.getX(i) / e.r) * 0.5 + 0.5, (p.getY(i) / e.r) * 0.5 + 0.5);
+    const m = new THREE.Matrix4().compose(center, q, new V3(1, 1, 1));
+    geo.addGeometry(G_EYE, geom, m, [[B['eye' + sfx], 1]]);
+    geom.dispose();
+    // pálpebra: casca da frente do olho, guardada girada para cima/trás
+    const lid = new THREE.SphereGeometry(e.r * 1.14, 16, 10, 0, Math.PI, 0, Math.PI);
+    lid.rotateX(-LID_OPEN);
+    geo.addGeometry(G_SKIN, lid, m, [[B['lid' + sfx], 1]], [0.8, 0.75, 0.7]);
+    lid.dispose();
+    // arcada sobre o olho
+    const brow = new THREE.SphereGeometry(e.r * 1.3, 12, 6, 0, TAU, 0, Math.PI / 2);
+    const qb = new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.25, 0, -sd * 0.35));
+    geo.addGeometry(G_SKIN, brow, new THREE.Matrix4().compose(center.clone().setX(center.x * 0.94).setY(center.y + e.r * 0.2), qb, new V3(1, 0.6, 1.4)), [[B.head, 1]], [0.85, 0.8, 0.75]);
+    brow.dispose();
+  }
+  {
+    const nz = snoutZ - headLen * 0.1;
+    const pn = profileAt(prof, nz);
+    const nr = Math.max(pn[2], 0.02) * 0.22;
     for (const sd of sides) {
-      const geom = new THREE.SphereGeometry(e.r, 14, 10);
-      const p = geom.attributes.position;
-      const uv = geom.attributes.uv;
-      for (let i = 0; i < p.count; i++) {
-        uv.setXY(i, (p.getX(i) / e.r) * 0.5 + 0.5, (p.getY(i) / e.r) * 0.5 + 0.5);
-      }
-      const q = new THREE.Quaternion().setFromUnitVectors(new V3(0, 0, 1), new V3(sd, 0.12, 0.3).normalize());
-      geo.addGeometry(G_EYE, geom, new THREE.Matrix4().compose(new V3(x * sd, y, e.z), q, new V3(1, 1, 1)), [[B.head, 1]]);
-      geom.dispose();
-      // arcada sobre o olho
-      const brow = new THREE.SphereGeometry(e.r * 1.25, 10, 6, 0, TAU, 0, Math.PI / 2);
-      const qb = new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.25, 0, -sd * 0.35));
-      geo.addGeometry(G_SKIN, brow, new THREE.Matrix4().compose(new V3(x * sd * 0.92, y + e.r * 0.15, e.z), qb, new V3(1, 0.6, 1.4)), [[B.head, 1]]);
-      brow.dispose();
+      const g2 = new THREE.SphereGeometry(1, 8, 6);
+      const m = new THREE.Matrix4().compose(
+        new V3(sd * pn[2] * 0.72, pn[1] + pn[3] * 0.5, nz),
+        new THREE.Quaternion().setFromEuler(new THREE.Euler(0, sd * 0.45, 0)),
+        new V3(nr * 0.6, nr * 0.45, nr * 1.3),
+      );
+      geo.addGeometry(G_SKIN, g2, m, [[B.head, 1]], [0.1, 0.08, 0.07]);
+      g2.dispose();
     }
   }
 
@@ -558,7 +621,15 @@ function buildSpecies(spec, quality) {
     const z = spec.head - 0.1;
     const pr = profileAt(prof, z + 0.2);
     const center = new V3(0, pr[1] + pr[3] * 0.75, z - 0.25);
-    const geom = new THREE.SphereGeometry(1, 24, 12);
+    const geom = new THREE.SphereGeometry(1, 28, 14);
+    {
+      // UV radial: v = 0 no centro, 1 na borda (degradê e vasos da textura)
+      const p = geom.attributes.position;
+      const uv = geom.attributes.uv;
+      for (let i = 0; i < p.count; i++) {
+        uv.setXY(i, Math.atan2(p.getY(i), p.getX(i)) / TAU + 0.5, Math.min(1, Math.hypot(p.getX(i), p.getY(i))));
+      }
+    }
     const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.95, 0, 0));
     const m = new THREE.Matrix4().compose(center, q, new V3(1.25, 1.12, 0.2));
     geo.addGeometry(G_ACCENT, geom, m, [[B.head, 1]]);
@@ -589,6 +660,11 @@ function buildSpecies(spec, quality) {
       new V3(0, 4.06, 2.2),
     ]);
     const geom = new THREE.TubeGeometry(curve, 24, 0.085, 8, false);
+    {
+      // v ao longo da crista (base → ponta)
+      const uv = geom.attributes.uv;
+      for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getY(i), uv.getX(i));
+    }
     geo.addGeometry(G_ACCENT, geom, new THREE.Matrix4(), [[B.head, 1]]);
     geom.dispose();
     const capG = new THREE.SphereGeometry(0.085, 8, 6);
@@ -629,6 +705,18 @@ function buildSpecies(spec, quality) {
     }
   }
 
+  // barro e terra nos pés (cor por vértice)
+  {
+    const hipY0 = cy(0);
+    const skinV = new Set([...geo.groups[G_SKIN], ...geo.groups[G_LIMB]]);
+    for (const k of skinV) {
+      const m = smoothstep(hipY0 * 0.24, hipY0 * 0.02, geo.pos[k * 3 + 1]) * 0.85;
+      if (m <= 0) continue;
+      geo.col[k * 3] *= lerp(1, 0.6, m);
+      geo.col[k * 3 + 1] *= lerp(1, 0.5, m);
+      geo.col[k * 3 + 2] *= lerp(1, 0.4, m);
+    }
+  }
   const geometry = geo.build();
 
   // medidas úteis para animação e jogabilidade
@@ -671,6 +759,8 @@ function buildSpecies(spec, quality) {
     nTail: spec.tail.length,
     nSpine: spec.spine.length,
     nNeck: spec.neck.length,
+    lids: eyeInfo.map((e) => ({ name: 'lid' + e.sfx, axis: new V3(1, 0, 0).applyQuaternion(e.q), open: LID_OPEN })),
+    eyes: eyeInfo.map((e) => ({ name: 'eye' + e.sfx, side: e.sd })),
   };
 }
 
@@ -680,35 +770,90 @@ function buildSpecies(spec, quality) {
 const cache = new Map();
 let ivoryTex = null;
 
-export function prepareSpecies(id, quality) {
+// Microdetalhe: soma um segundo mapa normal repetido (poros/escamas miúdas).
+function addDetailNormal(mat, tex, rep, strength) {
+  mat.onBeforeCompile = (sh) => {
+    sh.uniforms.detailNormal = { value: tex };
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D detailNormal;').replace(
+      '#include <normal_fragment_maps>',
+      THREE.ShaderChunk.normal_fragment_maps.replace(
+        'mapN.xy *= normalScale;',
+        `mapN.xy *= normalScale;
+        vec3 dN = texture2D( detailNormal, vNormalMapUv * ${rep.toFixed(1)} ).xyz * 2.0 - 1.0;
+        mapN = normalize( vec3( mapN.xy + dN.xy * ${strength.toFixed(2)}, mapN.z ) );`,
+      ),
+    );
+  };
+  mat.customProgramCacheKey = () => 'dino-detail';
+}
+
+let detailTex = null;
+
+const skinSeed = (id) => id.length * 97 + id.charCodeAt(0);
+
+// Gera todas as peles em paralelo (Web Workers) e monta as espécies.
+export async function prepareAllSpecies(ids, quality, onProgress) {
+  const jobs = [];
+  for (const id of ids) {
+    jobs.push({ skin: SPECIES[id].skin, seed: skinSeed(id), limb: false });
+    jobs.push({ skin: SPECIES[id].skin, seed: skinSeed(id) + 5, limb: true });
+  }
+  const res = await makeSkinsParallel(jobs, onProgress);
+  ids.forEach((id, i) => prepareSpecies(id, quality, { skin: skinFromData(res[i * 2]), limb: skinFromData(res[i * 2 + 1]) }));
+}
+
+export function prepareSpecies(id, quality, pre = null) {
   const key = id + ':' + quality;
   if (cache.has(key)) return cache.get(key);
   const spec = SPECIES[id];
   const data = buildSpecies(spec, quality);
-  const skin = makeSkin(spec.skin, id.length * 97 + id.charCodeAt(0));
+  const skin = pre ? pre.skin : makeSkin(spec.skin, skinSeed(id));
   const accentHex = spec.frillColor ?? spec.crestColor ?? spec.plateColor ?? spec.skin.dark;
-  const accent = makeSkin(
-    { base: accentHex, dark: spec.skin.dark, belly: accentHex, pattern: 'spots', patternStrength: 0.45 },
-    id.charCodeAt(1) * 13,
-  );
+  const edge = new THREE.Color(accentHex).lerp(new THREE.Color(0xffd29a), 0.35).getHex();
+  const accent = makePlate(accentHex, edge, spec.skin.dark, id.charCodeAt(1) * 13);
   if (!ivoryTex) ivoryTex = makeIvory();
-  const skinMat = new THREE.MeshStandardMaterial({
+  const physical = quality === 'high' || quality === 'ultra';
+  const skinParams = {
     map: skin.map,
     normalMap: skin.normalMap,
-    normalScale: new THREE.Vector2(0.9, 0.9),
-    roughness: 0.78,
+    normalScale: new THREE.Vector2(1, 1),
+    roughnessMap: skin.roughnessMap,
+    roughness: 1,
     metalness: 0,
     vertexColors: true,
-  });
-  const ivoryMat = new THREE.MeshStandardMaterial({ map: ivoryTex, roughness: 0.45, metalness: 0 });
-  const eyeMat = new THREE.MeshStandardMaterial({ map: makeEye(spec.eye.iris), roughness: 0.12, metalness: 0 });
+  };
+  // pele: "sheen" dá o brilho aveludado de pele grossa nas bordas
+  const skinMat = physical
+    ? new THREE.MeshPhysicalMaterial({
+        ...skinParams,
+        sheen: 0.35,
+        sheenRoughness: 0.6,
+        sheenColor: new THREE.Color(spec.skin.belly).multiplyScalar(0.45),
+      })
+    : new THREE.MeshStandardMaterial(skinParams);
+  if (quality !== 'low') {
+    if (!detailTex) detailTex = makeDetailNormal();
+    addDetailNormal(skinMat, detailTex, quality === 'ultra' ? 7 : 5, 0.35);
+  }
+  const ivoryMat = new THREE.MeshStandardMaterial({ map: ivoryTex, roughness: 0.4, metalness: 0 });
+  const eyeTex = makeEye(spec.eye.iris);
+  const eyeMat = physical
+    ? new THREE.MeshPhysicalMaterial({ map: eyeTex, roughness: 0.4, clearcoat: 1, clearcoatRoughness: 0.03 })
+    : new THREE.MeshStandardMaterial({ map: eyeTex, roughness: 0.1, metalness: 0 });
   const accentMat = new THREE.MeshStandardMaterial({
     map: accent.map,
     normalMap: accent.normalMap,
-    roughness: 0.7,
+    roughness: 0.62,
     side: THREE.DoubleSide,
   });
-  const out = { spec, data, materials: [skinMat, ivoryMat, eyeMat, accentMat] };
+  // membros: mesma pele, textura própria
+  const limb = pre ? pre.limb : makeSkin(spec.skin, skinSeed(id) + 5, true);
+  const limbMat = skinMat.clone();
+  limbMat.map = limb.map;
+  limbMat.normalMap = limb.normalMap;
+  limbMat.roughnessMap = limb.roughnessMap;
+  if (quality !== 'low') addDetailNormal(limbMat, detailTex, quality === 'ultra' ? 7 : 5, 0.35);
+  const out = { spec, data, materials: [skinMat, ivoryMat, eyeMat, accentMat, limbMat] };
   cache.set(key, out);
   return out;
 }

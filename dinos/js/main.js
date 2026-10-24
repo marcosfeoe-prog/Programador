@@ -10,14 +10,15 @@ import { Input } from './input.js';
 import { AudioEngine } from './audio.js';
 import { UI } from './ui.js';
 import { SPECIES, SPECIES_ORDER, BEHAVIOR, POPULATION, growthStage } from './species.js';
-import { prepareSpecies } from './dinoModel.js';
+import { prepareAllSpecies } from './dinoModel.js';
 import { setTextureSize } from './textures.js';
-import { clamp, lerp, damp, isMobile, yieldFrame, mulberry32 } from './util.js';
+import { clamp, lerp, isMobile, yieldFrame } from './util.js';
 
 const QUALITY = {
-  low: { pixelRatio: 0.8, shadows: 0, shadowRange: 0, terrainRes: 160, vegetation: 1300, bushes: 230, texSize: 256, model: 'low', fogFar: 270, pop: 0.6, antialias: false },
-  medium: { pixelRatio: 1.25, shadows: 1024, shadowRange: 45, terrainRes: 220, vegetation: 2400, bushes: 300, texSize: 512, model: 'high', fogFar: 340, pop: 0.8, antialias: true },
-  high: { pixelRatio: 2, shadows: 2048, shadowRange: 60, terrainRes: 256, vegetation: 3800, bushes: 340, texSize: 512, model: 'high', fogFar: 430, pop: 1, antialias: true },
+  low: { pixelRatio: 0.8, shadows: 0, shadowRange: 0, terrainRes: 160, vegetation: 1300, bushes: 230, texSize: 256, dinoTex: 256, fogFar: 270, pop: 0.6, antialias: false },
+  medium: { pixelRatio: 1.25, shadows: 1024, shadowRange: 45, terrainRes: 220, vegetation: 2400, bushes: 300, texSize: 512, dinoTex: 512, fogFar: 340, pop: 0.8, antialias: true },
+  high: { pixelRatio: 2, shadows: 2048, shadowRange: 60, terrainRes: 256, vegetation: 3800, bushes: 340, texSize: 512, dinoTex: 1024, fogFar: 430, pop: 1, antialias: true },
+  ultra: { pixelRatio: 2, shadows: 4096, shadowRange: 75, terrainRes: 320, vegetation: 5200, bushes: 380, texSize: 1024, dinoTex: 1024, fogFar: 520, pop: 1, antialias: true },
 };
 
 const HOURS_PER_SEC = 24 / 1200; // um dia inteiro = 20 minutos
@@ -99,12 +100,10 @@ class Game {
     this.envTimer = 0;
     this.pmrem = new THREE.PMREMGenerator(r);
 
-    let i = 0;
-    for (const id of SPECIES_ORDER) {
-      progress(0.35 + (i++ / SPECIES_ORDER.length) * 0.45, `Pintando a pele: ${SPECIES[id].name}…`);
-      await yieldFrame();
-      prepareSpecies(id, q.model);
-    }
+    setTextureSize(q.dinoTex);
+    progress(0.35, 'Pintando a pele dos dinossauros…');
+    await yieldFrame();
+    await prepareAllSpecies(SPECIES_ORDER, q.name, (f) => progress(0.35 + f * 0.5, 'Pintando a pele dos dinossauros…'));
     progress(0.85, 'Soltando os dinossauros…');
     await yieldFrame();
 

@@ -84,6 +84,12 @@ export class PlayerController {
       c.ctrl.speed = 0;
       c.ctrl.yaw = c.yaw;
     }
+    // parado, a cabeça acompanha para onde a câmera olha
+    if (mag <= 0.12 && !c.action) {
+      c.lookAt = c.lookAt || new THREE.Vector3();
+      const hy = c.pos.y + c.data.headY * c.scale;
+      c.lookAt.set(c.pos.x + Math.sin(this.camYaw) * 40, hy - Math.sin(this.camPitch - 0.25) * 25, c.pos.z + Math.cos(this.camYaw) * 40);
+    } else c.lookAt = null;
 
     // dica de interação
     this.promptT -= dt;
