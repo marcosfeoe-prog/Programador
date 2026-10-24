@@ -66,7 +66,7 @@ export default {
         const z = akashiWalk(c, st);
         c.A.expr(lt > 5 ? 'sad' : 'neutral', 0, -0.4);
         c.A.st.lx = 0;
-        c.face(c.A, { dist: 0.7, yaw: 85, fov: 30, th: -0.04 });
+        c.face(c.A, { dist: 0.9, yaw: 55, fov: 30, th: -0.05 });
         const h = c.A.headWorld(V(0, 0, 0), 0.1);
         const ph = (lt * 0.7) % 1;
         c.fx.sprite('drop', h.clone().add(V(0, -ph * 0.6, -0.08)), 0.025, { opacity: 1 - ph });

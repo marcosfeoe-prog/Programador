@@ -212,6 +212,8 @@ export class Post {
     r.setRenderTarget(this.rt);
     r.clear();
     r.render(scene, camera);
+    this.sceneCalls = r.info.render.calls;
+    this.sceneTris = r.info.render.triangles;
     const p = this.p;
     const bloomOn = this.q.bloom && p.bloom > 0;
     if (bloomOn) {

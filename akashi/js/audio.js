@@ -15,11 +15,12 @@ export class AudioEngine {
     this.voiceMode = 'blips';
   }
 
-  init() {
+  // ctx opcional: permite renderizar a trilha offline (OfflineAudioContext).
+  init(given = null) {
     if (this.ctx) return;
     const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return;
-    const ctx = (this.ctx = new AC({ latencyHint: 'interactive' }));
+    if (!AC && !given) return;
+    const ctx = (this.ctx = given || new AC({ latencyHint: 'interactive' }));
     this.master = ctx.createGain();
     this.master.gain.value = this.vol.master;
     this.comp = ctx.createDynamicsCompressor();
@@ -30,8 +31,10 @@ export class AudioEngine {
     this.comp.release.value = 0.2;
     this.master.connect(this.comp);
     this.comp.connect(ctx.destination);
-    this.recDest = ctx.createMediaStreamDestination();
-    this.comp.connect(this.recDest);
+    if (ctx.createMediaStreamDestination) {
+      this.recDest = ctx.createMediaStreamDestination();
+      this.comp.connect(this.recDest);
+    }
     // ruído compartilhado
     const n = ctx.sampleRate * 2;
     this.noiseBuf = ctx.createBuffer(1, n, ctx.sampleRate);
@@ -169,6 +172,20 @@ export class AudioEngine {
       else hi = m;
     }
     return lo;
+  }
+
+  // Renderiza [t0, t0 + dur] num contexto offline (testes e exportação).
+  renderRange(t0, dur) {
+    this.sess = this.newSession();
+    this.t0 = t0;
+    this.a0 = 0.05;
+    let i = this.find(t0 - 30);
+    for (; i < this.events.length && this.events[i].t < t0 + dur; i++) {
+      const e = this.events[i];
+      if (e.t < t0) {
+        if (e.s && e.t + e.d > t0 + 0.1) this.schedule(e, this.a0, t0 - e.t);
+      } else this.schedule(e, this.a0 + (e.t - t0), 0);
+    }
   }
 
   // Tempo do episódio segundo o relógio do áudio.

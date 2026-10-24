@@ -111,8 +111,8 @@ export const aftermath = {
         if (lt < 3.4) c.cam([-2.3, 1.55, 8.6], [-2.2, 1.45, 6.3], 34);
         else {
           c.camKF(lt, [
-            [3.4, [-0.6, 1.0, 4.4], [x, 5.4, 21.4], 30],
-            [5, [-0.6, 1.2, 4.4], [x, 5.8, 21.4], 34],
+            [3.4, [-5.4, 1.1, 6.4], [x, 5.4, 21.4], 30],
+            [5, [-5.4, 1.3, 6.4], [x, 5.8, 21.4], 34],
           ]);
           c.ov.onoma('GRRRUUUM', 1250, 300, 70, lt - 3.4, { color: '#ffffff', rot: 0.05, dur: 1.6 });
           c.ov.continua(lt - 4.0);
@@ -188,8 +188,8 @@ export const ending = {
         b.position.set(0.55, 0.0, 9.35);
         b.rotation.set(0, 0.2, 0);
         c.camKF(lt, [
-          [0, [1.2, 0.55, 6.4], [0.1, 1.6, 9.3], 44],
-          [7.5, [0.8, 0.45, 6.9], [0.05, 1.9, 9.3], 46],
+          [0, [1.3, 0.75, 7.0], [0.1, 1.0, 9.3], 44],
+          [7.5, [0.9, 0.6, 7.4], [0.05, 1.25, 9.3], 46],
         ]);
         creditPanel(c);
         c.ov.roll(CREDITS, lt / 22);
@@ -205,7 +205,7 @@ export const ending = {
         const x0 = -22 + lt * 1.0;
         for (const [ch, dx, dz, style] of [
           [c.A, 0, 0, 'swagger'],
-          [c.H, -1.1, -0.6, 'walk'],
+          [c.H, -1.1, 0.9, 'walk'],
           [c.K, -2.2, 0.2, 'walk'],
         ]) {
           ch.place(x0 + dx, 21.2 + dz, PI / 2, 4.5);
@@ -213,7 +213,7 @@ export const ending = {
           ch.expr(ch === c.H ? 'smile' : 'neutral');
         }
         c.show('bag');
-        c.cam([x0 + 2.8, 3.2, 15.4], [x0 - 1.2, 5.3, 21.2], 36);
+        c.cam([x0 + 4.5, 5.9, 23.2], [x0 - 0.8, 5.6, 21.2], 40);
         creditPanel(c);
         c.ov.roll(CREDITS, (7.5 + lt) / 22);
         c.post.set({ bloom: 1.1 });

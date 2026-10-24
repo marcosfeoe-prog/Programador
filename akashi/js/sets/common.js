@@ -443,7 +443,7 @@ export function sakuraTree(parent, x, z, s = 1, seed = 1, opts = {}) {
     geo.translate(Math.cos(a) * d, 3.5 + rng.float(-0.3, 1.0) + (i === 0 ? 0.6 : 0), Math.sin(a) * d);
     L.push({ geo });
   }
-  const crown = mesh(mergeGeos(L), toon(SAKURA_PINKS[seed % 3]), opts.outline ?? 0.5, { cast: true });
+  const crown = mesh(mergeGeos(L), toon(SAKURA_PINKS[Math.abs(Math.round(seed)) % 3]), opts.outline ?? 0.5, { cast: true });
   g.add(crown);
   parent.add(g);
   return g;

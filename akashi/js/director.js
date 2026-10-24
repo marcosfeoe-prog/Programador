@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { clamp, hash, noise1, kf, range, smooth } from './util.js';
 import { VW, VH } from './overlay.js';
+import { POSE_CLOCK } from './character.js';
 import { makeBag, makeBento, makeBentoLid, makeChopsticks, makeSandwich, makeGiftBox, makeBread, makeBooks, makeBook, makePipe, makeBat, makeChain, makePhone, makeCat } from './props.js';
 
 export const SPEAKERS = {
@@ -282,7 +283,9 @@ export class Director {
     c.st0 = t - shot.scene.start;
     c.shot = shot;
     // animação "em dois" (12 poses por segundo), como no anime
-    c.at = dtPose ? Math.floor(c.lt * 12) / 12 : c.lt;
+    POSE_CLOCK.t = t;
+    POSE_CLOCK.shot = shot.start;
+    POSE_CLOCK.twos = !!dtPose;
     c.lb = 0;
     c.noSubs = false;
     shot.run(c, c.lt, c.u);

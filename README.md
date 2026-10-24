@@ -154,3 +154,13 @@ Segundo jogo do repositório: exploração em primeira pessoa pelos **Níveis 0,
 noturna, câmera térmica…), qualidade gráfica **Baixa, Média, Alta e Ultra** e
 controles feitos para **celular**. Com o servidor rodando (`npm start`), abra
 `http://localhost:8080/liminar/`. Detalhes em [`liminar/README.md`](liminar/README.md).
+
+---
+
+# AKASHI — Episódio 1 de anime em 3D (pasta `akashi/`)
+
+Terceiro projeto do repositório: um **episódio de anime de 9:50** renderizado em
+tempo real, feito só com código (personagens, rostos, cenários, efeitos de mangá,
+trilha sonora e efeitos sonoros). O delinquente Akashi, a aluna nova Hana, o rosbife
+e uma batalha ao pôr do sol. Com o servidor rodando (`npm start`), abra
+`http://localhost:8080/akashi/`. Detalhes em [`akashi/README.md`](akashi/README.md).

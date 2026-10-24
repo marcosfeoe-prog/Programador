@@ -8,6 +8,7 @@ import { FaceRig, FACE_W, FACE_CY } from './face.js';
 import { DEG, hash, clamp } from './util.js';
 
 const HEAD_R = 0.12;
+export const POSE_CLOCK = { t: 0, shot: 0, twos: false };
 const _q1 = new THREE.Quaternion();
 const _q2 = new THREE.Quaternion();
 
@@ -40,13 +41,13 @@ function deform(geo, fn) {
 let HEAD_GEO;
 let FACE_GEO;
 function headGeo() {
-  if (!HEAD_GEO) HEAD_GEO = deform(new THREE.SphereGeometry(HEAD_R, 32, 24), headShape);
+  if (!HEAD_GEO) HEAD_GEO = deform(new THREE.SphereGeometry(HEAD_R, 28, 20), headShape);
   return HEAD_GEO;
 }
 // Recorte frontal da cabeça, um pouco para fora, com UV planar (de frente).
 function faceGeo() {
   if (FACE_GEO) return FACE_GEO;
-  const g = new THREE.SphereGeometry(HEAD_R, 40, 30, Math.PI / 2 - 1.3, 2.6, 0.22 * Math.PI, 0.72 * Math.PI);
+  const g = new THREE.SphereGeometry(HEAD_R, 30, 22, Math.PI / 2 - 1.3, 2.6, 0.22 * Math.PI, 0.72 * Math.PI);
   deform(g, headShape);
   const p = g.attributes.position;
   const n = g.attributes.normal;
@@ -343,13 +344,14 @@ export class Character {
     this.build();
     this.face = new FaceRig(def.face || {});
     this.faceMesh.material.map = this.face.texture;
+    this.bake();
     this.blinkSeed = hash(def.name.length * 7.7 + (def.seed || 0));
     this.reset();
   }
 
   part(parent, geo, color, x = 0, y = 0, z = 0, opts = {}) {
     const mat = typeof color === 'number' ? toon(color, opts.matOpts) : color;
-    const m = mesh(geo, mat, opts.outline ?? this.outline, { smooth: opts.smooth, cast: opts.cast ?? true });
+    const m = mesh(geo, mat, opts.outline ?? this.outline, { smooth: opts.smooth, cast: opts.cast ?? this.def.cast ?? true });
     m.position.set(x, y, z);
     if (opts.sx || opts.sy || opts.sz) m.scale.set(opts.sx || 1, opts.sy || 1, opts.sz || 1);
     if (opts.rx) m.rotation.x = opts.rx;
@@ -509,6 +511,7 @@ export class Character {
         });
       }
       const hm = this.part(hd, sph(1, 10, 8), skin, 0, -0.045, 0, { sx: 0.04, sy: 0.055, sz: 0.026 });
+      hm.userData.keep = true;
       if (s > 0) this.lHandMesh = hm;
       else this.rHandMesh = hm;
       const anchor = new THREE.Group();
@@ -618,6 +621,49 @@ export class Character {
     });
   }
 
+  // Junta as malhas rígidas de cada articulação (mesmo material) numa só,
+  // com um único contorno: bem menos chamadas de desenho por personagem.
+  bake() {
+    const groups = [];
+    this.root.traverse((o) => {
+      if (o.isGroup) groups.push(o);
+    });
+    for (const g of groups) {
+      const buckets = new Map();
+      for (const ch of g.children) {
+        if (!ch.isMesh || ch.userData.keep || ch === this.blob || ch === this.faceMesh) continue;
+        if (Array.isArray(ch.material)) continue;
+        if (ch.children.some((c) => !c.userData.isOutline)) continue;
+        const ol = ch.children[0];
+        const key = `${ch.material.uuid}|${ol ? ol.material.uuid : '-'}|${ch.castShadow}|${ch.receiveShadow}`;
+        if (!buckets.has(key)) buckets.set(key, []);
+        buckets.get(key).push(ch);
+      }
+      for (const list of buckets.values()) {
+        if (list.length < 2) continue;
+        const parts = [];
+        const oparts = [];
+        for (const ch of list) {
+          ch.updateMatrix();
+          parts.push({ geo: ch.geometry, matrix: ch.matrix });
+          if (ch.children[0]) oparts.push({ geo: ch.children[0].geometry, matrix: ch.matrix });
+        }
+        const first = list[0];
+        const m = new THREE.Mesh(mergeGeos(parts), first.material);
+        m.castShadow = first.castShadow;
+        m.receiveShadow = first.receiveShadow;
+        if (oparts.length === list.length) {
+          const o = new THREE.Mesh(mergeGeos(oparts), first.children[0].material);
+          o.userData.isOutline = true;
+          o.raycast = () => {};
+          m.add(o);
+        }
+        for (const ch of list) g.remove(ch);
+        g.add(m);
+      }
+    }
+  }
+
   // ------------------------------------------------------------ API por quadro
   reset() {
     this.root.visible = false;
@@ -704,6 +750,10 @@ export class Character {
     return this;
   }
 
+  // Com POSE_CLOCK.twos ligado, a pose só muda 12 vezes por segundo
+  // (animação "em dois", como no anime); posição e câmera continuam suaves.
+  // (o "segurar" da pose acontece em update(), depois que a tomada terminou
+  // de montar a pose final do quadro)
   pose(p) {
     this.applyPose(p);
     return this;
@@ -722,6 +772,15 @@ export class Character {
   // Atualiza rosto, piscadas, boca falando, cabelo e casaco ao vento.
   update(t) {
     if (!this.root.visible) return;
+    const C = POSE_CLOCK;
+    if (C.twos) {
+      const key = `${Math.floor(C.t * 12)}|${C.shot}`;
+      if (this.heldKey === key && this.heldPose) this.applyPose(this.heldPose);
+      else {
+        this.heldKey = key;
+        this.heldPose = this.p;
+      }
+    }
     const p = this.p || {};
     let blink = false;
     if (!this.noBlink) {
@@ -967,6 +1026,7 @@ export function makeStudents(n, outline = 1) {
       seed: i,
       outfit: fem ? 'sailor' : 'gakuran',
       female: fem,
+      cast: false,
       scale: (fem ? 0.9 : 0.96) + r(2) * 0.07,
       build: fem ? 1 : 0.95 + r(6) * 0.15,
       outline,

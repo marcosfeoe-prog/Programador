@@ -240,7 +240,7 @@ export class Overlay {
   }
 
   // Legenda: nome do personagem colorido e fala com contorno.
-  subtitle(sub, lb = 0) {
+  subtitle(sub, lb = 0, lift = 0) {
     if (!sub) return;
     const { name, color, text, thought, age, dur, shown } = sub;
     const g = this.g;
@@ -250,7 +250,7 @@ export class Overlay {
     const str = thought ? `(${text})` : text;
     const visible = str.slice(0, Math.ceil(str.length * (shown ?? 1)));
     const lines = this.wrap(str, 1500, size, SANS, 700, thought);
-    const base = VH - 70 - Math.max(0, lb * 120 - 20);
+    const base = VH - 70 - Math.max(0, lb * 120 - 20) - lift * 95;
     let y = base - (lines.length - 1) * (size + 10);
     if (name) this.text(name, VW / 2, y - size - 4, { size: 30, color, stroke: '#000', sw: 7, alpha: a, weight: 800 });
     let left = visible.length;

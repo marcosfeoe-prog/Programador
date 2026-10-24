@@ -104,21 +104,42 @@ function audioEvents() {
 }
 
 // ------------------------------------------------------------ relógio
-const clock = { playing: false, t: 0, base: 0 };
+// O relógio segue o áudio quando ele está tocando de verdade (sincronia
+// labial e música); se o áudio travar ou não existir, segue o relógio do
+// sistema e o áudio é reiniciado no ponto certo.
+const clock = { playing: false, t: 0, base: 0, resync: 0 };
 function now() {
   if (!clock.playing) return clock.t;
-  if (audio.ok && audio.sess) return audio.time();
-  return clock.t + (performance.now() - clock.base) / 1000;
+  const pn = performance.now();
+  const perfT = clock.t + (pn - clock.base) / 1000;
+  if (audio.ok && audio.sess && audio.ctx.state === 'running' && audio.ctx.currentTime > audio.a0) {
+    const at = audio.time();
+    const diff = at - perfT;
+    if (Math.abs(diff) < 0.35) {
+      // puxa o relógio do sistema devagar na direção do áudio (sem travar junto)
+      clock.t += diff * 0.02;
+      return at;
+    }
+    if (pn - clock.resync > 2000) {
+      clock.resync = pn;
+      audio.play(perfT);
+    }
+  }
+  return perfT;
 }
 async function play() {
   if (clock.playing) return;
   if (clock.t >= DURATION - 0.05) clock.t = 0;
   clock.playing = true;
   clock.base = performance.now();
+  clock.resync = performance.now();
   audio.init();
   if (audio.ok) {
-    audio.setEvents(audioEvents());
-    await audio.play(clock.t);
+    if (!audio.events.length || audio.voiceKey !== settings.voice) {
+      audio.setEvents(audioEvents());
+      audio.voiceKey = settings.voice;
+    }
+    await audio.play(now());
   }
   lastLineT = clock.t;
   updateUI(true);
@@ -187,7 +208,8 @@ function speakLines(t) {
 let lastShot = null;
 function renderFrame(t) {
   const shot = director.frame(t, settings.twos);
-  if (settings.subs) ov.subtitle(director.sub, director.lb);
+  const lift = !recorder.on && !params.has('shot') && !document.body.classList.contains('idle') ? 1 : 0;
+  if (settings.subs) ov.subtitle(director.sub, director.lb, lift);
   post.render(stage.scene, camera, t);
   if (recorder.on) recorder.composite();
   lastShot = shot;
@@ -366,10 +388,20 @@ function buildUI() {
     clearTimeout(hideTimer);
     hideTimer = setTimeout(() => clock.playing && document.body.classList.add('idle'), 2600);
   };
+  let wasIdle = false;
   window.addEventListener('pointermove', wake);
-  window.addEventListener('pointerdown', wake);
+  window.addEventListener(
+    'pointerdown',
+    () => {
+      // o primeiro toque com os controles escondidos só os mostra
+      wasIdle = document.body.classList.contains('idle');
+      wake();
+    },
+    true,
+  );
   $('screen').addEventListener('click', (e) => {
-    if (e.target.closest('#controls, .panel')) return;
+    if (wasIdle) return;
+    if (e.target.closest('button, input, #controls, .panel, #start, #end')) return;
     if (!$('start').classList.contains('hidden')) return;
     clock.playing ? pause() : play();
   });
@@ -453,6 +485,9 @@ async function boot() {
   if (params.has('shot')) {
     // modo de captura: desenha o instante pedido e avisa
     Object.assign(window.__ep, {
+      stats() {
+        return { calls: post.sceneCalls, tris: post.sceneTris };
+      },
       renderAt(t) {
         renderFrame(t);
         return new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(() => res(director.shot?.scene?.name))));
@@ -466,7 +501,8 @@ async function boot() {
   }
   renderFrame(clock.t);
   updateUI(true);
-  $('start-btn').onclick = () => {
+  $('start-btn').onclick = (e) => {
+    e.stopPropagation();
     $('start').classList.add('hidden');
     play();
   };
@@ -474,7 +510,7 @@ async function boot() {
   loop();
 }
 
-window.__ep = { director, stage, cast, seek, play, pause, now };
+window.__ep = { director, stage, cast, seek, play, pause, now, audio, clock };
 boot().catch((e) => {
   console.error(e);
   $('load-msg').textContent = 'Erro ao carregar: ' + e.message;
