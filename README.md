@@ -154,3 +154,14 @@ Segundo jogo do repositório: exploração em primeira pessoa pelos **Níveis 0,
 noturna, câmera térmica…), qualidade gráfica **Baixa, Média, Alta e Ultra** e
 controles feitos para **celular**. Com o servidor rodando (`npm start`), abra
 `http://localhost:8080/liminar/`. Detalhes em [`liminar/README.md`](liminar/README.md).
+
+---
+
+# Instinto Jurássico — Sobrevivência de Dinossauros 3D (pasta `dinos/`)
+
+Terceiro jogo do repositório: escolha entre **Tiranossauro, Velociraptor, Tricerátops,
+Parassaurolofo, Galimimo e Estegossauro**, nasça filhote e sobreviva (vida, fome, sede,
+energia, sangramento e crescimento) num vale com lagos, rio, florestas e manadas com IA.
+Modelos, esqueletos, **animações** e **texturas** são todos gerados do zero por código.
+Com o servidor rodando (`npm start`), abra `http://localhost:8080/dinos/`.
+Detalhes em [`dinos/README.md`](dinos/README.md).

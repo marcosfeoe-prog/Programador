@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#14110c" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="description" content="Jogo 3D de sobrevivência de dinossauros: escolha uma espécie, cace ou paste, beba, cresça e sobreviva. Modelos, texturas, animações e sons feitos do zero." />
+    <title>Instinto Jurássico — Sobrevivência de Dinossauros 3D</title>
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/style.css" />
+    <script type="importmap">
+      { "imports": { "three": "../vendor/three/three.module.min.js" } }
+    </script>
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+
+    <div id="loading">
+      <div class="logo">INSTINTO <b>JURÁSSICO</b></div>
+      <div id="load-bar"><div id="load-fill"></div></div>
+      <div id="load-text">Preparando…</div>
+    </div>
+
+    <!-- Menu principal -->
+    <div id="menu" class="screen hidden">
+      <div class="menu-left">
+        <div class="logo">INSTINTO <b>JURÁSSICO</b></div>
+        <div class="tagline">Nasça filhote. Coma, beba, cresça — e sobreviva.</div>
+        <div id="species-list"></div>
+      </div>
+      <div class="menu-right">
+        <div id="sp-card" class="panel">
+          <div class="sp-head">
+            <div>
+              <div id="sp-name">—</div>
+              <div id="sp-sci">—</div>
+            </div>
+            <div id="sp-diet" class="diet">—</div>
+          </div>
+          <div id="sp-desc"></div>
+          <div id="sp-stats"></div>
+          <div id="sp-record"></div>
+        </div>
+        <div class="menu-buttons">
+          <button id="btn-play" class="primary">Jogar</button>
+          <button id="btn-settings">Configurações</button>
+          <button id="btn-help">Como jogar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HUD -->
+    <div id="hud" class="hidden">
+      <div id="stats" class="panel">
+        <div class="who"><span id="hud-name">—</span><span id="hud-stage">Filhote</span></div>
+        <div class="bar-row"><span class="ico">❤</span><div class="bar"><div id="b-health" class="fill health"></div></div></div>
+        <div class="bar-row"><span class="ico">🍖</span><div class="bar"><div id="b-hunger" class="fill hunger"></div></div></div>
+        <div class="bar-row"><span class="ico">💧</span><div class="bar"><div id="b-thirst" class="fill thirst"></div></div></div>
+        <div class="bar-row"><span class="ico">⚡</span><div class="bar"><div id="b-stamina" class="fill stamina"></div></div></div>
+        <div class="bar-row"><span class="ico">🌱</span><div class="bar thin"><div id="b-growth" class="fill growth"></div></div><span id="growth-pct">0%</span></div>
+        <div id="status-icons"></div>
+      </div>
+      <div id="clock" class="panel"><span id="clock-icon">☀</span><span id="clock-time">08:00</span><span id="clock-day">Dia 1</span></div>
+      <div id="compass"><div id="compass-strip"></div><div id="compass-mark"></div></div>
+      <div id="map-wrap" class="panel"><canvas id="minimap" width="180" height="180"></canvas></div>
+      <div id="target" class="panel hidden">
+        <div id="t-name">—</div>
+        <div id="t-sub">—</div>
+        <div class="bar thin"><div id="t-health" class="fill health"></div></div>
+      </div>
+      <div id="prompt" class="hidden"></div>
+      <div id="feed"></div>
+      <div id="crosshair"></div>
+      <div id="fps" class="hidden"></div>
+
+      <!-- Controles de toque -->
+      <div id="touch" class="hidden">
+        <div id="look-area"></div>
+        <div id="joy"><div id="joy-knob"></div></div>
+        <div id="tbtns">
+          <button data-act="attack" class="big">🦷<small>Atacar</small></button>
+          <button data-act="interact">🍖<small>Ação</small></button>
+          <button data-act="sprint">💨<small>Correr</small></button>
+          <button data-act="roar">📢<small>Rugir</small></button>
+          <button data-act="rest">💤<small>Deitar</small></button>
+          <button data-act="sleep">🌙<small>Dormir</small></button>
+        </div>
+        <button id="tmenu" data-act="menu">☰</button>
+        <button id="tmap" data-act="map">🗺</button>
+      </div>
+    </div>
+    <div id="vignette"></div>
+    <div id="bigmap" class="hidden"><canvas id="bigmap-canvas" width="640" height="640"></canvas><div class="hint">M para fechar</div></div>
+
+    <!-- Pausa -->
+    <div id="pause" class="screen hidden">
+      <div class="panel dialog">
+        <h2>Pausado</h2>
+        <button id="btn-resume" class="primary">Continuar</button>
+        <button id="btn-psettings">Configurações</button>
+        <button id="btn-phelp">Como jogar</button>
+        <button id="btn-quit">Voltar ao menu</button>
+      </div>
+    </div>
+
+    <!-- Morte -->
+    <div id="death" class="screen hidden">
+      <div class="panel dialog">
+        <h2>Você morreu</h2>
+        <div id="death-cause">—</div>
+        <div id="death-stats"></div>
+        <button id="btn-respawn" class="primary">Renascer</button>
+        <button id="btn-death-menu">Escolher outra espécie</button>
+      </div>
+    </div>
+
+    <!-- Configurações -->
+    <div id="settings" class="screen hidden">
+      <div class="panel dialog wide">
+        <h2>Configurações</h2>
+        <label>Qualidade gráfica
+          <select id="set-quality">
+            <option value="low">Baixa</option>
+            <option value="medium">Média</option>
+            <option value="high">Alta</option>
+          </select>
+        </label>
+        <div class="note">Mudar a qualidade recarrega o jogo.</div>
+        <label>Volume <input id="set-volume" type="range" min="0" max="1" step="0.05" /></label>
+        <label>Sensibilidade da câmera <input id="set-sens" type="range" min="0.3" max="2.5" step="0.1" /></label>
+        <label class="check"><input id="set-invert" type="checkbox" /> Inverter eixo vertical</label>
+        <label class="check"><input id="set-fps" type="checkbox" /> Mostrar FPS</label>
+        <button id="btn-set-close" class="primary">Fechar</button>
+      </div>
+    </div>
+
+    <!-- Ajuda -->
+    <div id="help" class="screen hidden">
+      <div class="panel dialog wide">
+        <h2>Como jogar</h2>
+        <div class="help-grid">
+          <div>
+            <h3>Sobreviva</h3>
+            <p>Você nasce <b>filhote</b>. Mantenha a <b>fome</b> e a <b>sede</b> cheias para crescer até <b>adulto</b>: maior, mais forte e com mais vida.</p>
+            <p><b>Carnívoros</b> caçam e comem <b>carcaças</b>. <b>Herbívoros</b> comem <b>arbustos com frutas vermelhas</b>. Todos bebem em <b>lagos e no rio</b>.</p>
+            <p>Mordidas causam <b>sangramento</b>. Descansar estanca o sangue e recupera a vida. À noite, dormir acelera tudo — mas os predadores não dormem.</p>
+            <p>Fome ou sede zeradas tiram vida. Correr gasta <b>energia</b>.</p>
+          </div>
+          <div>
+            <h3>Controles (PC)</h3>
+            <table>
+              <tr><td>WASD / setas</td><td>andar</td></tr>
+              <tr><td>Shift</td><td>correr</td></tr>
+              <tr><td>Ctrl</td><td>andar devagar (furtivo)</td></tr>
+              <tr><td>Mouse</td><td>câmera (roda: zoom)</td></tr>
+              <tr><td>Clique / Espaço / F</td><td>atacar</td></tr>
+              <tr><td>E</td><td>comer / beber</td></tr>
+              <tr><td>Q / botão direito</td><td>rugir</td></tr>
+              <tr><td>C</td><td>deitar / descansar</td></tr>
+              <tr><td>Z</td><td>dormir</td></tr>
+              <tr><td>M</td><td>mapa</td></tr>
+              <tr><td>H</td><td>esconder HUD</td></tr>
+              <tr><td>G</td><td>tela cheia</td></tr>
+              <tr><td>Esc</td><td>pausa</td></tr>
+            </table>
+            <p class="note">No celular: joystick à esquerda, arraste à direita para girar a câmera (dois dedos para zoom) e use os botões.</p>
+          </div>
+        </div>
+        <button id="btn-help-close" class="primary">Fechar</button>
+      </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
