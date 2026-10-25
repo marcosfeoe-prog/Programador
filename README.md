@@ -154,3 +154,14 @@ Segundo jogo do repositório: exploração em primeira pessoa pelos **Níveis 0,
 noturna, câmera térmica…), qualidade gráfica **Baixa, Média, Alta e Ultra** e
 controles feitos para **celular**. Com o servidor rodando (`npm start`), abra
 `http://localhost:8080/liminar/`. Detalhes em [`liminar/README.md`](liminar/README.md).
+
+---
+
+# Backrooms // Pixel (pasta `backrooms-pixel/`)
+
+Terror minimalista e pixelado nos Backrooms, feito do zero (raycaster próprio em
+Canvas 2D, sem bibliotecas nem arquivos de mídia): **Níveis 0, 1 e 2**, a entidade
+**Vagante** no Nível 0, lanterna com pilha, sanidade e câmera tremida que balança ao
+mover a visão. Com o servidor rodando (`npm start`), abra
+`http://localhost:8080/backrooms-pixel/`. Detalhes em
+[`backrooms-pixel/README.md`](backrooms-pixel/README.md).
