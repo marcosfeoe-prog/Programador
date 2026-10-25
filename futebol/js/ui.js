@@ -134,4 +134,28 @@ export function openModal(html, onMount) {
   return close;
 }
 
+// Confirmação dentro da página (caixas nativas como confirm() nem sempre funcionam)
+export function confirmBox(message, okLabel = 'Confirmar') {
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (v) => {
+      if (done) return;
+      done = true;
+      resolve(v);
+    };
+    openModal(`<p style="font-size:1.05rem;margin:0 0 16px">${esc(message)}</p><div class="row" style="justify-content:flex-end"><button class="btn ghost" data-close id="cb-no">Cancelar</button><button class="btn primary" id="cb-ok">${esc(okLabel)}</button></div>`, (card, close) => {
+      $('#cb-ok', card).onclick = () => {
+        close();
+        finish(true);
+      };
+      $('#modal').addEventListener('click', function h(e) {
+        if (e.target.id === 'modal' || e.target.closest('[data-close]')) {
+          this.removeEventListener('click', h);
+          finish(false);
+        }
+      });
+    });
+  });
+}
+
 export { crest, stars, trophySVG, esc };

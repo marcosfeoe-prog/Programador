@@ -7,7 +7,7 @@ import { seasonLabel } from './text.js';
 import { pushNews } from './news.js';
 import * as V from './views.js';
 import * as V2 from './views2.js';
-import { $, $$, hydrateThumbs, toast } from './ui.js';
+import { $, $$, hydrateThumbs, toast, confirmBox } from './ui.js';
 
 const SAVE_KEY = 'gramado-save-v1';
 
@@ -203,8 +203,8 @@ if (saved) {
 
 window.addEventListener('hashchange', () => render());
 $('#btn-advance').onclick = () => advance(1);
-$('#btn-season').onclick = () => {
+$('#btn-season').onclick = async () => {
   const left = 20 - W.week;
-  if (W.week !== 0 && !confirm(`Simular as ${left} semanas restantes da temporada?`)) return;
+  if (W.week !== 0 && !(await confirmBox(`Simular as ${left} semanas restantes da temporada?`, 'Simular'))) return;
   advance(W.week === 0 ? 20 : left);
 };

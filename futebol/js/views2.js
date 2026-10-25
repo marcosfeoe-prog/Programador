@@ -9,7 +9,7 @@ import { FigureViewer, kitFor } from './avatar3d.js';
 import { seasonLabel } from './text.js';
 import * as AI from './ai.js';
 import { mountViewer, disposeViewer } from './views.js';
-import { $, $$, ovrBadge, thumbImg, playerLink, teamCell, toast, openModal, crest, stars, esc } from './ui.js';
+import { $, $$, ovrBadge, thumbImg, playerLink, teamCell, toast, openModal, confirmBox, crest, stars, esc } from './ui.js';
 import { shirtIcon } from './svg.js';
 
 const IMPORTANCE = ['', 'Regional — torneio local, de alcance limitado', 'Nacional — competição de prestígio no país', 'Internacional — respeitado no continente', 'Cobiçado — entre os maiores do planeta', 'Lendário — importância máxima no futebol mundial'];
@@ -58,8 +58,8 @@ export function viewTournament(id) {
     </div>`,
     mount(root) {
       const d = $('#del-tour', root);
-      if (d) d.onclick = () => {
-        if (!confirm(`Excluir o torneio "${t.name}"? Clubes e jogadores continuam existindo.`)) return;
+      if (d) d.onclick = async () => {
+        if (!(await confirmBox(`Excluir o torneio "${t.name}"? Clubes e jogadores continuam existindo.`, 'Excluir'))) return;
         W.tournaments = W.tournaments.filter((x) => x !== t);
         window.save();
         location.hash = '#/torneios';
@@ -242,8 +242,8 @@ export function viewAward(id) {
     </div>`,
     mount(root) {
       const d = $('#del-award', root);
-      if (d) d.onclick = () => {
-        if (!confirm('Excluir este prêmio?')) return;
+      if (d) d.onclick = async () => {
+        if (!(await confirmBox('Excluir este prêmio?', 'Excluir'))) return;
         W.awards = W.awards.filter((x) => x !== a);
         window.save();
         location.hash = '#/premios';
@@ -492,8 +492,8 @@ function careerDashboard(p) {
         toast(r || 'Decisão registrada.', 3500);
         window.rerender();
       }));
-      $$('[data-offer]', root).forEach((b) => (b.onclick = () => {
-        if (!confirm('Aceitar esta proposta e mudar de clube?')) return;
+      $$('[data-offer]', root).forEach((b) => (b.onclick = async () => {
+        if (!(await confirmBox('Aceitar esta proposta e mudar de clube?', 'Aceitar'))) return;
         Career.acceptOffer(b.dataset.offer);
         window.save();
         toast('Transferência concluída!');
@@ -600,8 +600,8 @@ export function viewSettings() {
       };
       $('#exp', root).onclick = () => window.exportWorld();
       $('#imp', root).onchange = (e) => e.target.files[0] && window.importWorld(e.target.files[0]);
-      $('#reset', root).onclick = () => {
-        if (!confirm('Criar um novo universo? Todo o progresso atual será perdido.')) return;
+      $('#reset', root).onclick = async () => {
+        if (!(await confirmBox('Criar um novo universo? Todo o progresso atual será perdido.', 'Criar novo universo'))) return;
         window.newWorld(Number($('#seed', root).value) || undefined);
       };
     },
