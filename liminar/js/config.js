@@ -121,7 +121,7 @@ export const FILTERS = [
 // Os níveis, na ordem em que são visitados. `key` identifica a classe do nível
 // e os bilhetes; `num` é o número canônico (10.1 é um subnível do 10).
 // Ordem em que os níveis são visitados (as chaves de LEVELS; secretos e partes ficam de fora).
-export const ORDER = ['fr', '0', '1', '2', '3', '4', '5', '8', '9', '10', '10.1', '11', '12', '14', '15', '16', '23', '34', '35', '37', '43', '44', '45', '46', '88', '177'];
+export const ORDER = ['fr', '0', '1', '2', '3', '4', '5', '8', '9', '10', '10.1', '11', '12', '14', '15', '16', '23', '34', '35', '37', '43', '44', '45', '46', '47', '48', '88', '177'];
 
 // Posição de um nível na ordem (partes contam como o nível principal; secretos, como o pai).
 export function orderPos(info) {
@@ -495,6 +495,26 @@ export const LEVELS = [
     desc: 'Uma casa simples no meio da floresta, numa tarde qualquer. Tudo normal. Quase tudo.',
     objective: 'Explore a casa.',
     hint: 'Alguma coisa nas paredes não está certa.',
+  },
+  {
+    key: '47',
+    num: 47,
+    name: 'Corredores Liminares',
+    tag: 'Nível 47',
+    danger: 'Classe 2 · Inseguro · Entidade: Ladrão de Peles',
+    desc: 'Corredores limpos demais, paredes cor de creme e lajotas brilhantes. Bancos vazios, plantas de plástico. E alguém que parece uma pessoa comum.',
+    objective: 'Encontre a porta com a placa verde de SAÍDA.',
+    hint: 'Se encontrar alguém, não confie. Não deixe chegar perto e nunca dê as costas.',
+  },
+  {
+    key: '48',
+    num: 48,
+    name: 'Névoa Densa',
+    tag: 'Nível 48',
+    danger: 'Classe ? · Misteriosa',
+    desc: 'Um descampado engolido por uma névoa cinza tão espessa que não se enxerga a três metros. Ninguém sabe o que mais anda aqui.',
+    objective: 'Siga a luz vermelha na névoa.',
+    hint: 'A luz pisca. Quando sumir, espere: ela volta.',
   },
 ];
 

@@ -120,6 +120,16 @@ export const NOTES = {
     'No laboratório tem um computador que abre a jaula da quarentena. Lá dentro alguém deixou um rastro azul até uma porta aberta.',
   ],
   fr: ['Lista de compras: pão, leite, lâmpadas (a da sala anda zumbindo).'],
+  '47': [
+    'Encontrei um homem. Simpático, dizia que sabia a saída. Ele não piscava. Eu corri antes de ele chegar perto. Ainda bem.',
+    'O Ladrão de Peles usa a pele de quem se perdeu aqui. Se ele chegar a três passos de você, já era. Se você virar as costas, também.',
+    'Ele não cansa. Você cansa. Corra, quebre a linha de visão nas esquinas, e só então pare.',
+  ],
+  '48': [
+    'Siga a luz vermelha. Só ela. Não siga vozes.',
+    'As figuras paradas na névoa somem quando você chega perto. Não sei se isso é bom.',
+    'Os passos atrás de mim pararam quando eu parei. Eu nunca me virei. Recomendo o mesmo.',
+  ],
   '46': [
     'A água das cabanas é quente, mas é água. Beba antes que a vista comece a tremer.',
     'Vi um oásis. Corri até ele. Quando cheguei perto, só tinha areia. Não corra atrás de oásis.',
