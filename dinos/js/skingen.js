@@ -79,7 +79,7 @@ export function genSkin({ skin, seed = 1, limb = false, size = 512 }) {
   const mid = lowField(256, (u, v) => tileFbm(noise, u + 0.37, v + 0.71, 12, 3));
   const warpF = lowField(128, (u, v) => tileFbm(noise, u + 0.13, v + 0.57, 4, 3));
   const wrinkM = lowField(128, (u, v) => tileFbm(noise, u + 0.61, v + 0.29, 6, 3));
-  const mottle = skin.pattern === 'mottled' ? lowField(256, (u, v) => tileFbm(noise, u + 0.5, v, 6, 4)) : null;
+  const mottle = skin.pattern === 'mottled' || skin.pattern === 'saddles' ? lowField(256, (u, v) => tileFbm(noise, u + 0.5, v, 6, 4)) : null;
   const fine = makeTileWorley(seed + 11, 64, 64);
   const big = makeTileWorley(seed + 23, 24, 24);
   const plates = makeTileWorley(seed + 31, 30, 60, 0.75);
@@ -151,6 +151,11 @@ export function genSkin({ skin, seed = 1, limb = false, size = 512 }) {
       pat = Math.max(pat, (1 - smoothstep(0.05, 0.12, Math.abs(sp.f1 - 0.36 - m2 * 0.05))) * 0.5);
     } else if (skin.pattern === 'mottled') {
       pat = smoothstep(0.02, 0.3, mottle(u, v) + m2 * 0.15);
+    } else if (skin.pattern === 'saddles') {
+      // selas escuras no dorso, quebradas, sobre um manchado miúdo
+      const sd = Math.sin(TAU * (v * stripes + wp * 0.6 + m2 * 0.12));
+      const saddle = smoothstep(0.15, 0.7, sd) * smoothstep(0.5, 0.85, d2 + m1 * 0.15) * smoothstep(-0.3, 0.2, m2 + wp * 0.3);
+      pat = Math.max(saddle, smoothstep(0.08, 0.38, mottle(u, v) + m2 * 0.15) * 0.55);
     } else if (skin.pattern === 'bands') {
       const s = Math.sin(TAU * (v * stripes + wp * 0.35));
       pat = smoothstep(0.2, 0.65, s) * smoothstep(0.5, 0.8, d2);

@@ -49,6 +49,7 @@ export class Creature {
     this.actionTarget = null;
     this.attackCd = 0;
     this.attackHitT = -1;
+    this.lungeT = -1;
     this.roarCd = 0;
     this.lastAttacker = null;
     this.lastHitTime = -99;
@@ -137,6 +138,8 @@ export class Creature {
     this.anim.attack();
     this.attackCd = st.cooldown;
     this.attackHitT = st.attackTime * 0.48;
+    // mordida com bote: o corpo avança junto com a cabeça
+    this.lungeT = st.tailAttack ? -1 : 0;
     this.stamina = Math.max(0, this.stamina - 0.07);
     this.game.audio.attack(this, false);
     return true;
@@ -228,6 +231,18 @@ export class Creature {
       return;
     }
     this.attackCd = Math.max(0, this.attackCd - dt);
+    if (this.lungeT >= 0) {
+      const st = this.spec.stats;
+      this.lungeT += dt / st.attackTime;
+      if (this.lungeT > 0.36 && this.lungeT < 0.58) {
+        const dist = st.reach * this.scale * (this.spec.anim?.bite === 'rex' ? 0.55 : 0.35);
+        const f = this.forward();
+        const v = dist / (0.22 * st.attackTime);
+        this.pos.x += f.x * v * dt;
+        this.pos.z += f.z * v * dt;
+      }
+      if (this.lungeT >= 1) this.lungeT = -1;
+    }
     this.roarCd = Math.max(0, this.roarCd - dt);
     if (this.attackHitT >= 0) {
       this.attackHitT -= dt;

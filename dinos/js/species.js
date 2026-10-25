@@ -2,8 +2,10 @@
 // comportamento. Medidas em metros de um adulto. O modelo olha para +Z,
 // o quadril fica em z = 0 e o chão em y = 0.
 //
-// body: [z, y, meiaLargura, meiaAlturaCima, meiaAlturaBaixo] da ponta da cauda
-// até a ponta do focinho. jaw: mesmo formato, da articulação até o queixo.
+// body: [z, y, meiaLargura, meiaAlturaCima, meiaAlturaBaixo, larguraDoTopo?, superelipse?]
+// da ponta da cauda até a ponta do focinho. jaw: mesmo formato, da articulação
+// até o queixo. larguraDoTopo < 1 estreita o dorso; superelipse > 2 deixa a
+// seção mais quadrada (crânio, peito).
 
 export const SPECIES = {
   trex: {
@@ -12,61 +14,95 @@ export const SPECIES = {
     sci: 'Tyrannosaurus rex',
     diet: 'carnivore',
     quadruped: false,
-    desc: 'O predador supremo. Lento para virar, mas a mordida mais forte de todas.',
+    desc: 'O predador supremo: 14 m e mais de 5 m de altura no quadril. Lento para virar, mas a mordida mais forte de todas.',
+    // [z, y, meiaLargura, meiaAlturaCima, meiaAlturaBaixo, larguraDoTopo, superelipse]
     body: [
-      [-6.6, 2.4, 0.03, 0.03, 0.03],
-      [-5.8, 2.58, 0.1, 0.13, 0.1],
-      [-4.6, 2.82, 0.2, 0.27, 0.22],
-      [-3.2, 3.05, 0.36, 0.46, 0.38],
-      [-1.8, 3.2, 0.54, 0.66, 0.56],
-      [-0.6, 3.28, 0.7, 0.8, 0.76],
-      [0.4, 3.25, 0.82, 0.86, 0.96],
-      [1.3, 3.15, 0.86, 0.86, 1.06],
-      [2.1, 3.16, 0.74, 0.8, 0.95],
-      [2.7, 3.38, 0.54, 0.6, 0.64],
-      [3.25, 3.66, 0.44, 0.5, 0.5],
-      [3.75, 3.86, 0.46, 0.52, 0.42],
-      [4.3, 3.84, 0.42, 0.44, 0.26],
-      [4.85, 3.74, 0.32, 0.34, 0.2],
-      [5.3, 3.64, 0.22, 0.26, 0.16],
-      [5.56, 3.6, 0.08, 0.12, 0.08],
+      [-7.9, 3.15, 0.03, 0.03, 0.03],
+      [-7.2, 3.38, 0.08, 0.1, 0.09],
+      [-6.2, 3.68, 0.17, 0.22, 0.2],
+      [-5.0, 3.98, 0.3, 0.38, 0.37, 0.95, 2.1],
+      [-3.7, 4.2, 0.46, 0.55, 0.57, 0.9, 2.2],
+      [-2.4, 4.33, 0.64, 0.72, 0.8, 0.85, 2.2],
+      [-1.2, 4.38, 0.82, 0.86, 0.98, 0.8, 2.25],
+      [0.0, 4.36, 0.88, 0.95, 1.12, 0.78, 2.3],
+      [1.2, 4.2, 0.98, 0.95, 1.45, 0.8, 2.2],
+      [2.3, 4.12, 0.95, 0.92, 1.5, 0.84, 2.2],
+      [3.2, 4.2, 0.84, 0.85, 1.25, 0.9, 2.1],
+      [3.85, 4.55, 0.68, 0.68, 0.9, 0.95, 2.05],
+      [4.3, 4.95, 0.58, 0.6, 0.72, 1.0, 2.0],
+      [4.68, 5.28, 0.46, 0.46, 0.48, 1.0, 2.1],
+      [4.92, 5.48, 0.56, 0.64, 0.36, 1.1, 2.6],
+      [5.28, 5.48, 0.5, 0.58, 0.31, 1.0, 2.7],
+      [5.7, 5.4, 0.4, 0.5, 0.28, 0.88, 2.7],
+      [6.08, 5.3, 0.3, 0.42, 0.25, 0.82, 2.7],
+      [6.38, 5.18, 0.22, 0.32, 0.21, 0.82, 2.6],
+      [6.54, 5.1, 0.13, 0.21, 0.15, 0.85, 2.4],
+      [6.61, 5.06, 0.04, 0.07, 0.04],
     ],
     jaw: [
-      [3.8, 3.52, 0.38, 0.12, 0.22],
-      [4.4, 3.46, 0.35, 0.1, 0.17],
-      [5.0, 3.41, 0.25, 0.08, 0.12],
-      [5.42, 3.38, 0.11, 0.05, 0.07],
+      [4.85, 5.08, 0.5, 0.17, 0.42, 1, 2.3],
+      [5.3, 5.02, 0.45, 0.15, 0.36, 1, 2.4],
+      [5.8, 4.97, 0.35, 0.13, 0.28, 1, 2.4],
+      [6.2, 4.92, 0.25, 0.1, 0.21, 1, 2.3],
+      [6.46, 4.89, 0.14, 0.07, 0.13],
+      [6.56, 4.88, 0.05, 0.04, 0.05],
     ],
-    jawHinge: [3.55, 3.82],
-    tail: [-1.2, -2.4, -3.6, -4.8, -5.9],
-    spine: [1.0, 2.0],
-    neck: [2.65, 3.2],
-    head: 3.72,
+    jawHinge: [5.14, 4.86],
+    tail: [-1.4, -2.8, -4.2, -5.6, -6.9],
+    spine: [1.3, 2.75],
+    neck: [3.75, 4.3],
+    head: 4.72,
+    detail: 1.3,
+    legAo: 0.1,
     hind: {
-      hip: [0.55, 3.0, 0.1],
-      knee: [0.6, 1.75, 0.68],
-      ankle: [0.56, 0.66, -0.16],
-      ball: [0.56, 0.13, 0.24],
-      toeLen: 0.55,
-      r: [0.8, 0.74, 0.56, 0.32, 0.25, 0.16, 0.15, 0.09],
+      hip: [0.78, 3.95, 0.15],
+      knee: [0.86, 2.26, 0.6],
+      ankle: [0.8, 0.88, -0.1],
+      ball: [0.8, 0.18, 0.28],
+      toeLen: 0.72,
+      // raios: número ou [lado, frente, trás] (coxa em "coxinha", panturrilha atrás)
+      r: [1.0, [0.7, 0.98, 1.08], [0.56, 0.6, 0.72], [0.34, 0.38, 0.41], [0.29, 0.29, 0.36], [0.2, 0.22, 0.24], 0.2, 0.12],
       claws: true,
+      dewclaw: true,
     },
     arms: {
-      shoulder: [0.55, 2.78, 2.15],
-      elbow: [0.62, 2.4, 2.3],
-      wrist: [0.6, 2.28, 2.65],
-      tip: [0.58, 2.16, 2.9],
-      r: [0.13, 0.09, 0.06, 0.04],
+      shoulder: [0.74, 3.62, 3.1],
+      elbow: [0.8, 3.2, 3.02],
+      wrist: [0.78, 3.0, 3.38],
+      tip: [0.74, 2.86, 3.62],
+      r: [0.17, 0.12, 0.085, 0.055],
+      fingers: 2,
     },
-    eye: { z: 4.05, yFrac: 0.38, r: 0.075, iris: 0xd9a020 },
-    teeth: { from: 3.95, to: 5.4, n: 11, len: 0.13 },
-    skin: { base: 0x6e5a3c, dark: 0x352a1b, belly: 0xbca784, accent: 0x40301e, pattern: 'mottled', patternStrength: 0.6 },
-    stats: { health: 1200, attack: 150, walk: 2.4, trot: 4.6, run: 7.2, turn: 0.95, accel: 2.2, reach: 2.1, attackTime: 1.1, cooldown: 1.6 },
-    appetite: 420,
-    meat: 900,
-    sizeClass: 5,
-    voice: { pitch: 0.45, length: 2.4, grit: 0.9 },
-    camDist: 15,
+    // músculos e ossos marcando a pele (metros do adulto; espelhados)
+    sculpt: [
+      { c: [0.85, 3.45, 0.25], r: [0.42, 0.45, 0.9], a: 0.12 }, // transição corpo → coxa
+      { c: [0.92, 3.2, 0.95], r: [0.4, 0.7, 0.35], a: 0.1, part: 'limb' }, // quadríceps
+      { c: [0.92, 3.3, -0.36], r: [0.42, 0.72, 0.4], a: 0.11, part: 'limb' }, // posterior da coxa
+      { c: [1.32, 3.2, 0.3], r: [0.3, 0.7, 0.5], a: 0.06, part: 'limb' }, // iliotibial
+      { c: [0.86, 1.95, 0.05], r: [0.28, 0.4, 0.26], a: 0.08, part: 'limb' }, // panturrilha
+      { c: [0.55, 3.75, -1.7], r: [0.45, 0.42, 1.5], a: 0.12 }, // caudofemoral
+      { c: [0.41, 5.2, 0.1], r: [0.26, 0.22, 0.95], a: 0.06 }, // crista do ílio
+      { c: [0.85, 4.1, 3.05], r: [0.35, 0.5, 0.45], a: 0.05 }, // ombro
+      { c: [0.55, 4.95, 4.25], r: [0.28, 0.4, 0.45], a: 0.06 }, // músculos do pescoço
+      { c: [0.52, 5.28, 5.02], r: [0.16, 0.2, 0.28], a: 0.05 }, // bochecha (jugal)
+      { c: [0.5, 5.8, 4.95], r: [0.18, 0.16, 0.2], a: 0.05 }, // músculo da mandíbula
+      { c: [0.4, 5.96, 5.22], r: [0.1, 0.08, 0.12], a: 0.07 }, // chifre pós-orbital
+      { c: [0.32, 5.9, 5.5], r: [0.09, 0.07, 0.11], a: 0.055 }, // chifre lacrimal
+      { c: [0.4, 2.85, 1.6], r: [0.5, 0.25, 0.9], a: -0.04 }, // vinco da barriga
+    ],
+    rugosity: { from: 5.65, to: 6.38, n: 7, x: 0.09, r: 0.055, a: 0.025 },
+    faceMask: true,
+    eye: { z: 5.32, yFrac: 0.44, r: 0.1, iris: 0xd89a1c, fwd: 0.6 },
+    teeth: { from: 5.12, to: 6.42, n: 11, len: 0.17, thick: 0.3 },
+    skin: { base: 0x5b4a34, dark: 0x271d14, belly: 0xb5a07c, accent: 0x33261a, pattern: 'saddles', stripes: 2, patternStrength: 0.7 },
+    stats: { health: 1500, attack: 170, walk: 2.6, trot: 5.2, run: 8.0, turn: 0.85, accel: 2.0, reach: 2.8, attackTime: 1.25, cooldown: 1.7 },
+    appetite: 520,
+    meat: 1200,
+    sizeClass: 6,
+    voice: { pitch: 0.38, length: 2.8, grit: 0.95 },
+    // animação: peso, rugido e mordida próprios
+    anim: { heavy: 1, roar: 'rex', bite: 'rex', yawn: true },
+    camDist: 19,
   },
 
   raptor: {

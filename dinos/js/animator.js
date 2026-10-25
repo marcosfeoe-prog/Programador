@@ -10,7 +10,11 @@
 // ociosos (olhar em volta, sacudir a cabeça, abanar a cauda, farejar).
 // Ações: comer (arrancar carne / pastar mastigando), beber, rugir, atacar
 // (mordida com chacoalhão, chifrada, golpe de cauda), dano direcional,
-// deitar, dormir e morrer (joelhos cedem, o corpo tomba e assenta).
+// deitar com a cabeça no chão, dormir com a cauda enrolada e morrer (joelhos
+// cedem, o corpo tomba e assenta). Gestos: farejar o chão e o ar, inclinar a
+// cabeça, sacudir, bocejar. Perfis por espécie (spec.anim): "heavy" faz o corpo
+// afundar e balançar a cada pisada; roar/bite "rex" dão ao tiranossauro um
+// rugido em dois tempos e uma mordida com bote.
 import * as THREE from 'three';
 import { clamp, lerp, smooth, smoothstep, damp, wrapAngle, TAU } from './util.js';
 
@@ -59,7 +63,7 @@ export class DinoAnimator {
     this.move = 0;
     this.run = 0;
     this.time = Math.random() * 100;
-    this.w = { eat: 0, drink: 0, rest: 0, sleep: 0 };
+    this.w = { eat: 0, drink: 0, rest: 0, sleep: 0, restHead: 0 };
     this.attackT = -1;
     this.roarT = -1;
     this.hurtT = -1;
@@ -117,6 +121,43 @@ export class DinoAnimator {
     this.chest = this.b[this.data.chest];
     this.legLen = this.data.hipY;
     this.footstep = null; // callback(leg) quando um pé toca o chão
+    // perfil de animação da espécie: peso, estilo de rugido e de mordida
+    this.animProfile = this.spec.anim || {};
+    this.heavy = this.animProfile.heavy ?? clamp((this.spec.sizeClass - 2) / 4, 0, 1);
+    this.impact = new Spring(140, 0.35);
+    this.neckBounce = new Spring(70, 0.35);
+    this.armS = new Spring(50, 0.4);
+    this.act = null;
+    this.sleepSide = Math.random() < 0.5 ? 1 : -1;
+    // quanto o pescoço precisa descer para a boca encostar no chão deitado
+    const d = this.data;
+    const n0 = d.bones.find((bn) => bn.name === 'neck0').p;
+    const lie = d.bellyY * 0.95;
+    const my = d.mouth.y - n0.y;
+    const mz = d.mouth.z - n0.z;
+    const dm = Math.hypot(my, mz);
+    const th0 = Math.atan2(my, mz);
+    const th1 = Math.asin(clamp((d.hipY * 0.12 - (n0.y - lie)) / dm, -1, 1));
+    this.restNeckPitch = clamp(th0 - th1, 0, 1.3);
+  }
+
+  // gesto ocioso: shake, sniff (chão), smell (ar), tilt (cabeça de lado), yawn (bocejo)
+  idleAction(name) {
+    const dur = { shake: 0.8, sniff: 1.6, smell: 2.4, tilt: 2.6, yawn: 3.4 }[name] ?? 1.5;
+    this.act = { name, t: 0, dur, side: Math.random() < 0.5 ? -1 : 1 };
+  }
+
+  // pisada: bichos pesados afundam, o pescoço, a cauda e os braços balançam
+  onStep(leg, k = 1) {
+    const h = this.heavy;
+    if (h > 0) {
+      this.impact.v -= h * k * this.legLen * (0.14 + this.run * 0.2);
+      this.neckBounce.v += h * k * (0.35 + this.run * 0.3);
+      this.armS.v += h * k * 1.2;
+      const n = this.tailPitch.length;
+      for (let i = 0; i < n; i++) this.tailPitch[i].v -= (h * k * 0.15 * (i + 1)) / n;
+    }
+    if (this.footstep) this.footstep(leg);
   }
 
   attack() {
@@ -146,6 +187,8 @@ export class DinoAnimator {
     w.drink = damp(w.drink, s.drink ? 1 : 0, 4, dt);
     w.rest = damp(w.rest, s.rest || s.sleep ? 1 : 0, 2, dt);
     w.sleep = damp(w.sleep, s.sleep ? 1 : 0, 1, dt);
+    const restTarget = s.rest || s.sleep ? 1 : 0;
+    w.restHead = damp(w.restHead, restTarget, restTarget > w.restHead ? 1.3 : 4, dt);
 
     // ---- morte em etapas: joelhos cedem → tomba acelerando → assenta ----
     this.deadT = s.dead ? this.deadT + dt : 0;
@@ -182,6 +225,8 @@ export class DinoAnimator {
     this.accel = damp(this.accel, clamp(acc / s.scale, -6, 6), 4, dt);
 
     // ---- ações ----
+    const A = this.animProfile;
+    const rexBite = A.bite === 'rex';
     let atkStrike = 0;
     let atkWind = 0;
     if (this.attackT >= 0) {
@@ -191,16 +236,35 @@ export class DinoAnimator {
       atkStrike = bump(a, 0.36, 0.48, 0.58, 0.95);
       if (this.attackT >= 1) this.attackT = -1;
     }
-    let roar = 0;
+    // rugido: genérico (levanta a cabeça e abre a boca) ou "rex": inspira com a
+    // cabeça erguida, depois projeta a cabeça para a frente, escancara a boca e chacoalha
+    let rUp = 0;
+    let rOpen = 0;
+    let rFwd = 0;
+    let rShake = 0;
+    let rInhale = 0;
     if (this.roarT >= 0) {
       this.roarT += dt / s.roarTime;
-      roar = bump(this.roarT, 0, 0.15, 0.75, 1);
+      const r = this.roarT;
+      if (A.roar === 'rex') {
+        rInhale = bump(r, 0, 0.12, 0.18, 0.3);
+        const main = bump(r, 0.2, 0.32, 0.78, 0.95);
+        rUp = rInhale - main * 0.35;
+        rOpen = main + rInhale * 0.08;
+        rFwd = main;
+        rShake = main * smoothstep(0.35, 0.5, r);
+      } else {
+        const g0 = bump(r, 0, 0.15, 0.75, 1);
+        rUp = g0;
+        rOpen = g0;
+        rShake = sp.voice.horn ? 0 : g0 * 0.5;
+      }
       if (this.roarT >= 1) this.roarT = -1;
     }
     let hurt = 0;
     if (this.hurtT >= 0) {
       this.hurtT += dt / 0.4;
-      hurt = Math.sin(Math.min(1, this.hurtT) * Math.PI) * Math.exp(-this.hurtT * 1.5);
+      hurt = Math.sin(Math.min(1, this.hurtT) * Math.PI) * Math.exp(-this.hurtT * 1.5) * (1 - this.heavy * 0.35);
       if (this.hurtT >= 1) this.hurtT = -1;
     }
     let thrash = 0;
@@ -215,41 +279,49 @@ export class DinoAnimator {
     const busy = s.eat || s.drink || w.rest > 0.3 || this.attackT >= 0 || this.roarT >= 0;
 
     // ---- gestos ociosos ----
-    let shake = 0;
-    let sniff = 0;
     let flick = 0;
     if (!gait && !busy && alive > 0.99) {
       this.idleT -= dt;
-      if (this.idleT <= 0) {
+      if (this.idleT <= 0 && !this.act) {
         this.idleT = 2.5 + Math.random() * 5;
         const r = Math.random();
-        if (r < 0.45) {
+        if (r < 0.34) {
           this.idleLook.yaw = (Math.random() * 2 - 1) * 0.9;
           this.idleLook.pitch = (Math.random() * 2 - 1) * 0.18;
-        } else if (r < 0.58) this.shakeT = 0;
-        else if (r < 0.72) flick = (Math.random() < 0.5 ? -1 : 1) * 2.5;
-        else if (r < 0.88) this.shiftTarget = Math.random() < 0.5 ? -1 : 1;
-        else this.sniffT = 0;
+        } else if (r < 0.44) this.idleAction('shake');
+        else if (r < 0.55) flick = (Math.random() < 0.5 ? -1 : 1) * 2.5;
+        else if (r < 0.66) this.shiftTarget = Math.random() < 0.5 ? -1 : 1;
+        else if (r < 0.76) this.idleAction('sniff');
+        else if (r < 0.86) this.idleAction('smell');
+        else if (r < 0.94 || !(A.yawn || r > 0.985)) this.idleAction('tilt');
+        else this.idleAction('yawn');
       }
     } else {
       this.idleLook.yaw *= Math.exp(-dt * 2);
       this.idleLook.pitch *= Math.exp(-dt * 2);
       this.shiftTarget = 0;
+      if (gait || busy) this.act = null;
     }
-    if (this.shakeT >= 0) {
-      this.shakeT += dt / 0.8;
-      shake = Math.sin(this.shakeT * 26) * Math.sin(Math.min(1, this.shakeT) * Math.PI);
-      if (this.shakeT >= 1) this.shakeT = -1;
-    }
-    if (this.sniffT >= 0) {
-      this.sniffT += dt / 1.6;
-      sniff = bump(this.sniffT, 0, 0.25, 0.75, 1);
-      if (this.sniffT >= 1) this.sniffT = -1;
+    let shake = 0;
+    let sniff = 0;
+    let smell = 0;
+    let tilt = 0;
+    let yawn = 0;
+    if (this.act) {
+      const a = this.act;
+      a.t += dt / a.dur;
+      const p = Math.min(1, a.t);
+      if (a.name === 'shake') shake = Math.sin(p * 26) * Math.sin(p * Math.PI);
+      else if (a.name === 'sniff') sniff = bump(p, 0, 0.25, 0.75, 1);
+      else if (a.name === 'smell') smell = bump(p, 0, 0.2, 0.8, 1);
+      else if (a.name === 'tilt') tilt = bump(p, 0, 0.25, 0.7, 1) * a.side;
+      else if (a.name === 'yawn') yawn = bump(p, 0, 0.4, 0.6, 1);
+      if (a.t >= 1) this.act = null;
     }
     this.shift = damp(this.shift, this.shiftTarget, 1.5, dt);
 
     // ---- para onde olhar ----
-    let tgtYaw = this.idleLook.yaw;
+    let tgtYaw = this.idleLook.yaw + Math.sin(t * 2.2) * 0.35 * smell;
     let tgtPitch = this.idleLook.pitch;
     if (s.look && alive > 0.5) {
       const sc = s.scale;
@@ -276,7 +348,8 @@ export class DinoAnimator {
     this.eyeYaw = damp(this.eyeYaw, clamp((tgtYaw - this.lookYaw) * 1.5, -0.35, 0.35), 25, dt);
     this.eyePitch = damp(this.eyePitch, clamp((tgtPitch - this.lookPitch) * 1.5, -0.2, 0.2), 25, dt);
 
-    // ---- pelve ----
+    // ---- pelve (com o impacto das pisadas nos bichos pesados) ----
+    const imp = this.impact.step(0, dt);
     const bobAmp = legLen * lerp(0.022, 0.055, run) * m;
     const bob = sp.quadruped
       ? -Math.abs(Math.sin(TAU * ph)) * bobAmp * 0.6
@@ -286,13 +359,16 @@ export class DinoAnimator {
     const breath = Math.sin(this.breathPh);
     const lieDrop = this.data.bellyY * 0.95 * w.rest;
     const sway = sp.quadruped ? 0 : Math.cos(TAU * (ph - duty * 0.5)) * legLen * 0.03 * m * (1 - run * 0.5);
-    this.lunge = damp(this.lunge, (atkStrike - atkWind * 0.3) * (tailAtk ? 0 : 1), 18, dt);
-    const liveY = R.pelvis.y + bob - lieDrop - this.pelvisDrop + breath * legLen * 0.003 - buckle * legLen * 0.3;
+    this.lunge = damp(this.lunge, (atkStrike - atkWind * (rexBite ? 0.5 : 0.3)) * (tailAtk ? 0 : 1), 18, dt);
+    // carnívoro comendo puxa o pedaço com o corpo todo
+    const pull = carn ? Math.pow(Math.max(0, Math.sin(t * 1.7)), 4) * w.eat : 0;
+    const liveY = R.pelvis.y + bob - lieDrop - this.pelvisDrop + breath * legLen * 0.003 - buckle * legLen * 0.3 + imp;
     const py = lerp(liveY, this.data.width * 1.05, roll) + settle * legLen * 0.1;
+    const len = this.data.length;
     b.pelvis.position.set(
       alive * (sway + this.shift * legLen * 0.03),
       py,
-      R.pelvis.z + this.lunge * this.data.length * 0.05,
+      R.pelvis.z + alive * (this.lunge * len * (rexBite ? 0.07 : 0.05) - pull * len * 0.025 * this.heavy + rFwd * len * 0.015),
     );
     const pelvisVy = this.prevPelvisY === null ? 0 : (py - this.prevPelvisY) / Math.max(dt, 1e-3);
     this.prevPelvisY = py;
@@ -304,8 +380,13 @@ export class DinoAnimator {
           this.accel * 0.012 +
           (w.eat + w.drink) * 0.28 * bipedEat +
           sniff * 0.12 * bipedEat -
-          roar * (sp.sizeClass > 3 ? 0.14 : 0.08) +
-          atkStrike * (hornAtk ? -0.05 : 0.08) * bipedEat -
+          smell * 0.05 * bipedEat -
+          yawn * 0.04 -
+          pull * 0.05 -
+          rUp * (sp.sizeClass > 3 ? 0.1 : 0.08) +
+          rFwd * 0.06 +
+          atkStrike * (hornAtk ? -0.05 : rexBite ? 0.14 : 0.08) * bipedEat -
+          atkWind * (rexBite ? 0.06 : 0) -
           w.rest * 0.03 +
           hurt * 0.06) +
       buckle * 0.12 * bipedEat * (1 - roll);
@@ -313,15 +394,21 @@ export class DinoAnimator {
     b.pelvis.rotation.set(
       pelvisPitch,
       pelvisYaw,
-      alive * (Math.sin(TAU * ph + 0.5) * 0.03 * m + this.turnLean - this.shift * 0.03 + hurt * 0.12 * this.hurtSide) +
+      alive *
+        (Math.sin(TAU * ph + 0.5) * 0.03 * m +
+          this.turnLean -
+          this.shift * 0.03 +
+          hurt * 0.12 * this.hurtSide +
+          rShake * Math.sin(t * 7) * 0.02 * this.heavy) +
         (roll * 1.45 + settle) * this.deadSide,
     );
 
-    // ---- tórax: respiração expande as costelas ----
-    const brAmp = (s.pant ? 0.035 : 0.018) * alive + roar * 0.03;
+    // ---- tórax: respiração expande as costelas (e incha ao inspirar para rugir) ----
+    const brAmp = (s.pant ? 0.035 : 0.018) * alive + rOpen * 0.02;
+    const swell = rInhale * 0.06 + yawn * 0.025;
     // (nos quadrúpedes só alarga, para não mexer no alcance das patas da frente)
-    const bx = 1 + breath * brAmp * (sp.quadruped ? 1.5 : 1);
-    const by = sp.quadruped ? 1 : 1 + breath * brAmp * 1.25;
+    const bx = 1 + breath * brAmp * (sp.quadruped ? 1.5 : 1) + swell;
+    const by = sp.quadruped ? 1 : 1 + breath * brAmp * 1.25 + swell * 1.2;
     this.chest.scale.set(bx, by, 1);
     for (const ch of this.chest.children) ch.scale.set(1 / bx, 1 / by, 1);
 
@@ -336,17 +423,19 @@ export class DinoAnimator {
       const ys = this.tailYaw[i];
       if (flick) ys.v += flick * k;
       ys.v += -thrash * k * dt * 0.5;
-      const yawT = alive * (wave + idle - s.turn * 0.1 * (1 - run * 0.5) - pelvisYaw * 0.8 + sweep);
+      // dormindo, a cauda se curva para um lado
+      const curl = w.sleep * 0.17 * k * this.sleepSide;
+      const yawT = alive * (wave + idle - s.turn * 0.1 * (1 - run * 0.5) - pelvisYaw * 0.8 + sweep + curl + rShake * Math.sin(t * 3 - i * 0.5) * 0.06);
       const ps = this.tailPitch[i];
       // a ponta da cauda fica para trás quando o quadril sobe ou desce
       const lag = clamp(-pelvisVy / legLen, -1, 1) * 0.06 * k;
-      const pitchT = alive * (-0.035 * k * w.rest + run * 0.02 - roar * 0.04 + atkWind * 0.03 + lag) - roll * 0.06;
+      const pitchT = alive * (-0.035 * k * w.rest + run * 0.02 - rUp * 0.04 + rFwd * 0.05 + rInhale * 0.03 + atkWind * 0.03 + lag) - roll * 0.06;
       bone.rotation.set(ps.step(pitchT, dt), ys.step(yawT, dt) - roll * 0.12 * this.deadSide * k, 0);
     }
     const nS = this.data.nSpine;
     for (let i = 0; i < nS; i++) {
       b['spine' + i].rotation.set(
-        alive * ((w.eat + w.drink) * 0.06 * bipedEat - roar * 0.04 - pelvisPitch * 0.15),
+        alive * ((w.eat + w.drink) * 0.06 * bipedEat - rUp * 0.04 - pelvisPitch * 0.15),
         alive * (Math.sin(TAU * ph + 1.2) * 0.03 * m - pelvisYaw * 0.4),
         alive * hurt * 0.06 * this.hurtSide,
       );
@@ -356,27 +445,40 @@ export class DinoAnimator {
     const nN = this.data.nNeck;
     const lookW = alive * (1 - w.eat) * (1 - w.drink) * (1 - w.sleep);
     const eatDown = (sp.quadruped ? 0.32 : 0.42) * w.eat + (sp.quadruped ? 0.42 : 0.5) * w.drink;
-    // carnívoro arranca pedaços; herbívoro belisca as folhas
-    const pull = carn ? Math.pow(Math.max(0, Math.sin(t * 1.7)), 4) * w.eat : 0;
+    // herbívoro belisca as folhas
     const crop = !carn ? Math.max(0, Math.sin(t * 2.6)) * 0.06 * w.eat : 0;
     const stab = -(pelvisPitch + (s.pitch || 0) * 0.8) * 0.65 * alive;
+    // deitado: o pescoço desce até a cabeça encostar no chão (a cabeça vai por último ao deitar e levanta primeiro)
+    const restNeck = this.restNeckPitch * w.restHead * (1 - w.eat) * (1 - w.drink);
+    const nb = this.neckBounce.step(0, dt);
     const neckPitch =
       eatDown -
       pull * 0.3 +
       crop +
       Math.sin(t * 2) * 0.04 * w.drink +
-      sniff * 0.35 +
-      w.rest * (sp.quadruped ? 0.12 : 0.28) * (1 - w.eat) +
-      w.sleep * 0.08 -
-      roar * (sp.voice.horn ? 0.4 : 0.22) +
-      (hornAtk ? atkWind * 0.45 - atkStrike * 0.55 : tailAtk ? 0 : -atkWind * 0.22 + atkStrike * 0.32) -
+      sniff * 0.35 -
+      smell * 0.32 +
+      restNeck * 1.05 +
+      w.sleep * 0.04 -
+      rUp * (sp.voice.horn ? 0.4 : 0.22) +
+      rFwd * 0.2 +
+      (hornAtk ? atkWind * 0.45 - atkStrike * 0.55 : tailAtk ? 0 : -atkWind * (rexBite ? 0.38 : 0.22) + atkStrike * (rexBite ? 0.45 : 0.32)) -
       run * 0.06 * m -
-      hurt * 0.15 +
+      hurt * 0.15 -
+      yawn * 0.22 +
       this.lookPitch * 0.5 * lookW +
-      stab * (1 - w.eat) * (1 - w.drink);
+      stab * (1 - w.eat) * (1 - w.drink) * (1 - w.restHead) +
+      nb;
     const headBob = sp.quadruped ? 0 : Math.cos(TAU * ph * 2) * 0.03 * m;
     const neckY = this.neckYaw.step(
-      alive * (this.lookYaw * 0.55 * lookW + shake * 0.12 + thrash * 0.18 + pull * Math.sin(t * 19) * 0.12 - pelvisYaw - hurt * 0.2 * this.hurtSide) +
+      alive *
+        (this.lookYaw * 0.55 * lookW +
+          shake * 0.12 +
+          thrash * 0.18 +
+          pull * Math.sin(t * 19) * 0.12 -
+          pelvisYaw -
+          hurt * 0.2 * this.hurtSide +
+          w.sleep * 0.25 * this.sleepSide) +
         (tailAtk ? atkWind * 0.15 - atkStrike * 0.2 : 0) * alive,
       dt,
     );
@@ -390,30 +492,35 @@ export class DinoAnimator {
     b.head.rotation.set(
       alive *
         (eatDown * 0.6 -
-          roar * 0.12 -
-          headBob * 0.8 +
-          w.rest * 0.15 +
-          sniff * 0.2 +
-          (hornAtk ? atkWind * 0.2 - atkStrike * 0.4 : atkStrike * 0.1) +
+          rUp * 0.12 -
+          rFwd * 0.24 -
+          headBob * 0.8 -
+          restNeck * 0.45 +
+          sniff * 0.2 -
+          smell * 0.12 -
+          yawn * 0.15 +
+          (hornAtk ? atkWind * 0.2 - atkStrike * 0.4 : atkStrike * 0.1 - atkWind * (rexBite ? 0.12 : 0)) +
           this.lookPitch * 0.5 * lookW +
-          stab * 0.35) +
+          stab * 0.35 * (1 - w.restHead)) +
         roll * 0.25,
-      alive * (this.lookYaw * 0.45 * lookW + shake * 0.15 + Math.sin(t * 14) * 0.05 * roar * (sp.voice.horn ? 0 : 1)) - roll * 0.2 * this.deadSide,
-      alive * (Math.sin(t * 1.3) * 0.02 * (1 - m) + shake * 0.1 + hurt * 0.1 * this.hurtSide),
+      alive * (this.lookYaw * 0.45 * lookW + shake * 0.15 + Math.sin(t * 8) * 0.1 * rShake + w.sleep * 0.15 * this.sleepSide) - roll * 0.2 * this.deadSide,
+      alive * (Math.sin(t * 1.3) * 0.02 * (1 - m) + shake * 0.1 + hurt * 0.1 * this.hurtSide + tilt * 0.3 + rShake * Math.sin(t * 6 + 1) * 0.06),
     );
     const chew = Math.sin(t * 7) * 0.5 + 0.5;
     const lap = Math.sin(t * 9) * 0.5 + 0.5;
     const jawOpen =
-      roar * (sp.voice.horn ? 0.25 : 0.75) +
-      Math.sin(t * 31) * 0.03 * roar +
-      (hornAtk || tailAtk ? 0 : atkWind * 0.7 * (1 - atkStrike)) +
+      rOpen * (sp.voice.horn ? 0.25 : A.roar === 'rex' ? 1.05 : 0.75) +
+      Math.sin(t * 31) * 0.03 * rOpen +
+      (hornAtk || tailAtk ? 0 : atkWind * (rexBite ? 1.05 : 0.7) * (1 - atkStrike)) +
       w.eat * (carn ? (1 - pull) * chew * 0.3 : chew * 0.16) +
       w.drink * lap * 0.12 +
       sniff * Math.max(0, Math.sin(t * 18)) * 0.05 +
+      smell * Math.max(0, Math.sin(t * 22)) * 0.04 +
+      yawn * 1.0 +
       hurt * 0.35 +
       (s.pant ? (Math.sin(this.breathPh) * 0.5 + 0.5) * 0.14 : 0) +
       roll * 0.3;
-    b.jaw.rotation.set(clamp(jawOpen, 0, 0.9) * 0.7, !carn ? Math.sin(t * 7 + 1.2) * 0.05 * w.eat : 0, 0);
+    b.jaw.rotation.set(clamp(jawOpen, 0, 1.05) * 0.7, !carn ? Math.sin(t * 7 + 1.2) * 0.05 * w.eat : 0, 0);
 
     // ---- olhos e pálpebras ----
     for (const e of this.eyes) e.rotation.set(this.eyePitch * lookW, this.eyeYaw * lookW, 0);
@@ -428,7 +535,11 @@ export class DinoAnimator {
       blink = Math.sin(Math.min(1, this.blinkP) * Math.PI);
       if (this.blinkP >= 1) this.blinkP = -1;
     }
-    const closed = clamp(Math.max(blink, w.sleep, w.rest * 0.35, s.dead ? 0.65 * smoothstep(0.3, 1.2, dT) : 0, hurt * 0.8, roar * 0.25, pull * 0.5), 0, 1);
+    const closed = clamp(
+      Math.max(blink, w.sleep, w.restHead * 0.35, s.dead ? 0.65 * smoothstep(0.3, 1.2, dT) : 0, hurt * 0.8, rOpen * 0.25, pull * 0.5, yawn * 0.75),
+      0,
+      1,
+    );
     // aberta, a pálpebra encolhe para dentro do globo ocular (fica invisível)
     const lidS = lerp(0.8, 1, smoothstep(0, 0.12, closed));
     for (const l of this.lids) {
@@ -436,18 +547,23 @@ export class DinoAnimator {
       l.bone.scale.setScalar(lidS);
     }
 
-    // ---- braços dos bípedes ----
+    // ---- braços dos bípedes (balançam com as pisadas, tremem no rugido) ----
     if (sp.arms) {
+      const armB = this.armS.step(0, dt);
       for (const sfx of ['L', 'R']) {
         const sd = sfx === 'L' ? 1 : -1;
         const sw = Math.sin(TAU * ph + (sd > 0 ? 0 : Math.PI)) * 0.15 * m;
         b['uarm' + sfx].rotation.set(
-          alive * (sw + Math.sin(t * 1.1 + sd) * 0.04 - atkWind * 0.3 - this.accel * 0.03 + breath * 0.02) + roll * 0.4,
+          alive * (sw + Math.sin(t * 1.1 + sd) * 0.04 - atkWind * 0.3 - this.accel * 0.03 + breath * 0.02 + armB - yawn * 0.3) + roll * 0.4,
           0,
           alive * -0.1 * sd + roll * 0.3 * sd,
         );
-        b['farm' + sfx].rotation.set(alive * (-0.2 * run + atkStrike * -0.3 + Math.sin(t * 1.3 + sd) * 0.03) + roll * 0.3, 0, 0);
-        b['hand' + sfx].rotation.set(alive * 0.1 * Math.sin(t * 1.7 + sd), 0, 0);
+        b['farm' + sfx].rotation.set(
+          alive * (-0.2 * run + atkStrike * -0.3 + Math.sin(t * 1.3 + sd) * 0.03 + rShake * Math.sin(t * 19 + sd) * 0.08 + armB * 0.6 - yawn * 0.25) + roll * 0.3,
+          0,
+          0,
+        );
+        b['hand' + sfx].rotation.set(alive * (0.1 * Math.sin(t * 1.7 + sd) - yawn * 0.3), 0, 0);
       }
     }
 
@@ -550,7 +666,7 @@ export class DinoAnimator {
           if (!leg.planted) {
             leg.planted = true;
             leg.lock.copy(leg.cur);
-            if (g.m > 0.3 && this.footstep) this.footstep(leg);
+            if (g.m > 0.3) this.onStep(leg, 1);
           }
           // escorrega só se o corpo foi empurrado para longe do pé
           tmpV.set(leg.ball.x, 0, leg.ball.z + g.stride * (0.5 - q / g.duty));
@@ -601,7 +717,7 @@ export class DinoAnimator {
           leg.lock.copy(leg.neutral);
           leg.cur.copy(leg.lock);
           leg.stepT = -1;
-          if (this.footstep) this.footstep(leg);
+          this.onStep(leg, 0.35);
         }
       }
       leg.cur.y = s.ground(leg.cur.x, leg.cur.z);

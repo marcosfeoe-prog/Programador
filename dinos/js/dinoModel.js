@@ -13,6 +13,7 @@ const G_IVORY = 1;
 const G_EYE = 2;
 const G_ACCENT = 3;
 const G_LIMB = 4; // pernas, braços e dedos: pele própria, repetindo em volta
+const G_MOUTH = 5; // língua (material úmido)
 const LID_OPEN = 1.7; // pálpebra guardada (rad) — gira até 0 para fechar
 
 // ---------------------------------------------------------------------------
@@ -25,7 +26,7 @@ class SkinGeo {
     this.col = [];
     this.si = [];
     this.sw = [];
-    this.groups = [[], [], [], [], []];
+    this.groups = [[], [], [], [], [], []];
     this.seams = [];
     this.n = 0;
   }
@@ -69,7 +70,21 @@ class SkinGeo {
     }
   }
 
-  build() {
+  // média das normais dos vértices duplicados na costura
+  fixSeams(nrm) {
+    const a = new V3();
+    const b = new V3();
+    for (const [i, j] of this.seams) {
+      a.fromBufferAttribute(nrm, i);
+      b.fromBufferAttribute(nrm, j);
+      a.add(b).normalize();
+      nrm.setXYZ(i, a.x, a.y, a.z);
+      nrm.setXYZ(j, a.x, a.y, a.z);
+    }
+  }
+
+  // sculpt: músculos/saliências {c, r, a, group?} empurrando a pele pela normal
+  build(sculpt = []) {
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(this.pos, 3));
     geo.setAttribute('uv', new THREE.Float32BufferAttribute(this.uv, 2));
@@ -85,29 +100,62 @@ class SkinGeo {
     });
     geo.setIndex(index);
     geo.computeVertexNormals();
-    // costura: média das normais dos vértices duplicados
-    const nrm = geo.attributes.normal;
-    const a = new V3();
-    const b = new V3();
-    for (const [i, j] of this.seams) {
-      a.fromBufferAttribute(nrm, i);
-      b.fromBufferAttribute(nrm, j);
-      a.add(b).normalize();
-      nrm.setXYZ(i, a.x, a.y, a.z);
-      nrm.setXYZ(j, a.x, a.y, a.z);
+    this.fixSeams(geo.attributes.normal);
+    if (sculpt.length) {
+      const groupOf = new Int8Array(this.n).fill(-1);
+      this.groups.forEach((g, gi) => {
+        for (const k of g) groupOf[k] = gi;
+      });
+      const pos = geo.attributes.position;
+      const nrm = geo.attributes.normal;
+      for (let k = 0; k < this.n; k++) {
+        const x = pos.getX(k);
+        const y = pos.getY(k);
+        const z = pos.getZ(k);
+        let d = 0;
+        for (const b of sculpt) {
+          if (b.group !== undefined && b.group !== groupOf[k]) continue;
+          const dx = (x - b.c[0]) / b.r[0];
+          const dy = (y - b.c[1]) / b.r[1];
+          const dz = (z - b.c[2]) / b.r[2];
+          const d2 = dx * dx + dy * dy + dz * dz;
+          if (d2 < 6) d += b.a * Math.exp(-d2 * 1.5);
+        }
+        if (d) pos.setXYZ(k, x + nrm.getX(k) * d, y + nrm.getY(k) * d, z + nrm.getZ(k) * d);
+      }
+      geo.computeVertexNormals();
+      this.fixSeams(geo.attributes.normal);
     }
     geo.computeBoundingSphere();
     return geo;
   }
 }
 
+const hash01 = (n) => {
+  const x = Math.sin(n * 127.1 + 311.7) * 43758.5453;
+  return x - Math.floor(x);
+};
+
 // Perímetro aproximado de uma elipse (Ramanujan).
 function ellipseCirc(a, b) {
   return Math.PI * (3 * (a + b) - Math.sqrt((3 * a + b) * (a + 3 * b)));
 }
-const ringCirc = (R) => ellipseCirc(R.w, (R.ht + R.hb) / 2);
+const ringCirc = (R) => ellipseCirc(R.w * (1 + (R.wt ?? 1)) * 0.5, (R.ht + R.hb) / 2);
 
-// Gera os anéis de um tubo e conecta. Cada anel: {c, t, w, ht, hb, weights, shade?}.
+// Completa uma entrada de perfil: [z, y, w, ht, hb, wt = 1, pw = 2]
+const pad7 = (a) => [a[0], a[1], a[2], a[3], a[4], a[5] ?? 1, a[6] ?? 2];
+
+// x da superfície de um anel do perfil a uma altura relativa (-1 embaixo, 1 em cima)
+function surfX(pr, yFrac) {
+  const pw = pr[6] ?? 2;
+  const csAbs = Math.pow(Math.min(1, Math.abs(yFrac)), pw / 2);
+  const sx = Math.pow(Math.sqrt(Math.max(0, 1 - csAbs * csAbs)), 2 / pw);
+  const ww = yFrac > 0 ? lerp(1, pr[5] ?? 1, Math.min(1, csAbs * 1.3)) : 1;
+  return pr[2] * ww * sx;
+}
+
+// Gera os anéis de um tubo e conecta. Cada anel: {c, t, w, ht, hb, wt?, pw?, weights, shade?}
+// (wt = largura relativa da metade de cima; pw = expoente da superelipse, 2 = elipse).
 // A coordenada v avança em "voltas": uma repetição da textura por perímetro
 // local, então as escamas ficam proporcionais (e menores na cauda e nos dedos).
 function loft(geo, g, rings, seg, opts = {}) {
@@ -135,12 +183,17 @@ function loft(geo, g, rings, seg, opts = {}) {
     if (up.lengthSq() < 1e-6) up.set(0, 1, 0);
     up.normalize();
     side.crossVectors(up, R.t).normalize();
+    const e = 2 / (R.pw ?? 2);
+    const wt = R.wt ?? 1;
     for (let s = 0; s <= seg; s++) {
       const th = (s / seg) * TAU;
       const sn = Math.sin(th);
       const cs = Math.cos(th);
       const hh = cs > 0 ? R.hb : R.ht;
-      p.copy(R.c).addScaledVector(side, R.w * sn).addScaledVector(up, -cs * hh);
+      const sx = e === 1 ? sn : Math.sign(sn) * Math.pow(Math.abs(sn), e);
+      const sy = e === 1 ? cs : Math.sign(cs) * Math.pow(Math.abs(cs), e);
+      const ww = cs < 0 && wt !== 1 ? R.w * lerp(1, wt, Math.min(1, -cs * 1.3)) : R.w;
+      p.copy(R.c).addScaledVector(side, ww * sx).addScaledVector(up, -sy * hh);
       geo.add(p, uMap ? uMap(s / seg) : s / seg, v, R.weights, colorOf(R, sn, cs));
     }
     geo.seams.push([base + r * row, base + r * row + seg]);
@@ -201,8 +254,9 @@ function catmull(p0, p1, p2, p3, t) {
   return 0.5 * (2 * p1 + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 + (-p0 + 3 * p1 - 3 * p2 + p3) * t3);
 }
 
-// Amostra um perfil [z, y, w, ht, hb] com Catmull-Rom.
-function sampleProfile(prof, spacing) {
+// Amostra um perfil [z, y, w, ht, hb, wt?, pw?] com Catmull-Rom.
+function sampleProfile(prof0, spacing) {
+  const prof = prof0.map(pad7);
   const out = [];
   for (let i = 0; i < prof.length - 1; i++) {
     const a = prof[i];
@@ -222,7 +276,8 @@ function sampleProfile(prof, spacing) {
 }
 
 // Interpolação linear do perfil numa posição z.
-export function profileAt(prof, z) {
+export function profileAt(prof0, z) {
+  const prof = prof0.map(pad7);
   if (z <= prof[0][0]) return prof[0];
   for (let i = 0; i < prof.length - 1; i++) {
     const a = prof[i];
@@ -242,12 +297,13 @@ function ringsFromProfile(samples, weightFn) {
     const prev = samples[Math.max(0, i - 1)];
     const next = samples[Math.min(samples.length - 1, i + 1)];
     const t = new V3(0, next[1] - prev[1], next[0] - prev[0]).normalize();
-    rings.push({ c: new V3(0, s[1], s[0]), t, w: s[2], ht: s[3], hb: s[4], z: s[0], weights: weightFn(s[0]) });
+    rings.push({ c: new V3(0, s[1], s[0]), t, w: s[2], ht: s[3], hb: s[4], wt: s[5], pw: s[6], z: s[0], weights: weightFn(s[0]) });
   }
   return rings;
 }
 
-// Tubo ao longo de uma cadeia de nós {p, r} (r = raio, achatado em x).
+// Tubo ao longo de uma cadeia de nós {p, r}. r é um número (achatado em x por
+// "flat") ou [lado, frente, trás] para modelar músculos (coxa, panturrilha).
 // "ao" escurece o começo do tubo (dobra onde a perna encontra o corpo).
 function chainTube(geo, g, nodes, owners, seg, spacing, flat = 0.82, opts = {}) {
   const { cMin = 0, ao = 0 } = opts;
@@ -259,6 +315,7 @@ function chainTube(geo, g, nodes, owners, seg, spacing, flat = 0.82, opts = {}) 
   const aoLen = (lengths[0] + (lengths[1] ?? 0)) * 1.1;
   let dist = 0;
   const shadeAt = (d) => (ao ? lerp(1 - ao, 1, smoothstep(0, aoLen, d)) : 1);
+  const radOf = (nd) => (Array.isArray(nd.r) ? { w: nd.r[0], ht: nd.r[1], hb: nd.r[2] } : { w: nd.r * flat, ht: nd.r, hb: nd.r });
   for (let k = 0; k < nodes.length - 1; k++) {
     const n = Math.max(2, Math.ceil(lengths[k] / spacing));
     const dk = dir(k);
@@ -266,19 +323,30 @@ function chainTube(geo, g, nodes, owners, seg, spacing, flat = 0.82, opts = {}) 
       const s = i / n;
       const t = dk.clone();
       if (i === 0 && k > 0) t.add(dir(k - 1)).normalize();
-      const r = lerp(nodes[k].r, nodes[k + 1].r, smooth(s));
+      const ra = radOf(nodes[k]);
+      const rb = radOf(nodes[k + 1]);
+      const ss = smooth(s);
       const d = dist + lengths[k] * s;
-      rings.push({ c: nodes[k].p.clone().lerp(nodes[k + 1].p, s), t, w: r * flat, ht: r, hb: r, weights: wf(k, s), shade: shadeAt(d) });
+      rings.push({
+        c: nodes[k].p.clone().lerp(nodes[k + 1].p, s),
+        t,
+        w: lerp(ra.w, rb.w, ss),
+        ht: lerp(ra.ht, rb.ht, ss),
+        hb: lerp(ra.hb, rb.hb, ss),
+        weights: wf(k, s),
+        shade: shadeAt(d),
+      });
     }
     dist += lengths[k];
   }
   const last = nodes.length - 1;
+  const rl = radOf(nodes[last]);
   rings.push({
     c: nodes[last].p.clone(),
     t: dir(last - 1),
-    w: nodes[last].r * flat,
-    ht: nodes[last].r,
-    hb: nodes[last].r,
+    w: rl.w,
+    ht: rl.ht,
+    hb: rl.hb,
     weights: wf(last - 1, 1),
     shade: shadeAt(dist),
   });
@@ -311,9 +379,12 @@ function buildSpecies(spec, quality) {
   const prof = spec.body;
   const len = prof[prof.length - 1][0] - prof[0][0];
   const cy = (z) => profileAt(prof, z)[1];
-  const seg = quality === 'low' ? 12 : quality === 'ultra' ? 26 : 18;
-  const legSeg = quality === 'low' ? 8 : quality === 'ultra' ? 16 : 12;
-  const spacing = len / (quality === 'low' ? 50 : quality === 'ultra' ? 120 : 80);
+  // espécies com "detail" > 1 (o tiranossauro) ganham malha mais densa
+  const det = spec.detail ?? 1;
+  const seg = 2 * Math.round(((quality === 'low' ? 12 : quality === 'ultra' ? 26 : 18) * det) / 2);
+  const legSeg = 2 * Math.round(((quality === 'low' ? 8 : quality === 'ultra' ? 16 : 12) * det) / 2);
+  const spacing = len / ((quality === 'low' ? 50 : quality === 'ultra' ? 120 : 80) * det);
+  const rv = (x) => (Array.isArray(x) ? x[0] : x);
   const maxC = Math.max(...prof.map((p) => ellipseCirc(p[2], (p[3] + p[4]) / 2)));
   const cMinBody = maxC * 0.2;
   const cMinLimb = maxC * 0.1;
@@ -324,9 +395,10 @@ function buildSpecies(spec, quality) {
     const e = spec.eye;
     const pr = profileAt(prof, e.z);
     const y = pr[1] + pr[3] * e.yFrac;
-    const x = pr[2] * Math.sqrt(Math.max(0.05, 1 - e.yFrac * e.yFrac)) - e.r * 0.35;
+    const x = surfX(pr, e.yFrac) - e.r * 0.35;
     for (const sd of [1, -1]) {
-      const q = new THREE.Quaternion().setFromUnitVectors(new V3(0, 0, 1), new V3(sd, 0.12, 0.3).normalize());
+      // fwd > 0.3: olhos voltados para a frente (visão binocular do tiranossauro)
+      const q = new THREE.Quaternion().setFromUnitVectors(new V3(0, 0, 1), new V3(sd, 0.12, e.fwd ?? 0.3).normalize());
       eyeInfo.push({ sd, sfx: sd > 0 ? 'L' : 'R', center: new V3(x * sd, y, e.z), q });
     }
   }
@@ -441,10 +513,13 @@ function buildSpecies(spec, quality) {
   const mouthCol = [0.55, 0.2, 0.2];
   const lipCol = [0.5, 0.44, 0.4];
   const beakCol = [0.32, 0.28, 0.24];
+  const maskCol = [0.72, 0.68, 0.64];
   const bodyColor = (R, sn, cs) => {
     if (R.z > headStart + headLen * 0.25 && cs > 0.86) return mouthCol;
     if (spec.beak && R.z > snoutZ - headLen * 0.22) return beakCol;
     if (R.z > headStart + headLen * 0.2 && cs > 0.5) return lipCol;
+    // máscara escura no alto do focinho e da cabeça
+    if (spec.faceMask && R.z > headStart - headLen * 0.1 && cs < -0.25) return maskCol;
     return null;
   };
   loft(geo, G_SKIN, ringsFromProfile(sampleProfile(prof, spacing), bodyWeights), seg, { colorFn: bodyColor, cMin: cMinBody });
@@ -453,7 +528,7 @@ function buildSpecies(spec, quality) {
   const jaw = spec.jaw;
   const jawEnd = jaw[jaw.length - 1][0];
   const jawColor = (R, sn, cs) => {
-    if (cs < -0.8) return mouthCol;
+    if (cs < -0.9) return mouthCol;
     if (spec.beak && R.z > jawEnd - headLen * 0.22) return beakCol;
     if (cs < -0.4) return lipCol;
     return null;
@@ -464,7 +539,7 @@ function buildSpecies(spec, quality) {
   for (const leg of legs) {
     const { L, sd, sfx, P, d } = leg;
     const r = d.r;
-    const top = P[0].clone().add(new V3(-sd * r[0] * 0.3, r[0] * 0.55, -0.02));
+    const top = P[0].clone().add(new V3(-sd * rv(r[0]) * 0.3, rv(r[0]) * 0.55, -0.02));
     const nodes = [
       { p: top, r: r[0] },
       { p: P[0], r: r[1] },
@@ -476,40 +551,45 @@ function buildSpecies(spec, quality) {
     ];
     const n = L.names.map((nm) => B[nm + sfx]);
     const parentBone = B[L.parent];
-    chainTube(geo, G_LIMB, nodes, [parentBone, n[0], n[0], n[1], n[1], n[2]], legSeg, spacing * 0.8, L.front ? 0.9 : 0.78, { cMin: cMinLimb, ao: 0.3 });
+    chainTube(geo, G_LIMB, nodes, [parentBone, n[0], n[0], n[1], n[1], n[2]], legSeg, spacing * 0.8, L.front ? 0.9 : 0.78, { cMin: cMinLimb, ao: spec.legAo ?? 0.3 });
     // dedos
     const toeAngles = d.toeLen < 0.3 && spec.quadruped ? [-0.5, -0.17, 0.17, 0.5] : [-0.38, 0, 0.38];
+    const rt = rv(r[7]);
+    const stubby = d.toeLen < 0.3 && spec.quadruped;
     for (const a of toeAngles) {
       const outer = Math.abs(a) > 0.3 ? 0.78 : 1;
       const tl = d.toeLen * outer;
       const dir = new V3(Math.sin(a) * sd, -0.1, Math.cos(a)).normalize();
-      const start = P[3].clone().addScaledVector(dir, -r[7] * 0.6).add(new V3(0, 0.0, 0));
+      const start = P[3].clone().addScaledVector(dir, -rt * 0.6);
       const tip = P[3].clone().addScaledVector(dir, tl);
-      tip.y = Math.max(r[7] * 0.3, tip.y);
-      const mid = start.clone().lerp(tip, 0.5);
-      chainTube(
-        geo,
-        G_LIMB,
-        [
-          { p: start, r: r[7] * 1.15 },
-          { p: mid, r: r[7] * 0.85 },
-          { p: tip, r: r[7] * 0.4 },
-        ],
-        [n[3], n[3]],
-        Math.max(6, legSeg - 4),
-        spacing,
-        1.1,
-        { cMin: cMinLimb },
-      );
+      tip.y = Math.max(rt * 0.3, tip.y);
+      // dedos longos: almofadas entre as juntas (falanges) e um leve arco
+      const prof2 = stubby
+        ? [[0, 1.15], [0.5, 0.85], [1, 0.4]]
+        : [[0, 1.15], [0.3, 1.0], [0.42, 0.84], [0.62, 0.9], [0.74, 0.72], [1, 0.38]];
+      const toeNodes = prof2.map(([t, k]) => ({
+        p: start.clone().lerp(tip, t).add(new V3(0, stubby ? 0 : Math.sin(Math.PI * t) * rt * 0.3, 0)),
+        r: rt * k,
+      }));
+      chainTube(geo, G_LIMB, toeNodes, toeNodes.slice(1).map(() => n[3]), Math.max(6, legSeg - 4), spacing * 0.7, 1.1, { cMin: cMinLimb });
       if (d.claws) {
-        addCone(geo, G_IVORY, tip.clone().addScaledVector(dir, -r[7] * 0.2), dir.clone().add(new V3(0, -0.35, 0)), r[7] * 2.4, r[7] * 0.45, [[n[3], 1]], 6, 0.25);
+        addCone(geo, G_IVORY, tip.clone().addScaledVector(dir, -rt * 0.2), dir.clone().add(new V3(0, -0.35, 0)), rt * 2.4, rt * 0.45, [[n[3], 1]], 6, 0.25);
       } else {
-        addCone(geo, G_IVORY, tip.clone().addScaledVector(dir, -r[7] * 0.3), dir.clone().add(new V3(0, -0.5, 0)), r[7] * 0.9, r[7] * 0.55, [[n[3], 1]], 6);
+        addCone(geo, G_IVORY, tip.clone().addScaledVector(dir, -rt * 0.3), dir.clone().add(new V3(0, -0.5, 0)), rt * 0.9, rt * 0.55, [[n[3], 1]], 6);
       }
     }
     if (d.sickle) {
-      const base = P[3].clone().add(new V3(-sd * r[7] * 0.9, r[7] * 1.2, r[7] * 0.4));
-      addCone(geo, G_IVORY, base, new V3(-sd * 0.1, 0.75, 0.6), r[7] * 4.2, r[7] * 0.6, [[n[3], 1]], 6, -0.45);
+      const base = P[3].clone().add(new V3(-sd * rt * 0.9, rt * 1.2, rt * 0.4));
+      addCone(geo, G_IVORY, base, new V3(-sd * 0.1, 0.75, 0.6), rt * 4.2, rt * 0.6, [[n[3], 1]], 6, -0.45);
+    }
+    if (d.dewclaw) {
+      // esporão (1º dedo) atrás do metatarso, sem tocar o chão
+      const ra = rv(r[5]);
+      const base = P[2].clone().lerp(P[3], 0.62).add(new V3(-sd * ra * 0.7, 0, -ra * 0.55));
+      const dirD = new V3(-sd * 0.35, -0.5, -0.8).normalize();
+      const tipD = base.clone().addScaledVector(dirD, d.toeLen * 0.3);
+      chainTube(geo, G_LIMB, [{ p: base, r: rt * 0.8 }, { p: base.clone().lerp(tipD, 0.5), r: rt * 0.62 }, { p: tipD, r: rt * 0.35 }], [n[2], n[2]], Math.max(6, legSeg - 6), spacing * 0.6, 1, { cMin: cMinLimb });
+      addCone(geo, G_IVORY, tipD.clone().addScaledVector(dirD, -rt * 0.15), dirD.clone().add(new V3(0, -0.3, 0)), rt * 1.6, rt * 0.32, [[n[2], 1]], 5, 0.25);
     }
   }
 
@@ -538,7 +618,7 @@ function buildSpecies(spec, quality) {
       { cMin: cMinLimb, ao: 0.22 },
     );
     const handDir = P[3].clone().sub(P[2]).normalize();
-    const nFingers = spec.diet === 'carnivore' && spec.id === 'trex' ? 2 : 3;
+    const nFingers = spec.arms.fingers ?? 3;
     for (let f = 0; f < nFingers; f++) {
       const off = (f - (nFingers - 1) / 2) * 0.35;
       const dir = handDir.clone().add(new V3(off * sd * 0.5, -0.2 + Math.abs(off) * 0.2, 0)).normalize();
@@ -605,14 +685,30 @@ function buildSpecies(spec, quality) {
       const z = lerp(t.from, t.to, i / (t.n - 1));
       const pr = profileAt(prof, z);
       const jr = profileAt(jaw, z);
-      const l = t.len * (0.7 + 0.5 * Math.sin((i / (t.n - 1)) * Math.PI));
+      const thick = t.thick ?? 0.28;
       for (const sd of sides) {
-        const ub = new V3(pr[2] * 0.62 * sd, pr[1] - pr[4] * 0.72, z);
-        addCone(geo, G_IVORY, ub, new V3(0, -1, 0.15), l, l * 0.28, [[B.head, 1]], 5, -0.15);
-        const lb = new V3(jr[2] * 0.66 * sd, jr[1] + jr[3] * 0.6, z + 0.02);
-        addCone(geo, G_IVORY, lb, new V3(0, 1, 0.1), l * 0.8, l * 0.25, [[B.jaw, 1]], 5);
+        // cada dente com tamanho e inclinação um pouco diferentes
+        const h1 = hash01(i * 7 + (sd > 0 ? 1 : 2));
+        const h2 = hash01(i * 13 + (sd > 0 ? 5 : 9));
+        const l = t.len * (0.7 + 0.5 * Math.sin((i / (t.n - 1)) * Math.PI)) * (0.8 + 0.4 * h1);
+        const ub = new V3(surfX(pr, -0.72) * 0.9 * sd, pr[1] - pr[4] * 0.66, z);
+        addCone(geo, G_IVORY, ub, new V3(sd * (h2 - 0.5) * 0.15, -1, 0.15 + h2 * 0.1), l, l * thick, [[B.head, 1]], 6, -0.15);
+        const lb = new V3(surfX(jr, 0.6) * 0.9 * sd, jr[1] + jr[3] * 0.55, z + 0.02);
+        addCone(geo, G_IVORY, lb, new V3(sd * (h1 - 0.5) * 0.12, 1, 0.1), l * (0.65 + 0.25 * h2), l * thick * 0.9, [[B.jaw, 1]], 6);
       }
     }
+  }
+
+  // ---- língua (aparece com a boca aberta) ----
+  {
+    const j0 = jaw[0][0];
+    const jl = jawEnd - j0;
+    const zc = j0 + jl * 0.45;
+    const jr = profileAt(jaw, zc);
+    const g2 = new THREE.SphereGeometry(1, 14, 8);
+    const m = new THREE.Matrix4().compose(new V3(0, jr[1] + jr[3] * 0.45, zc), new THREE.Quaternion(), new V3(jr[2] * 0.5, jr[3] * 0.42, jl * 0.36));
+    geo.addGeometry(G_MOUTH, g2, m, [[B.jaw, 1]]);
+    g2.dispose();
   }
 
   // ---- extras ----
@@ -717,7 +813,23 @@ function buildSpecies(spec, quality) {
       geo.col[k * 3 + 2] *= lerp(1, 0.4, m);
     }
   }
-  const geometry = geo.build();
+  // músculos e saliências (espelhados nos dois lados)
+  const sculpt = [];
+  for (const b of spec.sculpt ?? []) {
+    const group = b.part === 'limb' ? G_LIMB : b.part === 'all' ? undefined : G_SKIN;
+    sculpt.push({ c: b.c, r: b.r, a: b.a, group });
+    if (b.c[0] !== 0 && b.mirror !== false) sculpt.push({ c: [-b.c[0], b.c[1], b.c[2]], r: b.r, a: b.a, group });
+  }
+  if (spec.rugosity) {
+    // calombos ásperos no alto do focinho
+    const ru = spec.rugosity;
+    for (let i = 0; i < ru.n; i++) {
+      const z = lerp(ru.from, ru.to, i / Math.max(1, ru.n - 1));
+      const pr = profileAt(prof, z);
+      for (const sd of sides) sculpt.push({ c: [ru.x * sd, pr[1] + pr[3] * 0.97, z], r: [ru.r, ru.r * 0.8, ru.r], a: ru.a * (0.7 + 0.6 * hash01(i * 3 + sd)), group: G_SKIN });
+    }
+  }
+  const geometry = geo.build(sculpt);
 
   // medidas úteis para animação e jogabilidade
   const hipY = cy(0);
@@ -735,7 +847,7 @@ function buildSpecies(spec, quality) {
       ball: P[3].clone(),
       L: rel.map((v) => Math.hypot(v.y, v.z)),
       rest: [phi(rel[0]), phi(rel[1]), phi(rel[2]), phi(toeTip)],
-      footR: d.r[6],
+      footR: rv(d.r[6]),
       parent: L.parent,
     };
   });
@@ -753,7 +865,8 @@ function buildSpecies(spec, quality) {
     mouth: new V3(0, (jawTip.y + cy(snoutZ)) / 2, snoutZ - headLen * 0.15),
     headY: cy(spec.head),
     width: maxW,
-    bellyY: hipY - profileAt(prof, 0.5)[4],
+    // parte mais baixa do tronco (do quadril ao peito): é ela que toca o chão ao deitar
+    bellyY: Math.min(...[0, 0.5, ...spec.spine].map((z) => cy(z) - profileAt(prof, z)[4])),
     radius: geometry.boundingSphere.radius,
     center: geometry.boundingSphere.center.clone(),
     nTail: spec.tail.length,
@@ -853,7 +966,8 @@ export function prepareSpecies(id, quality, pre = null) {
   limbMat.normalMap = limb.normalMap;
   limbMat.roughnessMap = limb.roughnessMap;
   if (quality !== 'low') addDetailNormal(limbMat, detailTex, quality === 'ultra' ? 7 : 5, 0.35);
-  const out = { spec, data, materials: [skinMat, ivoryMat, eyeMat, accentMat, limbMat] };
+  const mouthMat = new THREE.MeshStandardMaterial({ color: 0x8a3a36, roughness: 0.32, metalness: 0 });
+  const out = { spec, data, materials: [skinMat, ivoryMat, eyeMat, accentMat, limbMat, mouthMat] };
   cache.set(key, out);
   return out;
 }

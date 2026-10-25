@@ -38,11 +38,28 @@ gestos ociosos (olhar em volta, sacudir a cabeça, abanar a cauda, farejar), car
 chacoalham a presa ao morder e arrancam pedaços ao comer, herbívoros que mastigam de lado,
 recuo para o lado oposto ao golpe e morte em etapas (joelhos cedem, o corpo tomba e assenta).
 
+### O tiranossauro
+
+Modelado à parte do resto: crânio fundo e largo atrás (com a "quina" do occipital,
+focinho rombudo e áspero, chifres sobre os olhos, bochechas e músculos da mandíbula),
+olhos voltados para a frente, mandíbula funda com lábios, dentes grossos e irregulares,
+língua, pescoço curto e grosso em S, tórax fundo e estreito no dorso, base da cauda
+com o músculo caudofemoral, coxas em "coxinha" com quadríceps e posteriores marcados,
+panturrilha, metatarso longo, três dedos com almofadas e garras, esporão atrás do pé
+e braços curtos de dois dedos. Pele com selas escuras e máscara no focinho.
+
+Animações próprias: rugido em dois tempos (enche o peito com a cabeça erguida, depois
+projeta a cabeça, escancara a boca, chacoalha, faz o corpo tremer e levanta a cauda),
+mordida com bote (recua e abre a boca, avança o corpo de verdade, fecha com força e
+chacoalha a presa), passos pesados (o corpo afunda e o pescoço, a cauda e os braços
+balançam a cada pisada), puxões com o corpo todo ao comer, bocejo, farejar o ar,
+deitar com o queixo no chão e dormir com a cabeça de lado e a cauda enrolada.
+
 ## Espécies
 
 | Espécie | Dieta | Estilo |
 |---|---|---|
-| **Tiranossauro** | Carnívoro | Predador supremo: vira devagar, mordida mais forte do jogo |
+| **Tiranossauro** | Carnívoro | Predador supremo: 14,5 m e 5,3 m no quadril, vira devagar, mordida mais forte do jogo |
 | **Velociraptor** | Carnívoro | Rápido e frágil; na IA, caça em bando e cerca a presa |
 | **Tricerátops** | Herbívoro | Quadrúpede blindado; ataca com os chifres e defende a manada |
 | **Parassaurolofo** | Herbívoro | Vive em manada, foge rápido; chamado grave pela crista |
