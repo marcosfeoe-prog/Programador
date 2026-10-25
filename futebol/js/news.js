@@ -371,6 +371,20 @@ export function newsCoachSacked(t, old, nw) {
   });
 }
 
+export function newsAging(p) {
+  const t = T(p.teamId);
+  return pushNews({
+    cat: 'analise',
+    title: g('[O tempo não perdoa:|Peso da idade:] aos 33, {p} [vê o rendimento cair|entra na fase final da carreira]', { p: p.name }),
+    lede: `Overall atual: ${p.ovr} · Potencial: ${p.pot}.`,
+    body: [
+      g('[Aos 33 anos|Chegando aos 33], {p} [começa a sentir os efeitos da idade|já não tem a mesma explosão de antes]. [Os números do departamento de fisiologia do {t} mostram queda na velocidade e na recuperação|A comissão técnica do {t} já administra a minutagem do veterano].', { p: p.name, t: t?.name || 'clube' }),
+      g('[O potencial de evolução praticamente acabou|Não há mais margem de crescimento]: [agora o desafio é prolongar a carreira com inteligência|a experiência passa a ser a principal arma].'),
+    ],
+    players: [p.id], teams: [t?.id].filter(Boolean), league: t?.leagueId, img: { type: 'player', id: p.id }, importance: p.fame >= 80 ? 3 : 1,
+  });
+}
+
 export function newsRetire(p) {
   return pushNews({
     cat: 'bastidores',

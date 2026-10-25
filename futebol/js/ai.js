@@ -74,3 +74,16 @@ export async function writeBio(p) {
 export async function testKey() {
   return ask('Responda apenas: "Redação conectada."', 200);
 }
+
+// Resposta de mensagem direta no TeleChat, no tom de voz do jogador
+export async function dmReply(p, me, chat, toneName) {
+  const history = chat.slice(-8).map((m) => `${m.me ? me.name : p.name}: ${m.text}`).join('\n');
+  const out = await ask(`Você é ${p.name}, jogador de futebol neste universo, conversando por mensagem direta numa rede social chamada TeleChat.
+Sua ficha: ${playerFacts(p)}
+Seu estilo nas redes: ${toneName}. Fama ${Math.round(p.fame)}/99; quem te escreve é ${me.name}, ${posName(me.pos).toLowerCase()} de ${me.age} anos do ${T(me.teamId)?.name}, fama ${Math.round(me.fame)}/99.
+Responda à última mensagem com UMA mensagem curta (no máximo 2 frases), em português do Brasil informal, no seu estilo. Pode usar emoji se combinar com o estilo. Responda só com o texto da mensagem.
+
+Conversa:
+${history}`, 600);
+  return out.split('\n')[0].replace(/^["“]|["”]$/g, '').slice(0, 300) || '👍';
+}

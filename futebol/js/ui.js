@@ -23,7 +23,7 @@ export function thumbImg(p, cls = '') {
   if (!p) return `<span class="pthumb ${cls}"></span>`;
   const t = T(p.teamId) || T(p.lastTeamId);
   const [c1, c2] = t?.colors || ['#334155', '#0f172a'];
-  return `<img class="pthumb ${cls}" data-pid="${p.id}" alt="" style="--c1:${c1}cc;--c2:#0b1020" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" />`;
+  return `<img class="pthumb ${cls}" data-pid="${p.id}" alt="" style="--c1:${c1}cc;--c2:#0b1020" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" />`;
 }
 
 export function playerLink(p, { sub = true, thumb = true } = {}) {
@@ -84,7 +84,7 @@ export function newsVisual(n) {
     if (p) {
       const t = T(p.teamId) || T(p.lastTeamId);
       const [c1, c2] = t?.colors || ['#1e293b', '#0f172a'];
-      return `<div class="visual" style="--c1:${c1};--c2:${img.type === 'award' ? '#3b2f00' : c2 === '#ffffff' ? '#0f172a' : c2}"><img class="portrait" data-pid="${p.id}" alt="${esc(p.name)}" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" />${img.stars ? `<span class="badge-stars">${stars(img.stars)}</span>` : ''}</div>`;
+      return `<div class="visual" style="--c1:${c1};--c2:${img.type === 'award' ? '#3b2f00' : c2 === '#ffffff' ? '#0f172a' : c2}"><img class="portrait" data-pid="${p.id}" alt="${esc(p.name)}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" />${img.stars ? `<span class="badge-stars">${stars(img.stars)}</span>` : ''}</div>`;
     }
   }
   if (img.type === 'trophy' || img.type === 'award') {

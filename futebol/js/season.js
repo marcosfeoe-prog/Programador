@@ -7,6 +7,7 @@ import { simulateMatch } from './match.js';
 import * as N from './news.js';
 import { awardInstances, rankAward, grantAward, ballonRace } from './awards.js';
 import * as Career from './career.js';
+import * as Tele from './telechat.js';
 import { monthOfWeek, seasonLabel } from './text.js';
 
 export const SEASON_WEEKS = 20;
@@ -210,6 +211,7 @@ export function advanceWeek() {
   if (W.week === 10) transferWindow(3);
   if ([8, 14, 18].includes(W.week)) N.newsColumnBallon(ballonRace(5));
   checkRecords();
+  Tele.weekly(allMatches);
   // carreira — eventos e propostas
   if (user) {
     Career.maybeEvent();
@@ -373,18 +375,28 @@ function develop(p) {
   p.age++;
   p.contract = Math.max(0, p.contract - 1);
   let d;
+  let potDrop = 0;
   if (p.age <= 21) d = (p.pot - p.ovr) * rng.float(0.15, 0.4) + rng.gauss(0, 1);
   else if (p.age <= 24) d = (p.pot - p.ovr) * rng.float(0.1, 0.3) + rng.gauss(0, 1);
   else if (p.age <= 28) d = rng.gauss(0.4, 1.4);
-  else if (p.age <= 31) d = rng.gauss(-0.8, 1.3);
-  else d = -rng.float(1, 4);
-  if (p.isUser) d = Math.max(d, p.age <= 27 ? 0 : d) * 0.6; // o treino semanal já evolui o protagonista
+  else if (p.age <= 30) d = rng.gauss(-0.6, 1.2);
+  else if (p.age <= 32) {
+    d = -rng.float(1, 3);
+    potDrop = rng.int(2, 4);
+  } else {
+    // a partir dos 33 anos o corpo cobra a conta: overall e potencial despencam
+    d = -rng.float(4, 8) - (p.age - 33) * 0.8;
+    potDrop = rng.int(7, 12);
+  }
+  if (p.isUser && p.age < 30) d = Math.max(d, 0) * 0.6; // o treino semanal já evolui o protagonista
   d = Math.round(d);
+  if (potDrop) p.pot -= potDrop;
   if (d) {
     for (const k of [...ATTR_KEYS, 'gk']) p.attrs[k] = clamp(p.attrs[k] + d * (k === 'pac' && d < 0 ? 1.5 : 1), 10, 99);
     p.ovr = calcOvr(p);
   }
   p.pot = Math.max(p.pot, p.ovr);
+  if (p.age === 33 && (p.fame >= 60 || p.isUser) && !p.retired) N.newsAging(p);
 }
 
 function shouldRetire(p) {

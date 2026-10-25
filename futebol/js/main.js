@@ -1,5 +1,5 @@
 // Inicialização, rotas, salvamento e controles de tempo.
-import { W, setWorld, createWorld } from './world.js';
+import { W, P, setWorld, createWorld } from './world.js';
 import { rng } from './rng.js';
 import { defaultAwards } from './awards.js';
 import { advanceWeek, weekLabel } from './season.js';
@@ -7,6 +7,8 @@ import { seasonLabel } from './text.js';
 import { pushNews } from './news.js';
 import * as V from './views.js';
 import * as V2 from './views2.js';
+import * as V3 from './views3.js';
+import * as Tele from './telechat.js';
 import { $, $$, hydrateThumbs, toast, confirmBox } from './ui.js';
 
 const SAVE_KEY = 'gramado-save-v1';
@@ -57,6 +59,7 @@ function newWorld(seed) {
     importance: 5,
   });
   setWorld(w);
+  Tele.seedIfEmpty();
   save();
   location.hash = '#/';
   render();
@@ -78,6 +81,7 @@ function importWorld(file) {
       const w = JSON.parse(fr.result);
       if (w.version !== 1 || !w.players) throw new Error();
       setWorld(w);
+      Tele.seedIfEmpty();
       save();
       toast('Universo importado!');
       location.hash = '#/';
@@ -122,6 +126,13 @@ function route() {
       return ['premios', () => V2.viewAward(b)];
     case 'carreira':
       return ['carreira', () => V2.viewCareer()];
+    case 'telechat':
+      if (b === 'perfil') return ['telechat', () => V3.viewTeleProfile(c)];
+      if (b === 'dm') return ['telechat', () => V3.viewTeleDM(c)];
+      if (b === 'dms') return ['telechat', () => V3.viewTeleInbox()];
+      return ['telechat', () => V3.viewTele(b || 'para-voce')];
+    case 'criar-jogador':
+      return ['criar', () => V3.viewCreatePlayer()];
     case 'ajustes':
       return ['ajustes', () => V2.viewSettings()];
     default:
@@ -154,6 +165,9 @@ function render(keepScroll = false) {
 function updateClock() {
   $('#clock-season').innerHTML = `<span class="clock-word">Temporada </span>${seasonLabel(W.season)}`;
   $('#clock-week').textContent = `${weekLabel()}${W.week > 0 && W.week <= 18 ? ' de 18' : ''}`;
+  const unread = W.tele?.unread || 0;
+  $('#tele-badge').textContent = unread > 0 ? String(Math.min(99, unread)) : '';
+  $('#tele-badge').hidden = !unread;
   $('#btn-advance').textContent = W.week === 0 ? '▶ Iniciar temporada' : W.week === 19 ? '▶ Gala de premiação' : '▶ Avançar semana';
 }
 
@@ -181,7 +195,9 @@ async function advance(n = 1) {
   btns.forEach((b) => (b.disabled = false));
   busy = false;
   const fresh = W.news[0];
-  if (W.week === 0) toast(`Temporada encerrada! Confira os campeões e premiados.`, 4000);
+  const follows = (W.tele?.notifs || []).filter((x) => x.type === 'follow' && x.abs === W.absWeek);
+  if (follows.length) toast(`TeleChat: ${follows.map((x) => P(x.pid)?.name).filter(Boolean).slice(0, 3).join(', ')} seguiu você de volta!`, 4000);
+  else if (W.week === 0) toast(`Temporada encerrada! Confira os campeões e premiados.`, 4000);
   else if (fresh) toast(`${weekLabel()} concluída · ${fresh.title}`, 3500);
   const onFeed = route()[0] === 'feed' && !location.hash.includes('noticia');
   render(!onFeed);
@@ -198,6 +214,7 @@ const saved = load();
 if (saved) {
   setWorld(saved);
   if (saved.rngState) rng.s = saved.rngState;
+  Tele.seedIfEmpty();
   render();
 } else newWorld();
 

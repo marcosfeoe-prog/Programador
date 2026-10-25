@@ -168,7 +168,7 @@ export function onWeekStart() {
     const cur = p.attrs[k] ?? 60;
     const ceiling = Math.min(99, p.pot + 8);
     const room = clamp((ceiling - cur) / 25, 0.1, 1); // atributos altos evoluem mais devagar
-    const gain = rng.float(0.15, 0.4) * (0.3 + gap / 25) * room * (0.4 + C.energy / 160) * (p.age <= 23 ? 1.2 : p.age >= 30 ? 0.5 : 1);
+    const gain = rng.float(0.15, 0.4) * (0.3 + gap / 25) * room * (0.4 + C.energy / 160) * (p.age <= 23 ? 1.2 : p.age >= 33 ? 0.2 : p.age >= 30 ? 0.5 : 1);
     if (p.attrs[k] !== undefined) {
       p.attrs[k] = clamp(p.attrs[k] + gain, 10, ceiling);
       if (rng.chance(0.35)) {

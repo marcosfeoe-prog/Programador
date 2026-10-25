@@ -89,6 +89,37 @@ responda a coletivas, convites, patrocínios e dilemas (que podem virar polêmic
 propostas de clubes maiores nas janelas. O painel **Rumo ao topo** acompanha 17
 conquistas — do primeiro gol à Bola de Ouro e ao nº 1 do ranking mundial.
 
+## TeleChat (rede social)
+
+Em **TeleChat**, os jogadores postam toda semana: gols, vitórias, derrotas, expulsões,
+lesões, transferências, prêmios, títulos, polêmicas, treinos e vida pessoal. Astros e
+jogadores pouco conhecidos postam; a quantidade de curtidas e seguidores depende da fama.
+O texto de cada post segue a personalidade (o Marrento provoca, o Influencer usa hashtags,
+o Tímido escreve pouco, o Festeiro fala de resenha…).
+
+Com um protagonista criado, você pode:
+- **postar** (posts provocativos podem virar polêmica na imprensa);
+- **seguir jogadores**: astros mundiais quase nunca seguem de volta; jogadores pouco
+  conhecidos quase sempre seguem. Companheiros de time, mesma nacionalidade e boas
+  conversas aumentam a chance. Alguns seguem na hora, outros na semana seguinte;
+- **mandar mensagens**: a chance de resposta segue a mesma lógica, e a resposta tem o tom
+  da personalidade do jogador (elogio, pedido de dica, convite, provocação…). Com a
+  redação com IA ativada, o Claude escreve a resposta no estilo do jogador.
+
+## Criar jogador
+
+Em **Criar jogador**, adicione ao universo lendas, craques ou promessas: nome,
+nacionalidade, idade, posição, overall, potencial, fama, personalidade, aparência,
+clube (titular ou reserva), jogos, gols, assistências, quantas vezes ganhou cada prêmio
+e cada título (ligas, Copa Suprema, seus torneios e copas de seleções). Há modelos
+prontos (Lenda mundial, Craque, Promessa, Jogador comum, Veterano).
+
+## Envelhecimento
+
+A partir dos 31 anos o rendimento começa a cair. **Aos 33 anos ou mais**, overall e
+potencial despencam a cada temporada (o potencial cai de 7 a 12 pontos por ano) e o
+treino rende muito menos, inclusive para o protagonista.
+
 ## Estrutura
 
 ```
@@ -102,7 +133,8 @@ futebol/
   js/awards.js       prêmios por estrelas e apuração
   js/news.js         gerador de notícias; js/text.js motor de texto; js/bio.js perfis
   js/career.js       modo protagonista
+  js/telechat.js     rede social TeleChat; js/creator.js criador de jogadores
   js/avatar3d.js     bonecos 3D (three.js) e miniaturas
   js/ai.js           redação opcional com a API do Claude
-  js/ui.js, views.js, views2.js, main.js   interface e rotas
+  js/ui.js, views.js, views2.js, views3.js, main.js   interface e rotas
 ```
