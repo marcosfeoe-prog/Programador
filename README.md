@@ -154,3 +154,13 @@ Segundo jogo do repositório: exploração em primeira pessoa pelos **Níveis 0,
 noturna, câmera térmica…), qualidade gráfica **Baixa, Média, Alta e Ultra** e
 controles feitos para **celular**. Com o servidor rodando (`npm start`), abra
 `http://localhost:8080/liminar/`. Detalhes em [`liminar/README.md`](liminar/README.md).
+
+---
+
+# Gramado — Universo do Futebol (pasta `futebol/`)
+
+Aplicativo de **notícias de futebol fictício**: 5 ligas com 10 clubes de 11 jogadores,
+notícias geradas a cada semana (resultados, polêmicas, mercado, prêmios), torneios e
+prêmios criados pelo usuário (1 a 5 estrelas), **modo protagonista** e **bonecos 3D**
+personalizáveis. Com o servidor rodando (`npm start`), abra
+`http://localhost:8080/futebol/`. Detalhes em [`futebol/README.md`](futebol/README.md).

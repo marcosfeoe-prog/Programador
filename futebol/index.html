@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0a1020" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="description" content="Universo fictício de futebol: notícias generativas, 5 ligas, torneios e prêmios criados pelo usuário, polêmicas e modo protagonista com bonecos 3D." />
+    <title>Gramado — Universo do Futebol</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/style.css" />
+    <script type="importmap">
+      { "imports": { "three": "../vendor/three/three.module.min.js" } }
+    </script>
+  </head>
+  <body>
+    <header id="topbar">
+      <a href="#/" class="brand" aria-label="Gramado — início">
+        <img src="icon.svg" alt="" width="30" height="30" />
+        <span><b>GRAMADO</b><small>Universo do Futebol</small></span>
+      </a>
+      <div id="clock">
+        <span id="clock-season"></span>
+        <span id="clock-week"></span>
+      </div>
+      <div class="actions">
+        <button id="btn-advance" class="btn primary">▶ Avançar semana</button>
+        <button id="btn-season" class="btn ghost" title="Simular até o fim da temporada">⏩ <span class="hide-sm">Fim da temporada</span></button>
+      </div>
+    </header>
+    <nav id="sidenav" aria-label="Navegação principal">
+      <a href="#/" data-nav="feed"><i>📰</i><span>Notícias</span></a>
+      <a href="#/liga/PL" data-nav="liga"><i>🏟️</i><span>Ligas</span></a>
+      <a href="#/torneios" data-nav="torneios"><i>🏆</i><span>Torneios</span></a>
+      <a href="#/premios" data-nav="premios"><i>⭐</i><span>Prêmios</span></a>
+      <a href="#/ranking" data-nav="ranking"><i>📊</i><span>Ranking</span></a>
+      <a href="#/carreira" data-nav="carreira"><i>🧑‍🚀</i><span>Carreira</span></a>
+      <a href="#/ajustes" data-nav="ajustes"><i>⚙️</i><span>Ajustes</span></a>
+    </nav>
+    <main id="view" tabindex="-1"></main>
+    <div id="toast" role="status" aria-live="polite"></div>
+    <div id="modal" class="hidden" role="dialog" aria-modal="true"><div class="modal-card"></div></div>
+    <noscript>Este aplicativo precisa de JavaScript.</noscript>
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
