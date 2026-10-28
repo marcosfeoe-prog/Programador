@@ -120,6 +120,11 @@ export const NOTES = {
     'No laboratório tem um computador que abre a jaula da quarentena. Lá dentro alguém deixou um rastro azul até uma porta aberta.',
   ],
   fr: ['Lista de compras: pão, leite, lâmpadas (a da sala anda zumbindo).'],
+  '257': [
+    'Sentei num desses bancos e fiquei olhando o rio por horas. O sol não se mexeu nem um centímetro.',
+    'A música fica mais lenta quanto mais você anda. Como se o lugar estivesse adormecendo junto com você.',
+    'Depois da estação de metrô o corredor aperta e começa a fazer curvas. Continue. No fim tem uma porta.',
+  ],
   '62': [
     'Toquei a campainha da recepção. Ninguém veio. Mas o cartão estava lá quando olhei de novo.',
     'O corredor do 12º andar não acaba. Conte os quartos. Os números voltam.',
