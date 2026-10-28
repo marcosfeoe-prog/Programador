@@ -8,6 +8,7 @@ import { GridLevel, W, EH, EV } from './grid.js';
 import { getTex, indoorEnvTex } from '../textures.js';
 import { panelMaterial } from '../materials.js';
 import { clamp, mulberry32 } from '../util.js';
+import { VoidPortal } from './level0_99.js';
 import './level0_1_tex.js';
 
 const ROOM = { x0: 0, x1: 2, z0: 0, z1: 2 }; // células da sala inicial (inclusive)
@@ -160,6 +161,30 @@ export class Level12 extends GridLevel {
     this.spawn = { x: 1.5 * c, z: 2.2 * c, yaw: 0 };
     this.makeDoor();
     this.makeHatch();
+    // Subnível 0.99: uma abertura escura na parede, perto da passagem
+    for (const [ox, oz, kind] of [
+      [1, 0, EH],
+      [-1, 0, EH],
+      [2, 0, EH],
+      [-2, 0, EH],
+      [1, 1, EH],
+      [0, 1, EV],
+      [0, -1, EV],
+    ]) {
+      const ix = hx + ox;
+      const iz = hz + oz;
+      const cellA = kind === EH ? [ix, iz] : [ix, iz];
+      const cellB = kind === EH ? [ix, iz - 1] : [ix - 1, iz];
+      if (this.edge(kind, ix, iz) !== W.FULL) continue;
+      if (this.corridor(...cellA) === this.corridor(...cellB)) continue;
+      this.setEdge(kind, ix, iz, W.DOOR);
+      const px = kind === EH ? ix * c + c / 2 : ix * c;
+      const pz = kind === EH ? iz * c : iz * c + c / 2;
+      this.portal = new VoidPortal(this, px, pz, { w: this.doorW, h: this.doorH, slab: false, ragged: true });
+      if (kind === EV) this.portal.g.rotation.y = Math.PI / 2;
+      this.portal.axisZ = kind === EV;
+      break;
+    }
   }
 
   makeDoor() {
@@ -236,6 +261,20 @@ export class Level12 extends GridLevel {
     // porta
     this.doorOpen += clamp(this.doorTarget - this.doorOpen, -dt * 1.6, dt * 1.6);
     this.doorPivot.rotation.y = this.doorOpen * 1.6;
+    // a abertura escura (Subnível 0.99)
+    const P = this.portal;
+    if (P && !g.transitioning) {
+      const q = P.axisZ ? { x: p.z - P.z + P.x, z: p.x - P.x + P.z } : p;
+      if (P.near(p, 5) && !this.toldPortal) {
+        this.toldPortal = true;
+        g.hud.message('Uma abertura na parede. Lá dentro, um escuro sem fundo. As paredes brancas em volta parecem rasgadas.', 4.5);
+      }
+      if (P.crossed(q)) {
+        this.portal = null;
+        g.enterLevel('0.99', 'none', 0.2);
+        return;
+      }
+    }
     // descer pela passagem pisando nela
     if (Math.hypot(p.x - this.hatch.x, p.z - this.hatch.z) < 0.45 && !g.transitioning) this.descend();
     // autocensura: filtros de gravação falham

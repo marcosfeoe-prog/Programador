@@ -120,6 +120,11 @@ export const NOTES = {
     'No laboratório tem um computador que abre a jaula da quarentena. Lá dentro alguém deixou um rastro azul até uma porta aberta.',
   ],
   fr: ['Lista de compras: pão, leite, lâmpadas (a da sala anda zumbindo).'],
+  '0.99': [
+    'Não tem cor aqui. Nem nas minhas mãos.',
+    'O teto dessa sala é tão baixo que eu tive que baixar a cabeça. O da sala ao lado eu nem consigo ver.',
+    'Fiquei tempo demais. Vi alguém parado no fim do corredor. Quando olhei direito, não tinha ninguém.',
+  ],
   '47': [
     'Encontrei um homem. Simpático, dizia que sabia a saída. Ele não piscava. Eu corri antes de ele chegar perto. Ainda bem.',
     'O Ladrão de Peles usa a pele de quem se perdeu aqui. Se ele chegar a três passos de você, já era. Se você virar as costas, também.',

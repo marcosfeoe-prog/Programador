@@ -6,6 +6,7 @@ import { GridLevel, W, EH, EV } from './grid.js';
 import { getTex, indoorEnvTex, textCanvasTex } from '../textures.js';
 import { panelMaterial } from '../materials.js';
 import { fbm, hash3, mulberry32, TAU } from '../util.js';
+import { VoidPortal } from './level0_99.js';
 
 export class Level4 extends GridLevel {
   constructor(game) {
@@ -451,6 +452,40 @@ export class Level4 extends GridLevel {
     ind.position.set(this.exit.x, 2.48, this.exit.z + nz * 0.01);
     ind.rotation.y = btn.rotation.y;
     this.dynamic.add(btn, ind);
+    this.makePortal(ex, ez);
+  }
+
+  // Subnível 0.99: uma porta escura, já aberta, em algum canto do escritório.
+  makePortal(ex, ez) {
+    const rnd = mulberry32(this.seed * 11 + 99);
+    const c = this.cell;
+    let px = 0;
+    let pz = 0;
+    for (let t = 0; t < 20; t++) {
+      const a = rnd() * TAU;
+      px = Math.round(Math.cos(a) * 9);
+      pz = Math.round(Math.sin(a) * 9);
+      if (Math.hypot(px - ex, pz - ez) > 8 && pz !== 0) break;
+    }
+    this.clearCell(px, pz);
+    this.carve(0, 0, px, pz, rnd);
+    this.setEdge(EH, px, pz, W.DOOR);
+    this.portal = new VoidPortal(this, px * c + c / 2, pz * c, { w: this.doorW, h: this.doorH, slab: true });
+  }
+
+  tick(dt, player) {
+    const P = this.portal;
+    if (!P || this.game.transitioning) return;
+    const p = player.pos;
+    if (P.near(p, 5) && !this.toldPortal) {
+      this.toldPortal = true;
+      this.game.hud.message('Uma porta escura, já aberta. Do outro lado não tem escritório — só preto.', 4);
+    }
+    if (P.crossed(p)) {
+      this.portal = null;
+      this.game.hud.message('O escuro te engole. Quando passa, as cores não voltam.', 4);
+      this.game.enterLevel('0.99', 'none', 0.2);
+    }
   }
 
   interactable(player) {

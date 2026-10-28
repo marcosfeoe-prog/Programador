@@ -29,6 +29,7 @@ import { Level46 } from './levels/level46.js';
 import { LevelFR } from './levels/levelFR.js';
 import { Level47 } from './levels/level47.js';
 import { Level48 } from './levels/level48.js';
+import { Level0_99 } from './levels/level0_99.js';
 import { Level177 } from './levels/level177.js';
 import { Level177Park } from './levels/level177_park.js';
 import { Level177Neon } from './levels/level177_neon.js';
@@ -80,6 +81,7 @@ const LEVEL_CLASSES = {
   fr: LevelFR,
   47: Level47,
   48: Level48,
+  '0.99': Level0_99,
   177: Level177,
   '177.2': Level177Park,
   '177.3': Level177Neon,

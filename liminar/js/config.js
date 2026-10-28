@@ -516,6 +516,20 @@ export const LEVELS = [
     objective: 'Siga a luz vermelha na névoa.',
     hint: 'A luz pisca. Quando sumir, espere: ela volta.',
   },
+  {
+    key: '0.99',
+    num: 0.99,
+    sub: true,
+    secret: true,
+    parent: '4',
+    returnTo: '5',
+    name: 'Anomalia',
+    tag: 'Subnível 0.99',
+    danger: 'Classe ? · Misteriosa · Sem entidades',
+    desc: 'Um lugar enorme e sem cor, onde nada tem a medida certa: salões altos demais, salas baixas demais, becos entre paredes sem fim. Não fique muito tempo.',
+    objective: 'Encontre a porta de luz branca.',
+    hint: 'Quanto mais tempo aqui, mais os seus olhos mentem.',
+  },
 ];
 
 // Onde um jogo novo começa: as Frontrooms.
