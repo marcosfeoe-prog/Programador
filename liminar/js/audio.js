@@ -1155,7 +1155,7 @@ export class AudioEngine {
     this.windK = 1;
     this.setReverb(look.reverb || 1.5);
     const k = this.kind;
-    const wets = { level0_99: 0.85, level47: 0.6, level48: 0.7, levelFR: 0.1, level46: 0.05, level177: 0.5, level177_2: 0.15, level177_3: 0.6, level177_4: 0.1, level177_5: 0.35, level16: 0.2, level14: 0.3, level45: 0.35, level43: 0.55, level44: 0.3, level34: 0.6, level35: 0.5, level8: 0.7, level9_5: 0.1, level2: 0.35, level3: 0.45, level37: 0.75, level12: 0.45, level12_2: 0.15, level12_3: 0.9, level88: 0.12, level0_1: 0.4, level10: 0.08, level11: 0.2, level1: 0.55, level9: 0.12, level10_1: 0.18, level23: 0.3, level15: 0.45, level5: 0.4 };
+    const wets = { level49: 0.65, level0_99: 0.85, level47: 0.6, level48: 0.7, levelFR: 0.1, level46: 0.05, level177: 0.5, level177_2: 0.15, level177_3: 0.6, level177_4: 0.1, level177_5: 0.35, level16: 0.2, level14: 0.3, level45: 0.35, level43: 0.55, level44: 0.3, level34: 0.6, level35: 0.5, level8: 0.7, level9_5: 0.1, level2: 0.35, level3: 0.45, level37: 0.75, level12: 0.45, level12_2: 0.15, level12_3: 0.9, level88: 0.12, level0_1: 0.4, level10: 0.08, level11: 0.2, level1: 0.55, level9: 0.12, level10_1: 0.18, level23: 0.3, level15: 0.45, level5: 0.4 };
     this.wet.gain.value = wets[k] !== undefined ? wets[k] : 0.35;
     this.hum = null;
     if (k === 'level0') {
@@ -1196,6 +1196,11 @@ export class AudioEngine {
       this.machineL = this.loop('machine', 0.06, { rate: 0.5, lp: 500, wet: 0.5 });
       this.waterL = this.loop('water', 0.07, { rate: 0.8, lp: 1200, wet: 0.6 });
       this.loop('brown', 0.04, { lp: 200 });
+    } else if (k === 'level49') {
+      // subsolo: reatores velhos, ventilação distante e água nos canos
+      this.hum = this.loop('hum', 0.07, { rate: 0.9, lp: 2600, wet: 0.5 });
+      this.loop('brown', 0.05, { lp: 160 });
+      this.loop('water', 0.015, { rate: 0.4, lp: 600, wet: 0.8 });
     } else if (k === 'level0_99') {
       // anomalia: zumbido grave, quase nada mais — eco enorme
       this.hum = this.loop('hum', 0.04, { rate: 0.7, lp: 1500, wet: 0.7 });
@@ -1459,6 +1464,11 @@ export class AudioEngine {
         const r = Math.random();
         if (r < 0.4) this.play('drip', { gain: 0.1, rate: 0.9 + Math.random() * 0.5, pan, wet: 1.4 });
         else if (r < 0.55) this.play('water', { gain: 0.05, rate: 1.6, pan, wet: 1.2 });
+      } else if (k === 'level49') {
+        const r = Math.random();
+        if (r < 0.2) this.play('drip', { gain: 0.08, rate: 0.8 + Math.random() * 0.4, pan, wet: 1.6 });
+        else if (r < 0.32) this.play('knock', { gain: 0.04, rate: 0.7, pan, wet: 1.8 });
+        else if (r < 0.4) this.play(this.B.step ? this.B.step.carpet : 'creak', { gain: 0.05, rate: 0.75, pan, wet: 1.8 });
       } else if (k === 'level47') {
         const r = Math.random();
         if (r < 0.2) this.play('knock', { gain: 0.05, rate: 1.1, pan, wet: 1.6 });

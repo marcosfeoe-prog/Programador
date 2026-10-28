@@ -121,7 +121,7 @@ export const FILTERS = [
 // Os níveis, na ordem em que são visitados. `key` identifica a classe do nível
 // e os bilhetes; `num` é o número canônico (10.1 é um subnível do 10).
 // Ordem em que os níveis são visitados (as chaves de LEVELS; secretos e partes ficam de fora).
-export const ORDER = ['fr', '0', '1', '2', '3', '4', '5', '8', '9', '10', '10.1', '11', '12', '14', '15', '16', '23', '34', '35', '37', '43', '44', '45', '46', '47', '48', '88', '177'];
+export const ORDER = ['fr', '0', '1', '2', '3', '4', '5', '8', '9', '10', '10.1', '11', '12', '14', '15', '16', '23', '34', '35', '37', '43', '44', '45', '46', '47', '48', '49', '88', '177'];
 
 // Posição de um nível na ordem (partes contam como o nível principal; secretos, como o pai).
 export function orderPos(info) {
@@ -529,6 +529,16 @@ export const LEVELS = [
     desc: 'Um lugar enorme e sem cor, onde nada tem a medida certa: salões altos demais, salas baixas demais, becos entre paredes sem fim. Não fique muito tempo.',
     objective: 'Encontre a porta de luz branca.',
     hint: 'Quanto mais tempo aqui, mais os seus olhos mentem.',
+  },
+  {
+    key: '49',
+    num: 49,
+    name: 'Estou Sozinho?',
+    tag: 'Nível 49',
+    danger: 'Classe 3 · Inseguro · Entidade: A Figura',
+    desc: 'Um subsolo esverdeado de blocos de concreto, pilares grossos, muretas e máquinas de venda apagadas. Corredores longos demais. Alguém todo branco anda por aqui.',
+    objective: 'Encontre a entrada dos túneis.',
+    hint: 'A Figura não ataca — a menos que você chegue perto demais ou aponte a lanterna para ela.',
   },
 ];
 
