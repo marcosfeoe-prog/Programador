@@ -57,11 +57,11 @@ export function pickShape(rng, stp) {
 export function pickColor(rng, shape) {
   const big = shape === 'wedge' || shape === 'multi';
   const w = {
-    gray: 40,
-    white: shape === 'rope' || shape === 'cone' || shape === 'vshape' ? 18 : 6,
-    dust: 14,
-    dark: big || shape === 'cylinder' ? 20 : 8,
-    rain: big ? 20 : 8,
+    gray: big ? 22 : 40,
+    white: shape === 'rope' || shape === 'cone' || shape === 'vshape' ? 18 : 4,
+    dust: shape === 'rope' ? 22 : 14,
+    dark: big ? 34 : shape === 'cylinder' ? 20 : 8,
+    rain: big ? 24 : 8,
   };
   let tot = 0;
   for (const k in w) tot += w[k];
@@ -253,7 +253,7 @@ export class Tornado {
       const debrisAmt = this.groundContact * smoothstep(20, 45, this.vmax) * clamp(0.35 + this.vmax / 110, 0, 1.3) * (ctx.surfaceDebris ?? 1);
       v.debris = lerp(v.debris, debrisAmt, 1 - Math.exp(-dt * 1.5));
       v.debrisR = lerp(this.rCore * sp.debris + 25, 45, this.ropeT);
-      v.debrisH = lerp(18 + this.rCore * 0.45, 22, this.ropeT);
+      v.debrisH = lerp(Math.min(18 + this.rCore * 0.45, 150), 22, this.ropeT);
       this.displayShape = this.ropeT > 0.5 ? 'rope' : this.shape;
       this.shapesSeen.add(this.displayShape);
 
@@ -296,7 +296,10 @@ export class Tornado {
 
     // Eixo: base no solo, topo na nuvem parede, com inclinação e sinuosidade
     const topOff = new THREE.Vector2(ctx.wallPos.x - this.pos.x, ctx.wallPos.y - this.pos.z);
-    const maxOff = this.H * (0.35 + this.ropeT * 1.6);
+    // Cordas ficam bem inclinadas: a base é arrastada pelo afluxo e o topo segue a nuvem parede
+    const ropeLean = Math.max(this.shape === 'rope' ? 1 : 0, this.ropeT) * this.H * 0.75;
+    if (ropeLean > 0 && ctx.stormVel.lengthSq() > 0.01) topOff.addScaledVector(_v2b.copy(ctx.stormVel).normalize(), -ropeLean);
+    const maxOff = this.H * (0.35 + Math.max(this.shape === 'rope' ? 0.6 : 0, this.ropeT * 1.6));
     if (topOff.length() > maxOff) topOff.setLength(maxOff);
     const sinu = lerp(sp.sinu, 70, this.ropeT) * (this.stage === 'funnel' ? 0.3 : 1);
     const perp = new THREE.Vector2(-topOff.y, topOff.x);
@@ -387,3 +390,4 @@ export class Tornado {
 }
 
 const _v2 = new THREE.Vector2();
+const _v2b = new THREE.Vector2();

@@ -51,6 +51,11 @@ crescendo enquanto estão no solo, sem limite (podem passar de 5 km em tornados 
 Aparências: **Cinza** (padrão), **Branco**, **Envolto de poeira**, **Cinza denso e escuro**
 e **Envolto pela chuva**.
 
+Visual inspirado em filmagens reais: funil de condensação liso com **estrias verticais**
+girando, **nuvem de detritos em domo "couve-flor"** na base (cinza-escura ou marrom-avermelhada
+conforme o solo), cordas bem **inclinadas e sinuosas**, cunhas e multivórtices largos e
+escuros que se fundem com a base da tempestade, e detritos voando em volta.
+
 A intensidade depende do formato: cordas e cones pequenos costumam ser F0–F2, enquanto
 cunhas e multivórtices têm ventos acima de 250 km/h (geralmente F3–F4; F5 é raro).
 A maioria dos tornados dura de 2 a 5 minutos.

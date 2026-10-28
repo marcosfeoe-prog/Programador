@@ -59,6 +59,7 @@ uniform vec4 uTorM;
 uniform vec4 uTorD;
 uniform vec4 uTorX;
 uniform vec3 uDebrisCol;
+uniform vec3 uTorAlb;
 uniform float uDebug;
 
 varying vec2 vUv;
@@ -104,7 +105,7 @@ vec2 tornado(vec3 p, bool cheap, out float dist) {
   float R = torRadius(hn);
   float outerR = R * (uTorM.x > 0.5 ? 1.7 : 1.45);
   float debR = uTorD.x;
-  if (uTorP.w > 0.01 && h < uTorD.y * 3.5) outerR = max(outerR, debR);
+  if (uTorP.w > 0.01 && h < uTorD.y * 3.5) outerR = max(outerR, debR * 1.5);
   if (uTorX.y > 1.5 && uTorX.y < 2.5 && h < H * 0.75) outerR = max(outerR, R * 2.0 + 20.0); // bainha de poeira
   dist = d - outerR;
   if (h < -10.0 || h > H + 80.0) { dist = max(dist, abs(h - H * 0.5) - H * 0.5); return vec2(0.0); }
@@ -126,11 +127,18 @@ vec2 tornado(vec3 p, bool cheap, out float dist) {
   vec3 nc = vec3(q.x * fs, h * fs * 0.45 - uTime * 0.05, q.y * fs);
   vec4 n4 = texture(tNoise, nc);
   float n = n4.r * 0.6 + n4.g * 0.4;
+  // Estrias verticais da condensação (amostradas num círculo: sem emenda)
+  vec2 cs = q / max(d, 0.01);
+  float sv = h / max(H * 0.8, 60.0) - uTime * 0.045;
+  float stri = texture(tNoise, vec3(cs.x * 0.42 + 0.31, sv, cs.y * 0.42 + 0.77)).g * 0.65
+             + texture(tNoise, vec3(cs.x * 0.9 + 0.13, sv * 2.3, cs.y * 0.9 + 0.52)).b * 0.35;
   // Faixa vertical de baixa frequência (funil irregular / fragmentado)
   float brk = texture(tNoise, vec3(0.13, h / (H * 1.5) + uTime * 0.01, 0.37)).a;
 
   float edge = 1.0 - d / max(Rt, 0.5);
-  float body = smoothstep(-0.06, 0.22, edge + (n - 0.55) * 0.5);
+  float body = smoothstep(-0.05, 0.16, edge + (n - 0.55) * 0.32 + (stri - 0.5) * 0.3);
+  // tubo: o centro fica um pouco menos denso, a borda mais marcada (aspecto liso e estriado)
+  body *= 0.7 + 0.3 * smoothstep(0.95, 0.35, edge) + 0.25 * stri;
   body *= smoothstep(fb - 2.0, fb + 6.0, h);
   // Efeito de "corda" fragmentada no estágio final
   body *= 1.0 - uTorD.z * smoothstep(0.42, 0.62, brk);
@@ -159,16 +167,27 @@ vec2 tornado(vec3 p, bool cheap, out float dist) {
 
   float deb = 0.0;
   if (uTorP.w > 0.001) {
+    float hd = max(h, 0.0);
     vec2 qd = rot(uTorP.z * 1.6) * rel;
     float fd = 1.0 / max(debR * 0.9, 20.0);
     float nd = texture(tNoise, vec3(qd.x * fd, h * fd * 0.8 - uTime * 0.12, qd.y * fd)).r;
-    float shape = smoothstep(debR, debR * 0.25, d + (nd - 0.5) * debR * 0.9);
-    float vert = exp(-max(h, 0.0) / max(uTorD.y, 1.0));
-    deb = shape * vert * uTorP.w * (0.4 + nd * 0.9) * (1.0 - 0.55 * uTorM.w);
-    deb *= 260.0 / (260.0 + debR);
+    // Nuvem de detritos em domo "couve-flor": elipsoide erodido por ruído celular,
+    // com as bolhas subindo e girando (como nas filmagens de tornados).
+    float domeH = max(uTorD.y * 2.6, 20.0);
+    float ell = length(vec2(d / debR, hd / domeH));
+    vec2 qb = rot(uTorP.z * 0.9 + hd / domeH * 0.8) * rel;
+    float bs = 1.0 / max(debR * 0.75, 14.0);
+    vec3 bp = vec3(qb.x * bs, hd * bs * 0.9 - uTime * 0.09, qb.y * bs);
+    float bill = texture(tNoise, bp).g * 0.62 + texture(tNoise, bp * 2.7 + 0.21).b * 0.38;
+    float dome = sat(1.05 - ell);
+    float billow = sat(remap(bill, 1.0 - sat(dome * 1.7), 1.0, 0.0, 1.0));
+    // saia de poeira rasteira mais larga, junto ao solo
+    float skirt = smoothstep(debR * 1.5, debR * 0.5, d + (nd - 0.5) * debR) * exp(-hd / max(uTorD.y * 0.45, 4.0));
+    deb = (billow * 2.6 + skirt * 0.7 * (0.4 + nd)) * uTorP.w * (1.0 - 0.55 * uTorM.w);
+    deb *= 260.0 / (260.0 + debR * 0.6);
     deb += subDust * uTorP.w * uTorM.w * (0.6 + nd * 0.8);
     // Detritos sobem ao longo do funil
-    deb += uTorP.w * 0.25 * smoothstep(R * 1.25, R * 0.6, d) * exp(-max(h, 0.0) / (uTorD.y * 4.0)) * nd;
+    deb += uTorP.w * 0.25 * smoothstep(R * 1.25, R * 0.6, d) * exp(-hd / (uTorD.y * 4.0)) * nd;
     if (uTorX.y > 0.5 && uTorX.y < 1.5) deb *= 0.45; // branco: pouca poeira visível
   }
   // Aparência "envolto de poeira": bainha marrom envolvendo a metade de baixo do funil
@@ -493,12 +512,14 @@ void main() {
         float under = 1.0 - stormCover(p.xz) * 0.9 * (1.0 - hgt);
         vec3 amb = mix(uAmbBot, uAmbTop * under, 0.45 + 0.55 * hgt);
         float hT = p.y - uTorBase.y;
-        vec3 condAlb = mix(uDebrisCol * 1.6, vec3(0.9), smoothstep(uTorD.y * 0.5, uTorD.y * 4.0, hT) * 0.6 + 0.4 * (1.0 - min(uTorP.w, 1.0)));
-        if (uTorX.y > 0.5 && uTorX.y < 1.5) condAlb = vec3(1.75);             // branco
-        else if (uTorX.y > 1.5 && uTorX.y < 2.5) condAlb = mix(condAlb, uDebrisCol * 1.8, 0.55); // poeira
-        else if (uTorX.y > 2.5 && uTorX.y < 3.5) condAlb = vec3(0.26, 0.26, 0.27);  // cinza escuro
-        else if (uTorX.y > 3.5) condAlb *= 0.75;                               // chuva
-        vec3 alb = (sC * vec3(1.0) + sP * vec3(0.62, 0.65, 0.7) + sT * condAlb + sD * uDebrisCol) / sigma;
+        // o funil recebe luz do horizonte por baixo da base da tempestade (contraste com o céu escuro)
+        amb = mix(amb, vec3(dot(uAmbTop, vec3(0.3333))) * vec3(0.92, 0.9, 0.87), (sT + sD) / sigma * 0.55 * smoothstep(uTorTop, mix(uTorBase.y, uTorTop, 0.45), p.y));
+        // Condensação: cinza-claro levemente tingido pela poeira na base; detritos:
+        // solo misturado com cinza-escuro (uTorX.w = quanto acinzentar).
+        vec3 debAlb = mix(uDebrisCol, vec3(0.2, 0.195, 0.19), uTorX.w);
+        vec3 condAlb = mix(debAlb * 1.7, uTorAlb, smoothstep(uTorD.y * 0.5, uTorD.y * 4.0, hT) * 0.6 + 0.4 * (1.0 - min(uTorP.w, 1.0)));
+        if (uTorX.y > 1.5 && uTorX.y < 2.5) condAlb = mix(condAlb, uDebrisCol * 1.8, 0.55); // poeira
+        vec3 alb = (sC * vec3(1.0) + sP * vec3(0.62, 0.65, 0.7) + sT * condAlb + sD * debAlb) / sigma;
         float ph = (sP > sC + sT) ? phaseP : phase;
         float powder = 1.0 - exp(-sigma * 60.0);
         vec3 Ls = uLightColor * lt * ph * mix(1.0, powder * 1.8, 0.5);
@@ -632,6 +653,7 @@ export class Volumetrics {
       uTorD: { value: new THREE.Vector4() },
       uTorX: { value: new THREE.Vector4(1, 0, 0, 0) },
       uDebrisCol: { value: new THREE.Color(0.36, 0.27, 0.19) },
+      uTorAlb: { value: new THREE.Color(0.9, 0.9, 0.9) },
       uDebug: { value: 0 },
     };
     this.material = new THREE.ShaderMaterial({

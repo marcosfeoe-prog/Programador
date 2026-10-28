@@ -507,7 +507,7 @@ class Game {
     // Céu e ambiente
     const env = { overcast: clamp(this.stormDark * 0.85 + ambCover * 0.6, 0, 1), flash, humidity: clamp(st.env.stp / 5, 0, 1), townPower: this.town.power, stormDark: this.stormDark };
     const sk = this.sky.update(cam, sun, moon, env, this.elapsed);
-    const hemiK = (0.25 + 1.45 * sk.day) * (1 - 0.6 * this.stormDark) + 0.06;
+    const hemiK = (0.25 + 1.45 * sk.day) * (1 - 0.42 * this.stormDark) + 0.06;
     this.hemi.color.copy(this.sky.zenith).lerp(this.sky.horizon, 0.4);
     this.hemi.groundColor.copy(this.sky.ground);
     this.hemi.intensity = hemiK * 1.6;
@@ -523,7 +523,7 @@ class Game {
 
     // Neblina
     const pu = this.post.uniforms;
-    const fogD = 0.000045 + env.humidity * 0.00003 + rainHere * 0.00055 + this.stormDark * 0.00012;
+    const fogD = 0.000045 + env.humidity * 0.00003 + rainHere * 0.00055 + this.stormDark * 0.00007;
     pu.uFog.value.set(fogD, 1 / 850);
     pu.uFogColor.value.copy(this.sky.fogColor).multiplyScalar(1 - this.stormDark * 0.35);
     pu.uFogSunColor.value.copy(this.sky.fogSunColor).multiplyScalar(1 - this.stormDark);
@@ -575,6 +575,10 @@ class Game {
       vu.uTorX.value.x = t.stage === 'funnel' ? 1 : 0.15;
       vu.uTorX.value.y = t.stage === 'tornado' ? COLORS[t.color].idx : 0;
       vu.uDebrisCol.value.copy(this.damage.surface.color);
+      const big = t.shape === 'wedge' || t.shape === 'multi';
+      const alb = { gray: big ? (t.shape === 'wedge' ? 0.42 : 0.55) : 1.05, white: 1.75, dust: 0.9, dark: 0.24, rain: big ? 0.38 : 0.6 }[t.color] ?? 1;
+      vu.uTorAlb.value.setScalar(alb);
+      vu.uTorX.value.w = t.color === 'dust' ? 0.05 : t.color === 'white' ? 0.3 : big || t.color === 'dark' ? 0.75 : 0.6;
     } else vu.uTorD.value.w = 0;
 
     // Vento local (para árvores, grama, chuva)
