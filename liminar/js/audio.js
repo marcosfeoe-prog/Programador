@@ -1155,7 +1155,7 @@ export class AudioEngine {
     this.windK = 1;
     this.setReverb(look.reverb || 1.5);
     const k = this.kind;
-    const wets = { level257: 0.35, level62: 0.45, level62_2: 0.9, level62_3: 0.3, level122: 0.7, level49: 0.65, level0_99: 0.85, level47: 0.6, level48: 0.7, levelFR: 0.1, level46: 0.05, level177: 0.5, level177_2: 0.15, level177_3: 0.6, level177_4: 0.1, level177_5: 0.35, level16: 0.2, level14: 0.3, level45: 0.35, level43: 0.55, level44: 0.3, level34: 0.6, level35: 0.5, level8: 0.7, level9_5: 0.1, level2: 0.35, level3: 0.45, level37: 0.75, level12: 0.45, level12_2: 0.15, level12_3: 0.9, level88: 0.12, level0_1: 0.4, level10: 0.08, level11: 0.2, level1: 0.55, level9: 0.12, level10_1: 0.18, level23: 0.3, level15: 0.45, level5: 0.4 };
+    const wets = { level69: 0.5, level257: 0.35, level62: 0.45, level62_2: 0.9, level62_3: 0.3, level122: 0.7, level49: 0.65, level0_99: 0.85, level47: 0.6, level48: 0.7, levelFR: 0.1, level46: 0.05, level177: 0.5, level177_2: 0.15, level177_3: 0.6, level177_4: 0.1, level177_5: 0.35, level16: 0.2, level14: 0.3, level45: 0.35, level43: 0.55, level44: 0.3, level34: 0.6, level35: 0.5, level8: 0.7, level9_5: 0.1, level2: 0.35, level3: 0.45, level37: 0.75, level12: 0.45, level12_2: 0.15, level12_3: 0.9, level88: 0.12, level0_1: 0.4, level10: 0.08, level11: 0.2, level1: 0.55, level9: 0.12, level10_1: 0.18, level23: 0.3, level15: 0.45, level5: 0.4 };
     this.wet.gain.value = wets[k] !== undefined ? wets[k] : 0.35;
     this.hum = null;
     if (k === 'level0') {
@@ -1196,6 +1196,10 @@ export class AudioEngine {
       this.machineL = this.loop('machine', 0.06, { rate: 0.5, lp: 500, wet: 0.5 });
       this.waterL = this.loop('water', 0.07, { rate: 0.8, lp: 1200, wet: 0.6 });
       this.loop('brown', 0.04, { lp: 200 });
+    } else if (k === 'level69') {
+      // vento alto, morno, entre as ilhas
+      this.wind = this.loop('wind', 0.05, { rate: 0.4, lp: 1100, wet: 0.35 });
+      this.loop('wind', 0.02, { rate: 0.25, lp: 400, wet: 0.6 });
     } else if (k === 'level257') {
       // vento morno lá fora, pássaros distantes
       this.wind = this.loop('wind', 0.025, { rate: 0.35, lp: 700, wet: 0.3 });
@@ -1510,6 +1514,10 @@ export class AudioEngine {
         const r = Math.random();
         if (r < 0.25) this.play('creak', { gain: 0.05, rate: 0.7 + Math.random() * 0.2, pan, wet: 0.4 });
         else if (r < 0.3) this.play('bark', { gain: 0.03, rate: 0.9, pan, wet: 1.2 });
+      } else if (k === 'level69') {
+        const r = Math.random();
+        if (r < 0.22) this.play('ding', { gain: 0.03, rate: 1.2 + Math.random() * 0.8, pan, wet: 1.6 });
+        else if (r < 0.3) this.play('birds', { gain: 0.02, rate: 1.1, pan, wet: 1.2 });
       } else if (k === 'level16') {
         if (Math.random() < 0.15) this.play('ding', { gain: 0.025, rate: 1.5 + Math.random(), pan, wet: 1.5 });
       } else if (k === 'level14') {
