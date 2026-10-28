@@ -32,6 +32,9 @@ import { Level48 } from './levels/level48.js';
 import { Level0_99 } from './levels/level0_99.js';
 import { Level49 } from './levels/level49.js';
 import { Level122 } from './levels/level122.js';
+import { Level62 } from './levels/level62.js';
+import { Level62Ball } from './levels/level62_ball.js';
+import { Level62Suite } from './levels/level62_suite.js';
 import { Level177 } from './levels/level177.js';
 import { Level177Park } from './levels/level177_park.js';
 import { Level177Neon } from './levels/level177_neon.js';
@@ -86,6 +89,9 @@ const LEVEL_CLASSES = {
   '0.99': Level0_99,
   49: Level49,
   122: Level122,
+  62: Level62,
+  '62.2': Level62Ball,
+  '62.3': Level62Suite,
   177: Level177,
   '177.2': Level177Park,
   '177.3': Level177Neon,
@@ -560,7 +566,8 @@ class Game {
     const byKey = (k) => LEVELS.findIndex((l) => l.key === k);
     if (cur.next) return byKey(cur.next);
     if (cur.secret) return byKey(cur.returnTo);
-    const pos = ORDER.indexOf(cur.key);
+    // a última parte de um nível segue a ordem do nível principal
+    const pos = ORDER.indexOf(cur.part || cur.key);
     return pos >= 0 && pos < ORDER.length - 1 ? byKey(ORDER[pos + 1]) : -1;
   }
 
