@@ -518,6 +518,7 @@ export class Menu {
     bind('s-sens', 'sensitivity');
     bind('s-vol', 'volume');
     bind('s-bob', 'headBob', 'checked');
+    bind('s-mblur', 'motionBlur', 'checked');
     bind('s-nav', 'navHelp', 'checked');
     bind('s-inv', 'invertY', 'checked');
     bind('s-fps', 'showFps', 'checked');

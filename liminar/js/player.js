@@ -119,22 +119,50 @@ export class Player {
       const surf = level.surfaceAt ? level.surfaceAt(this.pos.x, this.pos.z) : level.surface;
       this.game.audio.footstep(surf, sprint ? 1 : 0.7);
     }
-    const bobTarget = settings.headBob ? clamp(this.speed / 4.6, 0, 1) : 0;
-    this.bobAmp = damp(this.bobAmp, bobTarget, 8, dt);
+    // ---- câmera: balanço de passada realista e olhar suavizado
+    const bobOn = settings.headBob ? 1 : 0;
+    const spd = clamp((this.smSpeed ?? this.speed) / 4.6, 0, 1.2);
+    this.bobAmp = damp(this.bobAmp, spd * bobOn, 6, dt);
     const ph = this.stepPhase * Math.PI;
-    const bobY = Math.abs(Math.sin(ph)) * 0.055 * this.bobAmp - 0.02 * this.bobAmp;
-    const bobX = Math.cos(ph) * 0.03 * this.bobAmp;
+    const A = this.bobAmp;
+    // vertical: cai no apoio do pé (pico agudo para baixo, subida suave)
+    const s1 = Math.abs(Math.sin(ph));
+    const bobY = (Math.pow(s1, 0.7) * 0.048 - 0.03) * A * (sprint ? 1.35 : 1);
+    // lateral: o corpo passa de um pé ao outro (meia frequência)
+    const bobX = Math.sin(ph) * 0.022 * A;
+    // micro-giro da cabeça acompanhando a passada
+    const bobRoll = Math.sin(ph) * 0.006 * A;
+    const bobPitch = (Math.cos(ph * 2) * 0.004 + 0.002) * A;
+    // respiração parado (bem sutil) e fôlego depois de correr
+    const t = this.game.time;
+    const still = 1 - clamp(this.speed / 1.2, 0, 1);
+    const breathK = (0.6 + (1 - this.stamina) * 2.2) * bobOn;
+    const breathY = Math.sin(t * (1.6 + (1 - this.stamina) * 2)) * 0.0035 * breathK * still;
+    const swayX = Math.sin(t * 0.6) * 0.0018 * still * bobOn;
+    // ao parar ou arrancar, a cabeça "assenta" com uma mola
+    const prevS = this.smSpeed ?? this.speed;
+    this.smSpeed = damp(prevS, Math.min(this.speed, 6), 10, dt);
+    const accel = (this.smSpeed - prevS) / Math.max(dt, 1e-4);
+    this.nodV = (this.nodV || 0) + (clamp(-accel * 0.0025, -0.06, 0.06) - (this.nod || 0) * 60 - (this.nodV || 0) * 11) * dt;
+    this.nod = (this.nod || 0) + this.nodV * dt;
     // inclinação ao virar e andar de lado; tontura com pouca sanidade
     const insane = clamp((40 - sanity) / 40, 0, 1);
-    const t = this.game.time;
-    const targetRoll = -mx * 0.012 - look.x * 0.6 + Math.sin(t * 0.7) * 0.03 * insane * insane;
-    this.roll = damp(this.roll, clamp(targetRoll, -0.06, 0.06), 6, dt);
+    const targetRoll = -mx * 0.014 - look.x * 0.5 + Math.sin(t * 0.7) * 0.03 * insane * insane;
+    this.roll = damp(this.roll, clamp(targetRoll, -0.06, 0.06), 5, dt);
+    // o olhar segue a mira com um atraso mínimo (sem engasgos, sem enjoar)
+    if (this.camYaw === undefined || Math.abs(this.yaw - this.camYaw) > 1.5 || this.frozen) {
+      this.camYaw = this.yaw;
+      this.camPitch = this.pitch;
+    }
+    const sm = 1 - Math.exp(-dt * 26);
+    this.camYaw += (this.yaw - this.camYaw) * sm;
+    this.camPitch += (this.pitch - this.camPitch) * sm;
 
     const cam = this.camera;
     cam.rotation.order = 'YXZ';
-    cam.rotation.set(this.pitch + Math.sin(t * 0.53) * 0.012 * insane, this.yaw, this.roll);
+    cam.rotation.set(this.camPitch + bobPitch + (this.nod || 0) * bobOn + Math.sin(t * 0.53) * 0.012 * insane, this.camYaw, this.roll + bobRoll);
     _r.set(cy, 0, -sy);
-    cam.position.set(this.pos.x + _r.x * bobX, this.pos.y + this.eye + bobY, this.pos.z + _r.z * bobX);
+    cam.position.set(this.pos.x + _r.x * (bobX + swayX), this.pos.y + this.eye + bobY + breathY, this.pos.z + _r.z * (bobX + swayX));
     cam.updateMatrixWorld();
 
     // lanterna: segue o olhar com um pequeno atraso

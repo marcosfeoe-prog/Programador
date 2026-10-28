@@ -120,6 +120,11 @@ export const NOTES = {
     'No laboratório tem um computador que abre a jaula da quarentena. Lá dentro alguém deixou um rastro azul até uma porta aberta.',
   ],
   fr: ['Lista de compras: pão, leite, lâmpadas (a da sala anda zumbindo).'],
+  '122': [
+    'As flores olham. Só isso. Eu fiquei parado meia hora encarando uma delas. Ela piscou primeiro.',
+    'A água é morna e não tem cheiro de cloro. Tem cheiro de nada. Não sei o que é pior.',
+    'O rio vai de sala em sala. No fim do último salão tem uma porta com a placa verde. Siga a água.',
+  ],
   '49': [
     'Tem alguém aqui. Todo branco, sem rosto. Passou do meu lado e nem olhou. Eu não respirei.',
     'NÃO aponte a lanterna para ele. Eu apontei. Ele gritou sem boca e veio correndo.',

@@ -149,7 +149,8 @@ export function bladeTex(hue0, hue1, l0, l1, seed = 3) {
 
 // Tufos de capim em volta do jogador (InstancedMesh com cartões cruzados).
 export class GrassTufts {
-  constructor(level, map, R, h = 0.42, color = 0xffffff) {
+  constructor(level, map, R, h = 0.42, color = 0xffffff, spacing = 1.4) {
+    this.c = spacing;
     this.L = level;
     const pos = [];
     const nor = [];
@@ -186,7 +187,7 @@ export class GrassTufts {
     this.geo = g;
     this.mat = new THREE.MeshStandardMaterial({ map, alphaTest: 0.45, side: THREE.DoubleSide, roughness: 1, color });
     this.R = R;
-    const n = Math.ceil((R * 2) / 1.4) ** 2;
+    const n = Math.ceil((R * 2) / spacing + 1) ** 2;
     this.mesh = new THREE.InstancedMesh(g, this.mat, n);
     this.mesh.count = 0;
     this.mesh.frustumCulled = false;
@@ -194,7 +195,7 @@ export class GrassTufts {
   }
 
   refresh(px, pz, ground, skip) {
-    const c = 1.4;
+    const c = this.c;
     const R = this.R;
     const m = new THREE.Matrix4();
     const q = new THREE.Quaternion();

@@ -31,6 +31,7 @@ import { Level47 } from './levels/level47.js';
 import { Level48 } from './levels/level48.js';
 import { Level0_99 } from './levels/level0_99.js';
 import { Level49 } from './levels/level49.js';
+import { Level122 } from './levels/level122.js';
 import { Level177 } from './levels/level177.js';
 import { Level177Park } from './levels/level177_park.js';
 import { Level177Neon } from './levels/level177_neon.js';
@@ -84,6 +85,7 @@ const LEVEL_CLASSES = {
   48: Level48,
   '0.99': Level0_99,
   49: Level49,
+  122: Level122,
   177: Level177,
   '177.2': Level177Park,
   '177.3': Level177Neon,
@@ -755,6 +757,32 @@ class Game {
     u.uDamage.value = this.damage;
     u.uGlitch.value = this.glitch;
     u.uBlur.value = (this.level && this.level.blur) || 0;
+    // desfoque de movimento: quanto a visão girou/andou desde o quadro anterior
+    const P = this.player;
+    if (s.motionBlur !== false && this.running && !this.paused && P) {
+      const cam = this.camera;
+      const yaw = cam.rotation.y;
+      const pitch = cam.rotation.x;
+      const py = this.prevCamYaw ?? yaw;
+      const pp = this.prevCamPitch ?? pitch;
+      let dy = yaw - py;
+      if (dy > Math.PI) dy -= Math.PI * 2;
+      if (dy < -Math.PI) dy += Math.PI * 2;
+      const fov = (cam.fov * Math.PI) / 180;
+      // deslocamento na tela (em uv), suavizado e limitado
+      const k = 0.55;
+      const mx = clamp((dy / (fov * cam.aspect)) * k, -0.03, 0.03);
+      const my = clamp((-(pitch - pp) / fov) * k, -0.03, 0.03);
+      const m = u.uMotion.value;
+      m.set(damp(m.x, mx, 30, dt), damp(m.y, my, 30, dt));
+      u.uEdgeBlur.value = damp(u.uEdgeBlur.value, clamp(P.speed / 5, 0, 1) * 0.6 + (P.sprinting ? 0.4 : 0), 4, dt);
+      this.prevCamYaw = yaw;
+      this.prevCamPitch = pitch;
+    } else {
+      u.uMotion.value.set(0, 0);
+      u.uEdgeBlur.value = 0;
+      this.prevCamYaw = this.prevCamPitch = undefined;
+    }
     this.hud.camOverlay(s.filter, this.time);
     // CCTV: a cena é atualizada só ~10 vezes por segundo
     let draw = true;

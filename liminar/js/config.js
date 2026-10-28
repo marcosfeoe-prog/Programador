@@ -121,7 +121,7 @@ export const FILTERS = [
 // Os níveis, na ordem em que são visitados. `key` identifica a classe do nível
 // e os bilhetes; `num` é o número canônico (10.1 é um subnível do 10).
 // Ordem em que os níveis são visitados (as chaves de LEVELS; secretos e partes ficam de fora).
-export const ORDER = ['fr', '0', '1', '2', '3', '4', '5', '8', '9', '10', '10.1', '11', '12', '14', '15', '16', '23', '34', '35', '37', '43', '44', '45', '46', '47', '48', '49', '88', '177'];
+export const ORDER = ['fr', '0', '1', '2', '3', '4', '5', '8', '9', '10', '10.1', '11', '12', '14', '15', '16', '23', '34', '35', '37', '43', '44', '45', '46', '47', '48', '49', '122', '88', '177'];
 
 // Posição de um nível na ordem (partes contam como o nível principal; secretos, como o pai).
 export function orderPos(info) {
@@ -540,6 +540,16 @@ export const LEVELS = [
     objective: 'Encontre a entrada dos túneis.',
     hint: 'A Figura não ataca — a menos que você chegue perto demais ou aponte a lanterna para ela.',
   },
+  {
+    key: '122',
+    num: 122,
+    name: 'Piscinas Estranhas',
+    tag: 'Nível 122',
+    danger: 'Classe 0 · Seguro · Sem entidades hostis',
+    desc: 'Salões com o teto pintado de céu, canteiros de grama alta e um rio de água turquesa que brilha. Flores amarelas gigantes com um olho no meio acompanham você com o olhar.',
+    objective: 'Siga o rio até a porta com a placa verde.',
+    hint: 'As flores só olham. Pode entrar na água — ela é morna e rasa.',
+  },
 ];
 
 // Onde um jogo novo começa: as Frontrooms.
@@ -563,6 +573,7 @@ export function defaultSettings() {
     volume: 1,
     fov: mobile ? 78 : 74,
     headBob: true,
+    motionBlur: !mobile,
     navHelp: true,
     showFps: false,
     dynamicRes: mobile,

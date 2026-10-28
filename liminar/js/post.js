@@ -89,6 +89,8 @@ uniform float uFlash;
 uniform float uGlitch;
 uniform float uDamage;
 uniform float uBlur;
+uniform vec2 uMotion;
+uniform float uEdgeBlur;
 varying vec2 vUv;
 
 float hash( vec2 p ) {
@@ -189,6 +191,31 @@ void main() {
     col = vec3( colorAt( uv + dir ).r, colorAt( uv ).g, colorAt( uv - dir ).b );
   } else {
     col = colorAt( uv );
+  }
+  // desfoque de movimento (direção do giro/deslocamento da câmera na tela)
+  float mv = length( uMotion );
+  if ( mv > 0.0004 ) {
+    vec3 acc = col;
+    float wsum = 1.0;
+    for ( int k = 1; k <= 6; k++ ) {
+      float f = float( k ) / 6.0 - 0.5;
+      float w = 1.0 - abs( f );
+      acc += colorAt( uv + uMotion * f ) * w;
+      wsum += w;
+    }
+    col = acc / wsum;
+  }
+  // leve desfoque nas bordas (lente), mais forte ao correr
+  if ( uEdgeBlur > 0.001 ) {
+    float e = smoothstep( 0.25, 0.75, length( ( uv - 0.5 ) * vec2( 1.3, 1.0 ) ) ) * uEdgeBlur;
+    if ( e > 0.01 ) {
+      vec3 acc = col;
+      for ( int k = 0; k < 6; k++ ) {
+        float a = float( k ) * 1.0472;
+        acc += colorAt( uv + vec2( cos( a ), sin( a ) ) * e * 0.006 );
+      }
+      col = acc / 7.0;
+    }
   }
   // visão embaçada (alguns níveis)
   if ( uBlur > 0.001 ) {
@@ -430,6 +457,8 @@ export class Post {
       uGlitch: { value: 0 },
       uDamage: { value: 0 },
       uBlur: { value: 0 },
+      uMotion: { value: new THREE.Vector2() },
+      uEdgeBlur: { value: 0 },
     };
     this.compMat = mk(COMPOSITE, this.u);
     this.compMat.defines = { FILTER: 0 };
