@@ -7,7 +7,9 @@ e as texturas, sprites, a fonte bitmap e todos os sons são gerados por código.
 
 ## Como jogar
 
-Na raiz do repositório:
+**Jogar online:** https://claude.ai/artifact/MSKXAaNK73QTGbTeeU5rZv
+
+Ou localmente, na raiz do repositório:
 
 ```bash
 npm start              # http://localhost:8080
@@ -19,7 +21,7 @@ Funciona no PC e no celular (na horizontal).
 | Controle | PC | Celular |
 |---|---|---|
 | Andar | WASD / setas | analógico (lado esquerdo) |
-| Olhar | mouse | arrastar (lado direito) |
+| Olhar | mouse (ou clicar e arrastar) | arrastar (lado direito) |
 | Correr | Shift | botão CORRER |
 | Lanterna | F / botão direito | botão LUZ |
 | Girar sem mouse | Q / E | — |

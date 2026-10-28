@@ -32,6 +32,8 @@ export class Input {
     addEventListener('mousemove', (e) => {
       if (this.locked) { this.mdx += e.movementX; this.mdy += e.movementY; }
       else {
+        // sem trava do ponteiro (ex.: dentro de um iframe), arrastar também gira a câmera
+        if (e.buttons & 1) { this.mdx += e.movementX || 0; this.mdy += e.movementY || 0; }
         const p = this.toLogical(e.clientX, e.clientY);
         this.pointer.x = p.x; this.pointer.y = p.y; this.pointer.moved = true;
       }

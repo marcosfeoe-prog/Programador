@@ -492,7 +492,7 @@ function drawHUD() {
   }
   if (!input.touch && !input.locked && mode === 'play') {
     hud.rect(0, H / 2 + 14, W, 13, C.panel);
-    hud.text('CLIQUE PARA CONTROLAR A CÂMERA', W / 2, H / 2 + 15, C.white, 1, 'center');
+    hud.text('CLIQUE (OU ARRASTE) PARA OLHAR', W / 2, H / 2 + 15, C.white, 1, 'center');
   }
   // controles de toque
   input.buttons = [];
