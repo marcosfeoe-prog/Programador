@@ -120,6 +120,11 @@ export const NOTES = {
     'No laboratório tem um computador que abre a jaula da quarentena. Lá dentro alguém deixou um rastro azul até uma porta aberta.',
   ],
   fr: ['Lista de compras: pão, leite, lâmpadas (a da sala anda zumbindo).'],
+  '54': [
+    'As aranhas não descem das teias. Quase nunca. Se ouvir um tec-tec-tec no carpete, CORRA e não olhe pra trás.',
+    'Conte as teias: são nove. Nove cômodos, nove aranhas. Passe sempre pelo lado oposto ao canto da teia.',
+    'A saída é uma porta com placa verde, no fim do último salão. Depois do corredor que mal cabe um ombro.',
+  ],
   '69': [
     'Bati em todas as portas do vilarejo. Ninguém abre. Mas às vezes eu ouço uma TV ligada lá dentro.',
     'Caí da borda uma vez. Não doeu. Eu só acordei de novo na grama, como se nada tivesse acontecido.',

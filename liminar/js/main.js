@@ -37,6 +37,7 @@ import { Level62Ball } from './levels/level62_ball.js';
 import { Level62Suite } from './levels/level62_suite.js';
 import { Level257 } from './levels/level257.js';
 import { Level69 } from './levels/level69.js';
+import { Level54 } from './levels/level54.js';
 import { Level177 } from './levels/level177.js';
 import { Level177Park } from './levels/level177_park.js';
 import { Level177Neon } from './levels/level177_neon.js';
@@ -96,6 +97,7 @@ const LEVEL_CLASSES = {
   '62.3': Level62Suite,
   257: Level257,
   69: Level69,
+  54: Level54,
   177: Level177,
   '177.2': Level177Park,
   '177.3': Level177Neon,

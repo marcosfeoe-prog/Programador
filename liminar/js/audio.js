@@ -514,6 +514,31 @@ export class AudioEngine {
       }
       B.knock = this.buf(normalize(o, 0.8));
     }
+    // chiado de aranha gigante (ar passando por presas)
+    {
+      const n = sec(1.1);
+      const a = biquad(noise(n), 'bp', 5200, 0.9);
+      const b = biquad(noise(n), 'bp', 2600, 2.5);
+      const o = new Float32Array(n);
+      for (let i = 0; i < n; i++) {
+        const t = i / n;
+        const e = Math.min(1, t * 12) * Math.pow(1 - t, 1.6);
+        const tr = 0.75 + 0.25 * Math.sin(i * 0.0042 + Math.sin(i * 0.0007) * 3);
+        o[i] = (a[i] * 0.9 + b[i] * 0.5) * e * tr;
+      }
+      B.hiss = this.buf(normalize(o, 0.7));
+    }
+    // patas batendo no carpete (tec-tec-tec)
+    {
+      const n = sec(0.42);
+      const o = new Float32Array(n);
+      for (const at of [0, 0.07, 0.13, 0.22, 0.29]) {
+        const m = sec(0.05);
+        const k = env(biquad(noise(m), 'bp', 1800 + Math.random() * 1400, 1.5), 0.0005, 0.012);
+        for (let i = 0; i < m && sec(at) + i < n; i++) o[sec(at) + i] += k[i] * (0.6 + Math.random() * 0.5);
+      }
+      B.skitter = this.buf(normalize(o, 0.6));
+    }
     // grilos (laço de 4 s)
     {
       const n = sec(4);
@@ -1155,7 +1180,7 @@ export class AudioEngine {
     this.windK = 1;
     this.setReverb(look.reverb || 1.5);
     const k = this.kind;
-    const wets = { level69: 0.5, level257: 0.35, level62: 0.45, level62_2: 0.9, level62_3: 0.3, level122: 0.7, level49: 0.65, level0_99: 0.85, level47: 0.6, level48: 0.7, levelFR: 0.1, level46: 0.05, level177: 0.5, level177_2: 0.15, level177_3: 0.6, level177_4: 0.1, level177_5: 0.35, level16: 0.2, level14: 0.3, level45: 0.35, level43: 0.55, level44: 0.3, level34: 0.6, level35: 0.5, level8: 0.7, level9_5: 0.1, level2: 0.35, level3: 0.45, level37: 0.75, level12: 0.45, level12_2: 0.15, level12_3: 0.9, level88: 0.12, level0_1: 0.4, level10: 0.08, level11: 0.2, level1: 0.55, level9: 0.12, level10_1: 0.18, level23: 0.3, level15: 0.45, level5: 0.4 };
+    const wets = { level54: 0.4, level69: 0.5, level257: 0.35, level62: 0.45, level62_2: 0.9, level62_3: 0.3, level122: 0.7, level49: 0.65, level0_99: 0.85, level47: 0.6, level48: 0.7, levelFR: 0.1, level46: 0.05, level177: 0.5, level177_2: 0.15, level177_3: 0.6, level177_4: 0.1, level177_5: 0.35, level16: 0.2, level14: 0.3, level45: 0.35, level43: 0.55, level44: 0.3, level34: 0.6, level35: 0.5, level8: 0.7, level9_5: 0.1, level2: 0.35, level3: 0.45, level37: 0.75, level12: 0.45, level12_2: 0.15, level12_3: 0.9, level88: 0.12, level0_1: 0.4, level10: 0.08, level11: 0.2, level1: 0.55, level9: 0.12, level10_1: 0.18, level23: 0.3, level15: 0.45, level5: 0.4 };
     this.wet.gain.value = wets[k] !== undefined ? wets[k] : 0.35;
     this.hum = null;
     if (k === 'level0') {
@@ -1196,6 +1221,10 @@ export class AudioEngine {
       this.machineL = this.loop('machine', 0.06, { rate: 0.5, lp: 500, wet: 0.5 });
       this.waterL = this.loop('water', 0.07, { rate: 0.8, lp: 1200, wet: 0.6 });
       this.loop('brown', 0.04, { lp: 200 });
+    } else if (k === 'level54') {
+      // corredor de hotel: reatores das plafons e o ar parado
+      this.hum = this.loop('hum', 0.06, { rate: 1.05, lp: 2600, wet: 0.3 });
+      this.loop('brown', 0.05, { lp: 220 });
     } else if (k === 'level69') {
       // vento alto, morno, entre as ilhas
       this.wind = this.loop('wind', 0.05, { rate: 0.4, lp: 1100, wet: 0.35 });
@@ -1514,6 +1543,11 @@ export class AudioEngine {
         const r = Math.random();
         if (r < 0.25) this.play('creak', { gain: 0.05, rate: 0.7 + Math.random() * 0.2, pan, wet: 0.4 });
         else if (r < 0.3) this.play('bark', { gain: 0.03, rate: 0.9, pan, wet: 1.2 });
+      } else if (k === 'level54') {
+        const r = Math.random();
+        if (r < 0.18) this.play('skitter', { gain: 0.03, rate: 0.7 + Math.random() * 0.4, pan, wet: 1.6 });
+        else if (r < 0.3) this.play('creak', { gain: 0.03, rate: 0.9, pan, wet: 1.2 });
+        else if (r < 0.36) this.play('hiss', { gain: 0.015, rate: 0.7, pan, wet: 1.8 });
       } else if (k === 'level69') {
         const r = Math.random();
         if (r < 0.22) this.play('ding', { gain: 0.03, rate: 1.2 + Math.random() * 0.8, pan, wet: 1.6 });

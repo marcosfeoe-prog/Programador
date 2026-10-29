@@ -121,7 +121,7 @@ export const FILTERS = [
 // Os níveis, na ordem em que são visitados. `key` identifica a classe do nível
 // e os bilhetes; `num` é o número canônico (10.1 é um subnível do 10).
 // Ordem em que os níveis são visitados (as chaves de LEVELS; secretos e partes ficam de fora).
-export const ORDER = ['fr', '0', '1', '2', '3', '4', '5', '8', '9', '10', '10.1', '11', '12', '14', '15', '16', '23', '34', '35', '37', '43', '44', '45', '46', '47', '48', '49', '122', '62', '69', '257', '88', '177'];
+export const ORDER = ['fr', '0', '1', '2', '3', '4', '5', '8', '9', '10', '10.1', '11', '12', '14', '15', '16', '23', '34', '35', '37', '43', '44', '45', '46', '47', '48', '49', '122', '62', '69', '54', '257', '88', '177'];
 
 // Posição de um nível na ordem (partes contam como o nível principal; secretos, como o pai).
 export function orderPos(info) {
@@ -602,6 +602,16 @@ export const LEVELS = [
     desc: 'Ilhas de grama boiando num pôr do sol lilás e pêssego. Um vilarejo vazio de casas de azulejo, piscinas paradas como vidro e pontes sobre um mar de nuvens.',
     objective: 'Atravesse as ilhas até o paredão amarelo.',
     hint: 'Não olhe para baixo. Se cair, você acorda de novo.',
+  },
+  {
+    key: '54',
+    num: 54,
+    name: 'Estreito',
+    tag: 'Nível 54',
+    danger: 'Classe 2 · Instável · Aracmonster',
+    desc: 'Corredores estreitos de hotel com formatos errados: paredes amarelas em ângulos tortos e carpete preto de listras brancas. Nos cômodos, aranhas gigantes esperam nas teias.',
+    objective: 'Encontre a porta com a placa verde de saída.',
+    hint: 'As aranhas só atacam quem chega perto das teias. Passe pelo outro lado do cômodo.',
   },
 ];
 
