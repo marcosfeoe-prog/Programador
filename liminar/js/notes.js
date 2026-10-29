@@ -120,6 +120,15 @@ export const NOTES = {
     'No laboratório tem um computador que abre a jaula da quarentena. Lá dentro alguém deixou um rastro azul até uma porta aberta.',
   ],
   fr: ['Lista de compras: pão, leite, lâmpadas (a da sala anda zumbindo).'],
+  '55': [
+    'ELES SE MEXEM QUANDO VOCÊ NÃO OLHA. Ande de costas se precisar. Nunca vire as costas para um deles.',
+    'Eu pisquei e ele estava do meu lado. Do MEU LADO. Conte as piscadas. Sempre que piscar, olhe de novo.',
+    'Lá no fundo, depois das escadas, tem uma luz branca no fim de um corredor. Do outro lado as paredes são azuis. Lá eles não vão.',
+  ],
+  '55.2': [
+    'Corredor de hotel. Creme e azul. Nenhum boneco amarelo. Eu dormi encostado numa dessas portas e nada aconteceu.',
+    'A saída tem uma placa verde. Fica no fim de um corredor que parece igual a todos os outros.',
+  ],
   '54': [
     'As aranhas não descem das teias. Quase nunca. Se ouvir um tec-tec-tec no carpete, CORRA e não olhe pra trás.',
     'Conte as teias: são nove. Nove cômodos, nove aranhas. Passe sempre pelo lado oposto ao canto da teia.',

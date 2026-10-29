@@ -121,7 +121,7 @@ export const FILTERS = [
 // Os níveis, na ordem em que são visitados. `key` identifica a classe do nível
 // e os bilhetes; `num` é o número canônico (10.1 é um subnível do 10).
 // Ordem em que os níveis são visitados (as chaves de LEVELS; secretos e partes ficam de fora).
-export const ORDER = ['fr', '0', '1', '2', '3', '4', '5', '8', '9', '10', '10.1', '11', '12', '14', '15', '16', '23', '34', '35', '37', '43', '44', '45', '46', '47', '48', '49', '122', '62', '69', '54', '257', '88', '177'];
+export const ORDER = ['fr', '0', '1', '2', '3', '4', '5', '8', '9', '10', '10.1', '11', '12', '14', '15', '16', '23', '34', '35', '37', '43', '44', '45', '46', '47', '48', '49', '122', '62', '69', '54', '55', '257', '88', '177'];
 
 // Posição de um nível na ordem (partes contam como o nível principal; secretos, como o pai).
 export function orderPos(info) {
@@ -612,6 +612,28 @@ export const LEVELS = [
     desc: 'Corredores estreitos de hotel com formatos errados: paredes amarelas em ângulos tortos e carpete preto de listras brancas. Nos cômodos, aranhas gigantes esperam nas teias.',
     objective: 'Encontre a porta com a placa verde de saída.',
     hint: 'As aranhas só atacam quem chega perto das teias. Passe pelo outro lado do cômodo.',
+  },
+  {
+    key: '55',
+    num: 55,
+    next: '55.2',
+    name: 'Manequins',
+    tag: 'Nível 55',
+    danger: 'Classe 4 · Mortal · Manequins',
+    desc: 'Uma área gigante de corredores longos, amarelos e brilhantes, com escadas que descem e sobem. Os Manequins só se mexem quando ninguém está olhando — e um toque mata.',
+    objective: 'Atravesse os corredores amarelos até a luz no fim.',
+    hint: 'Nunca tire os olhos de um Manequim. Cuidado com as piscadas.',
+  },
+  {
+    key: '55.2',
+    num: 55,
+    part: '55',
+    name: 'Manequins',
+    tag: 'Nível 55 · Seção 2',
+    danger: 'Classe 1 · Mais seguro',
+    desc: 'As paredes mudam: corredores de hotel creme e azul, carpete azul e passadeiras. Os Manequins não chegam aqui.',
+    objective: 'Encontre a porta de saída do hotel.',
+    hint: 'Aqui dá para respirar.',
   },
 ];
 
