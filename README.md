@@ -154,3 +154,14 @@ Segundo jogo do repositório: exploração em primeira pessoa pelos **Níveis 0,
 noturna, câmera térmica…), qualidade gráfica **Baixa, Média, Alta e Ultra** e
 controles feitos para **celular**. Com o servidor rodando (`npm start`), abra
 `http://localhost:8080/liminar/`. Detalhes em [`liminar/README.md`](liminar/README.md).
+
+---
+
+# Garagem Lendária — colecionar carros (pasta `garagem/`)
+
+Terceiro jogo do repositório: toque para ganhar moedas, abra caixas, tire carros
+raros (66 modelos fictícios, de Comum a Ultra Prestígio), monte sua garagem e jogue
+minijogos (quiz, corrida, duelo, cara ou coroa, ferro-velho e leilão ao vivo).
+As imagens recortadas dos carros foram geradas do zero por um modelador 3D
+procedural. Com o servidor rodando, abra `http://localhost:8080/garagem/`.
+Detalhes em [`garagem/README.md`](garagem/README.md).
