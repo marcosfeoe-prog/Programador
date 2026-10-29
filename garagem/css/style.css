@@ -372,6 +372,10 @@ h2, h3, h4, b, .btn, .sec-title { font-family: var(--font); font-style: italic; 
 .rank li:nth-child(3) .pos { color: #e09a5b; }
 .rank .nm { flex: 1; font-weight: 800; font-size: 14px; }
 .rank .nm small { display: block; color: var(--muted); font-weight: 600; font-size: 11px; }
+.codeform { display: flex; gap: 8px; margin: 6px 0 4px; }
+.codeform input { flex: 1; min-width: 0; height: 48px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg2); padding: 0 14px; font: 900 18px var(--font); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); }
+.codeform input:focus { outline: 2px solid var(--yellow); outline-offset: 1px; }
+.codeform input::placeholder { text-transform: none; letter-spacing: 0; font: 700 15px var(--body); color: var(--muted); }
 .field { display: flex; flex-direction: column; gap: 6px; font-weight: 800; color: var(--muted); font-size: 12px; margin-bottom: 12px; }
 .field input { background: var(--bg2); border: 1px solid var(--line); border-radius: 12px; height: 44px; padding: 0 12px; font-weight: 800; color: var(--text); font-size: 16px; }
 .pstats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }

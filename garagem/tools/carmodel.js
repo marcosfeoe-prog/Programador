@@ -203,6 +203,56 @@ export const TYPES = {
     gh: { ws: 2.0, roofF: 2.55, roofR: 2.95, rw: 4.3, roofY: 1.32, inset: 0.08, tumble: 0.2, bp: 3.0 },
     lights: 'none', grille: 'pony', intake: 'none', sideScoop: true, lightY: -0.1, lightZ: 0.7, lightW: 0.3, lightH: 0.14, grilleW: 1.3, grilleH: 0.22, grilleY: 0,
   },
+  hiperluxo: {
+    L: 4.54, W: 2.04, wr: 0.36, tw: 0.32, fo: 1.05, wb: 2.71, rs: 0.16, endF: 0.32, endR: 0.2,
+    yb: [[0, 0.18], [0.3, 0.12], [4.25, 0.13], [4.54, 0.28]],
+    top: [[0, 0.5], [0.35, 0.72], [1.05, 0.84], [1.6, 0.86], [2.8, 0.92], [3.76, 0.98], [4.3, 0.94], [4.54, 0.82]],
+    dip: [[0, 0], [0.5, 0.07], [1.2, 0.06], [1.6, 0.02], [3.0, 0.02], [3.4, 0.06], [4.54, 0]],
+    hw: [[0, 0.82], [0.5, 0.96], [1.05, 1], [2.0, 0.95], [3.0, 0.97], [3.76, 1.02], [4.3, 1], [4.54, 0.92]],
+    gh: { ws: 1.6, roofF: 2.3, roofR: 2.75, rw: 3.95, roofY: 1.21, inset: 0.12, tumble: 0.24, bp: 99 },
+    split: { bottom: 1.6, mid: 2.8, top: 1.95 }, cline: { bottom: 1.6, mid: 2.8, top: 1.95 },
+    lights: 'quadled', grille: 'horseshoe', intake: 'wide', lightY: -0.13, lightZ: 0.6, lightW: 0.44, lightH: 0.09, grilleW: 0.36, grilleH: 0.38, grilleY: 0.08,
+  },
+  escultural: {
+    L: 4.6, W: 2.05, wr: 0.37, tw: 0.32, fo: 1.08, wb: 2.72, rs: 0.22, endF: 0.34, endR: 0.22, endV: 0.7,
+    yb: [[0, 0.16], [0.3, 0.1], [4.3, 0.12], [4.6, 0.26]],
+    top: [[0, 0.4], [0.4, 0.66], [1.08, 0.86], [1.6, 0.76], [2.6, 0.8], [3.8, 1.02], [4.35, 0.98], [4.6, 0.86]],
+    dip: [[0, 0], [0.5, 0.16], [1.1, 0.2], [1.6, 0.05], [2.8, 0.04], [3.4, 0.2], [4.2, 0.18], [4.6, 0.04]],
+    hw: [[0, 0.78], [0.6, 0.96], [1.08, 1.04], [1.9, 0.88], [2.7, 0.9], [3.8, 1.06], [4.4, 1.02], [4.6, 0.92]],
+    gh: { ws: 1.45, roofF: 2.15, roofR: 2.6, rw: 3.75, roofY: 1.15, inset: 0.2, tumble: 0.22, bp: 99 },
+    cline: { bottom: 1.75, mid: 3.0, top: 2.0 }, roofScoop: 2.7,
+    lights: 'slats', grille: 'horseshoe', intake: 'wide', lightY: -0.06, lightZ: 0.66, lightW: 0.34, lightH: 0.16, grilleW: 0.26, grilleH: 0.28, grilleY: 0.16,
+  },
+  aero: {
+    L: 4.54, W: 1.93, wr: 0.35, tw: 0.3, fo: 1.02, wb: 2.67, rs: 0.18, endF: 0.3, endR: 0.24, endV: 0.65,
+    yb: [[0, 0.18], [0.3, 0.11], [4.25, 0.13], [4.54, 0.28]],
+    top: [[0, 0.42], [0.45, 0.62], [1.02, 0.78], [1.55, 0.76], [3.0, 0.86], [3.69, 0.92], [4.35, 0.9], [4.54, 0.82]],
+    dip: [[0, 0], [0.5, 0.09], [1.25, 0.07], [1.6, 0.02], [2.9, 0.02], [3.4, 0.08], [4.54, 0]],
+    hw: [[0, 0.82], [0.6, 0.96], [1.02, 1], [2.0, 0.93], [3.0, 0.96], [3.69, 1.02], [4.35, 0.99], [4.54, 0.9]],
+    gh: { ws: 1.45, roofF: 2.15, roofR: 2.65, rw: 4.05, roofY: 1.2, inset: 0.1, tumble: 0.26, bp: 99, glassRoof: true },
+    roof: 'black', doorScoop: true,
+    lights: 'socket', grille: 'none', intake: 'wide', lightY: -0.05, lightZ: 0.64, lightW: 0.42, lightH: 0.17,
+  },
+  pista: {
+    L: 4.7, W: 2.05, wr: 0.35, tw: 0.33, fo: 1.1, wb: 2.8, rs: 0.14, endF: 0.26, endR: 0.18,
+    yb: [[0, 0.14], [0.3, 0.08], [4.4, 0.1], [4.7, 0.24]],
+    top: [[0, 0.38], [0.45, 0.62], [1.1, 0.8], [1.6, 0.74], [2.9, 0.82], [3.9, 0.96], [4.5, 0.94], [4.7, 0.86]],
+    dip: [[0, 0], [0.5, 0.16], [1.2, 0.14], [1.6, 0.04], [2.9, 0.04], [3.4, 0.14], [4.4, 0.12], [4.7, 0.03]],
+    hw: [[0, 0.8], [0.6, 0.96], [1.1, 1.04], [1.9, 0.9], [2.9, 0.93], [3.9, 1.05], [4.5, 1.02], [4.7, 0.95]],
+    gh: { ws: 1.4, roofF: 2.1, roofR: 2.5, rw: 3.6, roofY: 1.12, inset: 0.22, tumble: 0.18, bp: 99 },
+    wing: true, wingH: 0.46, wingChord: 0.42, roofScoop: 2.25, fin: true, splitter: true, canards: true, side: true,
+    lights: 'pagani', grille: 'none', intake: 'wide', lightY: -0.07, lightZ: 0.7, lightW: 0.2, lightH: 0.24,
+  },
+  rali: {
+    L: 4.46, W: 1.77, wr: 0.33, tw: 0.25, fo: 0.88, wb: 2.63, rs: 0.07, endF: 0.14, endR: 0.12, endV: 0.45,
+    yb: [[0, 0.24], [0.25, 0.15], [4.2, 0.17], [4.46, 0.3]],
+    top: [[0, 0.7], [0.3, 0.78], [0.88, 0.82], [1.6, 0.88], [3.51, 0.96], [4.35, 0.97], [4.46, 0.9]],
+    dip: [[0, 0], [0.6, 0.02], [1.5, 0.01], [4.46, 0]],
+    hw: [[0, 0.9], [0.35, 0.99], [0.88, 1.02], [2.0, 0.98], [3.51, 1.02], [4.3, 0.99], [4.46, 0.93]],
+    gh: { ws: 1.6, roofF: 2.25, roofR: 3.25, rw: 3.85, roofY: 1.43, inset: 0.07, tumble: 0.16, bp: 2.75 },
+    wing: true, wingH: 0.2, wingChord: 0.3, wingColor: 'body', hoodVents: true, canards: true, splitter: true, rim: 'spoke6',
+    lights: 'evo', grille: 'mesh', intake: 'wide', lightY: -0.08, lightZ: 0.66, lightW: 0.38, lightH: 0.13, grilleW: 0.55, grilleH: 0.14,
+  },
   proto: {
     L: 4.4, W: 2.0, wr: 0.34, tw: 0.3, fo: 0.95, wb: 2.3, rs: 0.14, endF: 0.28, endR: 0.2,
     yb: [[0, 0.18], [0.3, 0.1], [4.1, 0.12], [4.4, 0.24]],
@@ -493,6 +543,86 @@ function rrect(g, x, y, w, h, r) {
 }
 
 const HEADLIGHT = {
+  quadled: (g, w, h) => {
+    g.fillStyle = '#0c1015';
+    rrect(g, 1, 1, w - 2, h - 2, h * 0.45);
+    g.fill();
+    g.shadowColor = '#cfe9ff';
+    g.shadowBlur = 8;
+    g.fillStyle = '#ffffff';
+    for (let i = 0; i < 4; i++) rrect(g, w * (0.12 + i * 0.2), h * 0.22, w * 0.11, h * 0.5, 3), g.fill();
+    rrect(g, w * 0.08, h * 0.8, w * 0.84, h * 0.08, 2);
+    g.fill();
+  },
+  slats: (g, w, h) => {
+    g.shadowColor = '#e6f4ff';
+    g.shadowBlur = 8;
+    g.fillStyle = '#ffffff';
+    for (let i = 0; i < 4; i++) rrect(g, w * (0.04 + i * 0.13), h * (0.08 + i * 0.22), w * 0.5, h * 0.11, h * 0.05), g.fill();
+  },
+  socket: (g, w, h) => {
+    g.fillStyle = '#07080a';
+    g.beginPath();
+    g.moveTo(w * 0.02, h * 0.55);
+    g.quadraticCurveTo(w * 0.25, h * 0.02, w * 0.98, h * 0.12);
+    g.quadraticCurveTo(w * 0.8, h * 0.95, w * 0.3, h * 0.96);
+    g.quadraticCurveTo(w * 0.05, h * 0.92, w * 0.02, h * 0.55);
+    g.fill();
+    g.shadowColor = '#d9efff';
+    g.shadowBlur = 10;
+    g.strokeStyle = '#ffffff';
+    g.lineWidth = h * 0.07;
+    g.lineCap = 'round';
+    g.beginPath();
+    g.moveTo(w * 0.12, h * 0.42);
+    g.quadraticCurveTo(w * 0.35, h * 0.16, w * 0.9, h * 0.2);
+    g.stroke();
+    g.shadowBlur = 0;
+    const gr = g.createRadialGradient(w * 0.62, h * 0.42, 1, w * 0.62, h * 0.42, h * 0.14);
+    gr.addColorStop(0, '#ffffff');
+    gr.addColorStop(1, '#3a4450');
+    g.fillStyle = gr;
+    g.beginPath();
+    g.arc(w * 0.62, h * 0.42, h * 0.13, 0, Math.PI * 2);
+    g.fill();
+  },
+  pagani: (g, w, h) => {
+    g.fillStyle = '#0a0b0d';
+    g.beginPath();
+    g.ellipse(w / 2, h / 2, w * 0.48, h * 0.48, 0, 0, Math.PI * 2);
+    g.fill();
+    for (const cy of [h * 0.3, h * 0.7]) {
+      const R = Math.min(w, h) * 0.2;
+      const gr = g.createRadialGradient(w / 2, cy, 1, w / 2, cy, R);
+      gr.addColorStop(0, '#ffffff');
+      gr.addColorStop(0.55, '#dfe8f0');
+      gr.addColorStop(0.85, '#59626c');
+      gr.addColorStop(1, '#e3e6ea');
+      g.fillStyle = gr;
+      g.beginPath();
+      g.arc(w / 2, cy, R, 0, Math.PI * 2);
+      g.fill();
+    }
+  },
+  evo: (g, w, h) => {
+    g.fillStyle = '#c9d0d8';
+    rrect(g, 1, 1, w - 2, h - 2, h * 0.3);
+    g.fill();
+    g.fillStyle = '#ff9a1a';
+    rrect(g, 4, h * 0.18, w * 0.16, h * 0.64, 4);
+    g.fill();
+    for (const cx of [w * 0.42, w * 0.72]) {
+      const gr = g.createRadialGradient(cx, h / 2, 2, cx, h / 2, h * 0.36);
+      gr.addColorStop(0, '#ffffff');
+      gr.addColorStop(0.5, '#e8f0f8');
+      gr.addColorStop(0.9, '#56606a');
+      gr.addColorStop(1, '#aab2bb');
+      g.fillStyle = gr;
+      g.beginPath();
+      g.arc(cx, h / 2, h * 0.34, 0, Math.PI * 2);
+      g.fill();
+    }
+  },
   round: (g, w, h) => {
     const cx = w / 2;
     const cy = h / 2;
@@ -587,6 +717,40 @@ const HEADLIGHT = {
 };
 
 const GRILLE = {
+  horseshoe: (g, w, h) => {
+    const path = (m) => {
+      g.beginPath();
+      g.moveTo(m, h * 0.12 + m * 0.4);
+      g.quadraticCurveTo(w / 2, -h * 0.02 + m, w - m, h * 0.12 + m * 0.4);
+      g.bezierCurveTo(w - m, h * 0.62, w * 0.82 - m * 0.3, h - m, w / 2, h - m);
+      g.bezierCurveTo(w * 0.18 + m * 0.3, h - m, m, h * 0.62, m, h * 0.12 + m * 0.4);
+      g.closePath();
+    };
+    const gr = g.createLinearGradient(0, 0, w, h);
+    gr.addColorStop(0, '#ffffff');
+    gr.addColorStop(0.5, '#8d949c');
+    gr.addColorStop(1, '#f1f3f5');
+    g.fillStyle = gr;
+    path(2);
+    g.fill();
+    g.fillStyle = '#08090b';
+    path(w * 0.07);
+    g.fill();
+    g.save();
+    path(w * 0.07);
+    g.clip();
+    g.strokeStyle = '#2a2e34';
+    g.lineWidth = 2;
+    for (let y = 0; y < h; y += 10) for (let x = (y / 10) % 2 ? 5 : 0; x < w; x += 10) g.strokeRect(x, y, 6, 6);
+    g.restore();
+    g.fillStyle = '#c4161c';
+    g.beginPath();
+    g.ellipse(w / 2, h * 0.3, w * 0.17, h * 0.07, 0, 0, Math.PI * 2);
+    g.fill();
+    g.strokeStyle = '#f1f3f5';
+    g.lineWidth = 3;
+    g.stroke();
+  },
   temple: (g, w, h) => {
     const gr = g.createLinearGradient(0, 0, w, 0);
     gr.addColorStop(0, '#9aa1aa');
@@ -863,7 +1027,9 @@ function buildWheel(P, mats) {
       face.add(m);
     }
   };
-  if (style === 'spoke5') {
+  if (style === 'spoke6') {
+    spoke(6, rimR * 0.22, 0.035);
+  } else if (style === 'spoke5') {
     spoke(5, rimR * 0.2, 0.03);
   } else if (style === 'split') {
     spoke(5, rimR * 0.08, 0.03, 0.09);
@@ -958,7 +1124,7 @@ export function buildCar(spec) {
   const glass = new THREE.MeshPhysicalMaterial({ color: 0x05070a, metalness: 0.2, roughness: 0.06, clearcoat: 1, clearcoatRoughness: 0.02, envMapIntensity: 0.75 });
   const trim = new THREE.MeshStandardMaterial({ color: 0x0b0c0e, metalness: 0.3, roughness: 0.45 });
   const chromeTrim = new THREE.MeshStandardMaterial({ color: 0xdfe3e8, metalness: 1, roughness: 0.08 });
-  const roofMat = spec.roof === 'black' ? new THREE.MeshPhysicalMaterial({ color: 0x0d0e10, metalness: 0.3, roughness: 0.25, clearcoat: 1 }) : spec.roofColor ? paintMaterial(spec.roofColor, 'gloss') : paint;
+  const roofMat = P.roof === 'black' ? new THREE.MeshPhysicalMaterial({ color: 0x0d0e10, metalness: 0.3, roughness: 0.25, clearcoat: 1 }) : P.roofColor ? paintMaterial(P.roofColor, 'gloss') : paint;
   const rc = RIM_COLORS[spec.rimColor || 'silver'];
   const mats = {
     tire: new THREE.MeshStandardMaterial({ color: 0x141416, roughness: 0.82, metalness: 0 }),
@@ -982,8 +1148,36 @@ export function buildCar(spec) {
     else if (t === 'l') k = 0.45;
     col.push(k, k, k);
   });
+  // curva em "C" (vista lateral): d da divisa em função da altura
+  const cCurve = (C, y) => {
+    const t = clamp((y - 0.12) / 0.9, 0, 1);
+    const tm = 0.45;
+    return t < tm ? C.mid - (C.mid - C.bottom) * ((tm - t) / tm) ** 2 : C.mid - (C.mid - C.top) * ((t - tm) / (1 - tm)) ** 2;
+  };
+  let bodyMat = paint;
+  if (P.split && paint2) {
+    // dois tons com divisa nítida: a cor é escolhida por fragmento, pela mesma curva em "C"
+    const C = P.split;
+    bodyMat = paint.clone();
+    bodyMat.onBeforeCompile = (sh) => {
+      sh.uniforms.uColor2 = { value: new THREE.Color(spec.color2) };
+      sh.uniforms.uSplit = { value: new THREE.Vector4(C.bottom, C.mid, C.top, P.L / 2) };
+      sh.vertexShader = sh.vertexShader
+        .replace('#include <common>', '#include <common>\nvarying vec3 vSplitPos;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvSplitPos = position;');
+      sh.fragmentShader = sh.fragmentShader
+        .replace('#include <common>', '#include <common>\nvarying vec3 vSplitPos;\nuniform vec3 uColor2;\nuniform vec4 uSplit;')
+        .replace(
+          'vec4 diffuseColor = vec4( diffuse, opacity );',
+          `float tS = clamp((vSplitPos.y - 0.12) / 0.9, 0.0, 1.0);
+          float dB = tS < 0.45 ? uSplit.y - (uSplit.y - uSplit.x) * pow((0.45 - tS) / 0.45, 2.0) : uSplit.y - (uSplit.y - uSplit.z) * pow((tS - 0.45) / 0.55, 2.0);
+          vec4 diffuseColor = vec4((uSplit.w - vSplitPos.x) < dB ? diffuse : uColor2, opacity);`,
+        );
+    };
+    bodyMat.customProgramCacheKey = () => `split-${C.bottom}-${C.mid}-${C.top}-${P.L}-${spec.color2}`;
+  }
   body.geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-  const bodyMesh = new THREE.Mesh(body.geo, paint);
+  const bodyMesh = new THREE.Mesh(body.geo, bodyMat);
   car.add(bodyMesh);
 
   // --- estufa
@@ -1030,7 +1224,7 @@ export function buildCar(spec) {
   const hw0 = (P.fHw(0.3) * P.W) / 2;
 
   // --- faixas de pintura (projetadas de cima, sem passar pelo vidro)
-  if (paint2 && spec.stripes) {
+  if (paint2 && spec.stripes && !P.split) {
     const stripeMat = paint2.clone();
     stripeMat.vertexColors = false;
     stripeMat.polygonOffset = true;
@@ -1117,6 +1311,60 @@ export function buildCar(spec) {
       decal({ center: new THREE.Vector3(P.L / 2 - d, P.fTop(d) - 0.28, 0), dir: new THREE.Vector3(0, 0, -sz), u: Xv.clone().multiplyScalar(sz), v: Yv, w: 0.34, h: 0.12, nu: 14, nv: 6 }, m);
     }
   }
+  // --- linha cromada em "C" na lateral
+  if (P.cline) {
+    const C = P.cline;
+    const d0 = Math.min(C.bottom, C.top) - 0.12;
+    const d1 = C.mid + 0.12;
+    const y0 = 0.1;
+    const y1 = Math.min(1.12, P.fTop(C.mid) + 0.05);
+    const W2 = d1 - d0;
+    const H2 = y1 - y0;
+    const dc = (d0 + d1) / 2;
+    for (const sz of [1, -1]) {
+      const tex = canvasTex(512, Math.round(512 * (H2 / W2)), (g, w, h) => {
+        g.strokeStyle = '#f4f6f8';
+        g.lineWidth = Math.max(3, (0.028 / W2) * w);
+        g.lineCap = 'round';
+        g.beginPath();
+        for (let k = 0; k <= 60; k++) {
+          const y = y0 + 0.06 + (k / 60) * (H2 - 0.1);
+          const d = cCurve(C, y);
+          const sx = sz > 0 ? 0.5 - (d - dc) / W2 : 0.5 + (d - dc) / W2;
+          const px = sx * w;
+          const py = (1 - (y - y0) / H2) * h;
+          if (k) g.lineTo(px, py);
+          else g.moveTo(px, py);
+        }
+        g.stroke();
+      });
+      const m = new THREE.MeshStandardMaterial({ map: tex, emissiveMap: tex, emissive: 0x6a6e74, metalness: 0.85, roughness: 0.18, alphaTest: 0.5, polygonOffset: true, polygonOffsetFactor: -3 });
+      decal({ center: new THREE.Vector3(P.L / 2 - dc, (y0 + y1) / 2, 0), dir: new THREE.Vector3(0, 0, -sz), u: Xv.clone().multiplyScalar(sz), v: Yv, w: W2, h: H2, nu: 40, nv: 30, offset: 0.004 }, m);
+    }
+  }
+  // --- entrada de ar na porta (aerodinâmico)
+  if (P.doorScoop) {
+    const tex = canvasTex(256, 160, (g, w, h) => {
+      g.fillStyle = '#050607';
+      g.beginPath();
+      g.moveTo(w * 0.05, h * 0.1);
+      g.quadraticCurveTo(w * 0.6, h * 0.0, w * 0.95, h * 0.45);
+      g.quadraticCurveTo(w * 0.7, h * 0.95, w * 0.15, h * 0.9);
+      g.quadraticCurveTo(w * 0.35, h * 0.5, w * 0.05, h * 0.1);
+      g.fill();
+    });
+    const m = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.7, alphaTest: 0.5, polygonOffset: true, polygonOffsetFactor: -2 });
+    const d = P.fo + P.rA + 0.28;
+    const ymid = (P.fYb(d) + P.fTop(d)) / 2;
+    for (const sz of [1, -1]) decal({ center: new THREE.Vector3(P.L / 2 - d, ymid, 0), dir: new THREE.Vector3(0, 0, -sz), u: Xv.clone().multiplyScalar(-sz), v: Yv, w: 0.5, h: 0.3, nu: 20, nv: 12 }, m);
+  }
+  // --- saídas de ar no capô (sedã de rali)
+  if (P.hoodVents) {
+    const t = canvasTex(256, 128, GRILLE.mesh);
+    const m = new THREE.MeshStandardMaterial({ map: t, roughness: 0.5, alphaTest: 0.5, polygonOffset: true, polygonOffsetFactor: -2 });
+    for (const oz of [-0.2, 0.2]) decal({ center: new THREE.Vector3(P.L / 2 - 0.78, 0, oz), dir: new THREE.Vector3(0, -1, 0), u: Xv.clone().negate(), v: Zv, w: 0.32, h: 0.2, nu: 12, nv: 8 }, m);
+  }
+
   // --- linhas de porta
   {
     const dc = spec.finish === 'chrome' ? '#30343a' : 'rgba(0,0,0,0.75)';
@@ -1296,7 +1544,7 @@ export function buildCar(spec) {
     const y = P.fTop(d);
     const span = (P.fHw(d) * P.W) * 0.9;
     const shape = new THREE.Shape();
-    const c = 0.3;
+    const c = P.wingChord ?? 0.3;
     shape.moveTo(-c / 2, 0);
     shape.quadraticCurveTo(-c * 0.1, 0.05, c / 2, 0.02);
     shape.lineTo(c / 2, 0.005);
@@ -1304,9 +1552,9 @@ export function buildCar(spec) {
     shape.closePath();
     const g = new THREE.ExtrudeGeometry(shape, { depth: span, bevelEnabled: false, curveSegments: 10 });
     g.translate(0, 0, -span / 2);
-    const wingMat = spec.wingColor === 'body' ? paint : trim;
+    const wingMat = P.wingColor === 'body' ? paint : P.wingColor === 'accent' && paint2 ? paint2 : trim;
     const w = new THREE.Mesh(g, wingMat);
-    const hgt = spec.wingH ?? 0.26;
+    const hgt = P.wingH ?? 0.26;
     w.position.set(P.L / 2 - d - 0.02, y + hgt, 0);
     w.rotation.z = -0.1;
     car.add(w);
@@ -1314,10 +1562,65 @@ export function buildCar(spec) {
       const st = new THREE.Mesh(new THREE.BoxGeometry(0.12, hgt + 0.03, 0.025), trim);
       st.position.set(P.L / 2 - d, y + hgt / 2 - 0.01, sz * span * 0.33);
       car.add(st);
-      const ep = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.12, 0.012), wingMat);
+      const ep = new THREE.Mesh(new THREE.BoxGeometry(c + 0.04, 0.12 + c * 0.25, 0.012), wingMat);
       ep.position.set(P.L / 2 - d - 0.02, y + hgt + 0.02, sz * span / 2);
       car.add(ep);
     }
+  }
+
+  // --- tomada de ar no teto
+  if (P.roofScoop) {
+    const d = P.roofScoop;
+    const y = P.roofFn.top(d) + 0.03;
+    const g = new THREE.BoxGeometry(0.5, 0.12, 0.3, 4, 2, 2);
+    const pa = g.attributes.position;
+    for (let i = 0; i < pa.count; i++) {
+      const x = pa.getX(i);
+      if (pa.getY(i) > 0) pa.setY(i, pa.getY(i) - 0.07 * clamp(-x / 0.25, 0, 1));
+      pa.setZ(i, pa.getZ(i) * (pa.getY(i) > 0 ? 0.8 : 1));
+    }
+    g.computeVertexNormals();
+    const m = new THREE.Mesh(g, paint2 && !P.split ? paint2 : roofMat === paint ? trim : roofMat);
+    m.position.set(P.L / 2 - d, y, 0);
+    car.add(m);
+    const mouth = new THREE.Mesh(new THREE.PlaneGeometry(0.22, 0.07), trim);
+    mouth.rotation.y = Math.PI / 2;
+    mouth.position.set(P.L / 2 - d + 0.252, y + 0.02, 0);
+    car.add(mouth);
+  }
+  // --- barbatana (carro de pista)
+  if (P.fin) {
+    const sh = new THREE.Shape();
+    const xA = P.L / 2 - (G.roofR - 0.05);
+    const dB = P.L - 0.4;
+    const xB = P.L / 2 - dB;
+    sh.moveTo(xA, P.roofFn.top(G.roofR - 0.05));
+    sh.lineTo(xB, P.fTop(dB) + 0.36);
+    sh.lineTo(xB - 0.08, P.fTop(dB) + 0.36);
+    sh.lineTo(xB - 0.08, P.fTop(dB) - 0.05);
+    for (let k = 0; k <= 10; k++) {
+      const d = lerp(dB, G.roofR, k / 10);
+      const yy = d < G.rw ? P.roofFn.top(d) : P.fTop(d) - P.fDip(d);
+      sh.lineTo(P.L / 2 - d, yy - 0.04);
+    }
+    const g = new THREE.ExtrudeGeometry(sh, { depth: 0.014, bevelEnabled: false });
+    g.translate(0, 0, -0.007);
+    car.add(new THREE.Mesh(g, paint2 && !P.split ? paint2 : trim));
+  }
+  // --- splitter dianteiro e canards
+  if (P.splitter) {
+    const sp = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.022, hw0 * 1.78), trim);
+    sp.position.set(P.L / 2 - 0.2, P.fYb(0.3) + 0.01, 0);
+    car.add(sp);
+  }
+  if (P.canards) {
+    for (const sz of [1, -1])
+      for (const k of [0, 1]) {
+        const c = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.01, 0.07), trim);
+        c.position.set(P.L / 2 - 0.3 - k * 0.03, P.fYb(0.3) + 0.12 + k * 0.07, sz * (hw0 * 0.94 + 0.02));
+        c.rotation.z = -0.22;
+        car.add(c);
+      }
   }
 
   // --- rodas

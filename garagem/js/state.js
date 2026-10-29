@@ -1,5 +1,5 @@
 // Estado do jogador, economia e persistência (localStorage).
-import { CARS, CAR_BY_ID, POOL, RARITIES, RARITY_KEYS, BOXES, BODIES } from './data.js';
+import { CARS, CAR_BY_ID, POOL, RARITIES, RARITY_KEYS, BOXES, BODIES, CODES } from './data.js';
 
 const KEY = 'garagem-lendaria-v1';
 
@@ -22,6 +22,7 @@ function fresh() {
     reward: { last: '', streak: 0 },
     market: { block: -1, bought: {} },
     limited: {},
+    codes: {},
     sets: {},
     ach: {},
     boostUntil: 0,
@@ -108,6 +109,7 @@ export function rng(seed) {
   };
 }
 export const pick = (arr, r = Math.random) => arr[Math.floor(r() * arr.length)];
+export const codeKey = (code) => hash('codigo:' + code.trim().toUpperCase().replace(/\s+/g, '')).toString(36);
 export function todayKey(t = Date.now()) {
   const d = new Date(t);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -332,4 +334,4 @@ export function rollBox(boxId, r = Math.random) {
 }
 export const XP_BY_RARITY = { comum: 20, incomum: 60, raro: 180, epico: 600, lendario: 1500, mitico: 2500 };
 
-export { CARS, CAR_BY_ID, POOL, RARITIES, RARITY_KEYS, BOXES, BODIES };
+export { CARS, CAR_BY_ID, POOL, RARITIES, RARITY_KEYS, BOXES, BODIES, CODES };

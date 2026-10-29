@@ -1,7 +1,7 @@
 // Garagem Lendária — jogo de colecionar carros.
 import {
   S, save, changed, onChange, resetGame, short, full, rng, pick, todayKey, msToMidnight, clock,
-  CARS, CAR_BY_ID, POOL, RARITIES, BOXES, RARITY_KEYS, BODIES,
+  CARS, CAR_BY_ID, POOL, RARITIES, BOXES, RARITY_KEYS, BODIES, CODES, codeKey,
   totalCars, uniqueCars, garageValue, addCar, removeCar, sellPrice, bestOwned,
   canPay, pay, earn, addXp, xpForLevel, levelReward, tapValue, boostActive, boostSeconds, BOOST_COOLDOWN,
   passivePerHour, offlineHours, UPGRADES, collectOffline, ensureDay, TASKS, track, tasksClaimable, allTasksDone,
@@ -126,6 +126,7 @@ const home = {
         ${side('tasks', 'tasks', 'Tarefas', tasksN)}
         ${side('ranking', 'trophy', 'Ranking')}
         ${side('exchange', 'swap', 'Câmbio')}
+        ${side('codes', 'gift', 'Códigos')}
       </div>
       <div class="mid">
         <button class="boost" id="boost">${icon('bolt')}<span id="boostlbl"></span></button>
@@ -828,6 +829,7 @@ const PANELS = {
       <button class="btn dark wide" data-t="sound">${icon('sound')} Som: ${S.sound ? 'ligado' : 'desligado'}</button>
       <button class="btn dark wide" data-t="vibrate">Vibração: ${S.vibrate ? 'ligada' : 'desligada'}</button>
       <button class="btn dark wide" data-panel="profile">${icon('helmet')} Perfil e estatísticas</button>
+      <button class="btn dark wide" data-panel="codes">${icon('gift')} Códigos</button>
       <button class="btn ghost wide" data-t="reset">Apagar progresso</button>
       <p class="muted center small">Garagem Lendária · marcas e modelos fictícios.<br/>Imagens dos carros geradas proceduralmente.</p></div>`);
     $$('[data-t]', m).forEach(
@@ -847,6 +849,45 @@ const PANELS = {
   },
   reward() {
     go('store');
+  },
+  codes() {
+    $$('.modal-wrap').forEach((m) => m.close && m.close());
+    const used = () => `Códigos resgatados: ${Object.keys(S.codes || {}).length}`;
+    const m = modal(`<h3 class="m-title">${icon('gift')} Códigos</h3>
+      <p class="muted center small">Digite um código secreto para ganhar moedas ou gemas. Cada código só pode ser usado uma vez.</p>
+      <form class="codeform" id="codeform">
+        <input id="codein" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24" placeholder="Digite o código" aria-label="Código" />
+        <button class="btn green" type="submit">Resgatar</button>
+      </form>
+      <p class="muted center small" id="codeinfo">${used()}</p>`);
+    const inp = $('#codein', m);
+    setTimeout(() => inp.focus(), 250);
+    $('#codeform', m).addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!inp.value.trim()) return;
+      S.codes ||= {};
+      const key = codeKey(inp.value);
+      const r = CODES[key];
+      if (!r) {
+        sfx.error();
+        toast('Código inválido. Confira as letras e os números.', 'bad');
+        inp.select();
+        return;
+      }
+      if (S.codes[key]) {
+        sfx.error();
+        toast('Você já resgatou este código.', 'bad');
+        return;
+      }
+      S.codes[key] = Date.now();
+      earn(r.coins || 0, r.gems || 0);
+      sfx.win();
+      confetti();
+      toast(`Código resgatado: ${r.coins ? `${coinIc()} +${full(r.coins)} moedas` : `${gemIc()} +${full(r.gems)} gemas`}`, 'gold');
+      inp.value = '';
+      $('#codeinfo', m).textContent = used();
+      render();
+    });
   },
   exchange() {
     go('store');
