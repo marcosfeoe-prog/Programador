@@ -17,7 +17,10 @@ const cache = new Map();
 export function tex(name, { srgb = true, rep = true } = {}) {
   const key = name + (srgb ? ':s' : ':l');
   if (cache.has(key)) return cache.get(key);
-  const t = loader.load(new URL(`../assets/tex/${name}`, import.meta.url).href);
+  const t = loader.load(new URL(`../assets/tex/${name}`, import.meta.url).href, undefined, undefined, () => {
+    t.userData.failed = true;
+    console.warn('textura não carregou: ' + name);
+  });
   t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
   if (rep) t.wrapS = t.wrapT = THREE.RepeatWrapping;
   t.anisotropy = Q().aniso;
@@ -32,8 +35,9 @@ export function texturesReady() {
     list.map(
       (t) =>
         new Promise((res) => {
-          if (t.image && (t.image.complete || t.image.width)) return res();
-          const check = () => (t.image && t.image.width ? res() : setTimeout(check, 30));
+          const t0 = performance.now();
+          // não trava se uma imagem falhar: segue sem ela depois de 15 s
+          const check = () => (t.image && t.image.width) || t.userData.failed || performance.now() - t0 > 15000 ? res() : setTimeout(check, 30);
           check();
         })
     )

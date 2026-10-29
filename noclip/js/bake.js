@@ -2,11 +2,69 @@
 import * as THREE from 'three';
 
 let pool = null;
-function workers() {
+const WURL = new URL('./bake_worker.js', import.meta.url);
+
+// responde ao "ping" em até ms milissegundos?
+function ping(w, ms = 5000) {
+  return new Promise((res) => {
+    const to = setTimeout(() => res(false), ms);
+    w.onmessage = (e) => {
+      if (e.data && e.data.type === 'pong') {
+        clearTimeout(to);
+        res(true);
+      }
+    };
+    w.onerror = () => {
+      clearTimeout(to);
+      res(false);
+    };
+    try {
+      w.postMessage({ type: 'ping' });
+    } catch (e) {
+      clearTimeout(to);
+      res(false);
+    }
+  });
+}
+
+// "Worker" que roda na própria página (quando o navegador não deixa criar workers)
+async function inlineWorker() {
+  const src = await (await fetch(WURL)).text();
+  const w = { onmessage: null, terminate() {} };
+  const fake = { onmessage: null, postMessage: (x) => w.onmessage && w.onmessage({ data: x }) };
+  new Function('self', src)(fake);
+  w.postMessage = (m) => setTimeout(() => fake.onmessage({ data: m }), 0);
+  return w;
+}
+
+async function workers() {
+  if (pool) return pool;
+  const n = Math.max(1, Math.min(6, navigator.hardwareConcurrency || 2));
+  const make = async (factory) => {
+    try {
+      const first = factory();
+      if (!(await ping(first))) {
+        first.terminate();
+        return null;
+      }
+      const list = [first];
+      for (let i = 1; i < n; i++) list.push(factory());
+      return list;
+    } catch (e) {
+      return null;
+    }
+  };
+  pool = await make(() => new Worker(WURL));
   if (!pool) {
-    const n = Math.max(1, Math.min(6, (navigator.hardwareConcurrency || 2) - 0));
-    pool = Array.from({ length: n }, () => new Worker(new URL('./bake_worker.js', import.meta.url)));
+    try {
+      const src = await (await fetch(WURL)).text();
+      const bu = URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
+      pool = await make(() => new Worker(bu));
+    } catch (e) {
+      pool = null;
+    }
   }
+  if (!pool) pool = [await inlineWorker()];
   return pool;
 }
 
@@ -20,7 +78,7 @@ export async function bake({ grid, lights, quads, atlas, vertBatches = [], param
   const Q = new Float32Array(quads.length * QS);
   quads.forEach((q, i) => Q.set([...q.o, ...q.u, ...q.v, ...q.n, q.lu, q.lv, q.nu, q.nv, q.kind, 0, 0, 0], i * QS));
 
-  const pool = workers();
+  const pool = await workers();
   const N = pool.length;
   // divide as faces por quantidade de texels
   const cost = quads.map((q) => q.nu * q.nv);

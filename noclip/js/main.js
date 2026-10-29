@@ -107,7 +107,8 @@ class Game {
   async boot() {
     this._quality = settings.quality;
     this.ui.show('s-boot');
-    await this.loadLevel(0, (p) => (document.getElementById('boot-bar').style.width = p * 100 + '%'));
+    document.getElementById('boot-bar').style.width = '4%';
+    await this.loadLevel(0, (p) => (document.getElementById('boot-bar').style.width = Math.max(4, p * 100) + '%'));
     this.state = 'menu';
     this.menuT = 0;
     this.ui.show('s-menu');
@@ -540,5 +541,21 @@ class Game {
     }
   }
 }
+
+// erros aparecem na tela de carregamento em vez de deixá-la parada
+function showError(msg) {
+  const el = document.getElementById('boot-bar');
+  const box = el && el.parentElement && el.parentElement.parentElement;
+  if (!box || box.querySelector('.err')) return;
+  const p = document.createElement('p');
+  p.className = 'err';
+  p.style.cssText = 'color:#ff8a7a;font:13px monospace;max-width:90vw;white-space:pre-wrap';
+  p.textContent = msg;
+  box.appendChild(p);
+  const ld = document.getElementById('ld-step');
+  if (ld) ld.textContent = msg;
+}
+addEventListener('error', (e) => showError('Erro: ' + (e.message || e)));
+addEventListener('unhandledrejection', (e) => showError('Erro: ' + ((e.reason && (e.reason.stack || e.reason.message)) || e.reason)));
 
 window.game = new Game();

@@ -472,6 +472,7 @@ function bakeVerts(pos, nrm, v0, v1) {
 
 self.onmessage = (e) => {
   const m = e.data;
+  if (m.type === 'ping') return self.postMessage({ type: 'pong' });
   if (m.type !== 'bake') return;
   const g = m.grid;
   GW = g.w;
