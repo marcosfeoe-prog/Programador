@@ -11,7 +11,7 @@ Com o servidor rodando (`npm start` na raiz), abra `http://localhost:8080/garage
 | Aba | O que tem |
 |---|---|
 | **Início** | Toque no carro em destaque para ganhar moedas, Boost x3, nível e XP, renda passiva da garagem. Atalhos: Diário, Tarefas, Ranking, Câmbio, Códigos, Perfil, Melhorias, Conquistas e Coleções |
-| **Caixas** | Ofertas do dia (3 carros com estoque limitado, trocam à meia-noite), Edições Limitadas (tiragem fixa) e 5 caixas padrão — Básica, Entusiasta, Colecionador, Prestígio e Graal — com as chances de cada raridade. Inventário de caixas ganhas |
+| **Caixas** | Ofertas do dia (3 carros com estoque limitado, trocam à meia-noite), Edições Limitadas (pinturas neon e RGB com tiragem fixa, pagas em moedas; a mais cara custa 300 milhões) e 5 caixas padrão — Básica, Entusiasta, Colecionador, Prestígio e Graal — com as chances de cada raridade. Inventário de caixas ganhas |
 | **Garagem** | Valor total, carros e únicos; busca, filtro por raridade e por carroceria, ordenação e modo "mostrar todos" (silhuetas dos que faltam). Detalhes, destacar no início e vender |
 | **Leilão** | Leilão ao vivo contra rivais: cada lance garante pelo menos 8 s no relógio |
 | **Loja** | Recompensa diária com sequência de 7 dias, concessionária (estoque novo a cada 4 h) e câmbio de gemas/moedas |
@@ -35,7 +35,7 @@ As imagens em `assets/cars/` e `assets/boxes/` são recortes com fundo transpare
 (`tools/carmodel.js`): carroceria montada por seções transversais com caixas de roda,
 estufa com vidros e colunas, rodas com aros de vários estilos, pinças de freio e
 decalques projetados na superfície (faróis, grades, entradas de ar, linhas de porta,
-faixas de pintura e lanternas). Há 27 tipos de carroceria (entre eles hiper luxo, escultural, aerodinâmico, carro de pista, sedã de rali, super carro, hipercarro, luxuoso, elétrico, vintage, Mustang, conversível, perua, van,
+faixas de pintura e lanternas). Há 31 tipos de carroceria (entre eles conceito, Le Mans de rua, visor, protótipo de endurance, hiper luxo, escultural, aerodinâmico, carro de pista, sedã de rali, super carro, hipercarro, luxuoso, elétrico, vintage, Mustang, conversível, perua, van,
 hipercarro, GT, muscle, clássico, sedã, elétrico, hatch, JDM, SUV, picape e protótipo).
 
 A receita de cada carro (tipo, cor, acabamento, aros…) fica em `js/data.js`. Para
@@ -52,7 +52,7 @@ Também dá para ver um carro no navegador: `/garagem/tools/render.html?car=<id>
 
 ```
 index.html, css/style.css
-js/data.js     catálogo: raridades, carrocerias, 172 carros (receitas 3D), caixas e códigos
+js/data.js     catálogo: raridades, carrocerias, 198 carros (receitas 3D), caixas e códigos
 js/state.js    estado, economia, níveis, tarefas, conquistas, coleções, sorteio das caixas
 js/ui.js       ícones SVG, sons (Web Audio), toasts, janelas, confete
 js/main.js     telas: início, caixas, garagem, leilão, loja e painéis

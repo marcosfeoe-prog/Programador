@@ -397,6 +397,10 @@ h2, h3, h4, b, .btn, .sec-title { font-family: var(--font); font-style: italic; 
 .lim-info { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .lim-info b { font-size: 14px; }
 .lim-info small { color: var(--red); font-weight: 800; }
+.fxtag { align-self: flex-start; font: 900 10px var(--font); font-style: italic; letter-spacing: 0.08em; padding: 2px 8px; border-radius: 999px; color: #111; background: var(--fx); box-shadow: 0 0 10px var(--fx); }
+.fxtag.rgb { color: #fff; background: linear-gradient(90deg, #ff0040, #ff9900, #ffee00, #22ff66, #00d5ff, #4455ff, #cc33ff); background-size: 200% 100%; box-shadow: 0 0 10px rgba(255, 255, 255, 0.4); animation: fxtag 2s linear infinite; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); }
+@keyframes fxtag { to { background-position: 200% 0; } }
+@keyframes fx-rgb { from { filter: hue-rotate(0deg) saturate(1.15) drop-shadow(0 0 8px rgba(255, 255, 255, 0.35)); } to { filter: hue-rotate(360deg) saturate(1.15) drop-shadow(0 0 8px rgba(255, 255, 255, 0.35)); } }
 .lvlup { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .lvl-big { width: 96px; height: 96px; border-radius: 26px; background: linear-gradient(#ffc94a, #ffa500); color: #2a1700; display: grid; place-items: center; font: 900 46px var(--font); font-style: italic; box-shadow: 0 4px 0 #c98400, 0 0 40px rgba(255, 182, 39, 0.5); animation: carin 0.6s cubic-bezier(0.2, 1.4, 0.4, 1); }
 .lvl-big .ic { width: 54px; height: 54px; }

@@ -41,6 +41,10 @@ export const BODIES = {
   aero: 'Aerodinâmico',
   pista: 'Carro de Pista',
   rali: 'Sedã de Rali',
+  conceito: 'Conceito',
+  lmh: 'Le Mans de Rua',
+  visor: 'Visor',
+  endurance: 'Protótipo de Endurance',
 };
 
 // m = receita do modelo (ver tools/carmodel.js)
@@ -174,6 +178,9 @@ export const CARS = [
   C('mclaran-765lt-2021', 'McLaran', '765-LT', 2021, 'epico', 450000, 765, 330, 2.7, { type: 'aero', color: '#ff7a1a', finish: 'gloss', rim: 'split', rimColor: 'black', caliper: '#111111', wing: true, wingH: 0.08, wingColor: 'body', splitter: true }),
   C('hondra-nsx-tipo-s-2022', 'Hondra', 'NS-X Tipo S', 2022, 'epico', 170000, 600, 307, 2.9, { type: 'aero', color: '#5f646b', finish: 'gloss', roof: 'body', rim: 'spoke5', rimColor: 'black', caliper: '#d81e1e', lights: 'slim', gh: { glassRoof: false } }),
   C('belvares-visao-gt-2025', 'Belvares', 'Visão GT', 2025, 'epico', 480000, 805, 330, 2.9, { type: 'escultural', color: '#a9afb6', finish: 'chrome', rim: 'turbine', rimColor: 'black', grille: 'bars', grilleW: 0.5, grilleH: 0.16, lights: 'slim', roofScoop: false }),
+  C('gorlomi-12cilindri-2024', 'Gorlomi', '12-Cilindri', 2024, 'epico', 480000, 830, 340, 2.9, { type: 'visor', color: '#6b7076', rim: 'spoke5', rimColor: 'gunmetal', wing: false, hoodDuct: false, L: 4.73 }),
+  C('gorlomi-amalfi-2025', 'Gorlomi', 'Amalfi', 2025, 'epico', 300000, 640, 320, 3.3, { type: 'visor', color: '#1f3f8a', finish: 'pearl', rim: 'multi', rimColor: 'silver', caliper: '#d81e1e', wing: false, fenderVents: false, roof: 'body' }),
+  C('mazzarati-gt2-stradale-2025', 'Mazzarati', 'GT-2 Stradale', 2025, 'epico', 420000, 640, 324, 2.8, { type: 'visor', color: '#f2f2ee', finish: 'gloss', color2: '#1f4fb0', stripes: 'twin', rim: 'turbine', rimColor: 'black', caliper: '#1f4fb0', visor: false, grille: 'mesh', lightbar: false, lights: 'slim', lightZ: 0.72, lightW: 0.36, lightH: 0.08, lightY: -0.06, wingH: 0.18 }),
   // ---------------- Lendário ----------------
   C('kronberg-agira-rs-2017', 'Kronberg', 'Agira RS', 2017, 'lendario', 4800000, 1160, 447, 2.8, { type: 'hyper', color: '#1a1b1e', finish: 'carbon', rim: 'turbine', rimColor: 'black', caliper: '#ff7a1a' }),
   C('pagano-zondra-r-2009', 'Pagano', 'Zondra R', 2009, 'lendario', 3600000, 739, 350, 2.7, { type: 'hyper', color: '#e9eaec', finish: 'gloss', color2: '#1a1b1e', stripes: 'wide', rim: 'multi', rimColor: 'silver', caliper: '#d81e1e', L: 4.6 }),
@@ -210,6 +217,19 @@ export const CARS = [
   C('galvarini-essenza-scv12-2021', 'Galvarini', 'Essenza SCV-12', 2021, 'lendario', 3900000, 830, 340, 2.8, { type: 'pista', color: '#8fd11a', finish: 'gloss', color2: '#111214', stripes: 'twin', rim: 'turbine', rimColor: 'black', lights: 'slim', lightW: 0.4, lightH: 0.08 }),
   C('mclaran-senha-gtr-2020', 'McLaran', 'Senha GTR', 2020, 'lendario', 1800000, 814, 320, 2.7, { type: 'pista', color: '#151618', finish: 'carbon', color2: '#ff7a1a', stripes: 'twin', rim: 'split', rimColor: 'black', caliper: '#ff7a1a', lights: 'socket', lightW: 0.38, lightH: 0.15 }),
   C('ashton-morley-valquiria-amr-2022', 'Ashton Morley', 'Valquíria AMR Pro', 2022, 'lendario', 4800000, 1000, 360, 2.4, { type: 'pista', color: '#0f5a46', finish: 'gloss', color2: '#c9d64a', stripes: 'twin', rim: 'turbine', rimColor: 'black', caliper: '#c9d64a', lights: 'slim', lightW: 0.3, lightH: 0.08 }),
+  C('hispanica-carmem-2022', 'Hispânica', 'Carmem', 2022, 'lendario', 1900000, 1100, 290, 2.6, { type: 'conceito', color: '#b3121b', finish: 'pearl', rim: 'turbine', rimColor: 'gunmetal', caliper: '#d81e1e' }),
+  C('lotto-eviria-2023', 'Lotto', 'Evíria', 2023, 'lendario', 2100000, 2011, 350, 2.9, { type: 'conceito', color: '#0f4a3a', rim: 'turbine', rimColor: 'black', caliper: '#f2c218' }),
+  C('pininfarino-batista-2022', 'Pininfarino', 'Batísta', 2022, 'lendario', 2200000, 1900, 350, 1.9, { type: 'conceito', color: '#1b4fbf', finish: 'pearl', rim: 'multi', rimColor: 'silver', caliper: '#1b4fbf' }),
+  C('tzinger-21c-2023', 'Tzinger', '21-C', 2023, 'lendario', 2000000, 1250, 452, 1.9, { type: 'conceito', color: '#16171a', finish: 'carbon', rim: 'multi', rimColor: 'gold', caliper: '#c9a35a' }),
+  C('glikenhause-scg007-2022', 'Glikenhause', 'SCG-007', 2022, 'lendario', 3200000, 670, 340, 2.7, { type: 'lmh', color: '#e9eaec', finish: 'gloss', color2: '#2a8f3a', stripes: 'twin', rimColor: 'gold' }),
+  C('pejo-9x8-2023', 'Pejô', '9X8', 2023, 'lendario', 2800000, 680, 340, 2.8, { type: 'lmh', color: '#2a2d31', finish: 'gloss', color2: '#c9f21a', stripes: 'twin', rimColor: 'black', badge: '#c9f21a', wing: false }),
+  C('cadilon-vserie-r-2023', 'Cadilon', 'V-Série R', 2023, 'lendario', 2400000, 670, 330, 2.9, { type: 'lmh', color: '#f2f2ee', finish: 'gloss', color2: '#111214', stripes: 'wide', rimColor: 'black' }),
+  C('alpinne-a424-2024', 'Alpinne', 'A-424', 2024, 'lendario', 2600000, 700, 340, 2.8, { type: 'lmh', color: '#1f5fd6', finish: 'gloss', color2: '#ff2b8a', stripes: 'twin', rimColor: 'black', badge: '#ff2b8a' }),
+  C('galvarini-temerario-2025', 'Galvarini', 'Temerário', 2025, 'lendario', 1500000, 920, 343, 2.7, { type: 'visor', color: '#8fd11a', finish: 'pearl', rim: 'turbine', rimColor: 'black', caliper: '#111111', visor: false, lightbar: false, lights: 'slim', lightZ: 0.72, lightW: 0.4, lightH: 0.08, lightY: -0.05, roof: 'body' }),
+  C('tayoka-gr010-2022', 'Tayoka', 'GR-010 Híbrido', 2022, 'lendario', 4000000, 680, 340, 2.9, { type: 'endurance', color: '#f2f2ee', finish: 'gloss', stripeColors: ['#d1121b', '#111214'], roundel: 8, roundelColor: '#111214', tireRing: '#ffffff' }),
+  C('korsche-963-2023', 'Korsche', '963', 2023, 'lendario', 3800000, 680, 340, 2.8, { type: 'endurance', color: '#f4f4f0', finish: 'gloss', stripeColors: ['#d1121b', '#111214', '#d1121b'], roundel: 6, tireRing: '#ffffff' }),
+  C('cadilon-vlmdh-2024', 'Cadilon', 'V-LMDh', 2024, 'lendario', 3000000, 670, 335, 2.9, { type: 'endurance', color: '#13234a', finish: 'gloss', stripeColors: ['#f2c218'], roundel: 2, roundelColor: '#13234a' }),
+  C('galvarini-sc63-2024', 'Galvarini', 'SC-63', 2024, 'lendario', 2900000, 680, 335, 2.9, { type: 'endurance', color: '#141416', finish: 'gloss', stripeColors: ['#8fd11a'], roundel: 63, roundelColor: '#141416', tireRing: '#8fd11a' }),
   // ---------------- Ultra Prestígio ----------------
   C('belvares-300slr-1955', 'Belvares', '300SLR', 1955, 'mitico', 145000000, 548, 317, 4.8, { type: 'classic', color: '#c7ccd2', finish: 'chrome', rim: 'wire', rimColor: 'chrome', grille: 'chrome', grilleW: 0.5, grilleH: 0.2, gh: { roofY: 1.2 } }),
   C('muratti-type39-1936', 'Muratti', 'Type 39', 1936, 'mitico', 40000000, 200, 200, 9.5, { type: 'classic', color: '#2b2f35', rim: 'wire', rimColor: 'chrome', whitewall: true, L: 4.6, grille: 'chrome', grilleW: 0.26, grilleH: 0.34, gh: { ws: 2.0, roofF: 2.45, roofR: 2.9, rw: 3.9, roofY: 1.33 } }),
@@ -233,11 +253,24 @@ export const CARS = [
   C('muratti-turbilhao-2026', 'Muratti', 'Turbilhão', 2026, 'mitico', 32000000, 1800, 445, 2.0, { type: 'escultural', color: '#b9bec4', finish: 'gloss', roof: 'black', rim: 'turbine', rimColor: 'gunmetal', caliper: '#1f8fe6', roofScoop: false }),
   C('pagano-ventara-r-2021', 'Pagano', 'Ventara R', 2021, 'mitico', 30000000, 850, 370, 2.6, { type: 'pista', color: '#cfd3d8', finish: 'gloss', color2: '#c9a35a', stripes: 'twin', rim: 'multi', rimColor: 'gold', caliper: '#c9a35a' }),
   C('gorlomi-499p-modificata-2024', 'Gorlomi', '499-P Modificata', 2024, 'mitico', 19000000, 858, 330, 2.5, { type: 'pista', color: '#d1121b', finish: 'gloss', color2: '#f2c218', stripes: 'twin', rim: 'turbine', rimColor: 'black', caliper: '#f2c218', lights: 'slim', lightW: 0.36, lightH: 0.08 }),
-  // ---------------- Edições limitadas (só na vitrine limitada) ----------------
-  C('kronberg-agira-ouro-2024', 'Kronberg', 'Agira Ouro', 2024, 'mitico', 35000000, 1600, 450, 2.5, { type: 'hyper', color: '#d4a23a', finish: 'chrome', rim: 'turbine', rimColor: 'black', caliper: '#111111' }, { limited: { supply: 500, gems: 4200 } }),
-  C('gorlomi-laferrata-2017', 'Gorlomi', 'LaFerrata Aperta', 2017, 'mitico', 28000000, 950, 350, 2.4, { type: 'hyper', color: '#d1121b', finish: 'gloss', roof: 'black', rim: 'spoke5', rimColor: 'black', caliper: '#e1b400', wing: false }, { limited: { supply: 210, gems: 3600 } }),
-  C('galvarini-veneno-2014', 'Galvarini', 'Veneno', 2014, 'mitico', 60000000, 750, 355, 2.8, { type: 'hyper', color: '#55595f', finish: 'matte', color2: '#7ddc1f', stripes: 'twin', rim: 'turbine', rimColor: 'black', caliper: '#7ddc1f', wingH: 0.3 }, { limited: { supply: 14, gems: 8000 } }),
-  C('muratti-divo-2020', 'Muratti', 'Divo', 2020, 'mitico', 45000000, 1479, 380, 2.4, { type: 'hyper', color: '#7ec3e8', finish: 'gloss', roof: 'black', color2: '#0b0c0e', stripes: 'wide', rim: 'spoke5', rimColor: 'black', caliper: '#7ec3e8', wingH: 0.18 }, { limited: { supply: 40, gems: 6000 } }),
+  C('gorlomi-f80-2025', 'Gorlomi', 'F-80', 2025, 'mitico', 24000000, 1200, 350, 2.15, { type: 'visor', color: '#c4121a', finish: 'gloss', rim: 'spoke5', rimColor: 'black' }),
+  C('tayoka-gr-super-esporte-2025', 'Tayoka', 'GR Super Esporte', 2025, 'mitico', 18000000, 1000, 350, 2.5, { type: 'lmh', color: '#f2f2ee', finish: 'gloss', rimColor: 'black' }),
+  C('gorlomi-499p-lemans-2023', 'Gorlomi', '499-P Le Mans', 2023, 'mitico', 35000000, 680, 340, 2.6, { type: 'endurance', color: '#c4121a', finish: 'gloss', stripeColors: ['#1f8f3a', '#f4f4f0', '#d1121b'], roundel: 24 }),
+  // (ex-edições limitadas, agora nas caixas)
+  C('kronberg-agira-ouro-2024', 'Kronberg', 'Agira Ouro', 2024, 'mitico', 35000000, 1600, 450, 2.5, { type: 'hyper', color: '#d4a23a', finish: 'chrome', rim: 'turbine', rimColor: 'black', caliper: '#111111' }),
+  C('gorlomi-laferrata-2017', 'Gorlomi', 'LaFerrata Aperta', 2017, 'mitico', 28000000, 950, 350, 2.4, { type: 'hyper', color: '#d1121b', finish: 'gloss', roof: 'black', rim: 'spoke5', rimColor: 'black', caliper: '#e1b400', wing: false }),
+  C('galvarini-veneno-2014', 'Galvarini', 'Veneno', 2014, 'mitico', 60000000, 750, 355, 2.8, { type: 'hyper', color: '#55595f', finish: 'matte', color2: '#7ddc1f', stripes: 'twin', rim: 'turbine', rimColor: 'black', caliper: '#7ddc1f', wingH: 0.3 }),
+  C('muratti-divo-2020', 'Muratti', 'Divo', 2020, 'mitico', 45000000, 1479, 380, 2.4, { type: 'hyper', color: '#7ec3e8', finish: 'gloss', roof: 'black', color2: '#0b0c0e', stripes: 'wide', rim: 'spoke5', rimColor: 'black', caliper: '#7ec3e8', wingH: 0.18 }),
+  // ---------------- Edições limitadas (só na vitrine limitada, pagas em moedas) ----------------
+  // Pinturas neon (brilham) e RGB (arco-íris). fx é o efeito animado no jogo: rgb = cores
+  // girando; neon = brilho pulsando na cor indicada.
+  C('muratti-prisma-rgb-2026', 'Muratti', 'Prisma RGB', 2026, 'mitico', 300000000, 2000, 500, 1.8, { type: 'conceito', finish: 'rgb', rim: 'turbine', rimColor: 'black', caliper: '#ffffff' }, { limited: { supply: 5 }, fx: { kind: 'rgb' } }),
+  C('pagano-zondra-arco-iris-2025', 'Pagano', 'Zondra Arco-Íris', 2025, 'mitico', 250000000, 900, 380, 2.4, { type: 'pista', finish: 'rgb', rim: 'multi', rimColor: 'chrome', caliper: '#ffffff' }, { limited: { supply: 10 }, fx: { kind: 'rgb' } }),
+  C('kronberg-agira-neon-verde-2025', 'Kronberg', 'Agira Neon Verde', 2025, 'mitico', 220000000, 1600, 460, 2.2, { type: 'lmh', color: '#39ff14', finish: 'neon', color2: '#0b0c0e', stripes: 'twin', rimColor: '#39ff14', caliper: '#39ff14', badge: '#39ff14' }, { limited: { supply: 25 }, fx: { kind: 'neon', color: '#39ff14' } }),
+  C('galvarini-veneno-neon-rosa-2025', 'Galvarini', 'Veneno Neon Rosa', 2025, 'mitico', 180000000, 1015, 360, 2.5, { type: 'supercarro', color: '#ff2bd6', finish: 'neon', rim: 'turbine', rimColor: '#ff2bd6', caliper: '#ff2bd6', wing: true, wingH: 0.24 }, { limited: { supply: 40 }, fx: { kind: 'neon', color: '#ff2bd6' } }),
+  C('gorlomi-f80-neon-laranja-2025', 'Gorlomi', 'F-80 Laranja Neon', 2025, 'mitico', 160000000, 1200, 355, 2.1, { type: 'visor', color: '#ff6a00', finish: 'neon', rim: 'spoke5', rimColor: '#ff6a00', caliper: '#ff6a00' }, { limited: { supply: 79 }, fx: { kind: 'neon', color: '#ff7a00' } }),
+  C('mclaran-senha-neon-ciano-2025', 'McLaran', 'Senha Neon Ciano', 2025, 'mitico', 140000000, 900, 345, 2.6, { type: 'aero', color: '#00e5ff', finish: 'neon', rim: 'split', rimColor: '#00e5ff', caliper: '#00e5ff', wing: true, wingH: 0.2 }, { limited: { supply: 60 }, fx: { kind: 'neon', color: '#00e5ff' } }),
+  C('korsche-963-neon-roxo-2025', 'Korsche', '963 Neon Roxo', 2025, 'mitico', 120000000, 700, 345, 2.7, { type: 'endurance', color: '#b026ff', finish: 'neon', stripeColors: ['#0b0c0e', '#f4f4f0', '#0b0c0e'], roundel: 6, roundelColor: '#b026ff', tireRing: '#b026ff', rimColor: '#b026ff' }, { limited: { supply: 100 }, fx: { kind: 'neon', color: '#b026ff' } }),
 ];
 
 export const CAR_BY_ID = Object.fromEntries(CARS.map((c) => [c.id, c]));
@@ -252,6 +285,8 @@ export const CODES = {
   '1ghqmbg': { coins: 3000000 },
   '1haz50j': { gems: 60 },
   kgmbc4: { gems: 1000 },
+  '11h8gji': { coins: 15000000 },
+  gw89y: { gems: 15000 },
 };
 export const POOL = CARS.filter((c) => !c.limited);
 

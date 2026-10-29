@@ -107,14 +107,23 @@
       const camera = new THREE.PerspectiveCamera(26, W / H, 0.1, 100);
       let current = null;
 
+      // caixa do objeto sem as peças que não contam no enquadramento (ex.: neon no chão)
+      function frameBox(obj) {
+        const box = new THREE.Box3();
+        obj.traverse((o) => {
+          if (o.isMesh && !o.userData.noFrame) box.expandByObject(o, false);
+        });
+        return box;
+      }
+
       function frame(obj, az, el, fill = 0.9) {
-        const box = new THREE.Box3().setFromObject(obj);
+        const box = frameBox(obj);
         const center = box.getCenter(new THREE.Vector3());
         const dir = new THREE.Vector3(Math.cos(el) * Math.cos(az), Math.sin(el), Math.cos(el) * Math.sin(az));
         // amostra pontos da malha para enquadrar justo
         const pts = [];
         obj.traverse((o) => {
-          if (!o.isMesh) return;
+          if (!o.isMesh || o.userData.noFrame) return;
           const p = o.geometry.attributes.position;
           const step = Math.max(1, Math.floor(p.count / 400));
           for (let i = 0; i < p.count; i += step) pts.push(new THREE.Vector3().fromBufferAttribute(p, i).applyMatrix4(o.matrixWorld));
@@ -155,7 +164,7 @@
         current = obj;
         scene.add(obj);
         obj.updateMatrixWorld(true);
-        const box = new THREE.Box3().setFromObject(obj);
+        const box = frameBox(obj);
         const size = box.getSize(new THREE.Vector3());
         blob.scale.set(size.x * 1.15, size.z * 1.35, 1);
         blob.position.x = (box.min.x + box.max.x) / 2;

@@ -260,7 +260,7 @@ const boxes = {
           </div>`;
         })
         .join('')}</div>
-      <button class="limited" data-panel="limited">${icon('fire')}<div><b>EDIÇÕES LIMITADAS</b><small>Carros exclusivos com tiragem fixa · toque para ver</small></div>${icon('chevron')}</button>
+      <button class="limited" data-panel="limited">${icon('fire')}<div><b>EDIÇÕES LIMITADAS</b><small>Neon e RGB com tiragem fixa · toque para ver</small></div>${icon('chevron')}</button>
       <div class="sec-title">CAIXAS PADRÃO</div>
       <div class="box-grid">${BOXES.map(
         (b) => `<div class="box-card">
@@ -505,7 +505,7 @@ function garageGrid() {
       const R = RAR[c.rarity];
       return `<button class="car-card ${n ? '' : 'locked'}" data-car="${c.id}" style="--rc:${R.color};--glow:${R.glow}">
         ${n > 1 ? `<span class="dup">x${n}</span>` : ''}
-        <div class="cimg"><img src="${carImg(c.id)}" alt="" loading="lazy" /></div>
+        <div class="cimg"><img src="${carImg(c.id)}" class="${n ? '' : 'sil'}" alt="" loading="lazy" /></div>
         <h4>${n ? carName(c) : '???'}</h4>
         <div class="cval">${n ? `${coinIc('sm')} ${short(c.value)}` : `<span style="color:${R.color}">${R.name}</span>`}</div>
       </button>`;
@@ -1025,8 +1025,8 @@ const PANELS = {
     );
   },
   limited() {
-    const lim = CARS.filter((c) => c.limited);
-    const m = modal(`<h3 class="m-title">${icon('fire')} Edições limitadas</h3><p class="muted center small">Tiragem fixa. Cada jogador só pode ter um exemplar.</p>
+    const lim = CARS.filter((c) => c.limited).sort((a, b) => b.value - a.value);
+    const m = modal(`<h3 class="m-title">${icon('fire')} Edições limitadas</h3><p class="muted center small">Pinturas neon e RGB com tiragem fixa, pagas em moedas. Cada jogador só pode ter um exemplar.</p>
       <div class="col gap">${lim
         .map((c) => {
           const R = RAR[c.rarity];
@@ -1034,17 +1034,19 @@ const PANELS = {
           const left = limitedLeft(c);
           return `<div class="lim" style="--rc:${R.color};--glow:${R.glow}">
             <div class="cimg" data-car="${c.id}"><img src="${carImg(c.id)}" alt="" /></div>
-            <div class="lim-info"><b>${carName(c)}</b><small>${left} de ${c.limited.supply} restantes</small>
-            <button class="btn green sm" data-lim="${c.id}" ${own ? 'disabled' : ''}>${own ? 'NA SUA GARAGEM' : price(0, c.limited.gems)}</button></div></div>`;
+            <div class="lim-info"><b>${carName(c)}</b>${c.fx ? `<span class="fxtag ${c.fx.kind}" style="--fx:${c.fx.color || '#fff'}">${c.fx.kind === 'rgb' ? 'RGB' : 'NEON'}</span>` : ''}<small>${left} de ${c.limited.supply} restantes</small>
+            <button class="btn yellow sm" data-lim="${c.id}" ${own ? 'disabled' : ''}>${own ? 'NA SUA GARAGEM' : `${coinIc('sm')} ${short(c.value)}`}</button></div></div>`;
         })
         .join('')}</div>`);
     $$('[data-car]', m).forEach((b) => (b.onclick = () => carDetail(b.dataset.car)));
     $$('[data-lim]', m).forEach(
       (b) =>
-        (b.onclick = () => {
+        (b.onclick = async () => {
           const c = CAR_BY_ID[b.dataset.lim];
           if (S.limited[c.id]) return;
-          if (!pay(0, c.limited.gems)) return notEnough(true);
+          if (S.coins < c.value) return notEnough(false);
+          if (!(await confirmBox(`Comprar ${carName(c)} por ${full(c.value)} moedas?`, 'Comprar'))) return;
+          if (!pay(c.value, 0)) return notEnough(false);
           S.limited[c.id] = 1;
           m.close();
           revealCar(c, { source: `EDIÇÃO LIMITADA · #${c.limited.supply - limitedLeft(c) + 1}/${c.limited.supply}`, chance: null });
@@ -1079,6 +1081,25 @@ setInterval(() => {
 setInterval(() => save(true), 5000);
 addEventListener('visibilitychange', () => document.hidden && save(true));
 onChange(updateCounters);
+
+// Efeitos animados das edições limitadas, em qualquer imagem do carro (exceto silhuetas):
+// RGB gira as cores da pintura; neon pulsa um brilho na cor do carro.
+(() => {
+  const css = CARS.filter((c) => c.fx)
+    .map((c) => {
+      const sel = `img[src$="/${c.id}.webp"]:not(.sil)`;
+      const fx = c.fx.kind === 'rgb' ? 'fx-rgb 3.2s linear infinite' : `fx-${c.id} 1.3s ease-in-out infinite alternate`;
+      const keys =
+        c.fx.kind === 'rgb'
+          ? ''
+          : `@keyframes fx-${c.id}{from{filter:drop-shadow(0 0 3px ${c.fx.color}) drop-shadow(0 10px 12px rgba(0,0,0,.5))}to{filter:drop-shadow(0 0 10px ${c.fx.color}) drop-shadow(0 0 24px ${c.fx.color}) brightness(1.1)}}`;
+      return `${sel}{animation:${fx}}.reveal .rv-car ${sel}{animation:carin .7s cubic-bezier(.2,1.4,.4,1),${fx}}.tapzone ${sel}.bump{animation:bump .16s ease-out,${fx}}${keys}`;
+    })
+    .join('\n');
+  const st = document.createElement('style');
+  st.textContent = `@media (prefers-reduced-motion: no-preference){${css}}`;
+  document.head.appendChild(st);
+})();
 
 // início
 ensureDay();
