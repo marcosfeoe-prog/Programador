@@ -1,7 +1,7 @@
 // Garagem Lendária — jogo de colecionar carros.
 import {
   S, save, changed, onChange, resetGame, short, full, rng, pick, todayKey, msToMidnight, clock,
-  CARS, CAR_BY_ID, POOL, RARITIES, BOXES, RARITY_KEYS,
+  CARS, CAR_BY_ID, POOL, RARITIES, BOXES, RARITY_KEYS, BODIES,
   totalCars, uniqueCars, garageValue, addCar, removeCar, sellPrice, bestOwned,
   canPay, pay, earn, addXp, xpForLevel, levelReward, tapValue, boostActive, boostSeconds, BOOST_COOLDOWN,
   passivePerHour, offlineHours, UPGRADES, collectOffline, ensureDay, TASKS, track, tasksClaimable, allTasksDone,
@@ -391,7 +391,7 @@ function revealCar(car, { source, chance }) {
     <div class="rv-src">${source} · ${isNew ? 'CARRO NOVO' : `REPETIDO (x${S.cars[car.id]})`}</div>
     <div class="rv-car"><div class="halo"></div><img src="${carImg(car.id)}" alt="" /></div>
     <h2 class="rv-name">${carName(car)}</h2>
-    <div class="rv-tag">${rarityTag(car.rarity)} <span class="muted">· ${car.brand}</span></div>
+    <div class="rv-tag">${rarityTag(car.rarity)} <span class="muted">· ${car.brand} · ${bodyName(car)}</span></div>
     <div class="rv-vals">
       <div><small>VALOR DO CARRO</small><b>${coinIc()} ${full(car.value)}</b></div>
       <div><small>XP</small><b class="xp">${starIc()} +${full(xp)}</b></div>
@@ -434,7 +434,8 @@ function specRow(car) {
 // =====================================================================
 // GARAGEM
 // =====================================================================
-const gview = { q: '', rar: 'all', sort: 'value', all: false };
+const gview = { q: '', rar: 'all', body: 'all', sort: 'value', all: false };
+const bodyName = (c) => BODIES[c.model3d.type] || '';
 const garage = {
   html() {
     return `
@@ -445,11 +446,15 @@ const garage = {
       </div>
       <div class="searchbar">
         <label class="search">${icon('search')}<input id="gq" placeholder="Buscar por nome ou marca" value="${gview.q}" /></label>
-        <button class="sq ${gview.rar !== 'all' ? 'dot' : ''}" id="gfilter">${icon('filter')}</button>
+        <button class="sq ${gview.rar !== 'all' || gview.body !== 'all' ? 'dot' : ''}" id="gfilter">${icon('filter')}</button>
         <button class="sq ${gview.all ? 'on' : ''}" id="gall" title="Mostrar todos">${icon('cards')}</button>
       </div>
       <div class="chips" id="gchips">
         ${['all', ...RARITY_KEYS].map((r) => `<button class="chip ${gview.rar === r ? 'on' : ''}" data-rar="${r}" style="--rc:${r === 'all' ? '#ffb627' : RAR[r].color}">${r === 'all' ? 'Todas' : RAR[r].name}</button>`).join('')}
+        <label class="bodysel"><span>Carroceria</span><select id="gbody">
+          <option value="all">Todas</option>
+          ${Object.entries(BODIES).map(([k, n]) => `<option value="${k}" ${gview.body === k ? 'selected' : ''}>${n} (${CARS.filter((c) => c.model3d.type === k).length})</option>`).join('')}
+        </select></label>
       </div>
       <div class="sortrow"><span class="muted">Ordenar:</span>
         ${[['value', 'Valor'], ['rarity', 'Raridade'], ['name', 'Nome'], ['year', 'Ano']].map(([k, l]) => `<button class="link ${gview.sort === k ? 'on' : ''}" data-sort="${k}">${l}</button>`).join('')}
@@ -465,7 +470,11 @@ const garage = {
       draw();
     });
     $('#gfilter', root).onclick = () => $('#gchips', root).classList.toggle('open');
-    if (gview.rar !== 'all') $('#gchips', root).classList.add('open');
+    if (gview.rar !== 'all' || gview.body !== 'all') $('#gchips', root).classList.add('open');
+    $('#gbody', root).onchange = (e) => {
+      gview.body = e.target.value;
+      render();
+    };
     $('#gall', root).onclick = () => {
       gview.all = !gview.all;
       render();
@@ -480,7 +489,7 @@ const garage = {
 };
 function garageGrid() {
   const q = gview.q.trim().toLowerCase();
-  let list = (gview.all ? CARS : CARS.filter((c) => S.cars[c.id])).filter((c) => (gview.rar === 'all' || c.rarity === gview.rar) && (!q || carName(c).toLowerCase().includes(q)));
+  let list = (gview.all ? CARS : CARS.filter((c) => S.cars[c.id])).filter((c) => (gview.rar === 'all' || c.rarity === gview.rar) && (gview.body === 'all' || c.model3d.type === gview.body) && (!q || (carName(c) + ' ' + bodyName(c)).toLowerCase().includes(q)));
   const by = {
     value: (a, b) => b.value - a.value,
     rarity: (a, b) => RAR[b.rarity].order - RAR[a.rarity].order || b.value - a.value,
@@ -511,7 +520,7 @@ function carDetail(id) {
     `<div class="detail" style="--rc:${R.color};--glow:${R.glow}">
       <div class="rv-car small"><div class="halo"></div><img src="${carImg(id)}" class="${n ? '' : 'sil'}" alt="" /></div>
       <h2>${carName(c)}</h2>
-      <div class="rv-tag">${rarityTag(c.rarity)} <span class="muted">· ${c.brand}</span>${c.limited ? ' <span class="ltag">EDIÇÃO LIMITADA</span>' : ''}</div>
+      <div class="rv-tag">${rarityTag(c.rarity)} <span class="muted">· ${c.brand} · ${bodyName(c)}</span>${c.limited ? ' <span class="ltag">EDIÇÃO LIMITADA</span>' : ''}</div>
       <div class="rv-vals"><div><small>VALOR</small><b>${coinIc()} ${full(c.value)}</b></div><div><small>NA GARAGEM</small><b>${n}</b></div></div>
       ${specRow(c)}
       ${

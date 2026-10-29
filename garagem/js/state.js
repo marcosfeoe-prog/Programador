@@ -1,5 +1,5 @@
 // Estado do jogador, economia e persistência (localStorage).
-import { CARS, CAR_BY_ID, POOL, RARITIES, RARITY_KEYS, BOXES } from './data.js';
+import { CARS, CAR_BY_ID, POOL, RARITIES, RARITY_KEYS, BOXES, BODIES } from './data.js';
 
 const KEY = 'garagem-lendaria-v1';
 
@@ -332,4 +332,4 @@ export function rollBox(boxId, r = Math.random) {
 }
 export const XP_BY_RARITY = { comum: 20, incomum: 60, raro: 180, epico: 600, lendario: 1500, mitico: 2500 };
 
-export { CARS, CAR_BY_ID, POOL, RARITIES, RARITY_KEYS, BOXES };
+export { CARS, CAR_BY_ID, POOL, RARITIES, RARITY_KEYS, BOXES, BODIES };

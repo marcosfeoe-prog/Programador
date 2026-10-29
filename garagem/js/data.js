@@ -12,6 +12,32 @@ export const RARITIES = {
 };
 export const RARITY_KEYS = Object.keys(RARITIES);
 
+// Nome de cada carroceria (tipo do modelo 3D) mostrado no jogo.
+export const BODIES = {
+  hatch: 'Hatch',
+  sedan: 'Sedã',
+  wagon: 'Perua',
+  van: 'Van',
+  suv: 'SUV',
+  pickup: 'Picape',
+  jdm: 'Cupê JDM',
+  muscle: 'Muscle car',
+  pony: 'Mustang',
+  sport: 'Esportivo',
+  roadster: 'Conversível',
+  gt: 'Gran Turismo',
+  ev: 'Fastback',
+  eletrico: 'Elétrico',
+  luxo: 'Luxuoso',
+  super: 'Motor central',
+  supercarro: 'Super carro',
+  hyper: 'Hiperesportivo',
+  hipercarro: 'Hipercarro',
+  proto: 'Protótipo',
+  classic: 'Clássico',
+  vintage: 'Vintage',
+};
+
 // m = receita do modelo (ver tools/carmodel.js)
 const C = (id, brand, model, year, rarity, value, hp, top, acc, m, extra = {}) => ({ id, brand, model, year, rarity, value, hp, top, acc, model3d: m, ...extra });
 
@@ -43,6 +69,8 @@ export const CARS = [
   C('chevrole-celtinha-2003', 'Chevrolé', 'Celtinha', 2003, 'comum', 1700, 70, 155, 14.2, { type: 'hatch', color: '#1d5a2c', rim: 'steel', rimColor: 'silver', L: 3.75, W: 1.64, roofAdd: 0.02 }),
   C('fiato-uninho-way-2015', 'Fiato', 'Uninho Way', 2015, 'comum', 2600, 75, 160, 13.4, { type: 'hatch', color: '#e9e9e4', finish: 'gloss', rim: 'steel', rimColor: 'black', L: 3.8, wr: 0.34, topAdd: 0.05, roofAdd: 0.06 }),
 
+  C('bid-golfinho-2024', 'BID', 'Golfinho', 2024, 'comum', 4500, 95, 160, 10.9, { type: 'eletrico', color: '#9fd6c2', finish: 'gloss', roofColor: '#f2f2ee', L: 4.15, W: 1.77, wr: 0.33, roofAdd: -0.06, rim: 'disc', rimColor: 'white' }),
+  C('hondra-e-cubo-2022', 'Hondra', 'e-Cubo', 2022, 'comum', 3800, 154, 145, 9.0, { type: 'eletrico', color: '#f1f1ee', finish: 'gloss', roof: 'black', L: 3.9, W: 1.75, wr: 0.32, roofAdd: -0.12, rim: 'disc', rimColor: 'black', lights: 'round', lightbar: false, lightZ: 0.62, lightW: 0.2, lightH: 0.2 }),
   // ---------------- Incomum ----------------
   C('mazdo-miyata-1995', 'Mazdo', 'Miyata', 1995, 'incomum', 7500, 131, 200, 8.8, { type: 'jdm', color: '#c4161c', finish: 'gloss', rim: 'multi', rimColor: 'silver', L: 3.95, W: 1.68, wing: false, lights: 'slim', grille: 'none', roofAdd: -0.08, topAdd: -0.04 }),
   C('forde-mustango-2008', 'Forde', 'Mustango GT', 2008, 'incomum', 12000, 300, 250, 5.3, { type: 'muscle', color: '#f2c218', finish: 'gloss', color2: '#111111', stripes: 'twin', rim: 'spoke5', rimColor: 'black', L: 4.75, scoop: false, lights: 'round' }),
@@ -66,6 +94,10 @@ export const CARS = [
   C('dodje-chalenja-2015', 'Dodje', 'Chalenja SRT', 2015, 'incomum', 17800, 485, 290, 4.5, { type: 'muscle', color: '#4b1a7a', finish: 'gloss', rim: 'spoke5', rimColor: 'black', caliper: '#d81e1e', scoop: true, lights: 'quad' }),
   C('jeepo-compasso-2021', 'Jeepo', 'Compasso', 2021, 'incomum', 7200, 185, 200, 9.0, { type: 'suv', color: '#eeeeea', finish: 'gloss', roof: 'black', rim: 'split', rimColor: 'gunmetal', L: 4.4, roofAdd: -0.14, topAdd: -0.04, lights: 'slim', gh: { cp: 3.45, roofR: 4.0, rw: 4.3 } }),
 
+  C('voltra-modelo-y-2023', 'Voltra', 'Modelo Y', 2023, 'incomum', 14000, 384, 217, 5.0, { type: 'eletrico', color: '#f3f3f0', finish: 'gloss', rim: 'turbine', rimColor: 'gunmetal', lights: 'slim', lightbar: false, lightZ: 0.7, lightW: 0.34, lightH: 0.07 }),
+  C('forde-mustango-cavalo-negro-2024', 'Forde', 'Mustango Cavalo Negro', 2024, 'incomum', 17000, 500, 270, 4.2, { type: 'pony', color: '#111214', finish: 'gloss', rim: 'spoke5', rimColor: 'black', caliper: '#1d4fd8', gh: { rw: 4.05, roofY: 1.35 } }),
+  C('lincorn-continente-2019', 'Lincorn', 'Continente', 2019, 'incomum', 16000, 400, 250, 6.0, { type: 'luxo', color: '#1a2744', rim: 'multi', rimColor: 'chrome', L: 5.1, W: 1.91, wr: 0.38, ornament: false, grille: 'mesh', grilleW: 0.9, grilleH: 0.22, roofAdd: -0.12 }),
+  C('forde-modelo-te-1915', 'Forde', 'Modelo Tê', 1915, 'incomum', 15000, 20, 68, 60.0, { type: 'vintage', color: '#101113', finish: 'gloss', rim: 'wire', rimColor: 'black', L: 3.8, W: 1.4, wb: 2.54, track: 0.72, gh: { roofY: 1.95 } }),
   // ---------------- Raro ----------------
   C('nivan-sky-r34-2000', 'Nivan', 'Sky R34', 2000, 'raro', 48000, 330, 290, 4.9, { type: 'jdm', color: '#1d4fd8', rim: 'multi', rimColor: 'bronze', caliper: '#d4a017' }),
   C('korsche-921-carrera-2019', 'Korsche', '921 Carrera', 2019, 'raro', 42000, 385, 293, 4.2, { type: 'sport', color: '#f2f2ee', finish: 'gloss', rim: 'split', rimColor: 'gunmetal', caliper: '#b5121b' }),
@@ -88,6 +120,15 @@ export const CARS = [
   C('tayoka-gr86-2022', 'Tayoka', 'GR-86', 2022, 'raro', 34000, 234, 226, 6.3, { type: 'jdm', color: '#c8161d', rim: 'spoke5', rimColor: 'black', lights: 'slim', grille: 'mesh', wing: false, L: 4.27, roofAdd: -0.04, gh: { rw: 3.75 } }),
   C('belvares-classe-g-2022', 'Belvares', 'Classe-G', 2022, 'raro', 90000, 585, 220, 4.5, { type: 'suv', color: '#121315', finish: 'gloss', rim: 'spoke5', rimColor: 'black', lights: 'round', lightW: 0.22, lightH: 0.22, grille: 'bars', grilleW: 0.7, L: 4.66, roofAdd: 0.08, rs: 0.04, endF: 0.06, endR: 0.05 }),
 
+  C('chevrole-corveta-z06-2024', 'Chevrolé', 'Corveta Z06', 2024, 'raro', 88000, 670, 315, 2.6, { type: 'supercarro', color: '#5f646b', rim: 'spoke5', rimColor: 'black', caliper: '#e1b400', wing: true, wingH: 0.16, wingColor: 'body', roofAdd: 0.06 }),
+  C('rivano-r1s-2024', 'Rivano', 'R-1S', 2024, 'raro', 48000, 835, 201, 3.0, { type: 'eletrico', color: '#3e5a3c', finish: 'matte', rim: 'spoke5', rimColor: 'gunmetal', wr: 0.42, topAdd: 0.08, roofAdd: 0.12, lights: 'round', lightbar: false, lightZ: 0.72, lightW: 0.24, lightH: 0.12, gh: { rw: 4.7, roofR: 4.3, glassRoof: false } }),
+  C('lucida-ar-2023', 'Lucida', 'Ar Sapphire', 2023, 'raro', 82000, 1234, 330, 1.9, { type: 'eletrico', color: '#c9cdd2', finish: 'gloss', L: 5.0, rim: 'turbine', rimColor: 'gunmetal', topAdd: -0.06, roofAdd: -0.2 }),
+  C('cadilon-ct6-2019', 'Cadilon', 'CT-6', 2019, 'raro', 45000, 500, 240, 4.5, { type: 'luxo', color: '#0d0e10', rim: 'split', rimColor: 'silver', L: 5.2, ornament: false, grille: 'mesh', grilleW: 0.85, grilleH: 0.26, roofAdd: -0.12 }),
+  C('bavaro-serie7-2023', 'Bavaro', 'Série 7', 2023, 'raro', 70000, 536, 250, 4.0, { type: 'luxo', color: '#efefec', finish: 'gloss', rim: 'multi', rimColor: 'silver', L: 5.4, ornament: false, grille: 'bars', grilleW: 0.7, grilleH: 0.3, lights: 'blade', roofAdd: -0.08 }),
+  C('forde-mustango-fastback-1967', 'Forde', 'Mustango Fastback', 1967, 'raro', 65000, 320, 210, 7.0, { type: 'pony', color: '#1f4d2b', finish: 'gloss', rim: 'steel', rimColor: 'chrome' }),
+  C('forde-mustango-mach1-1970', 'Forde', 'Mustango Mach 1', 1970, 'raro', 58000, 335, 220, 5.7, { type: 'pony', color: '#e2581a', finish: 'gloss', color2: '#111111', stripes: 'wide', rim: 'mesh', rimColor: 'chrome', scoop: true }),
+  C('chevrole-camarra-z28-1970', 'Chevrolé', 'Camarra Z/28', 1970, 'raro', 44000, 360, 215, 6.5, { type: 'pony', color: '#1f4fb0', finish: 'gloss', color2: '#f4f4f0', stripes: 'twin', rim: 'steel', rimColor: 'chrome', gh: { rw: 4.0, roofR: 3.05 } }),
+  C('chevrole-master-1934', 'Chevrolé', 'Master', 1934, 'raro', 38000, 80, 110, 25.0, { type: 'vintage', color: '#1f4d2b', finish: 'gloss', rim: 'wire', rimColor: 'chrome', whitewall: true }),
   // ---------------- Épico ----------------
   C('korsche-921-turbo-s-2025', 'Korsche', '921 Turbo S', 2025, 'epico', 245000, 650, 330, 2.7, { type: 'sport', color: '#1a3fd6', rim: 'spoke5', rimColor: 'black', caliper: '#e1b400', wing: true, wingH: 0.12, wingColor: 'body', intake: 'wide' }),
   C('gorlomi-320-gtb-2025', 'Gorlomi', '320 GTB', 2025, 'epico', 340000, 830, 340, 2.9, { type: 'super', color: '#e01b1b', finish: 'gloss', rim: 'spoke5', rimColor: 'black', caliper: '#e1b400', roofAdd: 0.04 }),
@@ -109,6 +150,14 @@ export const CARS = [
   C('chevrole-corveta-stingray-1963', 'Chevrolé', 'Corveta Stingray', 1963, 'epico', 175000, 360, 230, 5.9, { type: 'classic', color: '#1f4e9e', finish: 'gloss', rim: 'spoke5', rimColor: 'chrome', grille: 'bars', grilleW: 0.6, grilleH: 0.12, lights: 'none', rs: 0.12, gh: { ws: 2.05, roofF: 2.5, roofR: 2.95, rw: 3.85 } }),
   C('ashton-morley-db11-volante-2021', 'Ashton Morley', 'DB-11 Volante', 2021, 'epico', 195000, 528, 322, 4.1, { type: 'roadster', color: '#2c2f34', rim: 'multi', rimColor: 'silver', grille: 'mesh', grilleW: 0.7, grilleH: 0.2, lights: 'slim', L: 4.74, W: 1.95, wr: 0.35, interior: '#c9a06a', cockpit: 1.2 }),
 
+  C('galvarini-aventura-svj-2019', 'Galvarini', 'Aventura SVJ', 2019, 'epico', 480000, 770, 350, 2.8, { type: 'supercarro', color: '#ff7a00', finish: 'pearl', rim: 'turbine', rimColor: 'black', caliper: '#111111', wing: true, wingH: 0.2 }),
+  C('gorlomi-sf90-2023', 'Gorlomi', 'SF-90 Estradal', 2023, 'epico', 495000, 1000, 340, 2.5, { type: 'supercarro', color: '#d1121b', finish: 'gloss', rim: 'spoke5', rimColor: 'black', caliper: '#e1b400', rs: 0.1, gh: { roofY: 1.16 } }),
+  C('belvares-maibach-2022', 'Belvares', 'Maibach S-680', 2022, 'epico', 260000, 621, 250, 4.5, { type: 'luxo', color: '#16171a', finish: 'gloss', roofColor: '#b9bec4', rim: 'disc', rimColor: 'chrome', grille: 'temple', ornament: true }),
+  C('bentolli-mulsano-2020', 'Bentolli', 'Mulsano', 2020, 'epico', 230000, 530, 296, 4.9, { type: 'luxo', color: '#123f2a', rim: 'multi', rimColor: 'chrome', grille: 'mesh', grilleW: 0.7, grilleH: 0.34, ornament: true, lights: 'round', lightW: 0.2, lightH: 0.2 }),
+  C('korsche-taikan-turbo-s-2024', 'Korsche', 'Taikan Turbo S', 2024, 'epico', 190000, 952, 260, 2.4, { type: 'eletrico', color: '#1a3fd6', finish: 'pearl', rim: 'turbine', rimColor: 'black', caliper: '#e1b400', L: 4.96, topAdd: -0.12, roofAdd: -0.24, lightbar: false, lights: 'slim', lightZ: 0.72, lightW: 0.3, lightH: 0.1 }),
+  C('forde-mustango-shelbo-gt500-1968', 'Forde', 'Mustango Shelbo GT-500', 1968, 'epico', 220000, 355, 225, 6.2, { type: 'pony', color: '#f4f4f0', finish: 'gloss', color2: '#1f4fb0', stripes: 'twin', rim: 'mesh', rimColor: 'silver', scoop: true }),
+  C('forde-mustango-fugitivo-1968', 'Forde', 'Mustango Fugitivo', 1968, 'epico', 300000, 325, 210, 6.5, { type: 'pony', color: '#173b25', finish: 'gloss', rim: 'turbine', rimColor: 'gunmetal' }),
+  C('plymonte-barracudo-1970', 'Plymonte', 'Barracudo Hemi', 1970, 'epico', 160000, 425, 235, 5.6, { type: 'pony', color: '#6a1fb0', finish: 'gloss', rim: 'steel', rimColor: 'chrome', scoop: true, gh: { rw: 3.9, roofR: 3.1 } }),
   // ---------------- Lendário ----------------
   C('kronberg-agira-rs-2017', 'Kronberg', 'Agira RS', 2017, 'lendario', 4800000, 1160, 447, 2.8, { type: 'hyper', color: '#1a1b1e', finish: 'carbon', rim: 'turbine', rimColor: 'black', caliper: '#ff7a1a' }),
   C('pagano-zondra-r-2009', 'Pagano', 'Zondra R', 2009, 'lendario', 3600000, 739, 350, 2.7, { type: 'hyper', color: '#e9eaec', finish: 'gloss', color2: '#1a1b1e', stripes: 'wide', rim: 'multi', rimColor: 'silver', caliper: '#d81e1e', L: 4.6 }),
@@ -126,6 +175,15 @@ export const CARS = [
   C('forde-gt40-1966', 'Forde', 'GT-40', 1966, 'lendario', 4200000, 485, 320, 4.2, { type: 'proto', color: '#1f4fb0', finish: 'gloss', color2: '#f4f4f0', stripes: 'twin', rim: 'disc', rimColor: 'silver', gh: { roofY: 1.06, inset: 0.18 } }),
   C('pagano-ventara-2017', 'Pagano', 'Ventara', 2017, 'lendario', 3000000, 764, 383, 2.8, { type: 'hyper', color: '#b9bec4', finish: 'chrome', rim: 'multi', rimColor: 'gunmetal', caliper: '#d81e1e', wing: false, L: 4.6 }),
 
+  C('galvarini-contra-ataque-2022', 'Galvarini', 'Contra-Ataque', 2022, 'lendario', 2400000, 769, 355, 2.8, { type: 'supercarro', color: '#f2f2ee', finish: 'gloss', rim: 'turbine', rimColor: 'gunmetal', caliper: '#d81e1e', rs: 0.03 }),
+  C('mclaran-senha-2019', 'McLaran', 'Senha', 2019, 'lendario', 1400000, 789, 340, 2.8, { type: 'supercarro', color: '#151618', finish: 'carbon', color2: '#ff7a1a', stripes: 'twin', rim: 'spoke5', rimColor: 'black', caliper: '#ff7a1a', wing: true, wingH: 0.32 }),
+  C('mazzarati-mc12-2004', 'Mazzarati', 'MC-12', 2004, 'lendario', 3400000, 621, 330, 3.8, { type: 'supercarro', color: '#f4f4f0', finish: 'gloss', color2: '#1f4fb0', stripes: 'wide', rim: 'disc', rimColor: 'silver', wing: true, wingH: 0.22, wingColor: 'body', L: 5.14 }),
+  C('muratti-quiron-2017', 'Muratti', 'Quíron', 2017, 'lendario', 3300000, 1479, 420, 2.4, { type: 'hipercarro', color: '#1b4fbf', finish: 'gloss', roof: 'black', color2: '#0b0c0e', stripes: 'wide', rim: 'spoke5', rimColor: 'black', caliper: '#1b4fbf', wing: false, gh: { inset: 0.3 } }),
+  C('ashton-morley-vulcao-2016', 'Ashton Morley', 'Vulcão', 2016, 'lendario', 2600000, 820, 360, 2.9, { type: 'hipercarro', color: '#3a3d42', finish: 'gloss', rim: 'turbine', rimColor: 'black', caliper: '#e1b400' }),
+  C('rimak-conceito-um-2017', 'Rimak', 'Conceito Um', 2017, 'lendario', 1300000, 1224, 355, 2.5, { type: 'hipercarro', color: '#2a4f8a', finish: 'matte', rim: 'turbine', rimColor: 'gunmetal', wing: false }),
+  C('rollar-fantasma-2023', 'Rollar', 'Fantasma', 2023, 'lendario', 1800000, 563, 250, 5.1, { type: 'luxo', color: '#4a0f1e', finish: 'gloss', roofColor: '#141416', rim: 'disc', rimColor: 'chrome' }),
+  C('rollar-fantasma-ii-1930', 'Rollar', 'Fantasma II', 1930, 'lendario', 4500000, 120, 140, 20.0, { type: 'vintage', color: '#5a1526', finish: 'gloss', rim: 'wire', rimColor: 'chrome', whitewall: true, L: 4.8, wb: 3.3, gh: { ws: 2.1, roofF: 2.22, cp: 3.6, bp: 3.0 } }),
+  C('cadilon-v16-1931', 'Cadilon', 'V-16', 1931, 'lendario', 2200000, 165, 150, 18.0, { type: 'vintage', color: '#e6dcc0', finish: 'gloss', color2: '#101113', rim: 'wire', rimColor: 'chrome', whitewall: true, L: 4.7, wb: 3.2 }),
   // ---------------- Ultra Prestígio ----------------
   C('belvares-300slr-1955', 'Belvares', '300SLR', 1955, 'mitico', 145000000, 548, 317, 4.8, { type: 'classic', color: '#c7ccd2', finish: 'chrome', rim: 'wire', rimColor: 'chrome', grille: 'chrome', grilleW: 0.5, grilleH: 0.2, gh: { roofY: 1.2 } }),
   C('muratti-type39-1936', 'Muratti', 'Type 39', 1936, 'mitico', 40000000, 200, 200, 9.5, { type: 'classic', color: '#2b2f35', rim: 'wire', rimColor: 'chrome', whitewall: true, L: 4.6, grille: 'chrome', grilleW: 0.26, grilleH: 0.34, gh: { ws: 2.0, roofF: 2.45, roofR: 2.9, rw: 3.9, roofY: 1.33 } }),
@@ -139,6 +197,10 @@ export const CARS = [
   C('jaguara-tipo-d-1955', 'Jaguara', 'Tipo-D', 1955, 'mitico', 30000000, 250, 270, 4.7, { type: 'roadster', color: '#0f3d26', finish: 'gloss', rim: 'wire', rimColor: 'chrome', grille: 'chrome', grilleW: 0.3, grilleH: 0.16, rs: 0.3, endF: 0.45, endR: 0.5, L: 3.9, interior: '#111111' }),
   C('rollar-spectra-2024', 'Rollar', 'Spectra', 2024, 'mitico', 16000000, 585, 250, 4.5, { type: 'ev', color: '#2a2147', finish: 'pearl', roofColor: '#e9e9ee', rim: 'disc', rimColor: 'chrome', grille: 'chrome', grilleW: 0.55, grilleH: 0.22, L: 5.45, W: 2.08, wr: 0.4, topAdd: 0.08 }),
 
+  C('kronberg-jasko-2022', 'Kronberg', 'Jasko Absoluto', 2022, 'mitico', 18000000, 1600, 530, 2.5, { type: 'hipercarro', color: '#f2f2ee', finish: 'pearl', rim: 'turbine', rimColor: 'black', caliper: '#d81e1e', wingH: 0.32 }),
+  C('gorlomi-fxxk-2015', 'Gorlomi', 'FXX-K', 2015, 'mitico', 20000000, 1036, 350, 2.4, { type: 'hipercarro', color: '#111214', finish: 'gloss', color2: '#d1121b', stripes: 'twin', rim: 'spoke5', rimColor: 'black', caliper: '#d1121b', wingH: 0.22 }),
+  C('muratti-real-1932', 'Muratti', 'Real', 1932, 'mitico', 120000000, 300, 160, 15.0, { type: 'vintage', color: '#111214', finish: 'gloss', color2: '#e1b400', rim: 'wire', rimColor: 'chrome', L: 5.2, wb: 3.7, W: 1.6, track: 0.84, gh: { ws: 2.5, roofF: 2.62, roofR: 4.4, rw: 4.58, bp: 3.5, cp: 4.0 } }),
+  C('belvares-540k-1936', 'Belvares', '540K', 1936, 'mitico', 45000000, 180, 170, 16.0, { type: 'vintage', color: '#b3121b', finish: 'gloss', color2: '#141416', rim: 'wire', rimColor: 'chrome', whitewall: true, L: 4.9, wb: 3.3, gh: { ws: 2.4, roofF: 2.52, roofR: 3.85, rw: 4.25, roofY: 1.72, bp: 3.2, cp: 3.75 } }),
   // ---------------- Edições limitadas (só na vitrine limitada) ----------------
   C('kronberg-agira-ouro-2024', 'Kronberg', 'Agira Ouro', 2024, 'mitico', 35000000, 1600, 450, 2.5, { type: 'hyper', color: '#d4a23a', finish: 'chrome', rim: 'turbine', rimColor: 'black', caliper: '#111111' }, { limited: { supply: 500, gems: 4200 } }),
   C('gorlomi-laferrata-2017', 'Gorlomi', 'LaFerrata Aperta', 2017, 'mitico', 28000000, 950, 350, 2.4, { type: 'hyper', color: '#d1121b', finish: 'gloss', roof: 'black', rim: 'spoke5', rimColor: 'black', caliper: '#e1b400', wing: false }, { limited: { supply: 210, gems: 3600 } }),

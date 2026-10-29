@@ -148,6 +148,61 @@ export const TYPES = {
     gh: { ws: 0.32, roofF: 0.78, roofR: 4.32, rw: 4.47, roofY: 1.98, inset: 0.05, tumble: 0.1, bp: 1.35, cp: 2.45 },
     lights: 'round', grille: 'none', intake: 'none', lightY: -0.3, lightZ: 0.7, lightW: 0.2, lightH: 0.2,
   },
+  supercarro: {
+    L: 4.85, W: 2.06, wr: 0.36, tw: 0.32, fo: 1.1, wb: 2.72, rs: 0.05, endF: 0.16, endR: 0.12, endV: 0.4,
+    yb: [[0, 0.16], [0.3, 0.1], [4.55, 0.12], [4.85, 0.26]],
+    top: [[0, 0.34], [0.5, 0.56], [1.1, 0.74], [1.6, 0.78], [3.0, 0.92], [3.82, 0.98], [4.6, 0.96], [4.85, 0.88]],
+    dip: [[0, 0], [0.5, 0.1], [1.3, 0.08], [1.6, 0.02], [3.0, 0.02], [3.4, 0.1], [4.4, 0.08], [4.85, 0]],
+    hw: [[0, 0.8], [0.6, 0.94], [1.1, 1], [2.0, 0.92], [3.0, 0.98], [3.82, 1.05], [4.6, 1.02], [4.85, 0.94]],
+    gh: { ws: 1.4, roofF: 2.35, roofR: 2.65, rw: 3.95, roofY: 1.13, inset: 0.14, tumble: 0.28, bp: 2.75, wsLin: true },
+    lights: 'slim', grille: 'none', intake: 'wide', side: true, lightY: -0.04, lightZ: 0.72, lightW: 0.44, lightH: 0.08,
+  },
+  hipercarro: {
+    L: 4.75, W: 2.1, wr: 0.36, tw: 0.33, fo: 1.1, wb: 2.75, rs: 0.18, endF: 0.3, endR: 0.18,
+    yb: [[0, 0.14], [0.3, 0.09], [4.5, 0.11], [4.75, 0.24]],
+    top: [[0, 0.36], [0.5, 0.62], [1.1, 0.82], [1.6, 0.7], [2.8, 0.74], [3.85, 0.98], [4.5, 0.96], [4.75, 0.9]],
+    dip: [[0, 0], [0.5, 0.18], [1.1, 0.2], [1.6, 0.06], [2.8, 0.06], [3.4, 0.18], [4.3, 0.16], [4.75, 0.04]],
+    hw: [[0, 0.78], [0.6, 0.96], [1.1, 1.03], [1.9, 0.86], [2.8, 0.88], [3.85, 1.05], [4.5, 1.02], [4.75, 0.95]],
+    gh: { ws: 1.35, roofF: 2.05, roofR: 2.4, rw: 3.4, roofY: 1.08, inset: 0.42, tumble: 0.12, bp: 99 },
+    lights: 'slim', grille: 'none', intake: 'wide', side: true, wing: true, wingH: 0.28, lightY: -0.05, lightZ: 0.74, lightW: 0.3, lightH: 0.08,
+  },
+  luxo: {
+    L: 5.55, W: 2.0, wr: 0.41, tw: 0.27, fo: 0.95, wb: 3.3, rs: 0.07, endF: 0.1, endR: 0.14, endV: 0.3, rimRatio: 0.68,
+    yb: [[0, 0.36], [0.25, 0.24], [5.3, 0.26], [5.55, 0.4]],
+    top: [[0, 0.98], [0.2, 1.02], [0.95, 1.04], [2.2, 1.06], [4.25, 1.08], [5.4, 1.07], [5.55, 1.0]],
+    dip: [[0, 0], [5.55, 0]],
+    hw: [[0, 0.92], [0.3, 0.98], [0.95, 1], [4.25, 1], [5.4, 0.98], [5.55, 0.94]],
+    gh: { ws: 2.1, roofF: 2.7, roofR: 3.95, rw: 4.6, roofY: 1.6, inset: 0.07, tumble: 0.14, bp: 3.25, cp: 4.15 },
+    lights: 'slim', grille: 'temple', intake: 'lip', ornament: true, lightY: -0.18, lightZ: 0.74, lightW: 0.36, lightH: 0.11, grilleW: 0.6, grilleH: 0.34,
+  },
+  eletrico: {
+    L: 4.75, W: 1.95, wr: 0.37, tw: 0.27, fo: 0.92, wb: 2.9, rs: 0.12, endF: 0.3, endR: 0.18, endV: 0.7,
+    yb: [[0, 0.3], [0.3, 0.2], [4.45, 0.22], [4.75, 0.34]],
+    top: [[0, 0.66], [0.35, 0.8], [0.92, 0.86], [1.5, 0.9], [3.82, 0.98], [4.6, 0.97], [4.75, 0.9]],
+    dip: [[0, 0], [0.6, 0.02], [4.75, 0]],
+    hw: [[0, 0.86], [0.5, 0.97], [0.92, 1], [3.82, 1.01], [4.6, 0.97], [4.75, 0.9]],
+    gh: { ws: 1.3, roofF: 2.25, roofR: 3.5, rw: 4.62, roofY: 1.6, inset: 0.08, tumble: 0.18, bp: 2.85, glassRoof: true },
+    lights: 'blade', lightbar: true, grille: 'none', intake: 'lip', rim: 'disc', lightY: -0.06, lightZ: 0, lightW: 1.4, lightH: 0.06,
+  },
+  vintage: {
+    L: 4.4, W: 1.5, wr: 0.4, tw: 0.15, fo: 0.72, wb: 2.95, rs: 0.06, endF: 0.12, endR: 0.25, endV: 0.3, rimRatio: 0.55,
+    track: 0.8, noArch: true, fenders: true, lamps: true,
+    yb: [[0, 0.5], [0.2, 0.44], [4.1, 0.44], [4.4, 0.5]],
+    top: [[0, 0.98], [0.15, 1.04], [1.5, 1.06], [1.75, 1.1], [3.8, 1.12], [4.4, 1.0]],
+    dip: [[0, 0], [1.5, 0.03], [1.8, 0], [4.4, 0]],
+    hw: [[0, 0.6], [0.2, 0.64], [1.55, 0.66], [1.8, 1], [4.0, 1], [4.4, 0.92]],
+    gh: { ws: 1.82, roofF: 1.95, roofR: 3.7, rw: 3.86, roofY: 1.86, inset: 0.04, tumble: 0.06, bp: 2.75, cp: 3.3 },
+    lights: 'none', grille: 'temple', intake: 'none', lightY: -0.2, lightZ: 0, lightW: 0.2, lightH: 0.2, grilleW: 0.5, grilleH: 0.48, grilleY: 0.06,
+  },
+  pony: {
+    L: 4.65, W: 1.82, wr: 0.35, tw: 0.27, fo: 0.92, wb: 2.74, rs: 0.07, endF: 0.1, endR: 0.1, endV: 0.35,
+    yb: [[0, 0.26], [0.2, 0.18], [4.45, 0.2], [4.65, 0.3]],
+    top: [[0, 0.78], [0.2, 0.82], [0.92, 0.84], [1.9, 0.87], [3.66, 0.92], [4.5, 0.91], [4.65, 0.86]],
+    dip: [[0, 0], [0.6, 0.03], [1.8, 0.02], [4.65, 0]],
+    hw: [[0, 0.9], [0.4, 0.98], [0.92, 1], [2.2, 0.98], [3.66, 1.01], [4.5, 0.99], [4.65, 0.95]],
+    gh: { ws: 2.0, roofF: 2.55, roofR: 2.95, rw: 4.3, roofY: 1.32, inset: 0.08, tumble: 0.2, bp: 3.0 },
+    lights: 'none', grille: 'pony', intake: 'none', sideScoop: true, lightY: -0.1, lightZ: 0.7, lightW: 0.3, lightH: 0.14, grilleW: 1.3, grilleH: 0.22, grilleY: 0,
+  },
   proto: {
     L: 4.4, W: 2.0, wr: 0.34, tw: 0.3, fo: 0.95, wb: 2.3, rs: 0.14, endF: 0.28, endR: 0.2,
     yb: [[0, 0.18], [0.3, 0.1], [4.1, 0.12], [4.4, 0.24]],
@@ -237,6 +292,7 @@ function resolve(spec) {
 // ---------------------------------------------------------------------------
 function archY(P, d) {
   let ya = -1;
+  if (P.noArch) return ya;
   for (const da of [P.fo, P.ra]) {
     const dx = Math.abs(d - da);
     if (dx < P.rA) ya = Math.max(ya, P.wr + Math.sqrt(P.rA * P.rA - dx * dx));
@@ -367,7 +423,7 @@ function makeRoofFn(P) {
   }
   const roofKeys = [
     [G.ws, base(G.ws)],
-    [lerp(G.ws, G.roofF, 0.55), lerp(base(G.ws), G.roofY, 0.78)],
+    [lerp(G.ws, G.roofF, 0.55), lerp(base(G.ws), G.roofY, G.wsLin ? 0.56 : 0.78)],
     [G.roofF, G.roofY - 0.005],
     [mid, G.roofY + 0.01],
     [G.roofR, G.roofY - 0.01],
@@ -531,6 +587,58 @@ const HEADLIGHT = {
 };
 
 const GRILLE = {
+  temple: (g, w, h) => {
+    const gr = g.createLinearGradient(0, 0, w, 0);
+    gr.addColorStop(0, '#9aa1aa');
+    gr.addColorStop(0.5, '#ffffff');
+    gr.addColorStop(1, '#8b929b');
+    g.fillStyle = gr;
+    rrect(g, 1, 1, w - 2, h - 2, 6);
+    g.fill();
+    g.fillStyle = '#121417';
+    g.fillRect(w * 0.1, h * 0.1, w * 0.8, h * 0.82);
+    for (let x = w * 0.14; x < w * 0.88; x += w * 0.06) {
+      const b = g.createLinearGradient(x, 0, x + w * 0.03, 0);
+      b.addColorStop(0, '#f2f4f6');
+      b.addColorStop(1, '#7b828b');
+      g.fillStyle = b;
+      g.fillRect(x, h * 0.1, w * 0.028, h * 0.82);
+    }
+  },
+  pony: (g, w, h) => {
+    g.fillStyle = '#060708';
+    rrect(g, 1, 1, w - 2, h - 2, h * 0.3);
+    g.fill();
+    g.strokeStyle = '#25282d';
+    g.lineWidth = 2;
+    for (let x = 0; x < w; x += 9) {
+      g.beginPath();
+      g.moveTo(x, 0);
+      g.lineTo(x, h);
+      g.stroke();
+    }
+    for (let y = 0; y < h; y += 9) {
+      g.beginPath();
+      g.moveTo(0, y);
+      g.lineTo(w, y);
+      g.stroke();
+    }
+    for (const cx of [h * 0.6, w - h * 0.6]) {
+      const gr = g.createRadialGradient(cx, h / 2, 2, cx, h / 2, h * 0.42);
+      gr.addColorStop(0, '#ffffff');
+      gr.addColorStop(0.5, '#e6eef6');
+      gr.addColorStop(0.85, '#59626c');
+      gr.addColorStop(1, '#c9ced4');
+      g.fillStyle = gr;
+      g.beginPath();
+      g.arc(cx, h / 2, h * 0.42, 0, Math.PI * 2);
+      g.fill();
+    }
+    g.strokeStyle = '#c9ced4';
+    g.lineWidth = 3;
+    rrect(g, w / 2 - h * 0.55, h * 0.25, h * 1.1, h * 0.5, 6);
+    g.stroke();
+  },
   mesh: (g, w, h) => {
     g.fillStyle = '#07080a';
     rrect(g, 1, 1, w - 2, h - 2, h * 0.35);
@@ -889,10 +997,10 @@ export function buildCar(spec) {
   const classify = (ta, tb, d) => {
     const tags = ta + tb;
     if (tags.includes('h')) return 2;
-    if (ta === 'r' && tb === 'r') return d > G.roofF + 0.04 && d < G.roofR - 0.02 ? 1 : 0;
+    if (ta === 'r' && tb === 'r') return !G.glassRoof && d > G.roofF + 0.04 && d < G.roofR - 0.02 ? 1 : 0;
     if (ta === 'c' && tb === 'c') return 1;
     if (ta === 'c' || tb === 'c') {
-      if (ta === 'r' || tb === 'r') return d > G.roofF + 0.04 && d < G.roofR - 0.02 ? 1 : 0;
+      if (ta === 'r' || tb === 'r') return !G.glassRoof && d > G.roofF + 0.04 && d < G.roofR - 0.02 ? 1 : 0;
       return 0;
     }
     if (ta === 's' || tb === 's') return 2;
@@ -952,16 +1060,16 @@ export function buildCar(spec) {
   const hlTex = canvasTex(256, Math.round(256 * Math.min(1, P.lightH / P.lightW)), hl);
   const hlMat = new THREE.MeshStandardMaterial({ map: hlTex, emissiveMap: hlTex, emissive: 0xffffff, emissiveIntensity: 0.9, roughness: 0.12, metalness: 0.2, alphaTest: 0.5, transparent: false });
   hlTex.premultiplyAlpha = false;
-  for (const sz of [1, -1]) {
+  for (const sz of P.lightbar ? [1] : [1, -1]) {
     decal(
       {
-        center: new THREE.Vector3(0, noseTop + P.lightY, sz * hw0 * P.lightZ),
+        center: new THREE.Vector3(0, noseTop + P.lightY, P.lightbar ? 0 : sz * hw0 * P.lightZ),
         dir: front,
         u: new THREE.Vector3(0, 0, -sz),
         v: Yv,
-        w: P.lightW,
+        w: P.lightbar ? hw0 * 1.8 : P.lightW,
         h: P.lightH,
-        nu: 24,
+        nu: P.lightbar ? 48 : 24,
         nv: 12,
       },
       hlMat,
@@ -974,7 +1082,8 @@ export function buildCar(spec) {
     const gw = P.grilleW || 0.6;
     const gH = P.grilleH || 0.16;
     const t = canvasTex(512, Math.round(512 * (gH / gw)), GRILLE[P.grille]);
-    const m = new THREE.MeshStandardMaterial({ map: t, roughness: 0.4, metalness: 0.5, alphaTest: 0.5 });
+    const glow = P.grille === 'pony' ? { emissiveMap: t, emissive: 0xffffff, emissiveIntensity: 0.6 } : {};
+    const m = new THREE.MeshStandardMaterial({ map: t, roughness: 0.3, metalness: P.grille === 'temple' ? 0.9 : 0.5, alphaTest: 0.5, ...glow });
     decal({ center: new THREE.Vector3(0, noseTop + P.lightY - (P.grilleY ?? 0.02), 0), dir: front, u: Zv.clone().negate(), v: Yv, w: gw, h: gH, nu: 28, nv: 10 }, m);
   }
   // --- entradas de ar inferiores
@@ -998,6 +1107,14 @@ export function buildCar(spec) {
     const m = new THREE.MeshStandardMaterial({ map: it, roughness: 0.6, alphaTest: 0.5 });
     for (const sz of [1, -1]) {
       decal({ center: new THREE.Vector3(P.L / 2 - (P.gh.bp + 0.45), P.fTop(P.gh.bp) - 0.24, 0), dir: new THREE.Vector3(0, 0, -sz), u: Xv.clone().multiplyScalar(sz), v: Yv, w: 0.55, h: 0.2, nu: 20, nv: 8 }, m);
+    }
+  }
+  if (P.sideScoop) {
+    const it = intakeTex();
+    const m = new THREE.MeshStandardMaterial({ map: it, roughness: 0.6, alphaTest: 0.5 });
+    const d = P.ra - P.rA - 0.32;
+    for (const sz of [1, -1]) {
+      decal({ center: new THREE.Vector3(P.L / 2 - d, P.fTop(d) - 0.28, 0), dir: new THREE.Vector3(0, 0, -sz), u: Xv.clone().multiplyScalar(sz), v: Yv, w: 0.34, h: 0.12, nu: 14, nv: 6 }, m);
     }
   }
   // --- linhas de porta
@@ -1091,6 +1208,77 @@ export function buildCar(spec) {
     car.add(wheel);
   }
 
+  // --- enfeite de capô (luxuoso)
+  if (P.ornament) {
+    const y = P.fTop(0.18);
+    const fig = new THREE.Group();
+    const body2 = new THREE.Mesh(new THREE.ConeGeometry(0.022, 0.1, 10), chromeTrim);
+    body2.position.y = 0.05;
+    fig.add(body2);
+    const wingL = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.05, 0.004), chromeTrim);
+    wingL.position.set(-0.03, 0.08, 0);
+    wingL.rotation.z = 0.5;
+    fig.add(wingL);
+    fig.position.set(P.L / 2 - 0.18, y - 0.005, 0);
+    car.add(fig);
+  }
+  // --- faróis-bala cromados (vintage)
+  if (P.lamps) {
+    const lens = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xfff3d6, emissiveIntensity: 1.1, roughness: 0.1 });
+    for (const sz of [1, -1]) {
+      const g = new THREE.Group();
+      const shell = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.07, 0.16, 24), chromeTrim);
+      shell.rotation.z = Math.PI / 2;
+      g.add(shell);
+      const glassL = new THREE.Mesh(new THREE.CircleGeometry(0.1, 24), lens);
+      glassL.rotation.y = Math.PI / 2;
+      glassL.position.x = 0.081;
+      g.add(glassL);
+      const stalk = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.22, 8), chromeTrim);
+      stalk.position.set(-0.04, -0.15, 0);
+      g.add(stalk);
+      g.position.set(P.L / 2 - 0.12, P.fTop(0.1) - 0.02, sz * 0.5);
+      car.add(g);
+    }
+  }
+  // --- para-lamas separados e estribos (vintage)
+  if (P.fenders) {
+    const fm = paint2 || new THREE.MeshPhysicalMaterial({ color: 0x0b0b0d, metalness: 0.4, roughness: 0.25, clearcoat: 1 });
+    const fmat = fm.clone();
+    fmat.vertexColors = false;
+    fmat.side = THREE.DoubleSide;
+    const R = P.wr + 0.07;
+    const width = P.tw + 0.14;
+    for (const da of [P.fo, P.ra]) {
+      for (const sz of [1, -1]) {
+        const arc = da === P.fo ? 3.4 : 3.0;
+        const g = new THREE.CylinderGeometry(R, R, width, 36, 1, true, Math.PI - arc / 2 + (da === P.fo ? -0.25 : 0.2), arc);
+        g.rotateX(Math.PI / 2);
+        const f = new THREE.Mesh(g, fmat);
+        f.position.set(P.L / 2 - da, P.wr, sz * P.track);
+        car.add(f);
+        // tampa lateral interna do para-lama
+        const cap = new THREE.Mesh(new THREE.RingGeometry(P.wr + 0.02, R, 36, 1, Math.PI / 2 - arc / 2, arc), fmat);
+        cap.position.set(P.L / 2 - da, P.wr, sz * (P.track - width / 2));
+        car.add(cap);
+      }
+    }
+    const x0 = P.L / 2 - (P.fo + R * 0.75);
+    const x1 = P.L / 2 - (P.ra - R * 0.95);
+    const hwB = (P.fHw((P.fo + P.ra) / 2) * P.W) / 2;
+    const zOut = P.track + width / 2;
+    for (const sz of [1, -1]) {
+      const rb = new THREE.Mesh(new THREE.BoxGeometry(x0 - x1, 0.035, zOut - hwB + 0.04), fmat);
+      rb.position.set((x0 + x1) / 2, P.fYb((P.fo + P.ra) / 2) + 0.02, sz * (hwB + zOut) / 2);
+      car.add(rb);
+    }
+    // estepe na traseira
+    const spare = buildWheel(P, mats);
+    spare.rotation.y = Math.PI / 2;
+    spare.position.set(-P.L / 2 - P.tw * 0.4, P.fYb(P.L - 0.2) + P.wr + 0.05, 0);
+    car.add(spare);
+  }
+
   // --- caçamba (picape): tampa preta
   if (P.bed) {
     const [b0, b1] = P.bed;
@@ -1138,7 +1326,7 @@ export function buildCar(spec) {
     const hwA = (P.fHw(da) * P.W) / 2;
     for (const sz of [1, -1]) {
       const wgrp = buildWheel(P, mats);
-      wgrp.position.set(x, P.wr, sz * (hwA - P.tw * 0.5 - 0.035));
+      wgrp.position.set(x, P.wr, sz * (P.track ?? hwA - P.tw * 0.5 - 0.035));
       if (sz < 0) wgrp.rotation.y = Math.PI;
       if (da === P.fo) wgrp.rotation.y += (spec.steer ?? 0.32) * (sz > 0 ? 1 : 1);
       car.add(wgrp);
