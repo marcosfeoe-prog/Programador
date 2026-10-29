@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#6b8a4f" />
+  <meta name="description" content="Jogo 2D de sobrevivência e defesa de base: colete recursos, construa torres e sobreviva às hordas de zumbis toda noite." />
+  <title>Hordas.io — Defesa de Base contra Zumbis</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hammersmith+One&display=swap" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- Menu inicial -->
+  <div id="menu" class="screen">
+    <div class="menu-box">
+      <h1 class="logo">HORDAS<span>.io</span></h1>
+      <p class="tag">Colete. Construa. Sobreviva à noite.</p>
+      <input id="name" maxlength="16" placeholder="Seu nome" autocomplete="off" />
+      <button id="play" class="big">Jogar</button>
+      <div class="howto">
+        <div><b>WASD</b> mover · <b>Mouse</b> mirar · <b>Clique/Espaço</b> atacar</div>
+        <div><b>1–0</b> construções · <b>E</b> melhorar · <b>T</b> vender · <b>B</b> loja</div>
+        <div><b>Q</b> trocar arma · <b>F</b> poção · <b>R</b> ataque automático · <b>Esc</b> cancelar</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fim de jogo -->
+  <div id="gameover" class="screen hidden">
+    <div class="menu-box">
+      <h2>Seu Cofre de Ouro foi destruído!</h2>
+      <div class="go-grid">
+        <div><span>Onda</span><b id="go-wave">0</b></div>
+        <div><span>Dia</span><b id="go-day">1</b></div>
+        <div><span>Zumbis</span><b id="go-kills">0</b></div>
+        <div><span>Pontuação</span><b id="go-score">0</b></div>
+      </div>
+      <p class="best">Recorde: <b id="go-best">0</b></p>
+      <button id="again" class="big">Jogar de novo</button>
+      <button id="tomenu" class="link">Menu</button>
+    </div>
+  </div>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div id="daybar" class="hud-block"><div id="dayfill"></div><span id="daytext"></span></div>
+
+    <div id="stats" class="panel hud-block">
+      <div class="st-title">Sobrevivência</div>
+      <div><span>Pontuação</span><b id="s-score">0</b></div>
+      <div><span>Onda</span><b id="s-wave">0</b></div>
+      <div><span>Zumbis vivos</span><b id="s-zombies">0</b></div>
+      <div><span>Abatidos</span><b id="s-kills">0</b></div>
+    </div>
+
+    <div id="toasts"></div>
+    <div id="respawn" class="hidden"></div>
+
+    <div id="minimap-wrap" class="panel hud-block"><canvas id="minimap"></canvas></div>
+
+    <div id="bottom" class="hud-block">
+      <div id="bars">
+        <div id="hpbar" class="bar"><div id="hpfill"></div><span id="hptext"></span></div>
+        <div id="shieldbar" class="bar hidden"><div id="shfill"></div></div>
+      </div>
+      <div id="weapons"></div>
+      <div id="toolbar" class="panel"></div>
+    </div>
+
+    <div id="resources" class="panel hud-block">
+      <div class="res"><span id="ri-wood" class="ri"></span><span class="rn">Madeira</span><b id="r-wood">0</b></div>
+      <div class="res"><span id="ri-stone" class="ri"></span><span class="rn">Pedra</span><b id="r-stone">0</b></div>
+      <div class="res"><span id="ri-gold" class="ri"></span><span class="rn">Ouro</span><b id="r-gold">0</b></div>
+      <div class="btns">
+        <button id="shopbtn">Loja (B)</button>
+        <button id="helpbtn">?</button>
+      </div>
+    </div>
+
+    <div id="bpanel" class="panel hud-block hidden">
+      <div class="bp-head"><b id="bp-name"></b><span id="bp-tier"></span></div>
+      <div id="bp-stats"></div>
+      <div class="bp-btns">
+        <button id="bp-up"></button>
+        <button id="bp-sell" class="danger"></button>
+      </div>
+      <button id="bp-upall" class="link">Melhorar todas deste nível</button>
+      <div id="bp-hint"></div>
+    </div>
+
+    <div id="shop" class="panel hud-block hidden">
+      <div class="shop-head">
+        <b>Loja</b>
+        <div class="tabs">
+          <button class="tab active" data-tab="weapons">Armas</button>
+          <button class="tab" data-tab="armor">Armadura</button>
+          <button class="tab" data-tab="items">Itens</button>
+        </div>
+        <button id="shopclose" class="x">×</button>
+      </div>
+      <div id="shoplist"></div>
+    </div>
+
+    <div id="help" class="panel hud-block hidden">
+      <h3>Como jogar</h3>
+      <p>Bata nas <b>árvores</b> e <b>rochas</b> com a picareta para conseguir madeira e pedra.
+        Coloque o <b>Cofre de Ouro</b> — ele é a sua base. Se ele for destruído, o jogo acaba.</p>
+      <p>Construa <b>Minas de Ouro</b> para ganhar ouro e use-o para <b>melhorar</b> as construções
+        (até o nível VIII) e comprar armas na <b>Loja</b>. As construções não passam do nível do Cofre.</p>
+      <p>Toda <b>noite</b> vem uma onda de zumbis, cada vez mais fortes. A cada 8 ondas aparece um <b>chefão</b>.
+        De dia o sol queima os zumbis que sobraram e suas construções se reparam.</p>
+      <p><b>WASD</b> mover · <b>Clique/Espaço</b> atacar · <b>1–0</b> construções (segure e arraste para paredes) ·
+        <b>E</b> melhorar · <b>T</b> vender · <b>B</b> loja · <b>Q</b> trocar arma · <b>F</b> poção ·
+        <b>R</b> ataque automático · <b>M</b> som · <b>Esc</b>/botão direito cancela.</p>
+      <p class="dim">Clique para fechar.</p>
+    </div>
+
+    <div id="tooltip" class="hidden"></div>
+    <div id="joy" class="hidden"><div id="joyknob"></div></div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/art.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
