@@ -1034,7 +1034,7 @@ const PANELS = {
           const left = limitedLeft(c);
           return `<div class="lim" style="--rc:${R.color};--glow:${R.glow}">
             <div class="cimg" data-car="${c.id}"><img src="${carImg(c.id)}" alt="" /></div>
-            <div class="lim-info"><b>${carName(c)}</b>${c.fx ? `<span class="fxtag ${c.fx.kind}" style="--fx:${c.fx.color || '#fff'}">${c.fx.kind === 'rgb' ? 'RGB' : 'NEON'}</span>` : ''}<small>${left} de ${c.limited.supply} restantes</small>
+            <div class="lim-info"><b>${carName(c)}</b>${c.fx ? `<span class="fxtag ${c.fx.kind}" style="--fx:${c.fx.color || '#fff'}">${c.fx.label || (c.fx.kind === 'rgb' ? 'RGB' : 'NEON')}</span>` : ''}<small>${left} de ${c.limited.supply} restantes</small>
             <button class="btn yellow sm" data-lim="${c.id}" ${own ? 'disabled' : ''}>${own ? 'NA SUA GARAGEM' : `${coinIc('sm')} ${short(c.value)}`}</button></div></div>`;
         })
         .join('')}</div>`);

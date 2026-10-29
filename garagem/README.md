@@ -35,7 +35,7 @@ As imagens em `assets/cars/` e `assets/boxes/` são recortes com fundo transpare
 (`tools/carmodel.js`): carroceria montada por seções transversais com caixas de roda,
 estufa com vidros e colunas, rodas com aros de vários estilos, pinças de freio e
 decalques projetados na superfície (faróis, grades, entradas de ar, linhas de porta,
-faixas de pintura e lanternas). Há 31 tipos de carroceria (entre eles conceito, Le Mans de rua, visor, protótipo de endurance, hiper luxo, escultural, aerodinâmico, carro de pista, sedã de rali, super carro, hipercarro, luxuoso, elétrico, vintage, Mustang, conversível, perua, van,
+faixas de pintura e lanternas). Há 36 tipos de carroceria (entre eles cockpit aberto, hiper GT, protótipo camuflado, kit car GTR, art déco, conceito, Le Mans de rua, visor, protótipo de endurance, hiper luxo, escultural, aerodinâmico, carro de pista, sedã de rali, super carro, hipercarro, luxuoso, elétrico, vintage, Mustang, conversível, perua, van,
 hipercarro, GT, muscle, clássico, sedã, elétrico, hatch, JDM, SUV, picape e protótipo).
 
 A receita de cada carro (tipo, cor, acabamento, aros…) fica em `js/data.js`. Para
@@ -52,7 +52,7 @@ Também dá para ver um carro no navegador: `/garagem/tools/render.html?car=<id>
 
 ```
 index.html, css/style.css
-js/data.js     catálogo: raridades, carrocerias, 198 carros (receitas 3D), caixas e códigos
+js/data.js     catálogo: raridades, carrocerias, 209 carros (receitas 3D), caixas e códigos
 js/state.js    estado, economia, níveis, tarefas, conquistas, coleções, sorteio das caixas
 js/ui.js       ícones SVG, sons (Web Audio), toasts, janelas, confete
 js/main.js     telas: início, caixas, garagem, leilão, loja e painéis

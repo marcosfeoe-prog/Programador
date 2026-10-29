@@ -293,6 +293,57 @@ export const TYPES = {
     fin: true, finH: 0.5, wing: true, wingH: 0.42, wingChord: 0.42, splitter: true, antenna: true, roofScoop: 2.45, tireRing: '#f2c218', roundel: 24, rim: 'multi', rimColor: 'black',
     lights: 'blade', grille: 'none', intake: 'none', lightY: -0.05, lightZ: 0.72, lightW: 0.34, lightH: 0.04,
   },
+  xbow: {
+    L: 4.2, W: 2.0, wr: 0.35, tw: 0.3, fo: 0.95, wb: 2.43, rs: 0.08, endF: 0.16, endR: 0.12, endV: 0.5,
+    yb: [[0, 0.2], [0.3, 0.12], [3.95, 0.14], [4.2, 0.28]],
+    top: [[0, 0.42], [0.4, 0.6], [0.95, 0.7], [1.5, 0.74], [2.3, 0.8], [3.38, 0.92], [4.0, 0.9], [4.2, 0.82]],
+    dip: [[0, 0.02], [0.5, 0.1], [1.2, 0.08], [1.6, 0.02], [4.2, 0.02]],
+    hw: [[0, 0.6], [0.5, 0.66], [0.95, 0.68], [1.6, 0.78], [2.6, 0.92], [3.38, 1], [4.0, 0.97], [4.2, 0.9]],
+    gh: { ws: 1.45, roofF: 1.75, roofR: 1.75, rw: 1.87, roofY: 0.98, inset: 0.08, tumble: 0.1, bp: 99, open: true },
+    cockpit: 1.0, interior: '#17181b', trackF: 0.82, noArchFront: true, cycleFenders: true, rollHoop: true, airbox: true, noDoors: true,
+    lowerColor: '#0b0c0e', lowerY: 0.42, splitter: true, wing: true, wingH: 0.3, wingChord: 0.32, rim: 'multi', rimColor: 'black',
+    lights: 'xbow', grille: 'none', intake: 'wide', lightY: -0.07, lightZ: 0.62, lightW: 0.28, lightH: 0.07,
+  },
+  fulminea: {
+    L: 4.95, W: 2.0, wr: 0.36, tw: 0.32, fo: 1.2, wb: 2.78, rs: 0.14, endF: 0.34, endR: 0.14, endV: 0.75,
+    yb: [[0, 0.14], [0.35, 0.09], [4.65, 0.11], [4.95, 0.26]],
+    top: [[0, 0.32], [0.5, 0.56], [1.2, 0.78], [1.75, 0.76], [3.0, 0.84], [3.98, 0.96], [4.7, 0.95], [4.95, 0.86]],
+    dip: [[0, 0], [0.6, 0.1], [1.3, 0.09], [1.8, 0.02], [3.0, 0.02], [3.5, 0.1], [4.6, 0.08], [4.95, 0.02]],
+    hw: [[0, 0.76], [0.6, 0.95], [1.2, 1.02], [2.1, 0.93], [3.0, 0.96], [3.98, 1.04], [4.7, 1], [4.95, 0.92]],
+    gh: { ws: 1.55, roofF: 2.35, roofR: 2.85, rw: 4.15, roofY: 1.16, inset: 0.12, tumble: 0.26, bp: 99 },
+    fenderLeds: true, cove: '#2a1015', sideNumber: '61', wing: true, wingH: 0.34, wingChord: 0.4, splitter: true, tireRing: '#f4f4f0',
+    lights: 'blade', grille: 'none', intake: 'wide', lightY: -0.03, lightZ: 0.76, lightW: 0.34, lightH: 0.035,
+  },
+  camo: {
+    L: 4.82, W: 2.03, wr: 0.36, tw: 0.32, fo: 0.92, wb: 2.73, rs: 0.12, endF: 0.22, endR: 0.2,
+    yb: [[0, 0.16], [0.3, 0.1], [4.5, 0.12], [4.82, 0.28]],
+    top: [[0, 0.56], [0.35, 0.7], [0.92, 0.82], [1.6, 0.84], [2.1, 0.86], [3.0, 0.9], [3.65, 0.96], [4.5, 0.94], [4.82, 0.86]],
+    dip: [[0, 0], [0.5, 0.08], [1.6, 0.05], [2.1, 0.02], [3.2, 0.02], [3.6, 0.06], [4.82, 0]],
+    hw: [[0, 0.86], [0.5, 0.97], [0.92, 1.03], [2.0, 0.95], [3.0, 0.98], [3.65, 1.05], [4.5, 1.02], [4.82, 0.94]],
+    gh: { ws: 2.05, roofF: 2.65, roofR: 3.1, rw: 4.05, roofY: 1.25, inset: 0.1, tumble: 0.24, bp: 3.0 },
+    finish: 'camo', hoodVents: true, splitter: true, wing: true, wingH: 0.3, wingChord: 0.34, rim: 'split', rimColor: 'black',
+    lights: 'slim', grille: 'mesh', intake: 'triple', lightY: -0.06, lightZ: 0.72, lightW: 0.36, lightH: 0.09, grilleW: 0.55, grilleH: 0.16, grilleY: 0.1,
+  },
+  ultima: {
+    L: 4.0, W: 1.88, wr: 0.34, tw: 0.3, fo: 0.95, wb: 2.5, rs: 0.18, endF: 0.3, endR: 0.16,
+    yb: [[0, 0.16], [0.3, 0.1], [3.75, 0.12], [4.0, 0.26]],
+    top: [[0, 0.4], [0.4, 0.62], [0.95, 0.8], [1.5, 0.78], [2.6, 0.86], [3.45, 0.94], [3.9, 0.92], [4.0, 0.86]],
+    dip: [[0, 0], [0.5, 0.12], [1.2, 0.1], [1.6, 0.03], [2.6, 0.03], [3.2, 0.1], [4.0, 0.04]],
+    hw: [[0, 0.82], [0.6, 0.97], [0.95, 1.02], [1.8, 0.94], [2.6, 0.96], [3.45, 1.03], [3.9, 1], [4.0, 0.94]],
+    gh: { ws: 1.45, roofF: 2.1, roofR: 2.5, rw: 3.4, roofY: 1.08, inset: 0.2, tumble: 0.24, bp: 99 },
+    roofScoop: 2.3, side: true, sideD: 2.92, wing: true, wingH: 0.38, wingChord: 0.38, rim: 'spoke5', rimColor: 'chrome', caliper: '#f2c218',
+    lights: 'teardrop', grille: 'none', intake: 'wide', lightY: -0.05, lightZ: 0.72, lightW: 0.36, lightH: 0.15,
+  },
+  atlantic: {
+    L: 4.6, W: 1.78, wr: 0.36, tw: 0.2, fo: 0.95, wb: 2.98, rs: 0.3, endF: 0.42, endR: 0.9, endV: 0.5, rimRatio: 0.62,
+    yb: [[0, 0.36], [0.4, 0.24], [1.6, 0.22], [3.0, 0.22], [4.3, 0.26], [4.6, 0.42]],
+    top: [[0, 0.6], [0.5, 0.82], [0.95, 0.9], [1.5, 0.78], [2.1, 0.74], [3.0, 0.78], [3.93, 0.92], [4.3, 0.74], [4.6, 0.5]],
+    dip: [[0, 0], [0.6, 0.14], [1.0, 0.16], [1.5, 0.06], [2.2, 0], [3.3, 0.04], [3.93, 0.14], [4.6, 0.02]],
+    hw: [[0, 0.74], [0.6, 0.96], [0.95, 1], [1.5, 0.86], [2.2, 0.8], [3.0, 0.84], [3.93, 1], [4.35, 0.86], [4.6, 0.56]],
+    gh: { ws: 1.7, roofF: 2.1, roofR: 2.6, rw: 4.2, roofY: 1.36, inset: 0.18, tumble: 0.3, bp: 2.55, cp: 3.02, solidRear: true, sideEnd: 3.12 },
+    rearSpat: true, dorsal: true, rim: 'disc', rimColor: 'silver', badge: '#c9a35a',
+    lights: 'round', grille: 'horseshoe', intake: 'none', lightY: -0.1, lightZ: 0.8, lightW: 0.17, lightH: 0.17, grilleW: 0.3, grilleH: 0.3, grilleY: 0.12,
+  },
   proto: {
     L: 4.4, W: 2.0, wr: 0.34, tw: 0.3, fo: 0.95, wb: 2.3, rs: 0.14, endF: 0.28, endR: 0.2,
     yb: [[0, 0.18], [0.3, 0.1], [4.1, 0.12], [4.4, 0.24]],
@@ -384,8 +435,13 @@ function archY(P, d) {
   let ya = -1;
   if (P.noArch) return ya;
   for (const da of [P.fo, P.ra]) {
+    if (P.noArchFront && da === P.fo) continue;
     const dx = Math.abs(d - da);
-    if (dx < P.rA) ya = Math.max(ya, P.wr + Math.sqrt(P.rA * P.rA - dx * dx));
+    if (dx >= P.rA) continue;
+    let a = P.wr + Math.sqrt(P.rA * P.rA - dx * dx);
+    // saia traseira: a carroceria cobre a roda e só deixa a parte de baixo do pneu à vista
+    if (P.rearSpat && da === P.ra) a = Math.min(a, P.wr * 0.85);
+    ya = Math.max(ya, a);
   }
   return ya;
 }
@@ -583,6 +639,41 @@ function rrect(g, x, y, w, h, r) {
 }
 
 const HEADLIGHT = {
+  xbow: (g, w, h) => {
+    g.fillStyle = '#060708';
+    rrect(g, 1, 1, w - 2, h - 2, h * 0.45);
+    g.fill();
+    for (const cx of [w * 0.32, w * 0.62]) {
+      const gr = g.createRadialGradient(cx, h / 2, 1, cx, h / 2, h * 0.34);
+      gr.addColorStop(0, '#ffffff');
+      gr.addColorStop(0.45, '#ffe29a');
+      gr.addColorStop(1, 'rgba(255,200,90,0.0)');
+      g.fillStyle = gr;
+      g.beginPath();
+      g.arc(cx, h / 2, h * 0.34, 0, Math.PI * 2);
+      g.fill();
+    }
+  },
+  teardrop: (g, w, h) => {
+    g.fillStyle = '#aab3bd';
+    g.beginPath();
+    g.moveTo(w * 0.98, h * 0.5);
+    g.bezierCurveTo(w * 0.7, h * 0.02, w * 0.12, h * 0.05, w * 0.03, h * 0.5);
+    g.bezierCurveTo(w * 0.12, h * 0.95, w * 0.7, h * 0.98, w * 0.98, h * 0.5);
+    g.fill();
+    g.fillStyle = '#1a1e24';
+    g.beginPath();
+    g.ellipse(w * 0.62, h * 0.5, w * 0.3, h * 0.36, 0, 0, Math.PI * 2);
+    g.fill();
+    const gr = g.createRadialGradient(w * 0.68, h * 0.5, 1, w * 0.68, h * 0.5, h * 0.3);
+    gr.addColorStop(0, '#ffffff');
+    gr.addColorStop(0.6, '#dfe8f0');
+    gr.addColorStop(1, '#5c6670');
+    g.fillStyle = gr;
+    g.beginPath();
+    g.arc(w * 0.68, h * 0.5, h * 0.28, 0, Math.PI * 2);
+    g.fill();
+  },
   quadled: (g, w, h) => {
     g.fillStyle = '#0c1015';
     rrect(g, 1, 1, w - 2, h - 2, h * 0.45);
@@ -1175,10 +1266,74 @@ function rgbMaterial(L) {
   return m;
 }
 
+// Efeitos de pintura calculados por fragmento, a partir da posição no mundo (o carro fica
+// na origem). userData.fx guarda quais estão ligados, para que um clone os mantenha:
+//   split: dois tons com divisa em "C"; lower: parte de baixo em outra cor;
+//   camo: camuflagem geométrica; weave: trama de fibra de carbono.
+function applyFx(mat, L) {
+  const fx = mat.userData.fx || {};
+  const u = {};
+  let decl = 'varying vec3 vFxPos;\nfloat fxHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }\n';
+  let code = 'vec3 fxC = diffuse;\n';
+  if (fx.camo) {
+    u.uCamo0 = { value: new THREE.Color(fx.camo[0]) };
+    u.uCamo1 = { value: new THREE.Color(fx.camo[1]) };
+    u.uCamo2 = { value: new THREE.Color(fx.camo[2]) };
+    decl += `uniform vec3 uCamo0; uniform vec3 uCamo1; uniform vec3 uCamo2;
+    vec3 fxCamo(vec3 p) {
+      vec2 a = vec2(p.x + p.z * 0.55, p.y * 1.25 - p.z * 0.45) * 3.4;
+      mat2 r1 = mat2(0.866, 0.5, -0.5, 0.866);
+      mat2 r2 = mat2(0.5, -0.866, 0.866, 0.5);
+      float v = fxHash(floor(a)) + fxHash(floor(r1 * a * 1.35) + 7.0) + fxHash(floor(r2 * a * 0.85) + 13.0);
+      float t = fract(v);
+      return t < 0.36 ? uCamo0 : (t < 0.68 ? uCamo1 : uCamo2);
+    }\n`;
+    code += 'fxC = fxCamo(vFxPos);\n';
+  }
+  if (fx.split) {
+    u.uSplit = { value: new THREE.Vector4(fx.split[0], fx.split[1], fx.split[2], L / 2) };
+    u.uSplitC = { value: new THREE.Color(fx.split[3]) };
+    decl += 'uniform vec4 uSplit; uniform vec3 uSplitC;\n';
+    code += `{ float tS = clamp((vFxPos.y - 0.12) / 0.9, 0.0, 1.0);
+      float dB = tS < 0.45 ? uSplit.y - (uSplit.y - uSplit.x) * pow((0.45 - tS) / 0.45, 2.0) : uSplit.y - (uSplit.y - uSplit.z) * pow((tS - 0.45) / 0.55, 2.0);
+      if ((uSplit.w - vFxPos.x) >= dB) fxC = uSplitC; }\n`;
+  }
+  if (fx.lower) {
+    u.uLowerY = { value: fx.lower[0] };
+    u.uLowerC = { value: new THREE.Color(fx.lower[1]) };
+    decl += 'uniform float uLowerY; uniform vec3 uLowerC;\n';
+    code += 'if (vFxPos.y < uLowerY + 0.05 * sin(vFxPos.x * 1.7)) fxC = uLowerC;\n';
+  }
+  if (fx.weave) {
+    decl += `float fxWeave(vec3 p) {
+      vec2 q = vec2(p.x + p.z * 0.7, p.y + p.z * 0.7) * 30.0;
+      vec2 c = floor(q);
+      float on = mod(c.x + c.y, 4.0) < 2.0 ? 1.0 : 0.0;
+      float f = on > 0.5 ? fract(q.x) : fract(q.y);
+      return mix(0.62, 1.12, on) * (0.86 + 0.14 * sin(f * 3.14159));
+    }\n`;
+    code += 'fxC *= fxWeave(vFxPos);\n';
+  }
+  mat.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, u);
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vFxPos;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvFxPos = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', '#include <common>\n' + decl)
+      .replace('vec4 diffuseColor = vec4( diffuse, opacity );', code + 'vec4 diffuseColor = vec4(fxC, opacity);');
+  };
+  mat.customProgramCacheKey = () => 'fx' + JSON.stringify(fx) + L;
+  mat.needsUpdate = true;
+  return mat;
+}
+
 function paintMaterial(color, finish) {
   const c = new THREE.Color(color);
   const base = { color: c, vertexColors: true };
   switch (finish) {
+    case 'carbonweave':
+      return new THREE.MeshPhysicalMaterial({ ...base, metalness: 0.35, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.02 });
     case 'neon':
       // sem tone mapping, para a cor saturada não desbotar como faria um carro comum
       return new THREE.MeshPhysicalMaterial({ ...base, emissive: c, emissiveIntensity: 0.32, metalness: 0.15, roughness: 0.2, clearcoat: 1, clearcoatRoughness: 0.02, toneMapped: false });
@@ -1213,7 +1368,12 @@ const RIM_COLORS = {
 export function buildCar(spec) {
   const P = resolve(spec);
   const car = new THREE.Group();
-  const paint = spec.finish === 'rgb' ? rgbMaterial(P.L) : paintMaterial(spec.color || '#c0392b', spec.finish);
+  const finish = spec.finish || P.finish;
+  const paint = finish === 'rgb' ? rgbMaterial(P.L) : paintMaterial(spec.color || '#c0392b', finish === 'camo' ? 'gloss' : finish);
+  if (finish === 'camo' || finish === 'carbonweave') {
+    paint.userData.fx = finish === 'camo' ? { camo: P.camo || ['#141518', '#eceeef', '#8a8f96'] } : { weave: true };
+    applyFx(paint, P.L);
+  }
   const paint2 = spec.color2 ? paintMaterial(spec.color2, spec.finish2 || (spec.finish === 'matte' ? 'matte' : spec.finish === 'neon' || spec.finish === 'rgb' ? 'neon' : 'gloss')) : null;
   const glass = new THREE.MeshPhysicalMaterial({ color: 0x05070a, metalness: 0.2, roughness: 0.06, clearcoat: 1, clearcoatRoughness: 0.02, envMapIntensity: 0.75 });
   const trim = new THREE.MeshStandardMaterial({ color: 0x0b0c0e, metalness: 0.3, roughness: 0.45 });
@@ -1251,27 +1411,14 @@ export function buildCar(spec) {
     const tm = 0.45;
     return t < tm ? C.mid - (C.mid - C.bottom) * ((tm - t) / tm) ** 2 : C.mid - (C.mid - C.top) * ((t - tm) / (1 - tm)) ** 2;
   };
+  // dois tons com divisa em "C" e/ou base de outra cor: só na carroceria inferior
   let bodyMat = paint;
-  if (P.split && paint2) {
-    // dois tons com divisa nítida: a cor é escolhida por fragmento, pela mesma curva em "C"
-    const C = P.split;
+  if (finish !== 'rgb' && ((P.split && paint2) || P.lowerColor)) {
     bodyMat = paint.clone();
-    bodyMat.onBeforeCompile = (sh) => {
-      sh.uniforms.uColor2 = { value: new THREE.Color(spec.color2) };
-      sh.uniforms.uSplit = { value: new THREE.Vector4(C.bottom, C.mid, C.top, P.L / 2) };
-      sh.vertexShader = sh.vertexShader
-        .replace('#include <common>', '#include <common>\nvarying vec3 vSplitPos;')
-        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvSplitPos = position;');
-      sh.fragmentShader = sh.fragmentShader
-        .replace('#include <common>', '#include <common>\nvarying vec3 vSplitPos;\nuniform vec3 uColor2;\nuniform vec4 uSplit;')
-        .replace(
-          'vec4 diffuseColor = vec4( diffuse, opacity );',
-          `float tS = clamp((vSplitPos.y - 0.12) / 0.9, 0.0, 1.0);
-          float dB = tS < 0.45 ? uSplit.y - (uSplit.y - uSplit.x) * pow((0.45 - tS) / 0.45, 2.0) : uSplit.y - (uSplit.y - uSplit.z) * pow((tS - 0.45) / 0.55, 2.0);
-          vec4 diffuseColor = vec4((uSplit.w - vSplitPos.x) < dB ? diffuse : uColor2, opacity);`,
-        );
-    };
-    bodyMat.customProgramCacheKey = () => `split-${C.bottom}-${C.mid}-${C.top}-${P.L}-${spec.color2}`;
+    bodyMat.userData.fx = { ...(paint.userData.fx || {}) };
+    if (P.split && paint2) bodyMat.userData.fx.split = [P.split.bottom, P.split.mid, P.split.top, spec.color2];
+    if (P.lowerColor) bodyMat.userData.fx.lower = [P.lowerY ?? 0.4, P.lowerColor];
+    applyFx(bodyMat, P.L);
   }
   body.geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
   const bodyMesh = new THREE.Mesh(body.geo, bodyMat);
@@ -1288,6 +1435,11 @@ export function buildCar(spec) {
   const classify = (ta, tb, d) => {
     const tags = ta + tb;
     if (tags.includes('h')) return 2;
+    // traseira fechada (art déco): teto e laterais viram lataria depois do fim das janelas
+    if (G.solidRear && d > G.roofR - 0.02) {
+      const sideFace = tags.includes('g') || tags.includes('s');
+      if (!sideFace || d > (G.sideEnd ?? G.roofR)) return tags.includes('s') ? 2 : 1;
+    }
     if (ta === 'r' && tb === 'r') return !G.glassRoof && d > G.roofF + 0.04 && d < G.roofR - 0.02 ? 1 : 0;
     if (ta === 'c' && tb === 'c') return 1;
     if (ta === 'c' || tb === 'c') {
@@ -1362,8 +1514,34 @@ export function buildCar(spec) {
   // --- faróis (lights: 'none' = faróis escamoteáveis fechados)
   const hl = HEADLIGHT[P.lights] || HEADLIGHT.slim;
   if (P.lights !== 'none') {
-  const hlTex = canvasTex(256, Math.round(256 * Math.min(1, P.lightH / P.lightW)), hl);
-  const hlMat = new THREE.MeshStandardMaterial({ map: hlTex, emissiveMap: hlTex, emissive: 0xffffff, emissiveIntensity: 0.9, roughness: 0.12, metalness: 0.2, alphaTest: 0.5, transparent: false });
+  const hlTex = canvasTex(256, Math.round(256 * Math.min(1, P.lightH / P.lightW)), (g, w, h) => {
+    hl(g, w, h);
+    if (!P.lightColor) return;
+    // tinge o farol: multiplica pela cor e restaura o recorte (alfa) original
+    const copy = document.createElement('canvas');
+    copy.width = w;
+    copy.height = h;
+    copy.getContext('2d').drawImage(g.canvas, 0, 0);
+    g.globalCompositeOperation = 'multiply';
+    g.fillStyle = P.lightColor;
+    g.fillRect(0, 0, w, h);
+    g.globalCompositeOperation = 'destination-in';
+    g.drawImage(copy, 0, 0);
+    g.globalCompositeOperation = 'source-over';
+  });
+  const hlMat = new THREE.MeshStandardMaterial({ map: hlTex, emissiveMap: hlTex, emissive: P.lightColor ? new THREE.Color(P.lightColor) : 0xffffff, emissiveIntensity: P.lightColor ? 2.2 : 0.9, roughness: 0.12, metalness: 0.2, alphaTest: 0.5, transparent: false, toneMapped: !P.lightColor });
+  const glowTex = P.lightGlow
+    ? canvasTex(256, 128, (g, w, h) => {
+        const gr = g.createRadialGradient(w / 2, h / 2, 2, w / 2, h / 2, w / 2);
+        gr.addColorStop(0, P.lightColor || '#ffffff');
+        gr.addColorStop(1, 'rgba(0,0,0,0)');
+        g.save();
+        g.scale(1, h / w);
+        g.fillStyle = gr;
+        g.fillRect(0, 0, w, w);
+        g.restore();
+      })
+    : null;
   hlTex.premultiplyAlpha = false;
   for (const sz of P.lightbar ? [1] : [1, -1]) {
     decal(
@@ -1379,6 +1557,10 @@ export function buildCar(spec) {
       },
       hlMat,
     );
+    if (glowTex) {
+      const gm = new THREE.MeshBasicMaterial({ map: glowTex, transparent: true, opacity: 0.85, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -4 });
+      decal({ center: new THREE.Vector3(0, noseTop + P.lightY, sz * hw0 * P.lightZ), dir: front, u: new THREE.Vector3(0, 0, -sz), v: Yv, w: P.lightW * 2.2, h: P.lightH * 5, nu: 20, nv: 10, offset: 0.008 }, gm);
+    }
   }
   }
 
@@ -1411,7 +1593,8 @@ export function buildCar(spec) {
     const it = intakeTex();
     const m = new THREE.MeshStandardMaterial({ map: it, roughness: 0.6, alphaTest: 0.5 });
     for (const sz of [1, -1]) {
-      decal({ center: new THREE.Vector3(P.L / 2 - (P.gh.bp + 0.45), P.fTop(P.gh.bp) - 0.24, 0), dir: new THREE.Vector3(0, 0, -sz), u: Xv.clone().multiplyScalar(sz), v: Yv, w: 0.55, h: 0.2, nu: 20, nv: 8 }, m);
+      const sd = P.sideD ?? P.gh.bp + 0.45;
+      decal({ center: new THREE.Vector3(P.L / 2 - sd, P.fTop(sd) - 0.26, 0), dir: new THREE.Vector3(0, 0, -sz), u: Xv.clone().multiplyScalar(sz), v: Yv, w: 0.55, h: 0.2, nu: 20, nv: 8 }, m);
     }
   }
   if (P.sideScoop) {
@@ -1568,8 +1751,113 @@ export function buildCar(spec) {
     decal({ center: new THREE.Vector3(P.L / 2 - 0.55, 0, 0), dir: new THREE.Vector3(0, -1, 0), u: Xv.clone().negate(), v: Zv, w: 0.5, h: 0.62, nu: 16, nv: 16, offset: 0.004 }, m);
   }
 
+  // --- filetes de LED subindo pelos para-lamas (hiper GT)
+  if (P.fenderLeds) {
+    const tex = canvasTex(512, 32, (g, w, h) => {
+      const gr = g.createLinearGradient(0, 0, w, 0);
+      gr.addColorStop(0, 'rgba(255,255,255,0)');
+      gr.addColorStop(0.35, '#ffffff');
+      gr.addColorStop(1, '#ffffff');
+      g.fillStyle = gr;
+      rrect(g, 0, h * 0.2, w, h * 0.6, h * 0.3);
+      g.fill();
+    });
+    const m = new THREE.MeshStandardMaterial({ map: tex, emissiveMap: tex, emissive: 0xffffff, emissiveIntensity: 1.2, alphaTest: 0.3, polygonOffset: true, polygonOffsetFactor: -3 });
+    for (const sz of [1, -1]) {
+      const d = 0.42;
+      decal({ center: new THREE.Vector3(P.L / 2 - d, 0, sz * ((P.fHw(d) * P.W) / 2) * 0.8), dir: new THREE.Vector3(0, -1, 0), u: Xv, v: Zv, w: 0.62, h: 0.035, nu: 30, nv: 2, offset: 0.004 }, m);
+    }
+  }
+  // --- recorte escuro na lateral e número de corrida (hiper GT)
+  if (P.cove) {
+    const d0 = P.fo + P.rA + 0.08;
+    const d1 = P.ra - P.rA - 0.04;
+    const yA = P.fYb((d0 + d1) / 2) + 0.06;
+    const yB = P.fTop((d0 + d1) / 2) - 0.22;
+    for (const sz of [1, -1]) {
+      const tex = canvasTex(512, 160, (g, w, h) => {
+        g.fillStyle = P.cove;
+        g.beginPath();
+        // borda dianteira inclinada (lado direito do decalque fica na frente)
+        g.moveTo(w * 0.02, h * 0.98);
+        g.lineTo(w * 0.7, h * 0.98);
+        g.lineTo(w * 0.98, h * 0.02);
+        g.lineTo(w * 0.55, h * 0.02);
+        g.closePath();
+        g.fill();
+      });
+      const m = new THREE.MeshPhysicalMaterial({ map: tex, roughness: 0.3, metalness: 0.4, clearcoat: 1, alphaTest: 0.5, polygonOffset: true, polygonOffsetFactor: -2 });
+      decal({ center: new THREE.Vector3(P.L / 2 - (d0 + d1) / 2, (yA + yB) / 2, 0), dir: new THREE.Vector3(0, 0, -sz), u: Xv.clone(), v: Yv, w: d1 - d0, h: yB - yA, nu: 30, nv: 10 }, m);
+    }
+  }
+  if (P.sideNumber) {
+    const d = P.fo + P.rA + 0.42;
+    const y = P.fTop(d) - 0.25;
+    for (const sz of [1, -1]) {
+      const tex = canvasTex(256, 160, (g, w, h) => {
+        g.font = `italic 900 ${Math.round(h * 0.78)}px Arial Black, Arial, sans-serif`;
+        g.textAlign = 'center';
+        g.textBaseline = 'middle';
+        g.lineWidth = 8;
+        g.strokeStyle = 'rgba(20,20,24,0.9)';
+        g.strokeText(String(P.sideNumber), w / 2, h / 2);
+        g.fillStyle = P.numberColor || '#f4f4f0';
+        g.fillText(String(P.sideNumber), w / 2, h / 2);
+      });
+      const m = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.35, alphaTest: 0.5, polygonOffset: true, polygonOffsetFactor: -4 });
+      decal({ center: new THREE.Vector3(P.L / 2 - d, y, 0), dir: new THREE.Vector3(0, 0, -sz), u: Xv.clone().multiplyScalar(sz), v: Yv, w: 0.36, h: 0.22, nu: 12, nv: 8, offset: 0.005 }, m);
+    }
+  }
+  // --- bandeirinha tricolor curta no capô
+  if (P.hoodFlag) {
+    P.hoodFlag.forEach((fc, i) => {
+      const m = paintMaterial(fc, 'gloss');
+      m.vertexColors = false;
+      m.polygonOffset = true;
+      m.polygonOffsetFactor = -3;
+      decal({ center: new THREE.Vector3(P.L / 2 - 0.85, 0, 0.32 + (i - 1) * 0.04), dir: new THREE.Vector3(0, -1, 0), u: Xv, v: Zv, w: 0.5, h: 0.035, nu: 20, nv: 2, offset: 0.004 }, m);
+    });
+  }
+  // --- adesivo de fogo na lateral
+  if (P.flames) {
+    const d0 = P.fo - 0.1;
+    const d1 = P.ra - P.rA + 0.15;
+    const yA = P.fYb((d0 + d1) / 2) + 0.05;
+    const yB = P.fTop((d0 + d1) / 2) - 0.02;
+    const tex = canvasTex(1024, 320, (g, w, h) => {
+      // labaredas nascem na frente (direita) e lambem para trás (esquerda)
+      const layer = (scale, colors, outline) => {
+        const gr = g.createLinearGradient(w, 0, 0, 0);
+        colors.forEach((c, i) => gr.addColorStop(i / (colors.length - 1), c));
+        g.fillStyle = gr;
+        g.strokeStyle = outline;
+        g.lineWidth = 5;
+        const N = 6;
+        g.beginPath();
+        g.moveTo(w, h * 0.12);
+        for (let i = 0; i < N; i++) {
+          const y0 = h * (0.12 + (i / N) * 0.76);
+          const y1 = h * (0.12 + ((i + 1) / N) * 0.76);
+          const ym = (y0 + y1) / 2;
+          const len = w * scale * (0.55 + 0.4 * Math.abs(Math.sin(i * 2.3 + 1)));
+          const tipY = ym + (y1 - y0) * 0.55;
+          g.bezierCurveTo(w * 0.7, y0 - h * 0.02, w - len * 0.7, ym - h * 0.08, w - len, tipY);
+          g.bezierCurveTo(w - len * 0.62, ym + h * 0.02, w * 0.78, y1 - h * 0.03, w * 0.86, y1);
+        }
+        g.lineTo(w, h * 0.88);
+        g.closePath();
+        g.fill();
+        if (outline) g.stroke();
+      };
+      layer(1.0, ['#ffe066', '#ff8a00', '#e8180f', '#a80b06'], 'rgba(90,0,0,0.9)');
+      layer(0.62, ['#fff7c2', '#ffd21a', '#ff7a00'], '');
+    });
+    const m = new THREE.MeshPhysicalMaterial({ map: tex, emissiveMap: tex, emissive: 0xffffff, emissiveIntensity: 0.25, roughness: 0.25, clearcoat: 1, alphaTest: 0.5, polygonOffset: true, polygonOffsetFactor: -3 });
+    for (const sz of [1, -1]) decal({ center: new THREE.Vector3(P.L / 2 - (d0 + d1) / 2, (yA + yB) / 2, 0), dir: new THREE.Vector3(0, 0, -sz), u: Xv.clone(), v: Yv, w: d1 - d0, h: yB - yA, nu: 48, nv: 16, offset: 0.004 }, m);
+  }
+
   // --- linhas de porta
-  {
+  if (!P.noDoors) {
     const dc = spec.finish === 'chrome' ? '#30343a' : 'rgba(0,0,0,0.75)';
     const dt = doorTex(dc);
     const m = new THREE.MeshStandardMaterial({ map: dt, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3 });
@@ -1639,7 +1927,7 @@ export function buildCar(spec) {
       g.fill();
     });
     decal({ center: new THREE.Vector3(P.L / 2 - (d0 + d1) / 2, 0, 0), dir: new THREE.Vector3(0, -1, 0), u: Xv.clone().negate(), v: Zv, w: d1 - d0, h: hwc * 1.45, nu: 24, nv: 12, offset: 0.003 }, new THREE.MeshStandardMaterial({ map: ct, roughness: 0.8, alphaTest: 0.5, polygonOffset: true, polygonOffsetFactor: -2 }));
-    const leather = new THREE.MeshStandardMaterial({ color: new THREE.Color(spec.interior || '#3b2a22'), roughness: 0.6 });
+    const leather = new THREE.MeshStandardMaterial({ color: new THREE.Color(P.interior || '#3b2a22'), roughness: 0.6 });
     const deck = P.fTop((d0 + d1) / 2) - P.fDip((d0 + d1) / 2);
     for (const sz of [1, -1]) {
       const back = new THREE.Mesh(new THREE.CapsuleGeometry(0.09, 0.28, 4, 10), leather);
@@ -1885,13 +2173,98 @@ export function buildCar(spec) {
     car.add(glow);
   }
 
+  // --- para-lamas dianteiros soltos sobre as rodas (cockpit aberto)
+  if (P.cycleFenders) {
+    const fm = paint.clone();
+    fm.side = THREE.DoubleSide;
+    fm.vertexColors = false;
+    if (paint.userData.fx) applyFx(fm, P.L);
+    const R = P.wr + 0.06;
+    const width = P.tw + 0.08;
+    const hwF = (P.fHw(P.fo) * P.W) / 2;
+    for (const sz of [1, -1]) {
+      const g = new THREE.CylinderGeometry(R, R, width, 36, 1, true, Math.PI - 1.75 - 0.3, 3.5);
+      g.rotateX(Math.PI / 2);
+      const f = new THREE.Mesh(g, fm);
+      f.position.set(P.L / 2 - P.fo, P.wr, sz * P.trackF);
+      car.add(f);
+      // braço que liga o para-lama ao bico
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.05, P.trackF - width / 2 - hwF + 0.12), trim);
+      arm.position.set(P.L / 2 - P.fo, P.wr + 0.12, sz * (hwF + (P.trackF - width / 2 - hwF) / 2 - 0.04));
+      car.add(arm);
+    }
+  }
+  // --- arco de proteção e caixa de ar atrás do cockpit
+  if (P.rollHoop && G.open) {
+    const d1 = G.rw + 0.02 + (P.cockpit || 0.95);
+    const deck = P.fTop(d1) - P.fDip(d1);
+    const hwc = (P.fHw(d1) * P.W) / 2;
+    const hoopMat = new THREE.MeshStandardMaterial({ color: 0x9aa0a8, metalness: 0.9, roughness: 0.3 });
+    const hoop = new THREE.Mesh(new THREE.TorusGeometry(hwc * 0.6, 0.032, 10, 32, Math.PI), hoopMat);
+    hoop.rotation.y = Math.PI / 2;
+    hoop.position.set(P.L / 2 - (d1 - 0.05), deck + 0.05, 0);
+    car.add(hoop);
+    const brace = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.6, 8), hoopMat);
+    brace.rotation.z = Math.PI / 2 + 0.75;
+    brace.position.set(P.L / 2 - (d1 + 0.18), deck + 0.28, 0);
+    car.add(brace);
+  }
+  if (P.airbox && G.open) {
+    const d = G.rw + 0.02 + (P.cockpit || 0.95) + 0.22;
+    const y = P.fTop(d) - P.fDip(d);
+    const box = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.2, 0.34), trim);
+    box.position.set(P.L / 2 - d, y + 0.09, 0);
+    car.add(box);
+    const mouth = new THREE.Mesh(new THREE.PlaneGeometry(0.26, 0.12), new THREE.MeshStandardMaterial({ color: 0x020203, roughness: 0.9 }));
+    mouth.rotation.y = Math.PI / 2;
+    mouth.position.set(P.L / 2 - d + 0.182, y + 0.1, 0);
+    car.add(mouth);
+  }
+  // --- crista central com rebites (art déco)
+  if (P.dorsal) {
+    const ridgeY = (d) => {
+      if (d > G.ws && d < G.rw) {
+        const t = P.roofFn.top(d);
+        const h = t - P.roofFn.base(d);
+        return Math.max(t + 0.035 * clamp(h / 0.3, 0, 1), P.fTop(d) - P.fDip(d));
+      }
+      return P.fTop(d) - P.fDip(d);
+    };
+    const d0 = 0.35;
+    const d1 = P.L - 0.18;
+    const sh = new THREE.Shape();
+    const N = 80;
+    for (let k = 0; k <= N; k++) {
+      const d = lerp(d0, d1, k / N);
+      const y = ridgeY(d) + 0.028 * Math.sin((Math.PI * k) / N) + 0.008;
+      if (k) sh.lineTo(P.L / 2 - d, y);
+      else sh.moveTo(P.L / 2 - d, y);
+    }
+    for (let k = N; k >= 0; k--) {
+      const d = lerp(d0, d1, k / N);
+      sh.lineTo(P.L / 2 - d, ridgeY(d) - 0.04);
+    }
+    const g = new THREE.ExtrudeGeometry(sh, { depth: 0.022, bevelEnabled: true, bevelThickness: 0.006, bevelSize: 0.006, bevelSegments: 2, curveSegments: 4 });
+    g.translate(0, 0, -0.011);
+    car.add(new THREE.Mesh(g, paint));
+    const rivet = new THREE.SphereGeometry(0.007, 8, 6);
+    for (let d = d0 + 0.05; d < d1 - 0.05; d += 0.075) {
+      for (const sz of [1, -1]) {
+        const r = new THREE.Mesh(rivet, chromeTrim);
+        r.position.set(P.L / 2 - d, ridgeY(d) + 0.004, sz * 0.024);
+        car.add(r);
+      }
+    }
+  }
+
   // --- rodas
   for (const da of [P.fo, P.ra]) {
     const x = P.L / 2 - da;
     const hwA = (P.fHw(da) * P.W) / 2;
     for (const sz of [1, -1]) {
       const wgrp = buildWheel(P, mats);
-      wgrp.position.set(x, P.wr, sz * (P.track ?? hwA - P.tw * 0.5 - 0.035));
+      const trk = da === P.fo && P.trackF ? P.trackF : P.track;
+      wgrp.position.set(x, P.wr, sz * (trk ?? hwA - P.tw * 0.5 - 0.035));
       if (sz < 0) wgrp.rotation.y = Math.PI;
       if (da === P.fo) wgrp.rotation.y += (spec.steer ?? 0.32) * (sz > 0 ? 1 : 1);
       car.add(wgrp);
