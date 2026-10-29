@@ -150,6 +150,23 @@
     <div id="card" class="hidden"><div class="c-tag"></div><div class="c-name"></div></div>
     <div id="overlay-flash"></div>
 
+    <script>
+  // aviso independente do jogo: aparece se o código principal não iniciar
+  (function () {
+    var t0 = Date.now();
+    function say(m) {
+      var s = document.getElementById('s-boot');
+      if (!s) return;
+      var p = document.getElementById('boot-msg') || document.createElement('p');
+      p.id = 'boot-msg';
+      p.style.cssText = 'color:#ff8a7a;font:13px monospace;max-width:90vw;white-space:pre-wrap;text-align:center';
+      p.textContent = m;
+      s.appendChild(p);
+    }
+    window.addEventListener('error', function (e) { say('Erro: ' + (e.message || 'falha ao carregar ' + ((e.target && (e.target.src || e.target.href)) || ''))); }, true);
+    setTimeout(function () { if (!window.game) say('O código do jogo não iniciou (' + Math.round((Date.now() - t0) / 1000) + ' s). Recarregue a página.'); }, 12000);
+  })();
+</script>
     <script type="module" src="js/main.js"></script>
   </body>
 </html>
