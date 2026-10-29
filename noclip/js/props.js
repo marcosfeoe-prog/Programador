@@ -313,7 +313,7 @@ export function wallBits(level, quads, r, count = 60) {
 }
 
 // Porta (retângulo com batente) encostada numa face de parede; devolve as peças.
-export function doorOnWall(level, q, s, { w = 0.95, h = 2.1, map = 'door_metal.jpg', frameColor = 0x6d6a62, normal = 'door_metal_n.jpg', rough = 'door_metal_r.jpg', metal = 0.3 } = {}) {
+export function doorOnWall(level, q, s, { w = 0.95, h = 2.1, map = 'door_metal.jpg', frameColor = 0x6d6a62, normal = 'door_metal_n.jpg', rough = 'door_metal_r.jpg', metal = 0.3, glow = false } = {}) {
   const rot = Math.atan2(q.n[0], q.n[2]);
   const bx = q.o[0] + q.u[0] * s, bz = q.o[2] + q.u[2] * s;
   const frame = level.prop('frame', { color: frameColor, roughness: 0.5, metalness: 0.4 });
@@ -322,7 +322,7 @@ export function doorOnWall(level, q, s, { w = 0.95, h = 2.1, map = 'door_metal.j
   fx(w / 2 + 0.04, h / 2, 0.08, h);
   fx(0, h + 0.04, w + 0.16, 0.08);
   // vão escuro atrás da porta (aparece quando abre)
-  const voidM = level.prop('void', { color: 0x000000, roughness: 1, vlight: false });
+  const voidM = glow ? level.prop('voidGlow', { color: 0x000000, emissive: 0xfffaf0, emissiveIntensity: 3.2, vlight: false }) : level.prop('void', { color: 0x000000, roughness: 1, vlight: false });
   voidM.quad(
     [
       [bx - q.u[0] * w / 2 + q.n[0] * 0.004, 0, bz - q.u[2] * w / 2 + q.n[2] * 0.004],

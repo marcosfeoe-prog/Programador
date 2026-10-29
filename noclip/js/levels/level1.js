@@ -22,11 +22,11 @@ export class Level1 extends Level {
     this.id = 1;
     this.surf = {
       floor: { tex: 'l1_floor', scale: 4, normalScale: 0.7, macro: 0.2, roughness: 1, envMapIntensity: 0.25 },
-      wall: { tex: 'l1_wall', scale: 1.6, normalScale: 0.9, macro: 0.16, grime: [0.38, 1.1, 0.3] },
+      wall: { tex: 'l1_wall', scale: 1.6, normalScale: 0.9, macro: 0.16, grime: [0.38, 1.1, 0.3], color: 0xb4b2a8 },
       ceil: { tex: 'l1_ceiling', scale: 2, normalScale: 1.0, macro: 0.1 },
     };
     this.fog = { color: 0x08090a, density: 0.034 };
-    this.grade = { exposure: 1.1, tint: [1.0, 0.98, 0.93], lift: [0.0, 0.006, 0.01], sat: 0.85, contrast: 1.08, bloom: 0.55, ca: 0.025, grain: 0.08 };
+    this.grade = { exposure: 1.0, tint: [1.0, 0.98, 0.93], lift: [0.0, 0.006, 0.01], sat: 0.85, contrast: 1.08, bloom: 0.55, ca: 0.025, grain: 0.08 };
     this.bakeParams.floorAlb = [0.3, 0.3, 0.28];
     this.bakeParams.wallAlb = [0.42, 0.43, 0.38];
     this.bakeParams.ambient = [0.004, 0.0045, 0.005];
@@ -58,6 +58,7 @@ export class Level1 extends Level {
         zone[j * NX + i] = n < 0.36 ? 0 : n < 0.7 ? 1 : n < 0.8 ? 3 : 2;
       }
     zone[NX + 1] = 1;
+    zone[NX - 2] = zone[NX - 2] === 2 ? 1 : zone[NX - 2];
     this.zone = zone;
     this.NX = NX;
     this.NZ = NZ;
@@ -132,6 +133,8 @@ export class Level1 extends Level {
           this.lamp(x, z, { group: roll < 0.08 ? 1 : roll < 0.12 ? 2 : roll < 0.2 ? 3 : 0, broken: r.chance(0.06) });
         }
       }
+    // a área em frente ao elevador é sempre iluminada
+    for (const dx of [-3, 3]) this.lamp((this.elev.x0 + this.elev.x1) / 2 + dx, this.elev.z1 + 3.5, { group: 0 });
     // luz dentro do elevador
     const ecx = (this.elev.x0 + this.elev.x1) / 2, ecz = (this.elev.z0 + this.elev.z1) / 2;
     this.light(ecx, 3.1, ecz, 2.2, { kind: 'point', hx: 0.1, radius: 5, color: [1, 0.95, 0.85], group: 3 });
@@ -193,7 +196,7 @@ export class Level1 extends Level {
     const capG = new THREE.CylinderGeometry(0.07, 0.07, 0.05, 12);
     outer.add(capG, new THREE.Matrix4().makeTranslation(x, y + 0.27, z));
     if (!broken) {
-      this.light(x, y - 0.02, z, 7.5, { kind: 'point', hx: 0.12, radius: 15, group, color: this.panelColor });
+      this.light(x, y - 0.02, z, 4.6, { kind: 'point', hx: 0.12, radius: 14, group, color: this.panelColor });
       const bulb = this.prop('bulb' + group, { color: 0x000000, emissive: this.panelColor, emissiveIntensity: 9, emitPower: true, vlight: false });
       bulb.add(new THREE.SphereGeometry(0.06, 12, 8), new THREE.Matrix4().makeTranslation(x, y + 0.03, z));
     } else {
@@ -371,6 +374,7 @@ export class Level1 extends Level {
   }
 
   setEnv(env) {
+    if (!this.meshFloor.material.isMeshStandardMaterial) return;
     this.meshFloor.material.envMap = env;
     this.meshFloor.material.envMapIntensity = 0.22;
     this.meshFloor.material.needsUpdate = true;

@@ -33,6 +33,16 @@ export class UI {
     $('e-menu').onclick = () => game.quitToMenu();
     $('s-click').onclick = () => game.resume();
     this.buildKeypad();
+    addEventListener('keydown', (e) => {
+      if (this.current === 's-keypad') {
+        if (/^[0-9]$/.test(e.key)) this.kpPress(e.key);
+        else if (e.key === 'Enter') this.kpPress('OK');
+        else if (e.key === 'Backspace') {
+          this.kpVal = this.kpVal.slice(0, -1);
+          this.kpRender();
+        } else if (e.key === 'Escape') game.closeOverlay();
+      } else if (this.current === 's-note' && (e.key === 'Escape' || e.code === 'KeyE' || e.key === 'Enter')) game.closeOverlay();
+    });
   }
 
   applyLang() {

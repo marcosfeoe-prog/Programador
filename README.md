@@ -154,3 +154,15 @@ Segundo jogo do repositório: exploração em primeira pessoa pelos **Níveis 0,
 noturna, câmera térmica…), qualidade gráfica **Baixa, Média, Alta e Ultra** e
 controles feitos para **celular**. Com o servidor rodando (`npm start`), abra
 `http://localhost:8080/liminar/`. Detalhes em [`liminar/README.md`](liminar/README.md).
+
+---
+
+# NOCLIP — Backrooms (pasta `noclip/`)
+
+Terceiro jogo do repositório, feito do zero: terror em primeira pessoa no estilo de
+*Backrooms: Escape Together*, com **três níveis** — **Nível 0** (o Saguão amarelo e o
+Rastejador), **Nível 1** (o armazém da Zona Habitável, apagões e Sorridentes) e
+**Nível Fun =)** (a festa, os Festeiros e a porta FUN EXIT). Texturas geradas por
+script, iluminação pré-calculada, criaturas modeladas por campos de distância com
+animações procedurais e sons sintetizados. Com o servidor rodando (`npm start`), abra
+`http://localhost:8080/noclip/`. Detalhes em [`noclip/README.md`](noclip/README.md).

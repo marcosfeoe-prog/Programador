@@ -62,7 +62,8 @@ export function noise1(x, seed = 0) {
 export const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-export const isTouch = () => matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+// toque como entrada principal (notebooks com tela de toque e mouse continuam no modo PC)
+export const isTouch = () => matchMedia('(pointer: coarse)').matches || (navigator.maxTouchPoints > 0 && !matchMedia('(pointer: fine)').matches);
 
 // Ruído de valor 2D suave.
 export function noise2(x, y, seed = 0) {

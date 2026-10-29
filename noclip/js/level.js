@@ -135,6 +135,7 @@ export class Level {
     this.quads = quads;
     this.atlas = atlas;
     if (this.decorate) this.decorate(quads, atlas);
+    grid.finalize(); // objetos colocados na decoração também fazem sombra
     // difusores das luminárias por grupo
     const diff = new Map();
     for (const f of this.fixtures) {
@@ -284,7 +285,8 @@ export class Level {
     if (this.diffMats)
       for (const [g, m] of this.diffMats) if (g > 0) m.emissiveIntensity = (this.panelGlow ?? 7) * this.flickV[g];
     for (const u of this.updaters) u(dt, t);
-    for (const e of this.entities) e.update(dt);
+    const st = this.game.state;
+    if (st === 'play' || st === 'intro' || st === 'dying') for (const e of this.entities) e.update(dt);
     for (const pk of this.pickups) if (!pk.taken && pk.spin) pk.obj.rotation.y += dt * 0.6;
   }
 

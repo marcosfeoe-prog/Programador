@@ -61,6 +61,10 @@ class Game {
     addEventListener('pointerdown', unlockAudio);
     addEventListener('keydown', unlockAudio);
     addEventListener('touchstart', unlockAudio);
+    // depois de carregar (assíncrono) o navegador exige um clique para travar o mouse
+    this.canvas.addEventListener('click', () => {
+      if ((this.state === 'play' || this.state === 'intro') && !this.input.touch) this.input.lock();
+    });
     this.renderer.setAnimationLoop(() => this.frame());
     this.boot();
   }
@@ -185,10 +189,8 @@ class Game {
   }
 
   restartLevel() {
-    this.fresh = false;
+    // reconstrói o nível para reiniciar os quebra-cabeças
     const i = this.levelIndex;
-    this.level = this.level; // reconstrói para reiniciar quebra-cabeças
-    this.forceReload = true;
     this.ui.hideAll();
     this.state = 'loading';
     this.ui.show('s-loading');
@@ -404,6 +406,16 @@ class Game {
       if (document.fullscreenElement) document.exitFullscreen();
       else document.documentElement.requestFullscreen && document.documentElement.requestFullscreen().catch(() => {});
     }
+    // sem trava do mouse no PC: pede um clique
+    if (!inp.touch && !inp.locked) {
+      this.unlockedT = (this.unlockedT || 0) + dt;
+      if (this.unlockedT > 0.6) {
+        this.unlockedT = 0;
+        this.state = 'paused';
+        this.ui.show('s-click');
+        return;
+      }
+    } else this.unlockedT = 0;
     p.update(dt, inp, L);
     L.update(dt);
     p.applyCamera(this.camera, dt);

@@ -104,7 +104,7 @@ export class Level0 extends Level {
     }
     // início no canto, saída longe
     const si = 1, sj = 1;
-    this.spawn = { x: (si * M + 3.5) * g.cs, z: (sj * M + 3.5) * g.cs, yaw: Math.PI * 0.75 };
+    this.spawn = { x: (si * M + 3.5) * g.cs, z: (sj * M + 3.5) * g.cs, yaw: -Math.PI * 0.75 };
     g.rect(si * M + 1, sj * M + 1, si * M + M - 1, sj * M + M - 1, EMPTY);
     connect(g, r, g.cell(this.spawn.x), g.cell(this.spawn.z));
     const dist = bfs(g, g.cell(this.spawn.x), g.cell(this.spawn.z));

@@ -109,7 +109,7 @@ export class Partygoer {
     this.mesh.scale.setScalar(this.scale);
     // rosto desenhado (faixa curva presa ao osso da cabeça)
     if (!FACE) FACE = partyFace();
-    const fg = new THREE.CylinderGeometry(0.262, 0.262, 0.42, 24, 1, true, -0.95, 1.9);
+    const fg = new THREE.CylinderGeometry(0.262, 0.262, 0.52, 24, 1, true, -1.1, 2.2);
     fg.translate(0, 1.97 - J.head[1], 0);
     this.faceMat = gameMaterial({ map: FACE, transparent: true, roughness: 0.6, probe: true, forcePBR: true, polygonOffset: true, depthWrite: false });
     const face = new THREE.Mesh(fg, this.faceMat);
