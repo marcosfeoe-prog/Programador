@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#11151c" />
+  <meta name="description" content="Tornadopédia: a wiki de tornados fictícios, com imagens geradas por IA e a escala de FU a F5." />
+  <title>Tornadopédia — Wiki de Tornados Fictícios</title>
+  <link rel="icon" href="icone.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="css/wiki.css" />
+</head>
+<body>
+  <header class="topo">
+    <button class="menu-btn" id="menu-btn" aria-label="Abrir menu">☰</button>
+    <a class="marca" href="#/">
+      <img src="icone.svg" alt="" width="36" height="36" />
+      <span><b>Tornadopédia</b><small>A wiki de tornados fictícios</small></span>
+    </a>
+    <form class="busca" id="busca" role="search">
+      <input type="search" id="busca-q" placeholder="Pesquisar na Tornadopédia" autocomplete="off" aria-label="Pesquisar" />
+      <button type="submit" aria-label="Pesquisar">🔍</button>
+    </form>
+  </header>
+
+  <div class="layout">
+    <nav class="lateral" id="lateral">
+      <h3>Navegação</h3>
+      <a href="#/">Página principal</a>
+      <a href="#/lista">Todos os tornados</a>
+      <a href="#/escala">Escala de classificação</a>
+      <a href="#/aleatorio">Artigo aleatório</a>
+      <a href="#/imagens">Galeria de imagens IA</a>
+      <h3>Classes</h3>
+      <div class="classes-nav" id="classes-nav"></div>
+      <h3>Contribuir</h3>
+      <a href="#/novo">+ Criar artigo</a>
+      <a href="#/sobre">Sobre a wiki</a>
+    </nav>
+    <main class="conteudo" id="conteudo" tabindex="-1"></main>
+  </div>
+
+  <footer class="rodape">
+    Tornadopédia — todos os tornados, cidades, vítimas e eventos desta wiki são <b>fictícios</b>.
+    As imagens marcadas como “IA” foram geradas por inteligência artificial.
+  </footer>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

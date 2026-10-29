@@ -4,6 +4,11 @@ Jogo 3D de simulação de tornados que roda direto no navegador (PC e celular), 
 com [three.js](https://threejs.org/) e WebGL 2. Todas as texturas, nuvens, sons e
 modelos são gerados proceduralmente — não há arquivos de mídia externos.
 
+## Tornadopédia (wiki)
+
+Em [`wiki/`](wiki/) há uma wiki de tornados fictícios, com imagens geradas por IA e a
+escala FU–F5. Com o servidor rodando, abra `http://localhost:8080/wiki/`.
+
 ## Como jogar
 
 O jogo usa módulos ES, então precisa ser servido por HTTP (abrir o `index.html`
