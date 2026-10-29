@@ -23,18 +23,22 @@ try {
   page.on('pageerror', (e) => console.error('[page]', e.message));
   await page.goto(`http://localhost:${port}/garagem/tools/render.html`);
   await page.waitForFunction(() => window.ready === true, null, { timeout: 60000 });
-  const only = process.argv.slice(2);
+  const args = process.argv.slice(2);
+  const missing = args.includes('--missing');
+  const only = args.filter((a) => a !== '--missing');
   const carIds = await page.evaluate(() => window.carIds);
   const boxIds = await page.evaluate(() => window.boxIds);
   const save = (file, url) => fs.writeFileSync(file, Buffer.from(url.split(',')[1], 'base64'));
   for (const id of carIds) {
-    if (only.length && !only.includes(id) && !only.includes('cars')) continue;
+    if (missing && fs.existsSync(path.join(out, 'cars', `${id}.webp`))) continue;
+    if (!missing && only.length && !only.includes(id) && !only.includes('cars')) continue;
     const t = Date.now();
     save(path.join(out, 'cars', `${id}.webp`), await page.evaluate((i) => window.renderCar(i), id));
     console.log('carro', id, Date.now() - t, 'ms');
   }
   for (const id of boxIds) {
-    if (only.length && !only.includes(id) && !only.includes('boxes')) continue;
+    if (missing && fs.existsSync(path.join(out, 'boxes', `${id}.webp`))) continue;
+    if (!missing && only.length && !only.includes(id) && !only.includes('boxes')) continue;
     save(path.join(out, 'boxes', `${id}.webp`), await page.evaluate((i) => window.renderBox(i), id));
     console.log('caixa', id);
   }

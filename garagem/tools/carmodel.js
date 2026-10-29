@@ -120,6 +120,34 @@ export const TYPES = {
     bed: [3.35, 5.48],
     lights: 'square', grille: 'bars', intake: 'none', lightY: -0.1, lightZ: 0.72, lightW: 0.32, lightH: 0.16, grilleW: 1.0, grilleH: 0.34,
   },
+  roadster: {
+    L: 4.0, W: 1.73, wr: 0.32, tw: 0.23, fo: 0.82, wb: 2.33, rs: 0.16, endF: 0.3, endR: 0.32,
+    yb: [[0, 0.26], [0.3, 0.15], [3.75, 0.16], [4.0, 0.3]],
+    top: [[0, 0.5], [0.3, 0.62], [0.82, 0.72], [1.5, 0.76], [2.5, 0.8], [3.15, 0.82], [3.8, 0.78], [4.0, 0.65]],
+    dip: [[0, 0], [0.5, 0.06], [1.4, 0.04], [1.7, 0], [4.0, 0]],
+    hw: [[0, 0.85], [0.5, 0.96], [0.82, 1], [1.8, 0.96], [3.15, 1.01], [3.8, 0.96], [4.0, 0.86]],
+    gh: { ws: 1.55, roofF: 1.9, roofR: 1.9, rw: 2.02, roofY: 1.08, inset: 0.1, tumble: 0.12, bp: 99, open: true },
+    cockpit: 0.95,
+    lights: 'round', grille: 'mesh', intake: 'none', lightY: -0.06, lightZ: 0.66, lightW: 0.2, lightH: 0.16, grilleW: 0.42, grilleH: 0.12,
+  },
+  wagon: {
+    L: 4.9, W: 1.88, wr: 0.34, tw: 0.26, fo: 0.92, wb: 2.92, rs: 0.1, endF: 0.2, endR: 0.14, endV: 0.45,
+    yb: [[0, 0.28], [0.25, 0.18], [4.6, 0.2], [4.9, 0.34]],
+    top: [[0, 0.68], [0.3, 0.77], [0.92, 0.82], [1.7, 0.88], [3.0, 0.94], [3.84, 0.97], [4.8, 0.97], [4.9, 0.9]],
+    dip: [[0, 0], [0.6, 0.03], [1.6, 0.01], [4.9, 0]],
+    hw: [[0, 0.88], [0.4, 0.97], [0.92, 1], [3.84, 1], [4.7, 0.98], [4.9, 0.92]],
+    gh: { ws: 1.75, roofF: 2.4, roofR: 4.5, rw: 4.82, roofY: 1.47, inset: 0.07, tumble: 0.15, bp: 2.95, cp: 3.98 },
+    lights: 'slim', grille: 'bars', intake: 'lip', lightY: -0.06, lightZ: 0.7, lightW: 0.34, lightH: 0.1, grilleW: 0.6, grilleH: 0.18,
+  },
+  van: {
+    L: 4.5, W: 1.75, wr: 0.33, tw: 0.24, fo: 0.72, wb: 2.4, rs: 0.14, endF: 0.28, endR: 0.12, endV: 0.4,
+    yb: [[0, 0.38], [0.2, 0.3], [4.3, 0.32], [4.5, 0.42]],
+    top: [[0, 0.98], [0.15, 1.04], [0.6, 1.08], [4.4, 1.1], [4.5, 1.04]],
+    dip: [[0, 0], [4.5, 0]],
+    hw: [[0, 0.9], [0.3, 0.98], [4.3, 0.98], [4.5, 0.94]],
+    gh: { ws: 0.32, roofF: 0.78, roofR: 4.32, rw: 4.47, roofY: 1.98, inset: 0.05, tumble: 0.1, bp: 1.35, cp: 2.45 },
+    lights: 'round', grille: 'none', intake: 'none', lightY: -0.3, lightZ: 0.7, lightW: 0.2, lightH: 0.2,
+  },
   proto: {
     L: 4.4, W: 2.0, wr: 0.34, tw: 0.3, fo: 0.95, wb: 2.3, rs: 0.14, endF: 0.28, endR: 0.2,
     yb: [[0, 0.18], [0.3, 0.1], [4.1, 0.12], [4.4, 0.24]],
@@ -325,6 +353,18 @@ function makeRoofFn(P) {
   const G = P.gh;
   const base = (d) => P.fTop(d) - P.fDip(d) * 0.5 - 0.02;
   const mid = (G.roofF + G.roofR) / 2;
+  if (G.open) {
+    // conversível: só o para-brisa, caindo logo atrás para o cockpit
+    return {
+      base,
+      top: mono([
+        [G.ws, base(G.ws)],
+        [lerp(G.ws, G.roofF, 0.55), lerp(base(G.ws), G.roofY, 0.75)],
+        [G.roofF, G.roofY],
+        [G.rw, base(G.rw)],
+      ]),
+    };
+  }
   const roofKeys = [
     [G.ws, base(G.ws)],
     [lerp(G.ws, G.roofF, 0.55), lerp(base(G.ws), G.roofY, 0.78)],
@@ -810,7 +850,7 @@ export function buildCar(spec) {
   const glass = new THREE.MeshPhysicalMaterial({ color: 0x05070a, metalness: 0.2, roughness: 0.06, clearcoat: 1, clearcoatRoughness: 0.02, envMapIntensity: 0.75 });
   const trim = new THREE.MeshStandardMaterial({ color: 0x0b0c0e, metalness: 0.3, roughness: 0.45 });
   const chromeTrim = new THREE.MeshStandardMaterial({ color: 0xdfe3e8, metalness: 1, roughness: 0.08 });
-  const roofMat = spec.roof === 'black' ? new THREE.MeshPhysicalMaterial({ color: 0x0d0e10, metalness: 0.3, roughness: 0.25, clearcoat: 1 }) : paint;
+  const roofMat = spec.roof === 'black' ? new THREE.MeshPhysicalMaterial({ color: 0x0d0e10, metalness: 0.3, roughness: 0.25, clearcoat: 1 }) : spec.roofColor ? paintMaterial(spec.roofColor, 'gloss') : paint;
   const rc = RIM_COLORS[spec.rimColor || 'silver'];
   const mats = {
     tire: new THREE.MeshStandardMaterial({ color: 0x141416, roughness: 0.82, metalness: 0 }),
@@ -1018,6 +1058,37 @@ export function buildCar(spec) {
     mouth.rotation.y = Math.PI / 2;
     mouth.position.set(P.L / 2 - d + 0.312, y + 0.06, 0);
     car.add(mouth);
+  }
+
+  // --- cockpit aberto (conversíveis): abertura escura, bancos e volante
+  if (G.open) {
+    const d0 = G.rw + 0.02;
+    const d1 = d0 + (P.cockpit || 0.95);
+    const hwc = (P.fHw((d0 + d1) / 2) * P.W) / 2;
+    const ct = canvasTex(256, 128, (g, w, h) => {
+      g.fillStyle = '#0a0a0b';
+      rrect(g, 2, 2, w - 4, h - 4, h * 0.42);
+      g.fill();
+    });
+    decal({ center: new THREE.Vector3(P.L / 2 - (d0 + d1) / 2, 0, 0), dir: new THREE.Vector3(0, -1, 0), u: Xv.clone().negate(), v: Zv, w: d1 - d0, h: hwc * 1.45, nu: 24, nv: 12, offset: 0.003 }, new THREE.MeshStandardMaterial({ map: ct, roughness: 0.8, alphaTest: 0.5, polygonOffset: true, polygonOffsetFactor: -2 }));
+    const leather = new THREE.MeshStandardMaterial({ color: new THREE.Color(spec.interior || '#3b2a22'), roughness: 0.6 });
+    const deck = P.fTop((d0 + d1) / 2) - P.fDip((d0 + d1) / 2);
+    for (const sz of [1, -1]) {
+      const back = new THREE.Mesh(new THREE.CapsuleGeometry(0.09, 0.28, 4, 10), leather);
+      back.scale.set(1, 1, 2.2);
+      back.position.set(P.L / 2 - (d1 - 0.2), deck + 0.08, sz * hwc * 0.36);
+      back.rotation.z = 0.25;
+      car.add(back);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.09, 14, 10), leather);
+      head.scale.set(0.7, 0.9, 1.3);
+      head.position.set(P.L / 2 - (d1 - 0.12), deck + 0.36, sz * hwc * 0.36);
+      car.add(head);
+    }
+    const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.018, 8, 28), trim);
+    wheel.position.set(P.L / 2 - (d0 + 0.28), deck + 0.2, hwc * 0.36);
+    wheel.rotation.y = Math.PI / 2;
+    wheel.rotation.x = 0.35;
+    car.add(wheel);
   }
 
   // --- caçamba (picape): tampa preta
