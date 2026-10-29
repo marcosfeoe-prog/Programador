@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Garagem — estúdio de renderização</title>
+    <style>
+      body { margin: 0; background: repeating-conic-gradient(#2a2a2a 0 25%, #333 0 50%) 0 0 / 24px 24px; color: #eee; font: 14px sans-serif; }
+      canvas { display: block; }
+    </style>
+    <script type="importmap">
+      { "imports": { "three": "../../vendor/three/three.module.min.js" } }
+    </script>
+  </head>
+  <body>
+    <script type="module">
+      // Estúdio: renderiza um carro/caixa com fundo transparente e devolve a imagem.
+      // Usado por tools/render.mjs (Playwright). Também dá para abrir no navegador:
+      //   /garagem/tools/render.html?car=<id>
+      import * as THREE from 'three';
+      import { buildCar, buildBox } from './carmodel.js';
+      import { CARS, BOXES } from '../js/data.js';
+
+      const W = 960;
+      const H = 560;
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+      renderer.setPixelRatio(1);
+      renderer.setSize(W, H);
+      renderer.setClearColor(0x000000, 0);
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.05;
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      document.body.appendChild(renderer.domElement);
+
+      // Ambiente de estúdio para reflexos: sala escura com softboxes.
+      function studioEnv() {
+        const s = new THREE.Scene();
+        const room = new THREE.Mesh(new THREE.SphereGeometry(30, 32, 16), new THREE.MeshBasicMaterial({ side: THREE.BackSide, vertexColors: true }));
+        const pa = room.geometry.attributes.position;
+        const cols = [];
+        for (let i = 0; i < pa.count; i++) {
+          const y = pa.getY(i) / 30;
+          const c = y > 0 ? 0.18 + 0.25 * y : 0.06 + 0.08 * (1 + y);
+          cols.push(c, c, c * 1.05);
+        }
+        room.geometry.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+        s.add(room);
+        const panel = (w, h, x, y, z, k) => {
+          const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(k, k, k), side: THREE.DoubleSide }));
+          m.position.set(x, y, z);
+          m.lookAt(0, 0, 0);
+          s.add(m);
+        };
+        panel(18, 6, 0, 20, 0, 3.2); // softbox de teto
+        panel(4, 14, -16, 6, 10, 2.2);
+        panel(4, 14, 16, 6, -10, 1.6);
+        panel(20, 1.6, 6, 3, 18, 2.6); // faixa horizontal (linha de reflexo)
+        panel(20, 1.2, -6, 2, -18, 1.4);
+        panel(10, 3, 18, 10, 12, 1.8);
+        const pm = new THREE.PMREMGenerator(renderer);
+        return pm.fromScene(s, 0.02).texture;
+      }
+
+      const scene = new THREE.Scene();
+      scene.environment = studioEnv();
+      const hemi = new THREE.HemisphereLight(0xffffff, 0x333333, 0.4);
+      scene.add(hemi);
+      const key = new THREE.DirectionalLight(0xffffff, 1.6);
+      key.position.set(2, 8, 3);
+      key.castShadow = true;
+      key.shadow.mapSize.set(2048, 2048);
+      key.shadow.camera.left = -4;
+      key.shadow.camera.right = 4;
+      key.shadow.camera.top = 4;
+      key.shadow.camera.bottom = -4;
+      key.shadow.radius = 6;
+      key.shadow.blurSamples = 16;
+      key.shadow.bias = -0.0005;
+      scene.add(key);
+      const rim = new THREE.DirectionalLight(0xbfd4ff, 0.7);
+      rim.position.set(-6, 3, -5);
+      scene.add(rim);
+
+      // chão: sombra projetada + sombra de contato
+      const ground = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.ShadowMaterial({ opacity: 0.32 }));
+      ground.rotation.x = -Math.PI / 2;
+      ground.receiveShadow = true;
+      scene.add(ground);
+      const blobTex = (() => {
+        const c = document.createElement('canvas');
+        c.width = c.height = 256;
+        const g = c.getContext('2d');
+        const gr = g.createRadialGradient(128, 128, 10, 128, 128, 128);
+        gr.addColorStop(0, 'rgba(0,0,0,0.85)');
+        gr.addColorStop(0.5, 'rgba(0,0,0,0.45)');
+        gr.addColorStop(1, 'rgba(0,0,0,0)');
+        g.fillStyle = gr;
+        g.fillRect(0, 0, 256, 256);
+        return new THREE.CanvasTexture(c);
+      })();
+      const blob = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false }));
+      blob.rotation.x = -Math.PI / 2;
+      blob.position.y = 0.002;
+      scene.add(blob);
+
+      const camera = new THREE.PerspectiveCamera(26, W / H, 0.1, 100);
+      let current = null;
+
+      function frame(obj, az, el, fill = 0.9) {
+        const box = new THREE.Box3().setFromObject(obj);
+        const center = box.getCenter(new THREE.Vector3());
+        const dir = new THREE.Vector3(Math.cos(el) * Math.cos(az), Math.sin(el), Math.cos(el) * Math.sin(az));
+        // amostra pontos da malha para enquadrar justo
+        const pts = [];
+        obj.traverse((o) => {
+          if (!o.isMesh) return;
+          const p = o.geometry.attributes.position;
+          const step = Math.max(1, Math.floor(p.count / 400));
+          for (let i = 0; i < p.count; i += step) pts.push(new THREE.Vector3().fromBufferAttribute(p, i).applyMatrix4(o.matrixWorld));
+        });
+        let target = center.clone();
+        let dist = box.getSize(new THREE.Vector3()).length() * 1.8;
+        for (let it = 0; it < 6; it++) {
+          camera.position.copy(target).addScaledVector(dir, dist);
+          camera.lookAt(target);
+          camera.updateMatrixWorld();
+          let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+          for (const p of pts) {
+            const q = p.clone().project(camera);
+            x0 = Math.min(x0, q.x);
+            x1 = Math.max(x1, q.x);
+            y0 = Math.min(y0, q.y);
+            y1 = Math.max(y1, q.y);
+          }
+          const sx = (x1 - x0) / 2 / fill;
+          const sy = (y1 - y0) / 2 / (fill * 0.92);
+          const s = Math.max(sx, sy);
+          // recentraliza
+          const cx = (x0 + x1) / 2;
+          const cy = (y0 + y1) / 2;
+          const right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0);
+          const up = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1);
+          const halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * dist;
+          const halfW = halfH * camera.aspect;
+          target.addScaledVector(right, cx * halfW).addScaledVector(up, cy * halfH);
+          dist *= s;
+        }
+        camera.position.copy(target).addScaledVector(dir, dist);
+        camera.lookAt(target);
+      }
+
+      function show(obj, opts = {}) {
+        if (current) scene.remove(current);
+        current = obj;
+        scene.add(obj);
+        obj.updateMatrixWorld(true);
+        const box = new THREE.Box3().setFromObject(obj);
+        const size = box.getSize(new THREE.Vector3());
+        blob.scale.set(size.x * 1.15, size.z * 1.35, 1);
+        blob.position.x = (box.min.x + box.max.x) / 2;
+        frame(obj, opts.az ?? 0.7, opts.el ?? 0.22, opts.fill ?? 0.92);
+        renderer.render(scene, camera);
+      }
+
+      window.renderCar = (id, fmt = 'image/webp', q = 0.88, view) => {
+        const c = CARS.find((x) => x.id === id);
+        show(buildCar(c.model3d), view);
+        return renderer.domElement.toDataURL(fmt, q);
+      };
+      window.renderBox = (id, fmt = 'image/webp', q = 0.9) => {
+        const b = BOXES.find((x) => x.id === id);
+        const obj = buildBox(b.model3d);
+        const fillLight = new THREE.PointLight(0xffffff, 30, 0, 2);
+        fillLight.position.set(3, 2.5, 4);
+        scene.add(fillLight);
+        show(obj, { az: 1.05, el: 0.42, fill: 0.84 });
+        scene.remove(fillLight);
+        return renderer.domElement.toDataURL(fmt, q);
+      };
+      window.carIds = CARS.map((c) => c.id);
+      window.boxIds = BOXES.map((b) => b.id);
+
+      const qs = new URLSearchParams(location.search);
+      if (qs.get('car')) window.renderCar(qs.get('car'));
+      else if (qs.get('box')) window.renderBox(qs.get('box'));
+      window.ready = true;
+    </script>
+  </body>
+</html>
