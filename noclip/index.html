@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b0a06" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="description" content="NOCLIP — jogo de terror dos Backrooms em 3D no navegador: Nível 0, Nível 1 e Nível Fun =)." />
+    <title>NOCLIP — Backrooms</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/style.css" />
+    <script type="importmap">
+      { "imports": { "three": "../vendor/three/three.module.min.js" } }
+    </script>
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+
+    <div id="hud" class="hidden">
+      <div id="obj">
+        <div id="obj-tag"></div>
+        <div id="obj-text"></div>
+        <div id="obj-items"></div>
+      </div>
+      <div id="battery" title="">
+        <svg viewBox="0 0 24 40" width="22" height="36">
+          <rect x="7" y="1" width="10" height="4" rx="1" />
+          <rect x="2" y="5" width="20" height="33" rx="3" class="body" />
+          <rect x="5" y="29" width="14" height="6" class="cell c1" />
+          <rect x="5" y="21.5" width="14" height="6" class="cell c2" />
+          <rect x="5" y="14" width="14" height="6" class="cell c3" />
+          <rect x="5" y="6.5" width="14" height="6" class="cell c4" />
+        </svg>
+      </div>
+      <div id="hp"><span class="plus">✚</span><span id="hp-val">100</span></div>
+      <div id="mic">
+        <svg viewBox="0 0 24 36" width="22" height="34">
+          <defs>
+            <clipPath id="micclip"><rect id="mic-fill" x="0" y="36" width="24" height="36" /></clipPath>
+          </defs>
+          <rect x="7" y="2" width="10" height="20" rx="5" class="cap" />
+          <rect x="7" y="2" width="10" height="20" rx="5" class="lvl" clip-path="url(#micclip)" />
+          <path d="M3 16 a9 9 0 0 0 18 0" class="arc" />
+          <line x1="12" y1="25" x2="12" y2="31" class="arc" />
+          <line x1="7" y1="32" x2="17" y2="32" class="arc" />
+        </svg>
+      </div>
+      <div id="sta"><div id="sta-fill"></div></div>
+      <div id="cross"></div>
+      <div id="prompt" class="hidden"><span id="prompt-key">E</span><span id="prompt-text"></span></div>
+      <div id="toast"></div>
+      <div id="fps" class="hidden"></div>
+    </div>
+
+    <div id="touch" class="hidden">
+      <div id="joy"><div id="joy-knob"></div></div>
+      <div class="tbtn big" id="b-use" data-act="use">USE</div>
+      <div class="tbtn" id="b-flash" data-act="flash">LUZ</div>
+      <div class="tbtn" id="b-crouch" data-act="crouch">⇩</div>
+      <div class="tbtn" id="b-jump" data-act="jump">⇧</div>
+      <div class="tbtn small" id="b-shake" data-act="shake">↯</div>
+      <div class="tbtn small" id="b-pause" data-act="pause">II</div>
+    </div>
+
+    <div id="screens">
+      <section id="s-boot" class="screen">
+        <div class="title"><h1 class="glitch" data-text="NOCLIP">NOCLIP</h1></div>
+        <div class="bar"><div id="boot-bar"></div></div>
+      </section>
+      <section id="s-menu" class="screen hidden menu">
+        <div class="title"><h1 class="glitch" data-text="NOCLIP">NOCLIP</h1><div class="sub" data-t="title_sub"></div></div>
+        <nav>
+          <button id="m-play" data-t="play"></button>
+          <button id="m-levels" data-t="levels"></button>
+          <button id="m-settings" data-t="settings"></button>
+          <button id="m-controls" data-t="controls"></button>
+          <button id="m-credits" data-t="credits"></button>
+        </nav>
+      </section>
+      <section id="s-levels" class="screen hidden panel">
+        <h2 data-t="levels"></h2>
+        <div id="level-list"></div>
+        <button class="back" data-t="back"></button>
+      </section>
+      <section id="s-settings" class="screen hidden panel">
+        <h2 data-t="settings"></h2>
+        <div id="settings-list"></div>
+        <p class="note" data-t="q_note"></p>
+        <button class="back" data-t="back"></button>
+      </section>
+      <section id="s-controls" class="screen hidden panel">
+        <h2 data-t="controls"></h2>
+        <p data-t="ctrl_pc"></p>
+        <p data-t="ctrl_mobile"></p>
+        <button class="back" data-t="back"></button>
+      </section>
+      <section id="s-credits" class="screen hidden panel">
+        <h2 data-t="credits"></h2>
+        <p class="pre" data-t="credits_text"></p>
+        <button class="back" data-t="back"></button>
+      </section>
+      <section id="s-loading" class="screen hidden">
+        <div class="lv-tag" id="ld-tag"></div>
+        <div class="lv-name" id="ld-name"></div>
+        <div class="lv-desc" id="ld-desc"></div>
+        <div class="bar"><div id="ld-bar"></div></div>
+        <div class="lv-step" id="ld-step"></div>
+        <div class="tip" id="ld-tip"></div>
+      </section>
+      <section id="s-pause" class="screen hidden panel">
+        <h2 data-t="paused"></h2>
+        <nav>
+          <button id="p-resume" data-t="resume"></button>
+          <button id="p-settings" data-t="settings"></button>
+          <button id="p-restart" data-t="restart"></button>
+          <button id="p-quit" data-t="quit"></button>
+        </nav>
+      </section>
+      <section id="s-dead" class="screen hidden dead">
+        <h2 data-t="dead"></h2>
+        <p data-t="dead_sub"></p>
+        <button id="d-respawn" data-t="respawn"></button>
+      </section>
+      <section id="s-note" class="screen hidden">
+        <div class="paper"><div id="note-text"></div></div>
+        <button id="n-close" data-t="note_close"></button>
+      </section>
+      <section id="s-keypad" class="screen hidden">
+        <div class="keypad">
+          <div class="kp-title" data-t="keypad_title"></div>
+          <div class="kp-display" id="kp-display">____</div>
+          <div class="kp-grid" id="kp-grid"></div>
+          <div class="kp-hint" data-t="keypad_hint"></div>
+        </div>
+      </section>
+      <section id="s-end" class="screen hidden end">
+        <h2 data-t="end_title"></h2>
+        <p class="pre" id="end-text"></p>
+        <p id="end-stats"></p>
+        <button id="e-menu" data-t="end_menu"></button>
+      </section>
+      <section id="s-click" class="screen hidden click">
+        <p id="click-text"></p>
+      </section>
+    </div>
+
+    <div id="card" class="hidden"><div class="c-tag"></div><div class="c-name"></div></div>
+    <div id="overlay-flash"></div>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
