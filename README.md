@@ -154,3 +154,14 @@ Segundo jogo do repositório: exploração em primeira pessoa pelos **Níveis 0,
 noturna, câmera térmica…), qualidade gráfica **Baixa, Média, Alta e Ultra** e
 controles feitos para **celular**. Com o servidor rodando (`npm start`), abra
 `http://localhost:8080/liminar/`. Detalhes em [`liminar/README.md`](liminar/README.md).
+
+---
+
+# Ofensiva — Tiro Tático 3D (pasta `ofensiva/`)
+
+Terceiro jogo do repositório: tiro tático em primeira pessoa no estilo dos clássicos
+de desarme de bomba. Terroristas × Contra-Terroristas no mapa **Poeira**, com bomba,
+economia, menu de compra, 14 armas com recuo próprio, granadas e bots com quatro
+níveis de dificuldade. Modos desarme de bomba, mata-mata e treino. Com o servidor
+rodando (`npm start`), abra `http://localhost:8080/ofensiva/`. Detalhes em
+[`ofensiva/README.md`](ofensiva/README.md).

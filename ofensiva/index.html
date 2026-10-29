@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#14110c" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="description" content="Tiro tático em primeira pessoa: Terroristas contra Contra-Terroristas, bomba, economia, menu de compra, recuo de armas e bots." />
+    <title>Ofensiva — Tiro Tático 3D</title>
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/style.css" />
+    <script type="importmap">
+      { "imports": { "three": "../vendor/three/three.module.min.js" } }
+    </script>
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+
+    <div id="flash"></div>
+    <div id="scope" class="hidden"><div class="ring"></div><div class="h"></div><div class="v"></div></div>
+    <div id="dmg-ind"></div>
+
+    <!-- HUD -->
+    <div id="hud" class="hidden">
+      <div id="top">
+        <div class="side ct"><div class="alive" id="alive-ct"></div><div class="score" id="score-ct">0</div></div>
+        <div id="timer-box"><div id="timer">1:55</div><div id="round-no">Rodada 1</div></div>
+        <div class="side t"><div class="score" id="score-t">0</div><div class="alive" id="alive-t"></div></div>
+      </div>
+      <canvas id="radar" width="220" height="220"></canvas>
+      <div id="place"></div>
+      <div id="money"><span id="buyzone">🛒</span><span id="money-v">$800</span></div>
+      <div id="money-delta"></div>
+      <div id="killfeed"></div>
+      <div id="radio"></div>
+      <div id="crosshair"><i class="l"></i><i class="r"></i><i class="t"></i><i class="b"></i><i class="d"></i></div>
+      <div id="hitmarker"></div>
+      <div id="center-msg"><div id="cm-title"></div><div id="cm-sub"></div></div>
+      <div id="hint"></div>
+      <div id="progress" class="hidden"><div id="progress-label"></div><div class="bar"><div id="progress-fill"></div></div></div>
+      <div id="bottom-left">
+        <div class="stat"><span class="ico">✚</span><span id="hp">100</span></div>
+        <div class="stat"><span class="ico" id="armor-ico">⛨</span><span id="armor">0</span></div>
+      </div>
+      <div id="bottom-right">
+        <div id="inv"></div>
+        <div id="ammo"><span id="ammo-mag">20</span><span id="ammo-res">/ 120</span></div>
+        <div id="wname">Glock-18</div>
+      </div>
+      <div id="bomb-ico" class="hidden">💣</div>
+      <div id="spectate" class="hidden"></div>
+    </div>
+
+    <!-- Menu de compra -->
+    <div id="buy" class="hidden">
+      <div class="buy-head"><b>MENU DE COMPRA</b><span id="buy-money">$800</span><span id="buy-time"></span><span class="close">B / Esc para fechar</span></div>
+      <div id="buy-grid"></div>
+    </div>
+
+    <!-- Placar -->
+    <div id="scoreboard" class="hidden"></div>
+
+    <!-- Controles de toque -->
+    <div id="touch" class="hidden">
+      <div id="t-zone"></div>
+      <div id="t-stick"><div id="t-knob"></div></div>
+      <div class="tb" id="tb-fire" data-key="Mouse0" data-aim="1">🔫</div>
+      <div class="tb" id="tb-fire2" data-key="Mouse0" data-aim="1">🔫</div>
+      <div class="tb" id="tb-scope" data-key="Mouse2">◎</div>
+      <div class="tb" id="tb-jump" data-key="Space">⤒</div>
+      <div class="tb" id="tb-crouch" data-key="ControlLeft" data-toggle="1">⤓</div>
+      <div class="tb" id="tb-reload" data-key="KeyR">R</div>
+      <div class="tb" id="tb-use" data-key="KeyE">E</div>
+      <div class="tb" id="tb-swap" data-key="KeyQ">⇄</div>
+      <div class="tb" id="tb-nade" data-key="Digit4">💥</div>
+      <div class="tb small" id="tb-buy" data-key="KeyB">$</div>
+      <div class="tb small" id="tb-score" data-key="Tab">☰</div>
+      <div class="tb small" id="tb-pause" data-key="Escape">❚❚</div>
+    </div>
+
+    <!-- Menus -->
+    <div id="menu" class="screen">
+      <div class="menu-box">
+        <h1>OFENSIVA</h1>
+        <div class="tagline">Tiro tático em primeira pessoa · Mapa Poeira</div>
+        <div id="main-menu">
+          <div class="row">
+            <label>Lado</label>
+            <div class="seg" data-opt="team"><button data-v="CT" class="on">Contra-Terroristas</button><button data-v="T">Terroristas</button><button data-v="auto">Automático</button></div>
+          </div>
+          <div class="row">
+            <label>Bots</label>
+            <div class="seg" data-opt="skill"><button data-v="easy">Fácil</button><button data-v="normal" class="on">Normal</button><button data-v="hard">Difícil</button><button data-v="expert">Expert</button></div>
+          </div>
+          <div class="row">
+            <label>Partida</label>
+            <div class="seg" data-opt="length"><button data-v="quick">Rápida (MR4)</button><button data-v="short" class="on">Curta (MR8)</button><button data-v="comp">Competitiva (MR12)</button></div>
+          </div>
+          <div class="row">
+            <label>Jogadores</label>
+            <div class="seg" data-opt="size"><button data-v="2">2×2</button><button data-v="3">3×3</button><button data-v="5" class="on">5×5</button></div>
+          </div>
+          <div class="row">
+            <label>Modo</label>
+            <div class="seg" data-opt="mode"><button data-v="defuse" class="on">Desarme de bomba</button><button data-v="dm">Mata-mata</button><button data-v="practice">Treino livre</button></div>
+          </div>
+          <button id="play" class="big">JOGAR</button>
+          <div class="menu-links"><button id="open-settings">Configurações</button><button id="open-help">Controles</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="pause" class="screen hidden">
+      <div class="menu-box">
+        <h2>PAUSADO</h2>
+        <button id="resume" class="big">CONTINUAR</button>
+        <div class="menu-links"><button id="p-settings">Configurações</button><button id="p-help">Controles</button><button id="quit">Sair da partida</button></div>
+      </div>
+    </div>
+
+    <div id="settings" class="screen hidden">
+      <div class="menu-box">
+        <h2>CONFIGURAÇÕES</h2>
+        <div class="row"><label>Sensibilidade <b id="v-sens"></b></label><input type="range" id="s-sens" min="0.2" max="6" step="0.05" /></div>
+        <div class="row"><label>Campo de visão <b id="v-fov"></b></label><input type="range" id="s-fov" min="60" max="100" step="1" /></div>
+        <div class="row"><label>Volume <b id="v-vol"></b></label><input type="range" id="s-vol" min="0" max="1" step="0.01" /></div>
+        <div class="row"><label>Mira</label><div class="seg" data-set="xhair"><button data-v="#3cff5a">Verde</button><button data-v="#00e5ff">Ciano</button><button data-v="#ffe600">Amarela</button><button data-v="#ff3cdc">Rosa</button><button data-v="#ffffff">Branca</button></div></div>
+        <div class="row"><label>Mira dinâmica</label><div class="seg" data-set="dynamic"><button data-v="1">Sim</button><button data-v="0">Não</button></div></div>
+        <div class="row"><label>Gráficos</label><div class="seg" data-set="quality"><button data-v="low">Baixa</button><button data-v="medium">Média</button><button data-v="high">Alta</button></div></div>
+        <div class="row"><label>Inverter eixo Y</label><div class="seg" data-set="invert"><button data-v="0">Não</button><button data-v="1">Sim</button></div></div>
+        <button id="settings-back" class="big">VOLTAR</button>
+      </div>
+    </div>
+
+    <div id="help" class="screen hidden">
+      <div class="menu-box wide">
+        <h2>CONTROLES</h2>
+        <div class="help-grid">
+          <span>W A S D</span><span>Mover</span>
+          <span>Mouse</span><span>Mirar</span>
+          <span>Botão esquerdo</span><span>Atirar / golpe / arremessar granada</span>
+          <span>Botão direito</span><span>Luneta · golpe forte da faca · granada por baixo</span>
+          <span>Espaço</span><span>Pular</span>
+          <span>Ctrl / C</span><span>Agachar (mais precisão)</span>
+          <span>Shift</span><span>Andar em silêncio</span>
+          <span>R</span><span>Recarregar</span>
+          <span>E</span><span>Plantar / desarmar a bomba · pegar arma</span>
+          <span>1 2 3 4 5</span><span>Primária · pistola · faca · granadas · bomba</span>
+          <span>Q / roda</span><span>Última arma / trocar arma</span>
+          <span>G</span><span>Largar a arma</span>
+          <span>F</span><span>Inspecionar a arma</span>
+          <span>B</span><span>Menu de compra (na área de compra)</span>
+          <span>Tab</span><span>Placar</span>
+          <span>Esc</span><span>Pausar</span>
+        </div>
+        <p class="help-tip">Dica: pare antes de atirar. Correndo, os rifles erram muito. Atire em rajadas curtas de longe e puxe a mira para baixo para controlar o recuo.</p>
+        <button id="help-back" class="big">VOLTAR</button>
+      </div>
+    </div>
+
+    <div id="loading" class="screen hidden"><div class="menu-box"><h2>CARREGANDO…</h2></div></div>
+    <div id="error" class="hidden"></div>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
