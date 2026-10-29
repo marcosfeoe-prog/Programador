@@ -120,6 +120,11 @@ export const NOTES = {
     'No laboratório tem um computador que abre a jaula da quarentena. Lá dentro alguém deixou um rastro azul até uma porta aberta.',
   ],
   fr: ['Lista de compras: pão, leite, lâmpadas (a da sala anda zumbindo).'],
+  '57': [
+    'Tem um computador no chão de um quarto no 2º andar. Atrás da porta de madeira. Ele liga. Leia tudo.',
+    'Os passos param quando eu paro. Se eu viro, não tem ninguém. Eu parei de virar.',
+    'Dois olhos vermelhos dentro da loja de discos. Eu andei na direção deles e eles foram embora. Devagar. De costas.',
+  ],
   '55': [
     'ELES SE MEXEM QUANDO VOCÊ NÃO OLHA. Ande de costas se precisar. Nunca vire as costas para um deles.',
     'Eu pisquei e ele estava do meu lado. Do MEU LADO. Conte as piscadas. Sempre que piscar, olhe de novo.',

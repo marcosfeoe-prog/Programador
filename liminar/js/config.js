@@ -121,7 +121,7 @@ export const FILTERS = [
 // Os níveis, na ordem em que são visitados. `key` identifica a classe do nível
 // e os bilhetes; `num` é o número canônico (10.1 é um subnível do 10).
 // Ordem em que os níveis são visitados (as chaves de LEVELS; secretos e partes ficam de fora).
-export const ORDER = ['fr', '0', '1', '2', '3', '4', '5', '8', '9', '10', '10.1', '11', '12', '14', '15', '16', '23', '34', '35', '37', '43', '44', '45', '46', '47', '48', '49', '122', '62', '69', '54', '55', '257', '88', '177'];
+export const ORDER = ['fr', '0', '1', '2', '3', '4', '5', '8', '9', '10', '10.1', '11', '12', '14', '15', '16', '23', '34', '35', '37', '43', '44', '45', '46', '47', '48', '49', '122', '62', '69', '54', '55', '57', '257', '88', '177'];
 
 // Posição de um nível na ordem (partes contam como o nível principal; secretos, como o pai).
 export function orderPos(info) {
@@ -634,6 +634,16 @@ export const LEVELS = [
     desc: 'As paredes mudam: corredores de hotel creme e azul, carpete azul e passadeiras. Os Manequins não chegam aqui.',
     objective: 'Encontre a porta de saída do hotel.',
     hint: 'Aqui dá para respirar.',
+  },
+  {
+    key: '57',
+    num: 57,
+    name: 'Shopping Abandonado',
+    tag: 'Nível 57',
+    danger: 'Classe 2 · O Gigante',
+    desc: 'Um shopping enorme, vazio, mas que continua funcionando: luzes acesas, música de elevador, lojas fechadas. No escuro, dois olhos vermelhos observam.',
+    objective: 'Suba ao 2º andar e descubra os segredos do computador.',
+    hint: 'O Gigante não ataca. Duas saídas: o duto de ventilação e o corredor de serviço.',
   },
 ];
 
