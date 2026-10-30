@@ -550,13 +550,20 @@ class Game {
   savePhoto() {
     $('photobar').classList.add('hidden');
     this.renderer.render(this.scene, this.camera);
-    const url = this.canvas.toDataURL('image/png');
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `rota-serena-${Date.now()}.png`;
-    a.click();
+    const url = this.canvas.toDataURL('image/jpeg', 0.92);
     $('photobar').classList.remove('hidden');
-    this.hud.toast('📸 Foto salva');
+    // mostra a foto; o jogador salva pelo próprio navegador (funciona em qualquer lugar)
+    let ov = $('photo-view');
+    if (!ov) {
+      ov = document.createElement('div');
+      ov.id = 'photo-view';
+      ov.className = 'overlay';
+      ov.innerHTML = '<div class="panel wide" style="text-align:center"><img id="photo-img" alt="Foto da viagem" style="max-width:100%;border-radius:10px" /><p class="dim small">Clique com o botão direito (ou toque e segure) na foto para salvar.</p><button class="btn small" id="photo-close">Fechar</button></div>';
+      document.body.appendChild(ov);
+      ov.querySelector('#photo-close').onclick = () => ov.classList.add('hidden');
+    }
+    $('photo-img').src = url;
+    ov.classList.remove('hidden');
   }
 
   applySettings(key) {
