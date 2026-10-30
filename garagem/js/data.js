@@ -51,6 +51,9 @@ export const BODIES = {
   ultima: 'Kit Car GTR',
   atlantic: 'Art Déco',
   vertical: 'Conceito Vertical',
+  flecha: 'Flecha',
+  gaivota: 'Asa de Gaivota',
+  megacarro: 'Megacarro',
 };
 
 // m = receita do modelo (ver tools/carmodel.js)
@@ -281,6 +284,12 @@ export const CARS = [
   // limited.gems: preço alternativo em gemas (o carro pode ser comprado de um jeito ou de outro).
   // Pinturas neon (brilham) e RGB (arco-íris). fx é o efeito animado no jogo: rgb = cores
   // girando; neon = brilho pulsando na cor indicada.
+  C('galvarini-veleno-corsa-2026', 'Galvarini', 'Veleno Corsa', 2026, 'mitico', 1000000000, 3500, 557, 0.79, { type: 'flecha', color: '#b9bec4', finish: 'gloss', color2: '#d1121b', stripes: 'twin', raceLivery: { number: 1, color: '#d1121b', sponsor: 'LENDÁRIA' } }, { limited: { supply: 1 }, fx: { kind: 'neon', color: '#ffcc33', label: 'CORRIDA' } }),
+  C('galvarini-sexto-elemento-2026', 'Galvarini', 'Sexto Elemento', 2026, 'mitico', 260000000, 1100, 360, 2.3, { type: 'flecha', color: '#1a1b1e', finish: 'carbonweave', sillLine: '#e0102a', tireRing: '#e0102a' }, { limited: { supply: 20 } }),
+  C('kronberg-jasko-ataque-2026', 'Kronberg', 'Jasko Ataque', 2026, 'mitico', 350000000, 1600, 520, 1.9, { type: 'megacarro', color: '#eef0f2', finish: 'gloss' }, { limited: { supply: 30 } }),
+  C('kronberg-cc850-2026', 'Kronberg', 'CC-850', 2026, 'mitico', 280000000, 1385, 450, 2.2, { type: 'megacarro', color: '#111214', finish: 'gloss', splitterAccent: '#c9a35a', caliper: '#c9a35a', rimColor: 'gold' }, { limited: { supply: 70 } }),
+  C('belvares-sl-gaivota-2026', 'Belvares', 'SL Gaivota', 2026, 'mitico', 240000000, 900, 340, 2.6, { type: 'gaivota', color: '#c4121a', finish: 'gloss', rimColor: '#c4121a' }, { limited: { supply: 55 } }),
+  C('ashton-morley-gaivota-2026', 'Ashton Morley', 'Gaivota', 2026, 'mitico', 220000000, 850, 335, 2.7, { type: 'gaivota', color: '#123f2a', finish: 'pearl', interior: '#c9a06a', rimColor: 'bronze' }, { limited: { supply: 40 } }),
   C('audex-elite-gt-2027', 'Audex', 'ELITE GT', 2027, 'mitico', 298000000, 3000, 549, 0.83, { type: 'vertical', color: '#8f9398', finish: 'satin', finish2: 'satin', color2: '#c4161c', stripes: 'single', skull: true, caliper: '#c4161c' }, { limited: { supply: 27, gems: 8500 }, fx: { kind: 'neon', color: '#c4161c', label: 'ELITE' } }),
   C('muratti-prisma-rgb-2026', 'Muratti', 'Prisma RGB', 2026, 'mitico', 300000000, 2000, 500, 1.8, { type: 'conceito', finish: 'rgb', rim: 'turbine', rimColor: 'black', caliper: '#ffffff' }, { limited: { supply: 5 }, fx: { kind: 'rgb' } }),
   C('pagano-zondra-arco-iris-2025', 'Pagano', 'Zondra Arco-Íris', 2025, 'mitico', 250000000, 900, 380, 2.4, { type: 'pista', finish: 'rgb', rim: 'multi', rimColor: 'chrome', caliper: '#ffffff' }, { limited: { supply: 10 }, fx: { kind: 'rgb' } }),

@@ -354,6 +354,38 @@ export const TYPES = {
     vflank: true, hoodSlot: true, sideSlot: true, noDoors: false, rim: 'spoke5', rimColor: 'black',
     lights: 'seg4', grille: 'vframe', intake: 'none', lightY: -0.035, lightZ: 0.66, lightW: 0.42, lightH: 0.05, grilleW: 0.42, grilleH: 0.4, grilleY: 0.2,
   },
+  flecha: {
+    L: 5.02, W: 2.08, wr: 0.36, tw: 0.33, fo: 1.15, wb: 2.7, rs: 0.04, endF: 0.12, endR: 0.14, endV: 0.3,
+    yb: [[0, 0.12], [0.3, 0.08], [4.7, 0.1], [5.02, 0.24]],
+    top: [[0, 0.36], [0.5, 0.6], [1.15, 0.8], [1.6, 0.74], [2.9, 0.84], [3.85, 1.0], [4.7, 0.98], [5.02, 0.9]],
+    dip: [[0, 0.05], [0.5, 0.2], [1.15, 0.2], [1.6, 0.06], [2.9, 0.04], [3.4, 0.16], [4.6, 0.14], [5.02, 0.04]],
+    hw: [[0, 0.82], [0.6, 0.96], [1.15, 1.04], [2.0, 0.9], [3.0, 0.93], [3.85, 1.06], [4.7, 1.02], [5.02, 0.94]],
+    gh: { ws: 1.42, roofF: 2.3, roofR: 2.65, rw: 3.95, roofY: 1.14, inset: 0.16, tumble: 0.28, bp: 99, wsLin: true },
+    side: true, hoodVents: true, wing: true, wingH: 0.36, wingChord: 0.4, fin: true, finH: 0.3, splitter: true, canards: true,
+    sillLine: '#e0102a', tireRing: '#e0102a', rim: 'turbine', rimColor: 'black', caliper: '#e0102a',
+    lights: 'yshape', grille: 'none', intake: 'wide', lightY: -0.04, lightZ: 0.74, lightW: 0.42, lightH: 0.15,
+  },
+  gaivota: {
+    L: 4.6, W: 2.0, wr: 0.36, tw: 0.31, fo: 1.0, wb: 2.7, rs: 0.14, endF: 0.28, endR: 0.2,
+    yb: [[0, 0.16], [0.3, 0.1], [4.3, 0.12], [4.6, 0.28]],
+    top: [[0, 0.46], [0.4, 0.66], [1.0, 0.82], [1.6, 0.8], [2.9, 0.88], [3.7, 0.96], [4.4, 0.94], [4.6, 0.86]],
+    dip: [[0, 0], [0.5, 0.12], [1.2, 0.1], [1.6, 0.03], [2.9, 0.02], [3.4, 0.08], [4.6, 0.02]],
+    hw: [[0, 0.82], [0.6, 0.96], [1.0, 1.02], [2.0, 0.94], [3.0, 0.97], [3.7, 1.03], [4.4, 1], [4.6, 0.92]],
+    gh: { ws: 1.6, roofF: 2.3, roofR: 2.75, rw: 3.9, roofY: 1.18, inset: 0.12, tumble: 0.26, bp: 99 },
+    gullwing: true, hoodDuct: true, noDoors: true, interior: '#5a0f14', rim: 'spoke6',
+    lights: 'louver', grille: 'none', intake: 'triple', lightY: -0.06, lightZ: 0.72, lightW: 0.3, lightH: 0.14,
+  },
+  megacarro: {
+    L: 4.61, W: 2.03, wr: 0.35, tw: 0.33, fo: 1.08, wb: 2.7, rs: 0.16, endF: 0.3, endR: 0.16,
+    yb: [[0, 0.12], [0.3, 0.08], [4.35, 0.1], [4.61, 0.24]],
+    top: [[0, 0.38], [0.45, 0.6], [1.08, 0.8], [1.6, 0.76], [2.9, 0.84], [3.78, 0.98], [4.4, 0.96], [4.61, 0.88]],
+    dip: [[0, 0], [0.5, 0.14], [1.2, 0.12], [1.65, 0.04], [2.9, 0.03], [3.35, 0.12], [4.4, 0.1], [4.61, 0.02]],
+    hw: [[0, 0.82], [0.6, 0.96], [1.08, 1.03], [2.0, 0.92], [3.0, 0.95], [3.78, 1.05], [4.4, 1.02], [4.61, 0.94]],
+    gh: { ws: 1.45, roofF: 2.2, roofR: 2.62, rw: 3.75, roofY: 1.13, inset: 0.14, tumble: 0.26, bp: 99 },
+    roof: 'black', side: true, sideD: 2.95, sideW: 0.72, sideH: 0.32, hoodVents: true, wing: true, wingH: 0.46, wingChord: 0.38, swan: true,
+    splitter: true, splitterAccent: '#9ae600', caliper: '#9ae600', rim: 'turbine', rimColor: 'black',
+    lights: 'slim', grille: 'none', intake: 'wide', lightY: -0.05, lightZ: 0.72, lightW: 0.36, lightH: 0.08,
+  },
   proto: {
     L: 4.4, W: 2.0, wr: 0.34, tw: 0.3, fo: 0.95, wb: 2.3, rs: 0.14, endF: 0.28, endR: 0.2,
     yb: [[0, 0.18], [0.3, 0.1], [4.1, 0.12], [4.4, 0.24]],
@@ -649,6 +681,45 @@ function rrect(g, x, y, w, h, r) {
 }
 
 const HEADLIGHT = {
+  yshape: (g, w, h) => {
+    // farol afiado em "Y": carcaça escura inclinada com o LED na borda de cima
+    g.fillStyle = '#07080a';
+    g.beginPath();
+    g.moveTo(w * 0.02, h * 0.12);
+    g.lineTo(w * 0.98, h * 0.02);
+    g.lineTo(w * 0.62, h * 0.5);
+    g.lineTo(w * 0.72, h * 0.98);
+    g.lineTo(w * 0.48, h * 0.55);
+    g.lineTo(w * 0.06, h * 0.4);
+    g.closePath();
+    g.fill();
+    g.shadowColor = '#e8f6ff';
+    g.shadowBlur = 8;
+    g.strokeStyle = '#ffffff';
+    g.lineWidth = h * 0.07;
+    g.lineCap = 'round';
+    g.beginPath();
+    g.moveTo(w * 0.08, h * 0.16);
+    g.lineTo(w * 0.9, h * 0.07);
+    g.lineTo(w * 0.6, h * 0.48);
+    g.stroke();
+  },
+  louver: (g, w, h) => {
+    // farol oval encoberto, com aletas horizontais
+    g.fillStyle = '#0b0c0e';
+    g.beginPath();
+    g.ellipse(w / 2, h / 2, w * 0.48, h * 0.46, -0.12, 0, Math.PI * 2);
+    g.fill();
+    g.save();
+    g.beginPath();
+    g.ellipse(w / 2, h / 2, w * 0.44, h * 0.4, -0.12, 0, Math.PI * 2);
+    g.clip();
+    g.shadowColor = '#e8f6ff';
+    g.shadowBlur = 5;
+    g.fillStyle = '#f4f9ff';
+    for (let y = h * 0.22; y < h * 0.85; y += h * 0.16) g.fillRect(0, y, w, h * 0.05);
+    g.restore();
+  },
   seg4: (g, w, h) => {
     g.fillStyle = '#0a0b0d';
     rrect(g, 1, 1, w - 2, h - 2, h * 0.3);
@@ -1434,7 +1505,7 @@ export function buildCar(spec) {
     barrel: new THREE.MeshStandardMaterial({ color: 0x0e0f11, roughness: 0.7, side: THREE.DoubleSide }),
     disc: new THREE.MeshStandardMaterial({ color: 0x6d7076, metalness: 0.9, roughness: 0.45 }),
     caliper: new THREE.MeshStandardMaterial({ color: new THREE.Color(P.caliper || '#c0392b'), roughness: 0.4, metalness: 0.2 }),
-    rim: new THREE.MeshStandardMaterial({ color: rc[0], metalness: rc[1], roughness: rc[2], emissive: rimHex ? new THREE.Color(spec.rimColor) : 0x000000, emissiveIntensity: rimHex ? 0.5 : 0 }),
+    rim: new THREE.MeshStandardMaterial({ color: rc[0], metalness: rc[1], roughness: rc[2], emissive: rimHex && (finish === 'neon' || finish === 'rgb') ? new THREE.Color(spec.rimColor) : 0x000000, emissiveIntensity: rimHex ? 0.5 : 0 }),
     ring: new THREE.MeshStandardMaterial({ color: new THREE.Color(P.tireRing || '#ffffff'), roughness: 0.5 }),
     cap: new THREE.MeshStandardMaterial({ color: new THREE.Color(P.badge || '#d4a017'), metalness: 0.8, roughness: 0.3 }),
   };
@@ -1640,7 +1711,7 @@ export function buildCar(spec) {
     const m = new THREE.MeshStandardMaterial({ map: it, roughness: 0.6, alphaTest: 0.5 });
     for (const sz of [1, -1]) {
       const sd = P.sideD ?? P.gh.bp + 0.45;
-      decal({ center: new THREE.Vector3(P.L / 2 - sd, P.fTop(sd) - 0.26, 0), dir: new THREE.Vector3(0, 0, -sz), u: Xv.clone().multiplyScalar(sz), v: Yv, w: 0.55, h: 0.2, nu: 20, nv: 8 }, m);
+      decal({ center: new THREE.Vector3(P.L / 2 - sd, P.fTop(sd) - 0.26, 0), dir: new THREE.Vector3(0, 0, -sz), u: Xv.clone().multiplyScalar(sz), v: Yv, w: P.sideW || 0.55, h: P.sideH || 0.2, nu: 20, nv: 8 }, m);
     }
   }
   if (P.sideScoop) {
@@ -2006,6 +2077,83 @@ export function buildCar(spec) {
     for (const sz of [1, -1]) decal({ center: new THREE.Vector3(P.L / 2 - d, y, 0), dir: new THREE.Vector3(0, 0, -sz), u: Xv.clone().multiplyScalar(sz), v: Yv, w: size, h: size, nu: 24, nv: 24, offset: 0.005 }, m);
   }
 
+  // --- filete colorido na soleira (flecha)
+  if (P.sillLine) {
+    const tex = canvasTex(512, 16, (g, w, h) => {
+      g.fillStyle = P.sillLine;
+      g.fillRect(0, h * 0.2, w, h * 0.6);
+    });
+    const m = new THREE.MeshStandardMaterial({ map: tex, emissiveMap: tex, emissive: 0xffffff, emissiveIntensity: 0.5, alphaTest: 0.5, polygonOffset: true, polygonOffsetFactor: -3 });
+    const d0 = P.fo + P.rA + 0.02;
+    const d1 = P.ra - P.rA - 0.02;
+    const dm = (d0 + d1) / 2;
+    for (const sz of [1, -1]) decal({ center: new THREE.Vector3(P.L / 2 - dm, P.fYb(dm) + 0.05, 0), dir: new THREE.Vector3(0, 0, -sz), u: Xv.clone(), v: Yv, w: d1 - d0, h: 0.025, nu: 30, nv: 2, offset: 0.004 }, m);
+  }
+  // --- adesivo de corrida: número no círculo, faixa quadriculada e patrocinador
+  if (P.raceLivery) {
+    const R = P.raceLivery;
+    const d = P.fo + P.rA + 0.45;
+    const y = (P.fYb(d) + P.fTop(d)) / 2 + 0.04;
+    const num = canvasTex(256, 256, (g, w, h) => {
+      g.fillStyle = '#f4f4f0';
+      g.beginPath();
+      g.arc(w / 2, h / 2, w * 0.47, 0, Math.PI * 2);
+      g.fill();
+      g.lineWidth = 10;
+      g.strokeStyle = R.color || '#d1121b';
+      g.stroke();
+      g.fillStyle = '#111214';
+      g.font = `italic 900 ${Math.round(h * 0.58)}px Arial Black, Arial, sans-serif`;
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText(String(R.number), w / 2, h / 2 + 6);
+    });
+    const checker = canvasTex(512, 48, (g, w, h) => {
+      const c = h / 2;
+      for (let x = 0; x < w; x += c) for (let yy = 0; yy < h; yy += c) {
+        g.fillStyle = (x / c + yy / c) % 2 ? '#111214' : '#f4f4f0';
+        g.fillRect(x, yy, c, c);
+      }
+    });
+    const sponsor = canvasTex(512, 96, (g, w, h) => {
+      g.fillStyle = R.color || '#d1121b';
+      rrect(g, 4, 8, w - 8, h - 16, 10);
+      g.fill();
+      g.fillStyle = '#ffffff';
+      g.font = `italic 900 ${Math.round(h * 0.46)}px Arial Black, Arial, sans-serif`;
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText(R.sponsor || 'LENDÁRIA', w / 2, h / 2 + 2);
+    });
+    const mk = (t, k) => new THREE.MeshStandardMaterial({ map: t, roughness: 0.35, alphaTest: 0.5, polygonOffset: true, polygonOffsetFactor: k });
+    const d0 = P.fo + P.rA + 0.04;
+    const d1 = P.ra - P.rA - 0.04;
+    for (const sz of [1, -1]) {
+      decal({ center: new THREE.Vector3(P.L / 2 - d, y, 0), dir: new THREE.Vector3(0, 0, -sz), u: Xv.clone().multiplyScalar(sz), v: Yv, w: 0.42, h: 0.42, nu: 16, nv: 16, offset: 0.005 }, mk(num, -4));
+      decal({ center: new THREE.Vector3(P.L / 2 - (d0 + d1) / 2, P.fYb((d0 + d1) / 2) + 0.11, 0), dir: new THREE.Vector3(0, 0, -sz), u: Xv.clone(), v: Yv, w: d1 - d0, h: 0.06, nu: 30, nv: 3, offset: 0.005 }, mk(checker, -4));
+      const ds = d + 0.62;
+      decal({ center: new THREE.Vector3(P.L / 2 - ds, y - 0.02, 0), dir: new THREE.Vector3(0, 0, -sz), u: Xv.clone().multiplyScalar(sz), v: Yv, w: 0.5, h: 0.1, nu: 16, nv: 4, offset: 0.005 }, mk(sponsor, -4));
+    }
+  }
+  // --- abertura das portas asa de gaivota (interior visível)
+  if (P.gullwing) {
+    const tex = canvasTex(256, 160, (g, w, h) => {
+      g.fillStyle = '#0c0c0e';
+      rrect(g, 2, 2, w - 4, h - 4, 18);
+      g.fill();
+      // encosto do banco aparecendo pela abertura
+      g.fillStyle = P.interior || '#141416';
+      rrect(g, w * 0.55, h * 0.12, w * 0.28, h * 0.7, 16);
+      g.fill();
+    });
+    const m = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.7, alphaTest: 0.5, polygonOffset: true, polygonOffsetFactor: -3 });
+    const d0 = G.ws + 0.25;
+    const d1 = d0 + 1.05;
+    const yA = P.fYb((d0 + d1) / 2) + 0.2;
+    const yB = P.fTop((d0 + d1) / 2) + 0.02;
+    for (const sz of [1, -1]) decal({ center: new THREE.Vector3(P.L / 2 - (d0 + d1) / 2, (yA + yB) / 2, 0), dir: new THREE.Vector3(0, 0, -sz), u: Xv.clone(), v: Yv, w: d1 - d0, h: yB - yA, nu: 20, nv: 10, offset: 0.004 }, m);
+  }
+
   // --- linhas de porta
   if (!P.noDoors) {
     const dc = spec.finish === 'chrome' ? '#30343a' : 'rgba(0,0,0,0.75)';
@@ -2200,8 +2348,9 @@ export function buildCar(spec) {
     w.rotation.z = -0.1;
     car.add(w);
     for (const sz of [1, -1]) {
-      const st = new THREE.Mesh(new THREE.BoxGeometry(0.12, hgt + 0.03, 0.025), trim);
-      st.position.set(P.L / 2 - d, y + hgt / 2 - 0.01, sz * span * 0.33);
+      const sh2 = P.swan ? hgt + 0.12 : hgt + 0.03;
+      const st = new THREE.Mesh(new THREE.BoxGeometry(0.12, sh2, 0.025), trim);
+      st.position.set(P.L / 2 - d + (P.swan ? 0.06 : 0), y + sh2 / 2 - 0.01, sz * span * 0.33);
       car.add(st);
       const ep = new THREE.Mesh(new THREE.BoxGeometry(c + 0.04, 0.12 + c * 0.25, 0.012), wingMat);
       ep.position.set(P.L / 2 - d - 0.02, y + hgt + 0.02, sz * span / 2);
@@ -2250,6 +2399,11 @@ export function buildCar(spec) {
   }
   // --- splitter dianteiro e canards
   if (P.splitter) {
+    if (P.splitterAccent) {
+      const acc = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.026, hw0 * 1.78), new THREE.MeshStandardMaterial({ color: new THREE.Color(P.splitterAccent), roughness: 0.4 }));
+      acc.position.set(P.L / 2 - 0.08, P.fYb(0.3) + 0.012, 0);
+      car.add(acc);
+    }
     const sp = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.022, hw0 * 1.78), trim);
     sp.position.set(P.L / 2 - 0.2, P.fYb(0.3) + 0.01, 0);
     car.add(sp);
@@ -2404,6 +2558,35 @@ export function buildCar(spec) {
         r.position.set(P.L / 2 - d, ridgeY(d) + 0.004, sz * 0.024);
         car.add(r);
       }
+    }
+  }
+
+  // --- portas asa de gaivota abertas (dobradiça no centro do teto)
+  if (P.gullwing) {
+    const d0 = G.ws + 0.25;
+    const len = 1.05;
+    const dm = d0 + len / 2;
+    const roofTop = P.roofFn.top(dm) + 0.02;
+    const hwM = (P.fHw(dm) * P.W) / 2;
+    const inner = new THREE.MeshStandardMaterial({ color: new THREE.Color(P.interior || '#141416'), roughness: 0.6 });
+    for (const sz of [1, -1]) {
+      const door = new THREE.Group();
+      // pedaço do teto (fechado: deitado), janela e painel lateral (fechado: em pé)
+      const roofW = Math.max(0.3, hwM - G.inset - G.tumble - 0.1);
+      const top = new THREE.Mesh(new THREE.BoxGeometry(len * 0.82, 0.03, roofW), [paint, paint, paint, inner, paint, paint]);
+      top.position.set(0, 0, roofW / 2);
+      door.add(top);
+      const win = new THREE.Mesh(new THREE.BoxGeometry(len * 0.8, 0.3, 0.02), glass);
+      win.position.set(0, -0.16, roofW + 0.04);
+      win.rotation.x = 0.2;
+      door.add(win);
+      const panel = new THREE.Mesh(new THREE.BoxGeometry(len, 0.42, 0.035), [paint, paint, paint, paint, paint, inner]);
+      panel.position.set(0, -0.52, roofW + 0.09);
+      door.add(panel);
+      door.position.set(P.L / 2 - dm, roofTop, sz * 0.12);
+      door.rotation.x = sz > 0 ? -1.15 : 1.15;
+      if (sz < 0) door.scale.z = -1;
+      car.add(door);
     }
   }
 
