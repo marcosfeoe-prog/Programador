@@ -98,7 +98,9 @@ export class Race {
       const row = Math.floor(k / 2);
       const col = k % 2;
       sim.placeAt(track.startS - 6 - row * 9 - col * 3, col ? 2.6 : -2.6);
-      const model = buildCar(def.id, look);
+      // detalhe total só onde o aparelho aguenta (rivais ficam mais leves)
+      const ql = save.settings.quality;
+      const model = buildCar(def.id, look, ql === 'high' || (ql === 'medium' && isPlayer) ? 'high' : 'low');
       this.scene.add(model.group);
       const r = {
         sim,

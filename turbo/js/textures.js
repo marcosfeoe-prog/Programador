@@ -302,31 +302,30 @@ export function crateTexture() {
   });
 }
 
-// Aro da roda (desenhado de frente). style: cinco, malha, turbina, estrela, disco, raios.
+// Aro da roda (desenhado de frente, fundo transparente entre os raios para
+// aparecer o disco de freio). style: cinco, malha, turbina, estrela, disco, raios.
 export function rimTexture(style, color) {
-  return cached('rim-' + style + color, () => {
+  return cached('rim2-' + style + color, () => {
     const S = 256;
     const c = canvas(S, S);
     const ctx = c.getContext('2d');
     const cx = S / 2;
-    // borda do aro
-    const lip = ctx.createRadialGradient(cx, cx, 90, cx, cx, 128);
-    lip.addColorStop(0, shade(color, 0.7));
-    lip.addColorStop(0.6, shade(color, 1.2));
-    lip.addColorStop(1, shade(color, 0.6));
-    ctx.fillStyle = lip;
-    ctx.beginPath();
-    ctx.arc(cx, cx, 126, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#0d0e10';
-    ctx.beginPath();
-    ctx.arc(cx, cx, 104, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = color;
-    ctx.strokeStyle = color;
     ctx.save();
     ctx.translate(cx, cx);
-    const spokes = (n, w0, w1, r0 = 22, r1 = 104) => {
+    // aba externa
+    const lip = ctx.createRadialGradient(0, 0, 100, 0, 0, 127);
+    lip.addColorStop(0, shade(color, 0.55));
+    lip.addColorStop(0.45, shade(color, 1.25));
+    lip.addColorStop(0.75, shade(color, 0.85));
+    lip.addColorStop(1, shade(color, 0.5));
+    ctx.strokeStyle = lip;
+    ctx.lineWidth = 22;
+    ctx.beginPath();
+    ctx.arc(0, 0, 115, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.strokeStyle = color;
+    const spokes = (n, w0, w1, r0 = 20, r1 = 106) => {
       for (let i = 0; i < n; i++) {
         ctx.save();
         ctx.rotate((i / n) * Math.PI * 2);
@@ -339,92 +338,147 @@ export function rimTexture(style, color) {
         ctx.restore();
       }
     };
-    if (style === 'cinco') spokes(5, 12, 22);
-    else if (style === 'raios') spokes(12, 3, 7);
-    else if (style === 'estrela') {
-      spokes(6, 16, 6);
-      spokes(6, 2, 2, 60, 104);
+    if (style === 'cinco') {
+      spokes(5, 13, 20);
+      ctx.fillStyle = shade(color, 0.6);
+      spokes(5, 3, 4, 26, 100);
+      ctx.fillStyle = color;
+    } else if (style === 'raios') {
+      spokes(14, 3, 6);
+    } else if (style === 'estrela') {
+      spokes(6, 16, 5);
+      spokes(12, 2.5, 2.5, 64, 106);
     } else if (style === 'malha') {
-      ctx.lineWidth = 6;
+      ctx.lineWidth = 7;
+      ctx.lineCap = 'round';
+      for (let i = 0; i < 10; i++) {
+        ctx.save();
+        ctx.rotate((i / 10) * Math.PI * 2);
+        for (const sg of [1, -1]) {
+          ctx.beginPath();
+          ctx.moveTo(0, 22);
+          ctx.quadraticCurveTo(sg * 38, 62, 0, 104);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+    } else if (style === 'turbina') {
       for (let i = 0; i < 10; i++) {
         ctx.save();
         ctx.rotate((i / 10) * Math.PI * 2);
         ctx.beginPath();
-        ctx.moveTo(0, 20);
-        ctx.quadraticCurveTo(40, 60, 0, 104);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(0, 20);
-        ctx.quadraticCurveTo(-40, 60, 0, 104);
-        ctx.stroke();
-        ctx.restore();
-      }
-    } else if (style === 'turbina') {
-      for (let i = 0; i < 9; i++) {
-        ctx.save();
-        ctx.rotate((i / 9) * Math.PI * 2);
-        ctx.beginPath();
-        ctx.moveTo(0, 18);
-        ctx.quadraticCurveTo(40, 40, 30, 104);
-        ctx.lineTo(8, 104);
-        ctx.quadraticCurveTo(22, 50, -6, 20);
+        ctx.moveTo(-4, 20);
+        ctx.quadraticCurveTo(34, 40, 30, 106);
+        ctx.lineTo(12, 106);
+        ctx.quadraticCurveTo(18, 50, -12, 22);
         ctx.fill();
         ctx.restore();
       }
     } else if (style === 'disco') {
       ctx.beginPath();
-      ctx.arc(0, 0, 100, 0, Math.PI * 2);
+      ctx.arc(0, 0, 106, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.globalCompositeOperation = 'destination-out';
       for (let i = 0; i < 6; i++) {
         const a = (i / 6) * Math.PI * 2;
         ctx.beginPath();
-        ctx.arc(Math.cos(a) * 64, Math.sin(a) * 64, 13, 0, Math.PI * 2);
+        ctx.arc(Math.cos(a) * 66, Math.sin(a) * 66, 15, 0, Math.PI * 2);
         ctx.fill();
       }
+      ctx.globalCompositeOperation = 'source-over';
     }
-    // cubo
-    const hub = ctx.createRadialGradient(-6, -6, 2, 0, 0, 26);
+    // cubo com porcas
+    const hub = ctx.createRadialGradient(-6, -6, 2, 0, 0, 28);
     hub.addColorStop(0, '#ffffff');
-    hub.addColorStop(1, shade(color, 0.75));
+    hub.addColorStop(1, shade(color, 0.7));
     ctx.fillStyle = hub;
     ctx.beginPath();
-    ctx.arc(0, 0, 24, 0, Math.PI * 2);
+    ctx.arc(0, 0, 26, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#222';
+    ctx.fillStyle = '#2a2c30';
     for (let i = 0; i < 5; i++) {
       const a = (i / 5) * Math.PI * 2;
       ctx.beginPath();
-      ctx.arc(Math.cos(a) * 14, Math.sin(a) * 14, 3, 0, Math.PI * 2);
+      ctx.arc(Math.cos(a) * 15, Math.sin(a) * 15, 3.2, 0, Math.PI * 2);
       ctx.fill();
     }
-    ctx.restore();
-    // brilho
-    const sh = ctx.createLinearGradient(0, 0, S, S);
-    sh.addColorStop(0, 'rgba(255,255,255,0.28)');
-    sh.addColorStop(0.5, 'rgba(255,255,255,0)');
-    sh.addColorStop(1, 'rgba(0,0,0,0.25)');
-    ctx.fillStyle = sh;
+    ctx.fillStyle = shade(color, 0.5);
     ctx.beginPath();
-    ctx.arc(cx, cx, 126, 0, Math.PI * 2);
+    ctx.arc(0, 0, 6, 0, Math.PI * 2);
+    ctx.fill();
+    // brilho só onde já há metal
+    ctx.globalCompositeOperation = 'source-atop';
+    const sh = ctx.createLinearGradient(-128, -128, 128, 128);
+    sh.addColorStop(0, 'rgba(255,255,255,0.35)');
+    sh.addColorStop(0.45, 'rgba(255,255,255,0)');
+    sh.addColorStop(1, 'rgba(0,0,0,0.3)');
+    ctx.fillStyle = sh;
+    ctx.fillRect(-128, -128, 256, 256);
+    ctx.restore();
+    return toTex(c, { repeat: false });
+  });
+}
+
+// Disco de freio ventilado com furos.
+export function brakeTexture() {
+  return cached('brake', () => {
+    const S = 128;
+    const c = canvas(S, S);
+    const ctx = c.getContext('2d');
+    ctx.translate(S / 2, S / 2);
+    const g = ctx.createRadialGradient(0, 0, 18, 0, 0, 64);
+    g.addColorStop(0, '#3a3c40');
+    g.addColorStop(0.3, '#9aa0a8');
+    g.addColorStop(0.95, '#7a8088');
+    g.addColorStop(1, '#55595e');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0, 0, 63, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#2a2c30';
+    for (let r = 0; r < 3; r++)
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2 + r * 0.26;
+        const d = 30 + r * 10;
+        ctx.beginPath();
+        ctx.arc(Math.cos(a) * d, Math.sin(a) * d, 2.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    ctx.fillStyle = '#26282c';
+    ctx.beginPath();
+    ctx.arc(0, 0, 20, 0, Math.PI * 2);
     ctx.fill();
     return toTex(c, { repeat: false });
   });
 }
 
+// Pneu: banda de rodagem com sulcos (u = volta, v = perfil do pneu).
 export function tireTexture() {
-  return cached('tire', () => {
-    const W = 256;
-    const H = 32;
+  return cached('tire2', () => {
+    const W = 512;
+    const H = 64;
     const c = canvas(W, H);
     const ctx = c.getContext('2d');
-    ctx.fillStyle = '#1c1c1f';
+    ctx.fillStyle = '#1e1f22';
     ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = '#0e0e10';
+    // flancos lisos nas pontas do perfil, sulcos no meio
+    ctx.fillStyle = '#26272b';
+    ctx.fillRect(0, 0, W, 14);
+    ctx.fillRect(0, H - 14, W, 14);
+    ctx.fillStyle = '#0f1012';
     for (let x = 0; x < W; x += 16) {
-      ctx.fillRect(x, 4, 7, 11);
-      ctx.fillRect(x + 8, 17, 7, 11);
+      ctx.save();
+      ctx.translate(x, H / 2);
+      ctx.transform(1, 0, 0.6, 1, 0, 0);
+      ctx.fillRect(-2, -16, 5, 13);
+      ctx.restore();
+      ctx.save();
+      ctx.translate(x + 8, H / 2);
+      ctx.transform(1, 0, -0.6, 1, 0, 0);
+      ctx.fillRect(-2, 3, 5, 13);
+      ctx.restore();
     }
+    ctx.fillRect(0, H / 2 - 1, W, 2);
     return toTex(c);
   });
 }

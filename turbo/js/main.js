@@ -11,6 +11,7 @@ import { Garage } from './garage.js';
 import { UI } from './ui.js';
 import { Race } from './race.js';
 import { setAnisotropy } from './textures.js';
+import { setCarQuality } from './cars.js';
 import { yieldFrame } from './util.js';
 
 const TIPS = [
@@ -66,6 +67,7 @@ class Game {
   applyQuality() {
     const st = this.save.data.settings;
     this.quality = QUALITY[st.quality];
+    setCarQuality(st.quality);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, this.quality.pixelRatio));
     this.renderer.shadowMap.enabled = this.quality.shadows > 0;
     this.resize();

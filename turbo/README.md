@@ -74,7 +74,10 @@ placas de turbo e moedas.
 
 Dez carros (Faísca, Raio GT, Trovão, Lobo, Cometa, Tufão F, Vespa X, Bólido 70,
 Ciclone LM e Fantasma), cada um com velocidade, aceleração, controle e nitro
-próprios e **5 níveis de melhoria**. Dá para trocar a **pintura** (16 cores, algumas
+próprios e **5 níveis de melhoria**. As carrocerias são esculpidas por código a
+partir de seções transversais (para-lamas recortados, cabine com colunas e vidros,
+faróis e lanternas com moldura, entradas de ar, listras e números), com pintura
+envernizada e rodas com pneu arredondado, aro vazado, disco e pinça de freio. Dá para trocar a **pintura** (16 cores, algumas
 metálicas), as **rodas** (8 aros) e o **neon** embaixo do carro (incluindo
 arco-íris). O progresso fica salvo no navegador.
 
@@ -95,7 +98,7 @@ js/trackmesh.js  malha da pista, defensas, pórticos, turbo, moedas e pilares
 js/physics.js    física arcade (coordenadas de pista no chão, projétil no ar)
 js/ai.js         pilotos do computador
 js/obstacles.js  martelos, barras giratórias, pistões e caixotes
-js/cars.js       modelos procedurais dos carros
+js/cars.js       carrocerias esculpidas por seções (loft), rodas e peças dos carros
 js/worlds.js     céu (shader), mar/lava (shader) e cenários dos seis mundos
 js/race.js       uma corrida: carros, colisões, colocações, eventos e efeitos
 js/camera.js     câmera de perseguição (acompanha loops e parafusos)
