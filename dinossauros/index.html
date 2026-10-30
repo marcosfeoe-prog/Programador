@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#14110b" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="description" content="Jogo 3D de sobrevivência de dinossauros: cresça de filhote a adulto, cace, pasteje, beba e sobreviva. Modelos, animações, texturas e sons gerados do zero." />
+    <title>Instinto Jurássico — Sobrevivência de Dinossauros 3D</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/style.css" />
+    <script type="importmap">
+      { "imports": { "three": "../vendor/three/three.module.min.js" } }
+    </script>
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+    <div id="vignette"></div>
+
+    <!-- Carregamento -->
+    <div id="loading">
+      <div class="logo">INSTINTO<br /><b>JURÁSSICO</b></div>
+      <div class="load-bar"><i id="load-fill"></i></div>
+      <div id="load-text">Gerando o mundo…</div>
+    </div>
+
+    <!-- HUD -->
+    <div id="hud" class="hidden">
+      <div id="hud-tl" class="panel">
+        <div id="sp-name">Tiranossauro rex</div>
+        <div id="sp-stage">Filhote · 0%</div>
+        <div class="grow"><i id="grow-fill"></i></div>
+        <div id="clock"><span id="clock-icon">☀</span> <span id="clock-time">07:30</span> · <span id="clock-day">Dia 1</span></div>
+      </div>
+
+      <div id="hud-bl" class="panel">
+        <div class="stat" id="st-hp"><span class="ico">❤</span><div class="bar"><i></i></div><b>100</b></div>
+        <div class="stat" id="st-food"><span class="ico">🍖</span><div class="bar"><i></i></div><b>100</b></div>
+        <div class="stat" id="st-water"><span class="ico">💧</span><div class="bar"><i></i></div><b>100</b></div>
+        <div class="stat" id="st-stam"><span class="ico">⚡</span><div class="bar"><i></i></div><b>100</b></div>
+        <div id="chips"></div>
+      </div>
+
+      <div id="hud-tr">
+        <canvas id="minimap" width="180" height="180"></canvas>
+        <div id="map-label">M — mapa</div>
+      </div>
+
+      <div id="target" class="panel hidden">
+        <div id="tg-name">—</div>
+        <div id="tg-sub">—</div>
+        <div class="bar"><i id="tg-fill"></i></div>
+      </div>
+
+      <div id="hint" class="hidden"><kbd>E</kbd> <span>Comer</span></div>
+      <div id="toasts"></div>
+      <div id="help" class="panel">
+        <b>WASD</b> mover · <b>Shift</b> correr · <b>Clique/Espaço</b> atacar · <b>E</b> comer/beber · <b>R</b> descansar · <b>C</b> rugir · <b>M</b> mapa · <b>Esc</b> pausa
+      </div>
+    </div>
+
+    <!-- Controles de toque -->
+    <div id="touch">
+      <div class="joy-zone"><div class="joy-base"><div class="joy-knob"></div></div></div>
+      <div class="look-zone"></div>
+      <div class="btns">
+        <button data-act="attack" class="big">⚔<small>Atacar</small></button>
+        <button data-act="interact">🍖<small>Comer/Beber</small></button>
+        <button data-act="sprint">»<small>Correr</small></button>
+        <button data-act="roar">📣<small>Rugir</small></button>
+        <button data-act="rest">☾<small>Descansar</small></button>
+      </div>
+      <div class="top-btns">
+        <button data-act="map">🗺</button>
+        <button data-act="menu">❚❚</button>
+      </div>
+    </div>
+
+    <!-- Mapa grande -->
+    <div id="bigmap" class="hidden"><canvas id="bigmap-c" width="640" height="640"></canvas><div>M ou toque para fechar</div></div>
+
+    <!-- Menu inicial -->
+    <div id="menu" class="hidden">
+      <div class="menu-side">
+        <div class="logo">INSTINTO<br /><b>JURÁSSICO</b></div>
+        <div class="tagline">Nasça filhote. Coma, beba, cresça — e não vire comida.</div>
+        <div id="species" class="species"></div>
+        <div id="sp-info" class="sp-info"></div>
+        <button id="btn-play" class="primary">Nascer</button>
+        <div class="row">
+          <button id="btn-options">Opções</button>
+          <button id="btn-howto">Como jogar</button>
+        </div>
+        <div id="records" class="records"></div>
+      </div>
+    </div>
+
+    <!-- Pausa -->
+    <div id="pause" class="overlay hidden">
+      <div class="box">
+        <h2>Pausado</h2>
+        <button id="btn-resume" class="primary">Continuar</button>
+        <button id="btn-options2">Opções</button>
+        <button id="btn-quit">Voltar ao menu</button>
+      </div>
+    </div>
+
+    <!-- Morte -->
+    <div id="death" class="overlay hidden">
+      <div class="box">
+        <h2 id="death-title">Você morreu</h2>
+        <div id="death-cause"></div>
+        <div id="death-stats" class="stats"></div>
+        <button id="btn-respawn" class="primary">Renascer</button>
+        <button id="btn-quit2">Escolher outra espécie</button>
+      </div>
+    </div>
+
+    <!-- Opções -->
+    <div id="options" class="overlay hidden">
+      <div class="box">
+        <h2>Opções</h2>
+        <label>Qualidade gráfica <select id="opt-quality"></select></label>
+        <label>Sensibilidade <input id="opt-sens" type="range" min="0.3" max="2.5" step="0.1" /></label>
+        <label>Volume <input id="opt-vol" type="range" min="0" max="1" step="0.05" /></label>
+        <label class="chk"><input id="opt-invert" type="checkbox" /> Inverter eixo vertical</label>
+        <div class="note">Mudar a qualidade recarrega o jogo.</div>
+        <button id="btn-opt-close" class="primary">Fechar</button>
+      </div>
+    </div>
+
+    <!-- Como jogar -->
+    <div id="howto" class="overlay hidden">
+      <div class="box wide">
+        <h2>Como jogar</h2>
+        <p>Você nasce <b>filhote</b> e precisa sobreviver até virar <b>adulto</b>. Crescer exige estar alimentado e hidratado (acima de 40%).</p>
+        <ul>
+          <li><b>Fome</b> — herbívoros comem <b>samambaias</b> (elas encolhem e voltam a crescer); carnívoros comem <b>carcaças</b>: cace ou encontre animais mortos.</li>
+          <li><b>Sede</b> — beba em rios e lagos com <b>E</b> quando a boca estiver na água.</li>
+          <li><b>Energia</b> — correr e nadar gastam; descansar (<b>R</b>) recupera mais rápido e também cura.</li>
+          <li><b>Sangramento</b> — mordidas e garras abrem feridas; descansar estanca mais rápido.</li>
+          <li>Com fome ou sede em 0% você perde vida. A vida se regenera com fome e sede acima de 25%.</li>
+          <li>Herbívoros vivem em <b>manadas</b>; Triceratops, Estegossauros e Braquiossauros se defendem. Raptores caçam em <b>bando</b>. O <b>T. rex</b> defende seu território.</li>
+          <li>Os dias passam: à noite é mais escuro e muitos animais dormem.</li>
+        </ul>
+        <p class="dim">PC: WASD, mouse para girar a câmera (clique para capturar), roda para zoom, Shift correr, clique/Espaço atacar, E comer/beber, R descansar, C rugir, M mapa, H esconde o HUD.<br />Celular: joystick à esquerda (empurre além da borda para correr), arraste à direita para girar, pinça para zoom.</p>
+        <button id="btn-howto-close" class="primary">Entendi</button>
+      </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>

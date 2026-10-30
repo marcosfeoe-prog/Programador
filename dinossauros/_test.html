@@ -1,0 +1,22 @@
+<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;background:#888}</style>
+<script type="importmap">{ "imports": { "three": "../vendor/three/three.module.min.js" } }</script></head>
+<body><script type="module">
+import * as THREE from 'three';
+import { SPECIES, QUALITY } from './js/config.js';
+import { createDino } from './js/rig.js';
+import { Animator } from './js/anim.js';
+const p = new URLSearchParams(location.search);
+const r = new THREE.WebGLRenderer({antialias:true}); r.setSize(1200,700); document.body.appendChild(r.domElement);
+const sc = new THREE.Scene(); sc.background = new THREE.Color(0x9ab0c8);
+sc.add(new THREE.HemisphereLight(0xddeeff,0x554433,1.2)); const d=new THREE.DirectionalLight(0xffffff,2.2); d.position.set(5,10,7); sc.add(d);
+const g = new THREE.Mesh(new THREE.PlaneGeometry(200,200), new THREE.MeshStandardMaterial({color:0x557744})); g.rotation.x=-Math.PI/2; sc.add(g);
+const ids = (p.get('s')||'trex,raptor,trike,stego,para,brachio').split(',');
+const anims=[]; let x=0;
+for (const id of ids){ const s=SPECIES[id]; const dd=createDino(s,QUALITY.alta); const grp=new THREE.Group(); grp.add(dd.mesh); grp.position.x=x; grp.rotation.y=Number(p.get('ry')||Math.PI/2); x+= Math.max(4,dd.layout.width*2+3); sc.add(grp); anims.push(new Animator(s,dd)); }
+const cam = new THREE.PerspectiveCamera(40,1200/700,0.1,500);
+const st = JSON.parse(p.get('st')||'{}'); const T = Number(p.get('t')||0);
+for (let i=0;i<Math.round(T*30);i++) anims.forEach(a=>a.update(1/30,{speed:st.speed||0,run:st.run,action:st.action,actionT:st.actionT,eat:st.eat,rest:st.rest,dead:st.dead,swim:st.swim,turn:st.turn||0}));
+anims.forEach(a=>a.update(1/30,{...st}));
+const c = JSON.parse(p.get('cam')||'null') || [x/2-2, 6, 26]; cam.position.set(...c); cam.lookAt(c[3]??x/2-2, c[4]??2, c[5]??0);
+r.render(sc,cam); const m=sc.children[3].children[0]; console.log(m.geometry.attributes.position.count, JSON.stringify(m.boundingSphere), m.skeleton.bones.length, JSON.stringify(m.geometry.groups)); console.log(JSON.stringify(m.skeleton.bones.map(b=>[b.name,+b.rotation.x.toFixed(2),+b.position.y.toFixed(2)]))); console.log(r.info.render.calls, r.info.programs.length); window.done=true;
+</script></body></html>

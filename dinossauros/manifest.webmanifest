@@ -1,0 +1,10 @@
+{
+  "name": "Instinto Jurássico — Sobrevivência de Dinossauros 3D",
+  "short_name": "Instinto Jurássico",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#14110b",
+  "theme_color": "#14110b",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
