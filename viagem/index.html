@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#11161c" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="description" content="Rota Serena: jogo relaxante de viagem de carro em mundo aberto por seis países. Carros e cenários gerados do zero." />
+    <title>Rota Serena — Viagens de carro</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/style.css" />
+    <script type="importmap">
+      { "imports": { "three": "../vendor/three/three.module.min.js" } }
+    </script>
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+
+    <!-- carregamento -->
+    <div id="loading">
+      <div class="ld-in">
+        <div class="logo">Rota <b>Serena</b></div>
+        <div class="ld-sub">viagens de carro pelo mundo</div>
+        <div class="lbar"><div id="ld-bar"></div></div>
+        <div id="ld-text">Preparando o mapa…</div>
+        <div id="ld-tip"></div>
+      </div>
+    </div>
+
+    <!-- HUD -->
+    <div id="hud" class="hidden">
+      <div id="loc" class="glass">
+        <canvas id="loc-flag" width="72" height="48"></canvas>
+        <div>
+          <div id="loc-country">—</div>
+          <div id="loc-place">—</div>
+        </div>
+      </div>
+      <div id="clock" class="glass">
+        <div id="clock-time">16:30</div>
+        <div id="clock-wx"><span id="wx-icon">☀</span> <span id="wx-temp">22°C</span></div>
+      </div>
+      <div id="gps" class="glass hidden">
+        <div id="gps-arrow">➤</div>
+        <div>
+          <div id="gps-dest">—</div>
+          <div id="gps-info">—</div>
+        </div>
+      </div>
+      <div id="radio" class="glass hidden"><span class="ico">📻</span><div><div id="radio-st"></div><div id="radio-song"></div></div></div>
+      <canvas id="minimap" width="440" height="440"></canvas>
+      <canvas id="speedo" width="440" height="440"></canvas>
+      <div id="flags"></div>
+      <div id="toasts"></div>
+      <div id="banner" class="hidden">
+        <canvas id="banner-flag" width="240" height="160"></canvas>
+        <div id="banner-name"></div>
+        <div id="banner-sub"></div>
+      </div>
+      <div id="hint" class="hidden"></div>
+      <div id="fps" class="hidden"></div>
+    </div>
+
+    <!-- controles de toque -->
+    <div id="touch">
+      <div class="look-zone"></div>
+      <div class="steer-zone"><div class="steer-track"><div class="steer-knob">◀ ▶</div></div></div>
+      <div class="pedals">
+        <div class="pedal brake" data-pedal="brake">FREIO</div>
+        <div class="pedal gas" data-pedal="gas">ACELERAR</div>
+      </div>
+      <div class="tbtns">
+        <div class="tbtn" data-act="camera">🎥</div>
+        <div class="tbtn" data-act="map">🗺</div>
+        <div class="tbtn" data-act="radio">📻</div>
+        <div class="tbtn" data-act="lights">💡</div>
+        <div class="tbtn" data-act="autopilot">🅰</div>
+        <div class="tbtn" data-act="menu">☰</div>
+      </div>
+      <div class="hb" data-pedal="handbrake">⏏</div>
+    </div>
+
+    <!-- tela título -->
+    <div id="title" class="hidden">
+      <div class="title-in">
+        <div class="logo big">Rota <b>Serena</b></div>
+        <div class="ld-sub">seis países · doze cidades · nenhuma pressa</div>
+        <div class="menu-col">
+          <button class="btn primary" id="t-play">Dirigir</button>
+          <button class="btn" id="t-trips">Viagens</button>
+          <button class="btn" id="t-garage">Garagem</button>
+          <button class="btn" id="t-passport">Passaporte</button>
+          <button class="btn" id="t-settings">Configurações</button>
+          <button class="btn" id="t-help">Controles</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- pausa -->
+    <div id="pause" class="overlay hidden">
+      <div class="panel narrow">
+        <h2>Pausa</h2>
+        <div class="menu-col">
+          <button class="btn primary" data-go="resume">Continuar</button>
+          <button class="btn" data-go="trips">Viagens</button>
+          <button class="btn" data-go="map">Mapa</button>
+          <button class="btn" data-go="garage">Garagem</button>
+          <button class="btn" data-go="passport">Passaporte</button>
+          <button class="btn" data-go="rest">Descansar (mudar a hora)</button>
+          <button class="btn" data-go="photo">Modo foto</button>
+          <button class="btn" data-go="settings">Configurações</button>
+          <button class="btn" data-go="help">Controles</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- descansar -->
+    <div id="rest" class="overlay hidden">
+      <div class="panel narrow">
+        <h2>Descansar</h2>
+        <p class="dim">Pare um pouco e continue a viagem em outra hora do dia.</p>
+        <div class="menu-col">
+          <button class="btn" data-h="6">Amanhecer · 06:00</button>
+          <button class="btn" data-h="10">Manhã · 10:00</button>
+          <button class="btn" data-h="13">Meio-dia · 13:00</button>
+          <button class="btn" data-h="17.4">Pôr do sol · 17:30</button>
+          <button class="btn" data-h="21">Noite · 21:00</button>
+          <button class="btn ghost" data-h="back">Voltar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- viagens -->
+    <div id="trips" class="overlay hidden">
+      <div class="panel wide">
+        <div class="ph"><h2>Viagens</h2><button class="btn small ghost" data-close>Fechar</button></div>
+        <p class="dim">Escolha um destino. O GPS mostra o caminho com setas na pista; o piloto automático (tecla O) pode dirigir para você.</p>
+        <div id="trip-list"></div>
+        <div class="row"><button class="btn small" id="trip-free">Explorar livremente (sem destino)</button></div>
+      </div>
+    </div>
+
+    <!-- garagem -->
+    <div id="garage" class="overlay side hidden">
+      <div class="panel sidepanel">
+        <div class="ph"><h2>Garagem</h2><button class="btn small ghost" data-close>Fechar</button></div>
+        <div id="car-list"></div>
+        <div id="car-info">
+          <div id="car-name"></div>
+          <div id="car-cls" class="dim"></div>
+          <p id="car-desc"></p>
+          <div id="car-stats"></div>
+          <h3>Pintura</h3>
+          <div id="paints"></div>
+          <h3>Rodas</h3>
+          <div id="rims"></div>
+          <button class="btn primary" id="car-drive">Dirigir este carro</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- passaporte -->
+    <div id="passport" class="overlay hidden">
+      <div class="panel wide pp">
+        <div class="ph"><h2>Passaporte</h2><button class="btn small ghost" data-close>Fechar</button></div>
+        <div id="pp-stats"></div>
+        <div id="pp-grid"></div>
+        <h3>Mirantes</h3>
+        <div id="pp-vps"></div>
+      </div>
+    </div>
+
+    <!-- configurações -->
+    <div id="settings" class="overlay hidden">
+      <div class="panel">
+        <div class="ph"><h2>Configurações</h2><button class="btn small ghost" data-close>Fechar</button></div>
+        <div class="set-grid">
+          <label>Qualidade gráfica</label><select id="s-quality"></select>
+          <label>Unidade</label><select id="s-units"><option value="kmh">km/h</option><option value="mph">mph</option></select>
+          <label>Duração do dia</label><select id="s-day"><option value="12">12 min</option><option value="24">24 min</option><option value="48">48 min</option><option value="0">Hora parada</option></select>
+          <label>Clima</label><select id="s-weather"><option value="auto">Automático (cada país)</option><option value="clear">Sempre limpo</option><option value="cloudy">Nublado</option><option value="rain">Chuva</option><option value="snow">Neve</option><option value="fog">Neblina</option></select>
+          <label>Assistências de direção</label><select id="s-assist"><option value="1">Ligadas (relaxante)</option><option value="0">Desligadas</option></select>
+          <label>Câmbio</label><select id="s-manual"><option value="0">Automático</option><option value="1">Manual (Q / E)</option></select>
+          <label>Volume geral</label><input type="range" id="s-vmaster" min="0" max="1" step="0.05" />
+          <label>Motor</label><input type="range" id="s-vengine" min="0" max="1" step="0.05" />
+          <label>Rádio</label><input type="range" id="s-vmusic" min="0" max="1" step="0.05" />
+          <label>Ambiente</label><input type="range" id="s-vamb" min="0" max="1" step="0.05" />
+          <label>Sensibilidade da câmera</label><input type="range" id="s-sens" min="0.3" max="2.5" step="0.1" />
+          <label>Mostrar FPS</label><select id="s-fps"><option value="0">Não</option><option value="1">Sim</option></select>
+        </div>
+        <p class="dim small">Mudar a qualidade recarrega o mundo (sua viagem fica salva).</p>
+      </div>
+    </div>
+
+    <!-- controles -->
+    <div id="help" class="overlay hidden">
+      <div class="panel">
+        <div class="ph"><h2>Controles</h2><button class="btn small ghost" data-close>Fechar</button></div>
+        <div class="help-grid">
+          <b>W / ↑</b><span>acelerar</span>
+          <b>S / ↓</b><span>frear · ré (segurando parado)</span>
+          <b>A D / ← →</b><span>virar</span>
+          <b>Espaço</b><span>freio de mão</span>
+          <b>C</b><span>trocar câmera (perseguição, cockpit, capô, cinematográfica…)</span>
+          <b>Arrastar o mouse</b><span>olhar em volta · B olha para trás</span>
+          <b>O</b><span>piloto automático até o destino</span>
+          <b>K</b><span>controle de cruzeiro</span>
+          <b>T / Tab</b><span>viagens (escolher destino)</span>
+          <b>M</b><span>mapa</span>
+          <b>R</b><span>trocar estação de rádio</span>
+          <b>L</b><span>faróis</span>
+          <b>H</b><span>buzina</span>
+          <b>P</b><span>modo foto</span>
+          <b>I</b><span>esconder a interface</span>
+          <b>Q / E</b><span>marchas (câmbio manual)</span>
+          <b>Backspace</b><span>voltar à estrada</span>
+          <b>F</b><span>tela cheia</span>
+          <b>Esc</b><span>pausa</span>
+        </div>
+        <p class="dim small">Também funciona com controle (gatilhos para acelerar e frear) e no celular, na horizontal.</p>
+      </div>
+    </div>
+
+    <!-- mapa -->
+    <div id="map" class="overlay hidden">
+      <canvas id="map-canvas"></canvas>
+      <div id="map-top" class="glass"><b>Mapa</b> · arraste para mover, role para aproximar · clique numa cidade</div>
+      <div id="map-side" class="glass hidden">
+        <canvas id="ms-flag" width="72" height="48"></canvas>
+        <div id="ms-name"></div>
+        <div id="ms-country" class="dim"></div>
+        <p id="ms-desc"></p>
+        <div id="ms-dist" class="dim"></div>
+        <button class="btn primary small" id="ms-go">Definir destino</button>
+        <button class="btn small" id="ms-warp">Viajar até lá agora</button>
+      </div>
+      <button class="btn small ghost" id="map-close">Fechar (M)</button>
+      <div id="map-legend" class="glass"></div>
+    </div>
+
+    <!-- cartão-postal de chegada -->
+    <div id="postcard" class="overlay hidden">
+      <div class="card">
+        <div class="card-photo"><img id="pc-img" alt="" /><canvas id="pc-stamp" width="260" height="260"></canvas></div>
+        <div class="card-body">
+          <div id="pc-title"></div>
+          <div id="pc-sub" class="dim"></div>
+          <p id="pc-desc"></p>
+          <div id="pc-stats" class="dim"></div>
+          <div class="row">
+            <button class="btn primary" id="pc-next">Próxima viagem</button>
+            <button class="btn" id="pc-stay">Passear por aqui</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- modo foto -->
+    <div id="photobar" class="glass hidden">
+      <b>Modo foto</b>
+      <label>Hora <input type="range" id="ph-time" min="0" max="24" step="0.1" /></label>
+      <label>Zoom <input type="range" id="ph-fov" min="15" max="80" step="1" /></label>
+      <button class="btn small" id="ph-save">Salvar foto</button>
+      <button class="btn small ghost" id="ph-exit">Sair (P)</button>
+    </div>
+
+    <div id="fade"></div>
+    <div id="error" class="hidden"></div>
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>

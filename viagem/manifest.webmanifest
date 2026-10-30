@@ -1,0 +1,10 @@
+{
+  "name": "Rota Serena — Viagens de carro",
+  "short_name": "Rota Serena",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#11161c",
+  "theme_color": "#11161c",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

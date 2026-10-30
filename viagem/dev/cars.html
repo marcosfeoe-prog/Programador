@@ -1,0 +1,52 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>cars</title>
+<style>body{margin:0;background:#222}canvas{display:block}</style>
+<script type="importmap">{ "imports": { "three": "../../vendor/three/three.module.min.js" } }</script></head>
+<body><script type="module">
+import * as THREE from 'three';
+import { CARS, TRAFFIC } from '../js/cars/specs.js';
+import { CarModel } from '../js/cars/model.js';
+const q = new URLSearchParams(location.search);
+const W = +q.get('w') || 1200, H = +q.get('h') || 700;
+const r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+r.setSize(W, H); r.toneMapping = THREE.ACESFilmicToneMapping; r.shadowMap.enabled = true;
+document.body.appendChild(r.domElement);
+const scene = new THREE.Scene();
+// ambiente: céu degradê
+const env = new THREE.Scene();
+const sg = new THREE.SphereGeometry(10, 32, 16);
+const sm = new THREE.ShaderMaterial({ side: THREE.BackSide, vertexShader: 'varying vec3 p; void main(){p=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}', fragmentShader: 'varying vec3 p; void main(){ float y=normalize(p).y; vec3 c = y>0. ? mix(vec3(0.9,0.85,0.75), vec3(0.25,0.45,0.8), pow(y,0.6)) : vec3(0.18,0.17,0.15); c += vec3(3.0,2.6,2.0)*pow(max(dot(normalize(p), normalize(vec3(0.5,0.6,0.4))),0.),200.); gl_FragColor=vec4(c,1.);}' });
+env.add(new THREE.Mesh(sg, sm));
+const pm = new THREE.PMREMGenerator(r);
+scene.environment = pm.fromScene(env, 0.02).texture;
+scene.background = new THREE.Color(0x8aa0b8);
+const sun = new THREE.DirectionalLight(0xfff0dd, 2.5); sun.position.set(5, 8, 4); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+const sc = sun.shadow.camera; sc.left = sc.bottom = -4; sc.right = sc.top = 4;
+scene.add(sun);
+const gnd = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.MeshStandardMaterial({ color: 0x55585a, roughness: 0.9 }));
+gnd.rotation.x = -Math.PI / 2; gnd.receiveShadow = true; scene.add(gnd);
+const id = q.get('car') || 'strale';
+const spec = CARS.find((c) => c.id === id) || TRAFFIC.find((c) => c.id === id);
+const t0 = performance.now();
+const car = new CarModel(spec, { interior: true, lod: +(q.get('lod') || 0) });
+console.log('build ms', performance.now() - t0);
+scene.add(car.root);
+car.root.position.set(0, 0, 0);
+const cam = new THREE.PerspectiveCamera(+(q.get('fov') || 32), W / H, 0.02, 200);
+const view = q.get('view') || '34';
+const L = spec.dims.L;
+const views = { '34': [5.2, 1.6, 5.2], side: [8, 1.0, 0], front: [0, 1.0, 8], back: [0, 1.3, -8], top: [0, 9, 0.01], r34: [-4.5, 1.8, -5] };
+if (view === 'cockpit') {
+  const e = car.interior.eye; cam.position.copy(e); cam.lookAt(e.x, e.y - 0.12, e.z + 2); cam.fov = 70; cam.updateProjectionMatrix();
+  car.interior.setHeadVisible(false);
+  car.interior.update({ steerAngle: 0.1, rpm: 3200, speed: 20, gearLabel: '3' }, true);
+} else if (view === 'inside') {
+  const e = car.interior.eye; cam.position.set(-e.x * 1.0, e.y + 0.05, e.z - 0.1); cam.lookAt(e.x, e.y - 0.3, e.z + 0.8); cam.fov = 75; cam.updateProjectionMatrix();
+} else {
+  const v = views[view]; cam.position.set(...v); cam.lookAt(0, 0.6, 0);
+}
+car.pose(car.com.clone(), new THREE.Quaternion(), null, +(q.get('steer') || 0), 0);
+if (q.get('lights')) car.setLights(true, 1, 1);
+r.render(scene, cam);
+window.DONE = true;
+</script></body></html>

@@ -154,3 +154,16 @@ Segundo jogo do repositório: exploração em primeira pessoa pelos **Níveis 0,
 noturna, câmera térmica…), qualidade gráfica **Baixa, Média, Alta e Ultra** e
 controles feitos para **celular**. Com o servidor rodando (`npm start`), abra
 `http://localhost:8080/liminar/`. Detalhes em [`liminar/README.md`](liminar/README.md).
+
+---
+
+# Rota Serena — Viagens de carro em mundo aberto (pasta `viagem/`)
+
+Terceiro jogo do repositório: um jogo **relaxante** de viagem de carro por um
+continente com **seis países** (Noruega, Suíça, Japão, México, Itália e Brasil),
+doze cidades e ~128 km de estradas. Escolha um destino, siga o GPS (ou ligue o
+piloto automático), pare nos mirantes e colecione carimbos no passaporte. Os sete
+carros têm carroceria, rodas e **interior completo gerados do zero** por código;
+rádio com música gerada na hora, ciclo de dia e noite e clima por país. Com o
+servidor rodando (`npm start`), abra `http://localhost:8080/viagem/`. Detalhes em
+[`viagem/README.md`](viagem/README.md).
