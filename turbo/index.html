@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b1a3a" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="description" content="Corrida arcade 3D em pistas suspensas: loops, saltos, obstáculos, seis mundos e garagem com melhorias. Feito para celular." />
+    <title>Turbo Looping 3D</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/style.css" />
+    <script type="importmap">
+      { "imports": { "three": "../vendor/three/three.module.min.js" } }
+    </script>
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+    <canvas id="speedlines" class="hidden"></canvas>
+
+    <!-- HUD da corrida -->
+    <div id="hud" class="hidden">
+      <div id="h-top">
+        <div id="h-pos"><span id="h-posn">6º</span><small id="h-tot">/6</small></div>
+        <div id="h-prog">
+          <div id="h-flag-start"></div>
+          <div id="h-track"></div>
+          <div id="h-flag-end"></div>
+        </div>
+        <button id="h-pause" aria-label="Pausar"><i></i><i></i></button>
+      </div>
+      <div id="h-sub">
+        <span id="h-time">0:00.00</span>
+        <span class="h-coins"><i class="coin"></i><b id="h-coins">0</b></span>
+      </div>
+      <div id="h-speed"><b id="h-kmh">0</b><small>km/h</small></div>
+      <button id="h-nitro" aria-label="Nitro">
+        <div id="h-nitro-ring"></div>
+        <span>NITRO</span>
+      </button>
+      <div id="h-count"></div>
+      <div id="h-toasts"></div>
+      <div id="h-hint">
+        <div class="hand"></div>
+        <p><b>Segure</b> para acelerar · <b>arraste</b> para virar<br /><small>Teclado: setas/WASD · Espaço = nitro · P = pausa</small></p>
+      </div>
+      <div id="h-fade"></div>
+    </div>
+
+    <!-- Menu principal -->
+    <div id="menu" class="screen hidden">
+      <div class="topbar">
+        <div></div>
+        <div class="coins"><i class="coin"></i><b class="coins-val">0</b></div>
+      </div>
+      <div id="logo">
+        <span class="l1">TURBO</span>
+        <span class="l2">LOOPING<em>3D</em></span>
+      </div>
+      <div id="m-buttons">
+        <button id="btn-play" class="big yellow">
+          <span>JOGAR ▶</span>
+          <small id="m-next">Nível 1</small>
+        </button>
+        <div class="row">
+          <button id="btn-worlds" class="mid blue">🗺 MUNDOS</button>
+          <button id="btn-garage" class="mid blue">🔧 GARAGEM</button>
+          <button id="btn-settings" class="sq blue" aria-label="Configurações">⚙</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mundos e níveis -->
+    <div id="worlds" class="screen hidden">
+      <div class="topbar">
+        <button class="back" data-back aria-label="Voltar">‹</button>
+        <h2>MUNDOS</h2>
+        <div class="coins"><i class="coin"></i><b class="coins-val">0</b></div>
+      </div>
+      <div id="w-list"></div>
+    </div>
+
+    <!-- Garagem -->
+    <div id="garage" class="screen hidden">
+      <div class="topbar">
+        <button class="back" data-back aria-label="Voltar">‹</button>
+        <h2>GARAGEM</h2>
+        <div class="coins"><i class="coin"></i><b class="coins-val">0</b></div>
+      </div>
+      <div id="g-panel">
+        <div id="g-name">Faísca</div>
+        <div id="g-kind">Compacto</div>
+        <div id="g-stars"></div>
+        <div id="g-stats"></div>
+        <button id="g-upgrade" class="green"></button>
+      </div>
+      <div id="g-bottom">
+        <div id="g-tabs">
+          <button data-tab="carros" class="on">🚗<span>Carros</span></button>
+          <button data-tab="pintura">🎨<span>Pintura</span></button>
+          <button data-tab="rodas">◎<span>Rodas</span></button>
+          <button data-tab="neon">✦<span>Neon</span></button>
+        </div>
+        <div id="g-row">
+          <div id="g-items"></div>
+          <button id="g-action" class="big"></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resultado -->
+    <div id="results" class="screen hidden">
+      <div class="card">
+        <h1 id="r-title"></h1>
+        <div id="r-level"></div>
+        <ol id="r-list"></ol>
+        <div id="r-reward"></div>
+        <p id="r-msg"></p>
+        <div class="row">
+          <button id="r-retry" class="mid blue">↻ REPETIR</button>
+          <button id="r-garage" class="mid blue">🔧 GARAGEM</button>
+          <button class="mid blue" data-back>☰ MENU</button>
+        </div>
+        <button id="r-next" class="big yellow">PRÓXIMO NÍVEL ▶</button>
+      </div>
+    </div>
+
+    <!-- Carregando -->
+    <div id="loading" class="screen hidden">
+      <div class="lbox">
+        <div id="l-title">Nível 1</div>
+        <div id="l-world">Arquipélago</div>
+        <div class="spinner"></div>
+        <p id="l-tip"></p>
+      </div>
+    </div>
+
+    <!-- Pausa -->
+    <div id="pause" class="modal hidden">
+      <div class="card">
+        <h1>PAUSA</h1>
+        <button id="p-continue" class="big yellow">CONTINUAR</button>
+        <button id="p-restart" class="mid blue">↻ RECOMEÇAR</button>
+        <button id="p-quit" class="mid blue">☰ SAIR PARA O MENU</button>
+      </div>
+    </div>
+
+    <!-- Configurações -->
+    <div id="settings" class="modal hidden">
+      <div class="card">
+        <h1>AJUSTES</h1>
+        <div id="s-body"></div>
+        <button id="s-close" class="big yellow">OK</button>
+        <button id="s-reset" class="link">Apagar progresso</button>
+      </div>
+    </div>
+
+    <div id="boot"><div class="spinner"></div></div>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>

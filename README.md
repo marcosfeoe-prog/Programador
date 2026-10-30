@@ -154,3 +154,14 @@ Segundo jogo do repositório: exploração em primeira pessoa pelos **Níveis 0,
 noturna, câmera térmica…), qualidade gráfica **Baixa, Média, Alta e Ultra** e
 controles feitos para **celular**. Com o servidor rodando (`npm start`), abra
 `http://localhost:8080/liminar/`. Detalhes em [`liminar/README.md`](liminar/README.md).
+
+---
+
+# Turbo Looping 3D — corrida arcade (pasta `turbo/`)
+
+Terceiro jogo do repositório: corrida 3D em pistas suspensas com loops, saltos,
+parafusos e obstáculos, seis mundos (Arquipélago, Cânion Dourado, Metrópole Neon,
+Pico Glacial, Vulcão Rubro e Órbita Estelar), IA e garagem com dez carros,
+melhorias, pinturas, rodas e neon. Feito para **celular** (segure para acelerar,
+arraste para virar). Com o servidor rodando (`npm start`), abra
+`http://localhost:8080/turbo/`. Detalhes em [`turbo/README.md`](turbo/README.md).
