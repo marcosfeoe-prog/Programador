@@ -1,5 +1,6 @@
 /* Turbo Looping — interface. Pensada primeiro para celular (retrato ou paisagem). */
 :root {
+  color-scheme: dark;
   --fg: #ffffff;
   --dim: #b8c8ec;
   --yellow: #ffd21a;

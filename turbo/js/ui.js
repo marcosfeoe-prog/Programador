@@ -114,8 +114,19 @@ export class UI {
       this.click();
       $('settings').classList.add('hidden');
     };
-    $('s-reset').onclick = () => {
-      if (!confirm('Apagar todo o progresso (moedas, carros e níveis)?')) return;
+    $('s-reset').onclick = (e) => {
+      // confirmação na própria tela (alguns navegadores bloqueiam confirm()):
+      // o segundo toque em até 3 s apaga
+      const b = e.currentTarget;
+      if (!b.dataset.armed) {
+        b.dataset.armed = '1';
+        b.textContent = 'Toque de novo para apagar tudo';
+        setTimeout(() => {
+          delete b.dataset.armed;
+          b.textContent = 'Apagar progresso';
+        }, 3000);
+        return;
+      }
       try {
         localStorage.clear();
       } catch (e) {
