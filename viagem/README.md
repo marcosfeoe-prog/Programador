@@ -22,6 +22,11 @@ estático (GitHub Pages, Netlify…). No celular, jogue na horizontal; dá para
 Parâmetros úteis na URL: `?quality=low|medium|high|ultra`, `?city=valdoro`
 (começar numa cidade), `?car=falke`, `?hour=6`, `?play` (pula a tela título).
 
+Há também um **mostruário** dos carros para ver os modelos de perto:
+`http://localhost:8080/viagem/dev/cars.html?car=strale&view=34` (vistas `34`,
+`side`, `front`, `back`, `top`, `cockpit`; carros `strale`, `kitsune`, `aero`,
+`fulmine`, `falke`, `trilha`, `brisa` e os do trânsito).
+
 ## O mapa
 
 Um continente fictício de **22 × 15,6 km**, cercado de mar, com seis países e
