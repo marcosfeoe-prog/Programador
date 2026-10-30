@@ -159,7 +159,7 @@ class Game {
     await this.traffic.init(yieldFrame);
     this.baseMap = buildBaseMap(F, this.gen);
     // luzes noturnas: faróis e postes (quantidade fixa para não recompilar shaders)
-    this.headlight = new THREE.SpotLight(0xfff2dc, 0, 160, 0.45, 0.55, 1.2);
+    this.headlight = new THREE.SpotLight(0xfff2dc, 0, 140, 0.55, 0.85, 1.4);
     this.headlight.target = new THREE.Object3D();
     this.scene.add(this.headlight, this.headlight.target);
     this.lampLights = [];
@@ -328,6 +328,32 @@ class Game {
     });
   }
 
+  // reposiciona o carro alguns metros à frente na rota (piloto automático preso)
+  skipAhead(m) {
+    const R = this.gps.route;
+    if (!R) return;
+    let i = R.idx;
+    let d = 0;
+    while (i < R.pts.length - 2 && d < m) {
+      d += Math.hypot(R.pts[i + 1].x - R.pts[i].x, R.pts[i + 1].z - R.pts[i].z);
+      i++;
+    }
+    const a = R.pts[i];
+    const b = R.pts[Math.min(R.pts.length - 1, i + 1)];
+    let tx = b.x - a.x;
+    let tz = b.z - a.z;
+    const l = Math.hypot(tx, tz) || 1;
+    tx /= l;
+    tz /= l;
+    const off = a.hw * 0.45;
+    this.fadeTo(() => {
+      const ap = this.autopilotOn;
+      this.spawnCar(this.progress.car, a.x - tz * off, a.z + tx * off, Math.atan2(tx, tz));
+      this.autopilotOn = ap;
+      R.idx = i;
+    });
+  }
+
   fadeTo(fn) {
     const f = $('fade');
     f.style.opacity = 1;
@@ -422,6 +448,7 @@ class Game {
     const d = new Date();
     P.dates[c.id] = P.dates[c.id] || `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
     this.gps.set(null);
+    this.hud.setGps(null);
     P.dest = null;
     this.autopilotOn = false;
     this.audio.chime();
@@ -740,6 +767,12 @@ class Game {
         if (man.brake > 0.5 || Math.abs(man.steer) > 0.6) {
           this.autopilotOn = false;
           this.hud.toast('Piloto automático desligado');
+        }
+        // preso num obstáculo: avança um pouco pela rota
+        this.stuckT = ctrl.throttle > 0.3 && Math.abs(ph.speed) < 1 ? (this.stuckT || 0) + dt : 0;
+        if (this.stuckT > 3) {
+          this.stuckT = 0;
+          this.skipAhead(25);
         }
       } else ctrl = man;
     } else if (st === 'arrival') ctrl = { throttle: 0, brake: 0, steer: 0, handbrake: true };
@@ -1080,7 +1113,7 @@ class Game {
       const front = ph.pos.clone().addScaledVector(f, ph.spec.dims.L / 2 - ph.com.z).addScaledVector(up, 0.1);
       hl.position.copy(front);
       hl.target.position.copy(front).addScaledVector(f, 25).addScaledVector(up, -2.2);
-      hl.intensity = 900 * night;
+      hl.intensity = 420 * night;
     } else hl.intensity = 0;
     // postes acesos perto da câmera
     this.lampT -= dt;

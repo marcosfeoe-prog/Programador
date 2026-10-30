@@ -253,7 +253,9 @@ export class VehiclePhysics {
     if (!this.manual && this.gear > 0 && this.shiftT <= 0) {
       const up = P.redline * (0.36 + 0.56 * thr);
       const down = P.redline * (0.17 + 0.3 * thr);
-      if (this.rpm > up && this.gear < P.gears.length && this.airborne < 0.2) {
+      // rotação pela velocidade do carro (evita subir marcha com as rodas patinando)
+      const rpmCar = ((Math.abs(this.speed) / this.wheels[2].r) * ratio * 60) / (2 * Math.PI);
+      if (this.rpm > up && rpmCar > up * 0.85 && this.gear < P.gears.length && this.airborne < 0.2) {
         this.gear++;
         this.shiftT = 0.18;
       } else if (this.rpm < down && this.gear > 1) {

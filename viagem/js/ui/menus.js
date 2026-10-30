@@ -195,7 +195,7 @@ export class Menus {
     const P = spec.phys;
     const hp = Math.round(P.power * 1.341);
     const pw = (P.power * 1000) / P.mass;
-    const zero100 = clamp(2.2 + 2200 / pw / (P.drive === 'AWD' ? 1.15 : 1), 2.2, 16);
+    const zero100 = clamp(1.9 + 750 / pw / (P.drive === "AWD" ? 1.15 : 1), 2.2, 18);
     const vmax = Math.round(P.vmax || 250);
     const stats = [
       ['Potência', clamp(hp / 1600, 0.05, 1), `${hp} cv`],

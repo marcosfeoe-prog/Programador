@@ -703,7 +703,9 @@ export class Cities {
     // praça
     const pv = style === 'japanese' ? [0.62, 0.6, 0.58] : style === 'mexican' || style === 'italian' ? [0.78, 0.66, 0.52] : [0.68, 0.66, 0.62];
     const pmat = new THREE.MeshStandardMaterial({ map: pavingTex(pv), roughness: 0.85 });
-    pmat.map.repeat.set(6, 6);
+    pmat.map = pmat.map.clone();
+    pmat.map.needsUpdate = true;
+    pmat.map.repeat.set(12, 12);
     const plaza = new THREE.Mesh(new THREE.CircleGeometry(25, 48), pmat);
     plaza.rotation.x = -Math.PI / 2;
     plaza.position.set(c.x, y + 0.035, c.z);
@@ -1068,7 +1070,7 @@ export class Cities {
     const lampOn = night > 0.35 ? 1 : 0;
     this.lampMat.emissiveIntensity = lampOn * 2.4;
     this.glowMat.opacity = lampOn * 0.85;
-    for (const m of this.winMats) m.emissiveIntensity = night * 1.25;
+    for (const m of this.winMats) m.emissiveIntensity = night * 0.55;
     if (this.lighthouseLamp) for (const l of this.lighthouseLamp) l.material.emissiveIntensity = 0.3 + night * 4 * (0.6 + 0.4 * Math.sin(t * 2));
     if (this.boats)
       for (const b of this.boats) {

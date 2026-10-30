@@ -438,7 +438,7 @@ export function autopilot(route, phys, maxKmh, dt, state) {
     const dist = Math.max(1, Math.hypot(a.x - pos.x, a.z - pos.z));
     curv = Math.max(curv, (da / d) / (1 + dist / 120));
   }
-  let vt = Math.min(maxKmh / 3.6, Math.sqrt(3.2 / Math.max(curv, 1e-4)));
+  let vt = Math.min(maxKmh / 3.6, Math.sqrt(3.9 / Math.max(curv, 1e-4)));
   const remain = route.remaining ?? 1e9;
   vt = Math.min(vt, Math.sqrt(2 * 2.5 * Math.max(0, remain - 25)) + 2);
   if (state && state.blocked) vt = Math.min(vt, state.blocked);

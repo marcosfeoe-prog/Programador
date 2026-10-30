@@ -642,7 +642,7 @@ class Grass {
     if (ok && g.cityAt(x, z, -20)) ok = false;
     if (ok) {
       h = g.height(x, z);
-      if (h < 2.2 || h > COUNTRIES[ci].snowLine - 50) ok = false;
+      if (h < g.waterLevel(x, z) + 2.2 || h > COUNTRIES[ci].snowLine - 50) ok = false;
       else {
         const e = 1.5;
         const sl = Math.abs(g.height(x + e, z) - h) / e;

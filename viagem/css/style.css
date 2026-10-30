@@ -888,24 +888,103 @@ body {
   font-size: 20px;
 }
 body.mobile #speedo {
-  right: auto;
-  left: 50%;
-  margin-left: -70px;
-  width: 140px;
-  height: 140px;
-  bottom: 4px;
+  right: 8px;
+  top: 62px;
+  bottom: auto;
+  width: 112px;
+  height: 112px;
 }
 body.mobile #minimap {
-  top: 70px;
+  left: 8px;
+  top: 62px;
   bottom: auto;
-  width: 130px;
-  height: 130px;
+  width: 112px;
+  height: 112px;
+}
+body.mobile #loc {
+  left: 8px;
+  top: 8px;
+  padding: 6px 10px 6px 6px;
+}
+body.mobile #loc-country {
+  font-size: 14px;
+}
+body.mobile #loc-place {
+  font-size: 11px;
+  max-width: 190px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 body.mobile #clock {
-  right: 70px;
+  right: 8px;
+  top: 8px;
+  padding: 5px 10px;
+}
+body.mobile #clock-time {
+  font-size: 17px;
+}
+body.mobile #gps {
+  top: 8px;
+  min-width: 0;
+  padding: 5px 12px 5px 8px;
+}
+body.mobile #toasts {
+  top: 64px;
+}
+body.mobile .toast {
+  font-size: 13px;
 }
 body.mobile #radio {
   display: none !important;
+}
+body.mobile #banner-name {
+  font-size: 34px;
+}
+body.mobile .tbtns {
+  top: 182px;
+  right: auto;
+  left: 8px;
+  bottom: auto;
+  display: grid;
+  grid-template-columns: repeat(2, 38px);
+  gap: 6px;
+}
+body.mobile .tbtn {
+  width: 38px;
+  height: 38px;
+  font-size: 16px;
+}
+body.mobile .steer-zone {
+  width: 40%;
+}
+body.mobile .steer-track {
+  width: 220px;
+  margin-left: -110px;
+  bottom: 24px;
+}
+body.mobile .pedal {
+  width: 80px;
+}
+body.mobile .pedal.gas {
+  height: 140px;
+}
+body.mobile .hb {
+  right: 206px;
+  bottom: 20px;
+  width: 52px;
+  height: 52px;
+}
+body.mobile .logo.big {
+  font-size: 44px;
+}
+body.mobile .menu-col {
+  gap: 6px;
+  margin-top: 14px;
+}
+body.mobile .btn {
+  padding: 8px 14px;
+  font-size: 14px;
 }
 
 @media (max-width: 760px) {

@@ -270,9 +270,9 @@ export class Sky {
       sun.target.position.z = Math.round(sun.target.position.z / tex) * tex;
       sun.position.copy(sun.target.position).addScaledVector(dir, 400);
     }
-    this.hemi.color.copy(zen).lerp(hor, 0.4).multiplyScalar(1.2);
-    this.hemi.groundColor.copy(U.uGround.value).multiplyScalar(1.5);
-    this.hemi.intensity = 0.25 + 0.35 * (1 - night) + 0.25 * grey;
+    this.hemi.color.copy(zen).lerp(hor, 0.4).multiplyScalar(1.2).lerp(this.tmpB.setRGB(0.16, 0.2, 0.32), night * 0.85);
+    this.hemi.groundColor.copy(U.uGround.value).multiplyScalar(1.5).lerp(this.tmpB.setRGB(0.05, 0.05, 0.06), night * 0.7);
+    this.hemi.intensity = 0.25 + 0.35 * (1 - night) + 0.25 * grey + night * 0.55;
     this.scene.environmentIntensity = lerp(0.12, 1.0, smoothstep(-8, 8, elev)) * (1 - grey * 0.25);
 
     this.mesh.position.copy(camPos);

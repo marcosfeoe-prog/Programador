@@ -608,15 +608,15 @@ export class WorldGen {
           // pedras e arbustos esparsos fora da mata
           if (r3 > 0.985 && roadClear > 6) {
             const h = this.height(x, z);
-            if (h > 1.5) push(x, h - 0.3, z, 0.5 + r4 * 1.8, SP.rock, r4);
+            if (h > this.waterLevel(x, z) + 1.5) push(x, h - 0.3, z, 0.5 + r4 * 1.8, SP.rock, r4);
           } else if (r3 < p + 0.05 && roadClear > 5) {
             const h = this.height(x, z);
-            if (h > 1.2 && h < C.treeLine) push(x, h, z, 0.6 + r4 * 0.6, ci === 3 ? SP.shrub : SP.bush, r4);
+            if (h > this.waterLevel(x, z) + 1.2 && h < C.treeLine) push(x, h, z, 0.6 + r4 * 0.6, ci === 3 ? SP.shrub : SP.bush, r4);
           }
           continue;
         }
         const h = this.height(x, z);
-        if (h < 1.6) continue;
+        if (h < this.waterLevel(x, z) + 1.6) continue;
         const e = 3;
         const slope = Math.hypot(this.height(x + e, z) - h, this.height(x, z + e) - h) / e;
         if (slope > 0.85) {
@@ -679,7 +679,7 @@ export class WorldGen {
             const qq = this.roadQuery(x, z, 20);
             if (qq && qq.dist < qq.hw + 4.5) continue;
             const h = this.height(x, z);
-            if (h < 1.5) continue;
+            if (h < this.waterLevel(x, z) + 1.5) continue;
             const rr = hash2(i, l[k], side + 5);
             push(x, h, z, 0.85 + rr * 0.3, ci === 4 ? SP.cypress : SP.cherry, rr);
           }

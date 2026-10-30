@@ -44,10 +44,21 @@ export class Traffic {
 
   spawn(px, pz, near) {
     const rng = this.rng;
-    // escolhe um ponto de estrada a 250–1100 m do jogador
+    // escolhe um ponto de estrada a 250–1100 m do jogador, nas estradas próximas
+    const near2 = this.roads.filter((r) => r.bbox && px > r.bbox[0] - 1200 && px < r.bbox[2] + 1200 && pz > r.bbox[1] - 1200 && pz < r.bbox[3] + 1200);
+    if (!near2.length) return null;
     for (let tries = 0; tries < 12; tries++) {
-      const r = rng.pick(this.roads);
-      const s = rng.float(30, r.len - 30);
+      const r = rng.pick(near2);
+      let k0 = 0;
+      let bd = 1e18;
+      for (let k = 0; k < r.hs.length; k += 8) {
+        const d = (r.pts[k * 2] - px) ** 2 + (r.pts[k * 2 + 1] - pz) ** 2;
+        if (d < bd) {
+          bd = d;
+          k0 = k;
+        }
+      }
+      const s = clamp(r.cum[k0] + (rng.chance(0.5) ? 1 : -1) * rng.float(near ? 160 : 300, 1000), 30, r.len - 30);
       const p = roadAt(r, s, this.tmp);
       const d = Math.hypot(p.x - px, p.z - pz);
       if (d < (near ? 140 : 280) || d > 1200) continue;
