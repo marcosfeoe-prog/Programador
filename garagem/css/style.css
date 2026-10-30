@@ -395,6 +395,7 @@ h2, h3, h4, b, .btn, .sec-title { font-family: var(--font); font-style: italic; 
 .lim { display: flex; align-items: center; gap: 10px; background: var(--card2); border-radius: 18px; padding: 6px 10px; }
 .lim .cimg { width: 48%; flex: none; }
 .lim-info { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.lim-info .row .btn { padding: 0 6px; }
 .lim-info b { font-size: 14px; }
 .lim-info small { color: var(--red); font-weight: 800; }
 .fxtag { align-self: flex-start; font: 900 10px var(--font); font-style: italic; letter-spacing: 0.08em; padding: 2px 8px; border-radius: 999px; color: #111; background: var(--fx); box-shadow: 0 0 10px var(--fx); }

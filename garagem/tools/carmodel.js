@@ -344,6 +344,16 @@ export const TYPES = {
     rearSpat: true, dorsal: true, rim: 'disc', rimColor: 'silver', badge: '#c9a35a',
     lights: 'round', grille: 'horseshoe', intake: 'none', lightY: -0.1, lightZ: 0.8, lightW: 0.17, lightH: 0.17, grilleW: 0.3, grilleH: 0.3, grilleY: 0.12,
   },
+  vertical: {
+    L: 4.5, W: 1.98, wr: 0.36, tw: 0.31, fo: 1.0, wb: 2.65, rs: 0.05, endF: 0.08, endR: 0.12, endV: 0.3,
+    yb: [[0, 0.18], [0.25, 0.12], [4.25, 0.14], [4.5, 0.28]],
+    top: [[0, 0.6], [0.3, 0.66], [1.0, 0.76], [1.45, 0.8], [2.9, 0.88], [3.65, 0.94], [4.35, 0.93], [4.5, 0.88]],
+    dip: [[0, 0.02], [0.5, 0.07], [1.2, 0.06], [1.5, 0.02], [2.9, 0.02], [3.3, 0.06], [4.5, 0.02]],
+    hw: [[0, 0.9], [0.3, 0.97], [1.0, 1], [2.0, 0.95], [3.0, 0.97], [3.65, 1.02], [4.35, 1], [4.5, 0.96]],
+    gh: { ws: 1.42, roofF: 2.2, roofR: 2.72, rw: 4.1, roofY: 1.19, inset: 0.1, tumble: 0.25, bp: 99, wsLin: true },
+    vflank: true, hoodSlot: true, sideSlot: true, noDoors: false, rim: 'spoke5', rimColor: 'black',
+    lights: 'seg4', grille: 'vframe', intake: 'none', lightY: -0.035, lightZ: 0.66, lightW: 0.42, lightH: 0.05, grilleW: 0.42, grilleH: 0.4, grilleY: 0.2,
+  },
   proto: {
     L: 4.4, W: 2.0, wr: 0.34, tw: 0.3, fo: 0.95, wb: 2.3, rs: 0.14, endF: 0.28, endR: 0.2,
     yb: [[0, 0.18], [0.3, 0.1], [4.1, 0.12], [4.4, 0.24]],
@@ -639,6 +649,15 @@ function rrect(g, x, y, w, h, r) {
 }
 
 const HEADLIGHT = {
+  seg4: (g, w, h) => {
+    g.fillStyle = '#0a0b0d';
+    rrect(g, 1, 1, w - 2, h - 2, h * 0.3);
+    g.fill();
+    g.shadowColor = '#e6f4ff';
+    g.shadowBlur = 6;
+    g.fillStyle = '#ffffff';
+    for (let i = 0; i < 4; i++) rrect(g, w * (0.08 + i * 0.22), h * 0.25, w * 0.14, h * 0.5, 2), g.fill();
+  },
   xbow: (g, w, h) => {
     g.fillStyle = '#060708';
     rrect(g, 1, 1, w - 2, h - 2, h * 0.45);
@@ -848,6 +867,31 @@ const HEADLIGHT = {
 };
 
 const GRILLE = {
+  vframe: (g, w, h) => {
+    // grade vertical: moldura prata, colmeia escura e emblema (losango) no alto
+    const gr = g.createLinearGradient(0, 0, w, 0);
+    gr.addColorStop(0, '#8d949c');
+    gr.addColorStop(0.5, '#e9ecef');
+    gr.addColorStop(1, '#8d949c');
+    g.fillStyle = gr;
+    rrect(g, 1, 1, w - 2, h - 2, 10);
+    g.fill();
+    g.fillStyle = '#060708';
+    rrect(g, w * 0.07, h * 0.06, w * 0.86, h * 0.88, 8);
+    g.fill();
+    g.strokeStyle = '#2b2f35';
+    g.lineWidth = 3;
+    for (let y = h * 0.2; y < h * 0.92; y += 16) for (let x = w * 0.1 + ((y / 16) % 2) * 8; x < w * 0.9; x += 16) g.strokeRect(x, y, 9, 9);
+    g.strokeStyle = '#e9ecef';
+    g.lineWidth = 5;
+    g.beginPath();
+    g.moveTo(w / 2, h * 0.07);
+    g.lineTo(w * 0.62, h * 0.12);
+    g.lineTo(w / 2, h * 0.17);
+    g.lineTo(w * 0.38, h * 0.12);
+    g.closePath();
+    g.stroke();
+  },
   hex: (g, w, h) => {
     g.fillStyle = '#050607';
     rrect(g, 1, 1, w - 2, h - 2, Math.min(18, h * 0.3));
@@ -1332,6 +1376,8 @@ function paintMaterial(color, finish) {
   const c = new THREE.Color(color);
   const base = { color: c, vertexColors: true };
   switch (finish) {
+    case 'satin':
+      return new THREE.MeshPhysicalMaterial({ ...base, metalness: 0.65, roughness: 0.42, clearcoat: 0.25, clearcoatRoughness: 0.4 });
     case 'carbonweave':
       return new THREE.MeshPhysicalMaterial({ ...base, metalness: 0.35, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.02 });
     case 'neon':
@@ -1854,6 +1900,110 @@ export function buildCar(spec) {
     });
     const m = new THREE.MeshPhysicalMaterial({ map: tex, emissiveMap: tex, emissive: 0xffffff, emissiveIntensity: 0.25, roughness: 0.25, clearcoat: 1, alphaTest: 0.5, polygonOffset: true, polygonOffsetFactor: -3 });
     for (const sz of [1, -1]) decal({ center: new THREE.Vector3(P.L / 2 - (d0 + d1) / 2, (yA + yB) / 2, 0), dir: new THREE.Vector3(0, 0, -sz), u: Xv.clone(), v: Yv, w: d1 - d0, h: yB - yA, nu: 48, nv: 16, offset: 0.004 }, m);
+  }
+
+  // --- entradas verticais escuras ao lado da grade (conceito vertical)
+  if (P.vflank) {
+    const tex = canvasTex(160, 256, (g, w, h) => {
+      g.fillStyle = '#060708';
+      rrect(g, 2, 2, w - 4, h - 4, 8);
+      g.fill();
+      g.fillStyle = '#23272d';
+      for (let x = w * 0.14; x < w * 0.9; x += w * 0.16) g.fillRect(x, h * 0.06, w * 0.05, h * 0.88);
+    });
+    const m = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.5, metalness: 0.4, alphaTest: 0.5 });
+    for (const sz of [1, -1]) decal({ center: new THREE.Vector3(0, noseTop + P.lightY - (P.grilleY ?? 0.02), sz * hw0 * 0.6), dir: front, u: Zv.clone().negate(), v: Yv, w: 0.26, h: P.grilleH || 0.4, nu: 12, nv: 16 }, m);
+  }
+  // --- friso escuro no capô, junto ao para-brisa
+  if (P.hoodSlot) {
+    const tex = canvasTex(64, 256, (g, w, h) => {
+      g.fillStyle = '#050607';
+      rrect(g, 2, 2, w - 4, h - 4, 10);
+      g.fill();
+    });
+    const m = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.95, metalness: 0, envMapIntensity: 0.15, alphaTest: 0.5, polygonOffset: true, polygonOffsetFactor: -2 });
+    decal({ center: new THREE.Vector3(P.L / 2 - (P.gh.ws - 0.22), 0, 0), dir: new THREE.Vector3(0, -1, 0), u: Xv.clone().negate(), v: Zv, w: 0.12, h: hw0 * 0.9, nu: 6, nv: 16 }, m);
+  }
+  // --- entrada vertical alta na lateral, atrás da porta
+  if (P.sideSlot) {
+    const tex = canvasTex(96, 320, (g, w, h) => {
+      g.fillStyle = '#040506';
+      rrect(g, 2, 2, w - 4, h - 4, 12);
+      g.fill();
+    });
+    const m = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6, alphaTest: 0.5, polygonOffset: true, polygonOffsetFactor: -2 });
+    const d = P.ra - P.rA - 0.32;
+    const yA = P.fYb(d) + 0.14;
+    const yB = P.fTop(d) - 0.08;
+    for (const sz of [1, -1]) decal({ center: new THREE.Vector3(P.L / 2 - d, (yA + yB) / 2, 0), dir: new THREE.Vector3(0, 0, -sz), u: Xv.clone().multiplyScalar(sz), v: Yv, w: 0.13, h: yB - yA, nu: 6, nv: 16 }, m);
+  }
+  // --- adesivo sombrio de caveira na porta
+  if (P.skull) {
+    const tex = canvasTex(512, 512, (g, w, h) => {
+      const ink = '#141417';
+      const edge = 'rgba(70,72,80,0.9)';
+      // crânio e mandíbula
+      g.fillStyle = ink;
+      g.strokeStyle = edge;
+      g.lineWidth = 6;
+      g.beginPath();
+      g.ellipse(w * 0.5, h * 0.4, w * 0.3, h * 0.29, 0, Math.PI * 0.82, Math.PI * 2.18);
+      g.bezierCurveTo(w * 0.78, h * 0.62, w * 0.7, h * 0.66, w * 0.68, h * 0.7);
+      g.lineTo(w * 0.66, h * 0.86);
+      g.quadraticCurveTo(w * 0.5, h * 0.95, w * 0.34, h * 0.86);
+      g.lineTo(w * 0.32, h * 0.7);
+      g.bezierCurveTo(w * 0.3, h * 0.66, w * 0.22, h * 0.62, w * 0.235, h * 0.535);
+      g.closePath();
+      g.fill();
+      g.stroke();
+      // órbitas com brilho vermelho fraco
+      for (const ex of [0.375, 0.625]) {
+        g.fillStyle = '#030304';
+        g.beginPath();
+        g.ellipse(w * ex, h * 0.43, w * 0.085, h * 0.075, ex < 0.5 ? 0.25 : -0.25, 0, Math.PI * 2);
+        g.fill();
+        const gr = g.createRadialGradient(w * ex, h * 0.44, 1, w * ex, h * 0.44, w * 0.05);
+        gr.addColorStop(0, 'rgba(255,40,30,0.95)');
+        gr.addColorStop(1, 'rgba(120,0,0,0)');
+        g.fillStyle = gr;
+        g.beginPath();
+        g.arc(w * ex, h * 0.44, w * 0.05, 0, Math.PI * 2);
+        g.fill();
+      }
+      // nariz
+      g.fillStyle = '#030304';
+      g.beginPath();
+      g.moveTo(w * 0.5, h * 0.52);
+      g.lineTo(w * 0.465, h * 0.6);
+      g.quadraticCurveTo(w * 0.5, h * 0.62, w * 0.535, h * 0.6);
+      g.closePath();
+      g.fill();
+      // dentes
+      g.strokeStyle = '#030304';
+      g.lineWidth = 5;
+      g.beginPath();
+      g.moveTo(w * 0.35, h * 0.74);
+      g.lineTo(w * 0.65, h * 0.74);
+      for (let x = 0.38; x < 0.64; x += 0.045) {
+        g.moveTo(w * x, h * 0.69);
+        g.lineTo(w * x, h * 0.84);
+      }
+      g.stroke();
+      // rachadura no crânio
+      g.strokeStyle = edge;
+      g.lineWidth = 4;
+      g.beginPath();
+      g.moveTo(w * 0.46, h * 0.13);
+      g.lineTo(w * 0.5, h * 0.21);
+      g.lineTo(w * 0.47, h * 0.27);
+      g.lineTo(w * 0.52, h * 0.33);
+      g.stroke();
+    });
+    const m = new THREE.MeshPhysicalMaterial({ map: tex, roughness: 0.55, metalness: 0.1, alphaTest: 0.5, polygonOffset: true, polygonOffsetFactor: -4 });
+    const d = (P.fo + P.rA + 0.1 + (P.ra - P.rA - 0.5)) / 2;
+    const y = (P.fYb(d) + P.fTop(d)) / 2 + 0.02;
+    const size = Math.min(0.66, (P.fTop(d) - P.fYb(d)) * 0.95);
+    for (const sz of [1, -1]) decal({ center: new THREE.Vector3(P.L / 2 - d, y, 0), dir: new THREE.Vector3(0, 0, -sz), u: Xv.clone().multiplyScalar(sz), v: Yv, w: size, h: size, nu: 24, nv: 24, offset: 0.005 }, m);
   }
 
   // --- linhas de porta

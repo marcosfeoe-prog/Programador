@@ -1026,7 +1026,7 @@ const PANELS = {
   },
   limited() {
     const lim = CARS.filter((c) => c.limited).sort((a, b) => b.value - a.value);
-    const m = modal(`<h3 class="m-title">${icon('fire')} Edições limitadas</h3><p class="muted center small">Pinturas neon e RGB com tiragem fixa, pagas em moedas. Cada jogador só pode ter um exemplar.</p>
+    const m = modal(`<h3 class="m-title">${icon('fire')} Edições limitadas</h3><p class="muted center small">Pinturas neon, RGB e skins exclusivas com tiragem fixa. Cada jogador só pode ter um exemplar.</p>
       <div class="col gap">${lim
         .map((c) => {
           const R = RAR[c.rarity];
@@ -1035,7 +1035,13 @@ const PANELS = {
           return `<div class="lim" style="--rc:${R.color};--glow:${R.glow}">
             <div class="cimg" data-car="${c.id}"><img src="${carImg(c.id)}" alt="" /></div>
             <div class="lim-info"><b>${carName(c)}</b>${c.fx ? `<span class="fxtag ${c.fx.kind}" style="--fx:${c.fx.color || '#fff'}">${c.fx.label || (c.fx.kind === 'rgb' ? 'RGB' : 'NEON')}</span>` : ''}<small>${left} de ${c.limited.supply} restantes</small>
-            <button class="btn yellow sm" data-lim="${c.id}" ${own ? 'disabled' : ''}>${own ? 'NA SUA GARAGEM' : `${coinIc('sm')} ${short(c.value)}`}</button></div></div>`;
+            ${
+              own
+                ? '<button class="btn yellow sm" disabled>NA SUA GARAGEM</button>'
+                : `<div class="row gap"><button class="btn yellow sm" data-lim="${c.id}" data-cur="coins">${coinIc('sm')} ${short(c.value)}</button>${
+                    c.limited.gems ? `<button class="btn green sm" data-lim="${c.id}" data-cur="gems">${gemIc('sm')} ${full(c.limited.gems)}</button>` : ''
+                  }</div>`
+            }</div></div>`;
         })
         .join('')}</div>`);
     $$('[data-car]', m).forEach((b) => (b.onclick = () => carDetail(b.dataset.car)));
@@ -1044,9 +1050,11 @@ const PANELS = {
         (b.onclick = async () => {
           const c = CAR_BY_ID[b.dataset.lim];
           if (S.limited[c.id]) return;
-          if (S.coins < c.value) return notEnough(false);
-          if (!(await confirmBox(`Comprar ${carName(c)} por ${full(c.value)} moedas?`, 'Comprar'))) return;
-          if (!pay(c.value, 0)) return notEnough(false);
+          const byGems = b.dataset.cur === 'gems' && c.limited.gems;
+          const cost = byGems ? c.limited.gems : c.value;
+          if ((byGems ? S.gems : S.coins) < cost) return notEnough(byGems);
+          if (!(await confirmBox(`Comprar ${carName(c)} por ${full(cost)} ${byGems ? 'gemas' : 'moedas'}?`, 'Comprar'))) return;
+          if (!pay(byGems ? 0 : cost, byGems ? cost : 0)) return notEnough(byGems);
           S.limited[c.id] = 1;
           m.close();
           revealCar(c, { source: `EDIÇÃO LIMITADA · #${c.limited.supply - limitedLeft(c) + 1}/${c.limited.supply}`, chance: null });

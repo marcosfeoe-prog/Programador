@@ -50,6 +50,7 @@ export const BODIES = {
   camo: 'Protótipo Camuflado',
   ultima: 'Kit Car GTR',
   atlantic: 'Art Déco',
+  vertical: 'Conceito Vertical',
 };
 
 // m = receita do modelo (ver tools/carmodel.js)
@@ -277,8 +278,10 @@ export const CARS = [
   C('galvarini-veneno-2014', 'Galvarini', 'Veneno', 2014, 'mitico', 60000000, 750, 355, 2.8, { type: 'hyper', color: '#55595f', finish: 'matte', color2: '#7ddc1f', stripes: 'twin', rim: 'turbine', rimColor: 'black', caliper: '#7ddc1f', wingH: 0.3 }),
   C('muratti-divo-2020', 'Muratti', 'Divo', 2020, 'mitico', 45000000, 1479, 380, 2.4, { type: 'hyper', color: '#7ec3e8', finish: 'gloss', roof: 'black', color2: '#0b0c0e', stripes: 'wide', rim: 'spoke5', rimColor: 'black', caliper: '#7ec3e8', wingH: 0.18 }),
   // ---------------- Edições limitadas (só na vitrine limitada, pagas em moedas) ----------------
+  // limited.gems: preço alternativo em gemas (o carro pode ser comprado de um jeito ou de outro).
   // Pinturas neon (brilham) e RGB (arco-íris). fx é o efeito animado no jogo: rgb = cores
   // girando; neon = brilho pulsando na cor indicada.
+  C('audex-elite-gt-2027', 'Audex', 'ELITE GT', 2027, 'mitico', 298000000, 3000, 549, 0.83, { type: 'vertical', color: '#8f9398', finish: 'satin', finish2: 'satin', color2: '#c4161c', stripes: 'single', skull: true, caliper: '#c4161c' }, { limited: { supply: 27, gems: 8500 }, fx: { kind: 'neon', color: '#c4161c', label: 'ELITE' } }),
   C('muratti-prisma-rgb-2026', 'Muratti', 'Prisma RGB', 2026, 'mitico', 300000000, 2000, 500, 1.8, { type: 'conceito', finish: 'rgb', rim: 'turbine', rimColor: 'black', caliper: '#ffffff' }, { limited: { supply: 5 }, fx: { kind: 'rgb' } }),
   C('pagano-zondra-arco-iris-2025', 'Pagano', 'Zondra Arco-Íris', 2025, 'mitico', 250000000, 900, 380, 2.4, { type: 'pista', finish: 'rgb', rim: 'multi', rimColor: 'chrome', caliper: '#ffffff' }, { limited: { supply: 10 }, fx: { kind: 'rgb' } }),
   C('kronberg-agira-neon-verde-2025', 'Kronberg', 'Agira Neon Verde', 2025, 'mitico', 220000000, 1600, 460, 2.2, { type: 'lmh', color: '#39ff14', finish: 'neon', color2: '#0b0c0e', stripes: 'twin', rimColor: '#39ff14', caliper: '#39ff14', badge: '#39ff14' }, { limited: { supply: 25 }, fx: { kind: 'neon', color: '#39ff14' } }),
