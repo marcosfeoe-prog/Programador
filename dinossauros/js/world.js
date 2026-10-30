@@ -347,7 +347,7 @@ export class World {
     const fernGeo = frondCluster(9, 1.5, 0.45, 0.05, 0.9);
 
     const trunkMat = new THREE.MeshStandardMaterial({ map: bark, roughness: 0.95 });
-    const crownMat = new THREE.MeshStandardMaterial({ map: needles, roughness: 0.9, color: 0xc8d8b8 });
+    const crownMat = new THREE.MeshStandardMaterial({ map: needles, roughness: 0.9, color: 0xffffff });
     const frondMat = windMaterial(new THREE.MeshStandardMaterial({ map: frondT, alphaTest: 0.5, roughness: 0.8 }), this.uTime, 0.04);
     const fernMat = windMaterial(new THREE.MeshStandardMaterial({ map: fernT, alphaTest: 0.5, roughness: 0.8 }), this.uTime, 0.08);
 
@@ -616,7 +616,7 @@ export class World {
     this.sun.intensity = sunUp ? 0.3 + 2.6 * smoothstep(-0.05, 0.3, elev) : 0.35 * smoothstep(0.0, 0.3, moonDir.y);
     this.hemi.color.copy(cTop).lerp(new THREE.Color(0xffffff), 0.35);
     this.hemi.groundColor.set(0x3a3020).multiplyScalar(0.4 + 0.6 * day);
-    this.hemi.intensity = 0.25 + 0.75 * day;
+    this.hemi.intensity = 0.3 + 1.2 * day;
     // a sombra acompanha o foco, alinhada à grade de texels
     const t = focus.clone();
     const snap = 110 / this.quality.shadowSize;

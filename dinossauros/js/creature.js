@@ -211,8 +211,14 @@ export class Creature {
   }
 
   canDrinkHere() {
+    if (this.wading > 0.15 || this.swim) return true;
+    // água logo à frente do focinho (até ~1,5 m)
     const m = this.mouth;
-    return this.world.height(m.x, m.z) < WATER - 0.05 || this.wading > 0.15 || this.swim;
+    const f = this.forward;
+    for (let d = 0; d <= 1.5 + this.radius * 0.5; d += 0.5) {
+      if (this.world.height(m.x + f.x * d, m.z + f.z * d) < WATER - 0.03) return true;
+    }
+    return false;
   }
 
   startEat(food) {
@@ -343,7 +349,8 @@ export class Creature {
       this.bleed = Math.max(0, this.bleed - dt * (0.25 + (this.resting ? 0.6 : 0)));
     }
     // fome / sede zeradas ferem
-    const starve = this.isPlayer ? 1 : 0.4;
+    // a IA só enfraquece (até 30% da vida); o jogador pode morrer de fome/sede
+    const starve = this.isPlayer || this.hp > this.maxHp * 0.3 ? 1 : 0;
     if (this.hunger <= 0) this.hp -= this.maxHp * 0.01 * dt * starve;
     if (this.thirst <= 0) this.hp -= this.maxHp * 0.013 * dt * starve;
     // regeneração

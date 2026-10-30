@@ -137,10 +137,19 @@ export class Brain {
         (sp.ai.defend && threat.power < c.power * 1.6 && c.growth > 0.5) ||
         (carn && threat.power < c.power * 1.3) ||
         (agg === threat && threat.power < c.power * 0.8);
-      if (canFight && c.hp > c.maxHp * 0.25) this.set('fight', threat);
-      else this.set('flee', threat);
-      c.resting = false;
-      return;
+      const close = threatD < 10 + c.radius * 2 + threat.radius;
+      if (canFight && c.hp > c.maxHp * 0.25) {
+        // defensores só partem para a briga se forem atacados ou o predador chegar perto
+        if (agg === threat || close || carn) {
+          this.set('fight', threat);
+          c.resting = false;
+          return;
+        }
+      } else {
+        this.set('flee', threat);
+        c.resting = false;
+        return;
+      }
     }
     if (this.state === 'flee' && this.stateT < 6) return;
 

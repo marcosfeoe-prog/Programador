@@ -366,7 +366,7 @@ export function barkTexture() {
       const n = N.fbm(u * 12, v * 3, 4, 12, 3);
       const ridge = Math.abs(Math.sin((u * 18 + n * 0.8) * Math.PI));
       const k = 0.55 + ridge * 0.45 + n * 0.2;
-      return [92 * k, 70 * k, 52 * k];
+      return [130 * k, 100 * k, 76 * k];
     },
     15,
   );
@@ -417,7 +417,7 @@ export function needleTexture() {
     (u, v, N) => {
       const n = N.fbm(u * 8, v * 8, 4, 8, 8);
       const k = 0.7 + n * 0.4;
-      return [30 * k, 62 * k, 34 * k];
+      return [58 * k, 100 * k, 52 * k];
     },
     17,
   );
@@ -427,7 +427,7 @@ export function needleTexture() {
     const a = R() * Math.PI;
     const l = 3 + R() * 5;
     const g = 50 + R() * 70;
-    ctx.strokeStyle = `rgba(${g * 0.5 | 0},${g | 0},${g * 0.45 | 0},0.6)`;
+    ctx.strokeStyle = `rgba(${(g * 0.7) | 0},${(g + 50) | 0},${(g * 0.5) | 0},0.6)`;
     ctx.lineWidth = 1;
     wrapDraw(ctx, S, x, y, l, (xx, yy) => {
       ctx.beginPath();

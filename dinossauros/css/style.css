@@ -391,6 +391,7 @@ kbd {
   background: linear-gradient(90deg, rgba(12, 10, 6, 0.92) 0%, rgba(12, 10, 6, 0.7) 38%, transparent 62%);
 }
 .menu-side {
+  touch-action: pan-y;
   width: min(460px, 100%);
   padding: calc(24px + var(--safe-t)) 24px 24px calc(24px + var(--safe-l));
   display: flex;
@@ -656,7 +657,25 @@ body.mobile #hud-bl {
     font-size: 30px;
   }
   .menu-side {
-    gap: 8px;
+    gap: 7px;
+    padding-top: calc(12px + var(--safe-t));
+  }
+  .tagline,
+  .sp-info .meters {
+    display: none;
+  }
+  .species {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .sp-card {
+    padding: 5px 8px;
+  }
+  .sp-info {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  .menu-side button {
+    padding: 7px 12px;
   }
   #hud-tl {
     min-width: 160px;
