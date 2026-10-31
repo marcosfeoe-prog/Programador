@@ -3,7 +3,7 @@
 // desarmes, faltas, cartões, impedimento, saídas de bola, bolas paradas,
 // cronômetro com acréscimos, prorrogação, pênaltis, estatísticas e replay.
 import { PITCH as P, BALL as B, STEP } from './constants.js';
-import { Ball, predictBall, buildRollTable, groundPassSpeed, solveDrive, solveLob } from './ball.js';
+import { Ball, predictBall, buildRollTable, groundPassSpeed, groundTravelTime, solveDrive, solveLob } from './ball.js';
 import { Team } from './team.js';
 import { PlayerEnt, ST, POSE_SIZE } from './player.js';
 import { TeamAI } from './ai.js';
@@ -507,7 +507,17 @@ export class Match {
     const vmax = c.vmax(this.env);
     c.sprint = !!inp.sprint;
     const frozen = this.state === 'setpiece' && this.sp && this.sp.taker === c;
-    if (frozen) {
+    // logo depois do passe, o receptor vai sozinho ao encontro da bola (o
+    // direcional ainda apertado do passe não o leva para longe)
+    c.stickX = mag > 0.12 ? mx / mag : null;
+    c.stickZ = mag > 0.12 ? mz / mag : null;
+    const lk = team.recvLock;
+    const locked = lk && lk.p === c && this.time < lk.until && this.passInfo && this.passInfo.to === c;
+    if (lk && !locked) team.recvLock = null;
+    if (locked) {
+      c.userAuto = true;
+      c.faceTarget = null;
+    } else if (frozen) {
       // o cobrador vai sozinho até a bola; o jogador só mira
       c.userAuto = false;
       if (mag > 0.2 && this.sp.ready && !c.pending) c.faceTarget = Math.atan2(mz, mx);
@@ -618,8 +628,9 @@ export class Match {
       const d = Math.hypot(dx, dz);
       if (d < 3) continue;
       const cos = (dx * dirx + dz * dirz) / d;
-      if (cos < 0.62) continue;
-      let s = cos * 3 - d / (kind === 'lob' ? 60 : 35);
+      if (cos < 0.3) continue;
+      // fora do cone principal (±50°) só vale se não houver ninguém dentro
+      let s = cos * 3 - d / (kind === 'lob' ? 60 : 35) - (cos < 0.64 ? 3 : 0);
       // espaço livre do companheiro
       let near = 99;
       for (const o of c.team.opp.active) near = Math.min(near, Math.hypot(o.x - m.x, o.z - m.z));
@@ -687,16 +698,42 @@ export class Match {
 
   // ------------------------------------------------------------ especificações de chute
 
+  // Velocidade com que o passe rasteiro chega ao companheiro: firme o bastante
+  // para não ser cortado, macia o bastante para dominar. A força segurada só
+  // ajusta um pouco (o passe é assistido).
+  passArrive(d, power) {
+    return clamp(6.2 + d * 0.16 + (power - 0.35) * 2.5, 5.5, 12.5);
+  }
+
   passSpec(c, m, kind, power = 0.5) {
     const b = this.ball.p;
-    const dd = Math.hypot(m.x - b.x, m.z - b.z) || 1;
-    const meet = kind === 'ground' ? 0.8 : 0;
-    let tx = m.x + m.vx * 0.35 + ((b.x - m.x) / dd) * meet;
-    let tz = m.z + m.vz * 0.35 + ((b.z - m.z) / dd) * meet;
-    const d = Math.hypot(tx - b.x, tz - b.z);
+    // mira onde o companheiro vai estar quando a bola chegar
+    let tx = m.x;
+    let tz = m.z;
+    let d = Math.hypot(tx - b.x, tz - b.z);
+    for (let i = 0; i < 3; i++) {
+      let T;
+      if (kind === 'ground') {
+        const v0 = Math.min(27, groundPassSpeed(this.roll, d, this.passArrive(d, power)));
+        T = groundTravelTime(this.roll, v0, d);
+        if (!isFinite(T)) T = d / 10;
+      } else T = d / 17 + 0.45;
+      const lt = Math.min(T, 2.2) * 0.8;
+      tx = m.x + m.vx * lt;
+      tz = m.z + m.vz * lt;
+      d = Math.hypot(tx - b.x, tz - b.z);
+    }
+    const dd = d || 1;
     if (kind === 'ground') {
-      // a bola chega mais rápida nos passes longos
-      return { kind: 'pass', tx, tz, ty: R, receiver: m, arrive: clamp(5 + d * 0.2 + (power - 0.5) * 5, 4, 14), power };
+      // o receptor vem ao encontro da bola
+      tx += ((b.x - tx) / dd) * 0.7;
+      tz += ((b.z - tz) / dd) * 0.7;
+    }
+    tx = clamp(tx, -P.HL + 0.8, P.HL - 0.8);
+    tz = clamp(tz, -P.HW + 0.8, P.HW - 0.8);
+    d = Math.hypot(tx - b.x, tz - b.z);
+    if (kind === 'ground') {
+      return { kind: 'pass', tx, tz, ty: R, receiver: m, arrive: this.passArrive(d, power), power };
     }
     const header = inBox(m.x, m.z, c.team.oppGoalX);
     return { kind: 'lob', tx, tz, ty: header ? 1.6 : R, receiver: m, pitch: clamp(0.38 + d * 0.004, 0.36, 0.62), back: 18 + this.r() * 14, power };
@@ -718,7 +755,7 @@ export class Match {
     uz /= l;
     let tx = clamp(m.x + ux * lead, -P.HL + 3, P.HL - 3);
     let tz = clamp(m.z + uz * lead, -P.HW + 2, P.HW - 2);
-    if (kind === 'ground') return { kind: 'through', tx, tz, ty: R, receiver: m, arrive: 2.5 + power * 2, power };
+    if (kind === 'ground') return { kind: 'through', tx, tz, ty: R, receiver: m, arrive: 4 + power * 3, power };
     return { kind: 'lob', tx, tz, ty: R, receiver: m, pitch: 0.5, back: 22, power };
   }
 
@@ -846,7 +883,7 @@ export class Match {
         skill = 0.7;
         break;
       default:
-        base = 0.034;
+        base = 0.02;
         skill = a.pas * 0.8 + a.con * 0.2;
     }
     let f = 1.15 - 0.85 * clamp(skill, 0, 1);
@@ -857,7 +894,10 @@ export class Match {
     // ângulo entre o corpo e a direção do chute
     const kd = Math.atan2(spec.tz - b.p.z, spec.tx - b.p.x);
     const bodyAng = Math.abs(Math.atan2(Math.sin(kd - p.face), Math.cos(kd - p.face)));
-    f *= 1 + pressure * 0.55 + run * 0.45 + smoothstep(0.6, 2.2, bodyAng) * 0.8 + smoothstep(4, 16, rel) * 0.6;
+    const ground = spec.kind === 'pass' || spec.kind === 'through';
+    f *= 1 + pressure * 0.55 + run * (ground ? 0.25 : 0.45) + smoothstep(0.6, 2.2, bodyAng) * (ground ? 0.4 : 0.8) + smoothstep(4, 16, rel) * 0.6;
+    // passe assistido do jogador para um companheiro escolhido
+    if (ground && spec.user && spec.receiver) f *= 0.7;
     if (b.p.y > 0.4 && spec.kind !== 'header') f *= 1.5; // voleio
     if (spec.power > 0.9 && spec.kind === 'shot') f *= 1.4;
     if (spec.finesse) f *= 0.85;
@@ -1004,7 +1044,10 @@ export class Match {
       if (spec.receiver) {
         spec.receiver.reactT = 0;
         spec.receiver.lastFrom = p;
-        if (team.user && spec.user && this.state === 'play') this.setCtrl(team, spec.receiver);
+        if (team.user && spec.user && this.state === 'play') {
+          this.setCtrl(team, spec.receiver);
+          team.recvLock = { p: spec.receiver, until: this.time + 2.5 };
+        }
       }
     }
   }
@@ -1257,14 +1300,15 @@ export class Match {
     const lat = -bx * uz + bz * ux;
     const ballAlong = b.v.x * ux + b.v.z * uz;
     const sp = p.speed;
-    const lead = 0.32 + sp * 0.035;
-    // toca quando a bola ficou para trás, para o lado ou sem velocidade
-    const need = along < lead || Math.abs(lat) > 0.45 || ballAlong < sp * 0.75 || (p.knockOn && this.time - p.knockOn < 0.4);
-    if (!need) return false;
-    const sprinting = p.sprint || (p.knockOn && this.time - p.knockOn < 0.4);
+    const knock = p.knockOn && this.time - p.knockOn < 0.4;
     const control = p.a.dri * 0.7 + p.a.con * 0.3;
+    // distância em que a bola fica à frente do pé (um pouco maior correndo)
+    const lead = 0.42 + sp * 0.035 + (p.sprint ? 0.12 : 0) + (1 - control) * 0.15;
+    // toca quando a bola ficou para trás, saiu da linha ou perdeu velocidade
+    const need = knock || along < lead * 0.75 || Math.abs(lat) > 0.3 || ballAlong < sp * 0.9;
+    if (!need) return false;
     // virada brusca: amortece a bola junto ao pé enquanto o corpo muda de direção
-    if (sp > 2.2) {
+    if (sp > 2.2 && !knock) {
       const cosV = (p.vx * ux + p.vz * uz) / sp;
       if (cosV < 0.6) {
         const k = 0.3 + (1 - control) * 0.25;
@@ -1278,23 +1322,38 @@ export class Match {
         return true;
       }
     }
-    let push = (0.55 + sp * 0.09) * (sprinting ? 1.6 : 1) * (1.25 - control * 0.45) + this.env.snow * 0.3;
-    if (p.knockOn && this.time - p.knockOn < 0.4) {
-      push = 6 + p.a.pac * 3;
-      p.knockOn = 0;
-    }
-    // a bola vai um pouco à frente da velocidade atual (o jogador ainda acelera)
-    const targetSpeed = sp + Math.max(0, Math.min(ds - sp, 2)) * 0.45 + push;
-    // erro de condução
     const pres = this.pressureOn(p);
-    const err = (0.03 + 0.12 * (1 - control)) * (0.5 + sp / 9) * (1 + pres * 0.6) * (1 + this.env.snow * 0.6 + this.env.ballWet * 0.3);
-    const a = Math.atan2(uz, ux) + this.gauss() * err - lat * 0.6;
-    const v = targetSpeed * (1 + this.gauss() * err * 0.5);
+    if (knock) {
+      // arrancada (botão Arrancar/Espaço): toque longo de propósito
+      p.knockOn = 0;
+      const v = sp + 4 + p.a.pac * 2.5;
+      const err = (0.02 + 0.06 * (1 - control)) * (1 + pres * 0.5);
+      const a = Math.atan2(uz, ux) + this.gauss() * err;
+      b.v.x = Math.cos(a) * v;
+      b.v.z = Math.sin(a) * v;
+      b.v.y = 0;
+      this.rollSpin();
+      p.touchCD = 0.25;
+      this.touchBy(p, 'dribble');
+      this.emit('touch', { player: p });
+      return true;
+    }
+    // condução controlada: escolhe a velocidade da bola para ela voltar a
+    // ficar a "lead" metros do pé daqui a T segundos, já descontando a
+    // desaceleração do gramado; o desvio lateral também é corrigido.
+    const T = 0.32;
+    const vEnd = Math.max(sp, Math.min(ds, sp + 1.5));
+    const decel = this.env.rollMu * 9.81 + this.env.rollLin * vEnd + 0.025 * vEnd * vEnd;
+    const vAlong = vEnd + (lead - along) / T + decel * T * 0.5;
+    const vLat = -lat / T;
+    const err = (0.006 + 0.035 * (1 - control)) * (0.6 + sp / 12) * (1 + pres * 0.5) * (1 + this.env.snow * 0.5 + this.env.ballWet * 0.3);
+    const a = Math.atan2(uz, ux) + Math.atan2(vLat, Math.max(0.5, vAlong)) + this.gauss() * err;
+    const v = Math.hypot(Math.max(0, vAlong), vLat) * (1 + this.gauss() * err * 0.3);
     b.v.x = Math.cos(a) * v;
     b.v.z = Math.sin(a) * v;
     b.v.y = 0;
     this.rollSpin();
-    p.touchCD = 0.1 + (sprinting ? 0.08 : 0);
+    p.touchCD = 0.12;
     this.touchBy(p, 'dribble');
     this.emit('touch', { player: p });
     return true;
@@ -1319,6 +1378,7 @@ export class Match {
     // bola rápida (ou alta, molhada, na neve) pode espirrar no domínio
     let fail = clamp((rel - 4) * (0.032 - con * 0.022), 0, 0.85);
     if (opp && !intended) fail += 0.08;
+    if (intended) fail *= 0.5;
     if (b.p.y > 0.4) fail += 0.12;
     fail += this.env.ballWet * 0.02 + this.env.snow * 0.03;
     if (this.r() < fail) {
@@ -1338,8 +1398,14 @@ export class Match {
       return true;
     }
     // domínio limpo: a bola fica à frente, no sentido em que o jogador vai
+    // (para o jogador controlado, no sentido do direcional)
     let ux = p.desVx;
     let uz = p.desVz;
+    if (p.userCtl && p.stickX != null) {
+      const vs = Math.max(2.5, Math.hypot(ux, uz));
+      ux = p.stickX * vs;
+      uz = p.stickZ * vs;
+    }
     let us = Math.hypot(ux, uz);
     if (us < 0.5) {
       ux = Math.cos(p.face);

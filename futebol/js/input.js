@@ -158,7 +158,7 @@ export class Input {
     const out = {
       x,
       y,
-      sprint: held.has('sprint') || Math.hypot(this.joy.x, this.joy.y) > 0.98,
+      sprint: held.has('sprint'),
       pressed: this.pressedQ,
       released: this.releasedQ,
       held,
