@@ -23,7 +23,7 @@ const STYLE = {
 // campo + chance de gol a partir dali), na mesma escala do xG.
 export function posValue(team, x, z) {
   const u = Math.max(0, team.u(x));
-  return 0.08 * u * u + 0.75 * xgAt(x, z, team.oppGoalX);
+  return 0.12 * u * u + 0.75 * xgAt(x, z, team.oppGoalX);
 }
 
 export class TeamAI {
@@ -251,7 +251,7 @@ export class TeamAI {
       const pu = team.u(p.x);
       const free = m.pressureOn(poss) < 0.5;
       const facing = Math.cos(poss.face) * team.dir > 0.2;
-      if (fwd && free && facing && pu > offU - 0.06 && pu < offU + 0.01 && m.r() < 0.35 * this.style.tempo) {
+      if (fwd && free && facing && pu > offU - 0.07 && pu < offU + 0.01 && m.r() < 0.55 * this.style.tempo) {
         const ru = clamp(offU + 0.14, 0, 0.95);
         const rv = clamp(team.v(p.z) * 0.75, -0.7, 0.7);
         p.run = { until: m.time + 2.4, x: team.wx(ru), z: team.wz(rv) };
@@ -278,6 +278,12 @@ export class TeamAI {
     }
     let x = team.wx(u);
     let z = team.wz(v);
+    // atacantes e meias procuram espaço livre perto da sua posição (desmarque)
+    if (poss && poss !== p && team.lineOf(p) !== 'def') {
+      if (!p.openSpot || m.time > p.openSpot.t) p.openSpot = this.findOpenSpot(p, poss, x, z, offU);
+      x = p.openSpot.x;
+      z = p.openSpot.z;
+    }
     // afasta de companheiros muito próximos
     for (const q of team.active) {
       if (q === p) continue;
@@ -293,6 +299,33 @@ export class TeamAI {
     z = clamp(z, -P.HW + 1.5, P.HW - 1.5);
     const far = Math.hypot(x - p.x, z - p.z) > 12;
     this.moveTo(p, x, z, far ? 0.82 : 0.6, far && this.ballU > 0.6);
+  }
+
+  findOpenSpot(p, poss, bx, bz, offU) {
+    const m = this.m;
+    const team = this.team;
+    let best = { x: bx, z: bz };
+    let bs = -1e9;
+    for (let k = 0; k < 9; k++) {
+      const ang = (k / 8) * Math.PI * 2;
+      const r = k === 8 ? 0 : 5 + (k % 2) * 3;
+      let x = bx + Math.cos(ang) * r;
+      let z = bz + Math.sin(ang) * r;
+      x = Math.max(-P.HL + 2, Math.min(P.HL - 2, x));
+      z = Math.max(-P.HW + 2, Math.min(P.HW - 2, z));
+      if (team.u(x) > offU - 0.006) x = team.wx(offU - 0.006);
+      let open = 99;
+      for (const o of team.opp.active) open = Math.min(open, Math.hypot(o.x - x, o.z - z));
+      let lane = 99;
+      for (const o of team.opp.active) lane = Math.min(lane, segDist(o.x, o.z, poss.x, poss.z, x, z).d);
+      const s = Math.min(open, 9) + Math.min(lane, 5) * 0.8 + posValue(team, x, z) * 25 - r * 0.08;
+      if (s > bs) {
+        bs = s;
+        best = { x, z };
+      }
+    }
+    best.t = m.time + 0.8 + m.r() * 0.6;
+    return best;
   }
 
   findSupportSpot(p, poss, idx) {
@@ -532,7 +565,7 @@ export class TeamAI {
   laneRisk(from, tx, tz, receiver) {
     const m = this.m;
     const d = Math.hypot(tx - from.x, tz - from.z);
-    const v0 = Math.min(27, groundPassSpeed(m.roll, d, clamp(3.5 + d * 0.13, 3, 11)));
+    const v0 = Math.min(27, groundPassSpeed(m.roll, d, clamp(5 + d * 0.2, 5, 14)));
     let risk = 0;
     for (const o of this.team.opp.active) {
       const sd = segDist(o.x, o.z, from.x, from.z, tx, tz);
@@ -540,16 +573,20 @@ export class TeamAI {
       const along = sd.t * d;
       const tb = along < 0.5 ? 0.05 : groundTravelTime(m.roll, v0, along);
       const reach = o.isGK ? 1.1 : 0.7;
-      const to = sd.d <= reach ? 0.05 : m.timeToCover(o, sd.cx, sd.cz) * ((sd.d - reach) / sd.d) + 0.2;
+      // o adversário precisa reagir (não sabe para onde vai o passe)
+      const to = sd.d <= reach ? 0.12 : m.timeToCover(o, sd.cx, sd.cz) * ((sd.d - reach) / sd.d) + 0.35;
       const margin = tb - to;
-      const r = 1 / (1 + Math.exp(-margin * 4.5));
+      const r = 0.85 / (1 + Math.exp(-margin * 3.5));
       risk = Math.max(risk, r);
     }
     // disputa no destino
     if (receiver) {
       const tr = groundTravelTime(m.roll, v0, d);
+      const dr = Math.hypot(receiver.x - from.x, receiver.z - from.z);
       for (const o of this.team.opp.active) {
-        const to = m.timeToCover(o, tx, tz) + 0.15;
+        // marcador atrás do receptor (do lado do gol) chega depois
+        const behind = Math.hypot(o.x - from.x, o.z - from.z) > dr + 0.5 ? 0.35 : 0;
+        const to = m.timeToCover(o, tx, tz) + 0.15 + behind;
         const tme = m.timeToCover(receiver, tx, tz);
         const t = Math.max(tr, tme);
         risk = Math.max(risk, 1 / (1 + Math.exp(-(t - to) * 3)) * 0.8);
@@ -578,7 +615,7 @@ export class TeamAI {
     const gx = team.oppGoalX;
     const u = team.u(from.x);
     const v0 = posValue(team, from.x, from.z);
-    const lossCost = 0.02 + 0.12 * (1 - u) * (1 - u);
+    const lossCost = 0.012 + 0.07 * (1 - u) * (1 - u);
     const style = this.style;
     const noise = this.skill.noise;
     const offU = m.offsideLineU(team);
@@ -601,7 +638,7 @@ export class TeamAI {
         else if (off > 2) xg *= 1.25;
       }
       const shooter = 0.8 + p.a.sho * 0.4;
-      let score = xg * shooter + 0.015;
+      let score = xg * shooter + 0.035;
       if (dGoal > 20) score *= style.longShot * (0.6 + p.a.pow * 0.5);
       if (dGoal < 11) score += 0.05;
       options.push({ type: 'shot', score, xg });
@@ -615,8 +652,10 @@ export class TeamAI {
       const offside = mu > 0.5 && mu > u && mu > offU + 0.002;
       // no pé
       if (!offside) {
-        const tx = mt.x + mt.vx * 0.4;
-        const tz = mt.z + mt.vz * 0.4;
+        // o receptor vem ao encontro da bola
+        const dd = Math.hypot(mt.x - from.x, mt.z - from.z) || 1;
+        const tx = mt.x + mt.vx * 0.4 + ((from.x - mt.x) / dd) * 0.8;
+        const tz = mt.z + mt.vz * 0.4 + ((from.z - mt.z) / dd) * 0.8;
         const d = Math.hypot(tx - from.x, tz - from.z);
         if (d > 4 && d < 58) {
           let open = 99;
@@ -655,7 +694,7 @@ export class TeamAI {
           const val = posValue(team, tx, tz);
           const ground = d < 30;
           const risk = (ground ? this.laneRisk(from, tx, tz, mt) : this.lobRisk(from, tx, tz, mt, d / 17 + 0.4)) * style.risk;
-          const sc = val * (1 - risk) - risk * lossCost + 0.008 + style.direct * 0.08;
+          const sc = val * (1 - risk) - risk * lossCost + 0.016 + style.direct * 0.08;
           options.push({ type: 'through', score: sc, mt, tx, tz, kind: ground ? 'ground' : 'lob', risk });
         }
       }
@@ -667,7 +706,7 @@ export class TeamAI {
       const inBoxMates = team.active.filter((q) => q !== p && inBox(q.x, q.z, gx));
       if (inBoxMates.length) {
         const tgt = inBoxMates.sort((a, c) => c.a.hea + c.height - (a.a.hea + a.height))[0];
-        const sc = 0.05 + inBoxMates.length * 0.015 + tgt.a.hea * 0.03 - (pressure > 1 ? 0.01 : 0);
+        const sc = 0.06 + inBoxMates.length * 0.02 + tgt.a.hea * 0.03 - (pressure > 1 ? 0.01 : 0);
         options.push({ type: 'cross', score: sc, mt: tgt });
       }
     }
