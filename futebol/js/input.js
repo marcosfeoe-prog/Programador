@@ -95,7 +95,13 @@ export class Input {
   }
 
   pollPad() {
-    const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+    // a API de controle pode estar bloqueada (por exemplo, dentro de um iframe)
+    let pads = [];
+    try {
+      pads = navigator.getGamepads ? navigator.getGamepads() || [] : [];
+    } catch (e) {
+      pads = [];
+    }
     let pad = null;
     for (const p of pads) if (p && p.connected) {
       pad = p;

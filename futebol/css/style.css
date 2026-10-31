@@ -10,6 +10,7 @@
   --red: #ff4d4d;
   --font: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --title: 'Arial Black', 'Segoe UI Black', Impact, Arial, sans-serif;
+  color-scheme: dark;
 }
 * {
   box-sizing: border-box;

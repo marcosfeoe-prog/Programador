@@ -102,6 +102,20 @@ export class Menu {
     return h('div.topbar', h('button.btn.small', { onclick: () => (this.click(), back()) }, '← Voltar'), h('h2', title));
   }
 
+  // Confirmação dentro da página (sem caixas do navegador).
+  ask(text, yesLabel, onYes) {
+    const dlg = h(
+      'div.screen.overlay',
+      h(
+        'div.dialog',
+        { style: 'max-width:440px' },
+        h('p', { style: 'font-size:16px;margin:0 0 16px' }, text),
+        h('div.row.end', h('button.btn', { onclick: () => dlg.remove() }, 'Cancelar'), h('button.btn.danger', { onclick: () => (dlg.remove(), onYes()) }, yesLabel))
+      )
+    );
+    this.root.appendChild(dlg);
+  }
+
   // ------------------------------------------------------------ início
 
   main() {
@@ -318,13 +332,13 @@ export class Menu {
       C.saveCareer(car);
       this.main();
     };
-    const del = () => {
-      if (!confirm(car.mode === 'carreira' ? 'Apagar esta carreira e começar outra?' : 'Abandonar este torneio?')) return;
-      C.deleteCareer(car.mode);
-      this.app.career = null;
-      if (car.mode === 'carreira') this.newCareer('carreira');
-      else this.tournaments();
-    };
+    const del = () =>
+      this.ask(car.mode === 'carreira' ? 'Apagar esta carreira e começar outra?' : 'Abandonar este torneio?', car.mode === 'carreira' ? 'Apagar carreira' : 'Abandonar', () => {
+        C.deleteCareer(car.mode);
+        this.app.career = null;
+        if (car.mode === 'carreira') this.newCareer('carreira');
+        else this.tournaments();
+      });
     this.show(
       this.screen(
         h('div.topbar', h('button.btn.small', { onclick: quit }, '← Menu'), crest(u, 36), h('h2', `${u.short} · ${title}`), h('div.spacer'), h('button.btn.small.danger', { onclick: del }, car.mode === 'carreira' ? 'Nova carreira' : 'Abandonar')),
@@ -717,7 +731,7 @@ export class Menu {
           h('button.btn', { onclick: () => (dlg.remove(), onReplay()) }, 'Replay'),
           team ? h('button.btn', { onclick: () => renderSubs() }, 'Substituições') : null,
           team ? h('button.btn', { onclick: () => renderTactics() }, 'Tática') : null,
-          h('button.btn.danger', { onclick: () => (confirm('Sair da partida?') ? (dlg.remove(), onQuit()) : null) }, 'Sair da partida')
+          h('button.btn.danger', { onclick: () => this.ask('Sair da partida? O jogo em andamento será perdido.', 'Sair da partida', () => (dlg.remove(), onQuit())) }, 'Sair da partida')
         )
       );
       body.appendChild(h('h3', 'Estatísticas'));
