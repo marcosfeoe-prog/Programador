@@ -397,6 +397,54 @@ export class PlayerModel {
         torso.rotation.x = -0.25 * back;
         break;
       }
+      case ST.FEINT: {
+        const t = clamp(P.aux2, 0, 1);
+        const code = P.aux1 | 0;
+        ar.sh.rotation.set(-0.3, 0, -0.75);
+        al.sh.rotation.set(-0.3, 0, 0.75);
+        body.position.y = 0.88;
+        if (code === 1) {
+          // dois toques: pé direito e esquerdo empurram a bola para o lado
+          const k = Math.sin(t * Math.PI * 2);
+          lr.hip.rotation.set(-0.2, 0, -0.45 * Math.max(0, k));
+          ll.hip.rotation.set(-0.2, 0, 0.45 * Math.max(0, -k));
+          lr.knee.rotation.x = 0.4;
+          ll.knee.rotation.x = 0.4;
+          body.rotation.z = Math.sin(t * Math.PI) * 0.28;
+          torso.rotation.x = 0.25;
+        } else if (code === 2) {
+          // pedalada: as pernas passam por cima da bola, o corpo balança
+          const k = Math.min(1, t / 0.65);
+          const leg = k < 0.5 ? lr : ll;
+          const q = Math.sin((k < 0.5 ? k * 2 : (k - 0.5) * 2) * Math.PI);
+          leg.hip.rotation.set(-0.7 * q, 0, (leg === lr ? -1 : 1) * 0.9 * q);
+          leg.knee.rotation.x = 0.9 * q;
+          const other = leg === lr ? ll : lr;
+          other.knee.rotation.x = 0.35;
+          body.rotation.z = Math.sin(k * Math.PI * 2) * 0.3;
+          torso.rotation.x = 0.2;
+        } else if (code === 3) {
+          // giro: agachado, sola na bola enquanto o corpo roda
+          lr.hip.rotation.x = -0.6;
+          lr.knee.rotation.x = 0.5;
+          ll.hip.rotation.x = 0.2;
+          ll.knee.rotation.x = 0.7;
+          body.position.y = 0.84;
+          torso.rotation.x = 0.3;
+          ar.sh.rotation.set(-0.2, 0, -1.1);
+          al.sh.rotation.set(-0.2, 0, 1.1);
+        } else {
+          // corte seco: corpo inclinado para dentro da curva, perna de apoio esticada
+          const q = Math.sin(Math.min(1, t * 1.4) * Math.PI);
+          body.rotation.z = 0.45 * q;
+          lr.hip.rotation.set(-0.3, 0, -0.6 * q);
+          lr.knee.rotation.x = 0.2;
+          ll.hip.rotation.x = 0.4;
+          ll.knee.rotation.x = 0.9 * q;
+          torso.rotation.x = 0.35;
+        }
+        break;
+      }
       case ST.OFF:
         r.visible = false;
         break;

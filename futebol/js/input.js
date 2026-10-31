@@ -29,6 +29,7 @@ const KEYS = {
   Escape: 'pause',
   KeyP: 'pause',
   KeyR: 'replay',
+  KeyF: 'feint',
   Enter: 'confirm',
 };
 const CHARGE = new Set(['pass', 'shoot', 'lob', 'through']);
@@ -108,7 +109,7 @@ export class Input {
       break;
     }
     if (!pad) return null;
-    const map = { 0: 'pass', 1: 'shoot', 2: 'through', 3: 'lob', 4: 'switch', 5: 'finesse', 6: 'chip', 7: 'sprint', 8: 'camera', 9: 'pause', 10: 'knock', 12: 'up', 13: 'down', 14: 'left', 15: 'right' };
+    const map = { 0: 'pass', 1: 'shoot', 2: 'through', 3: 'lob', 4: 'switch', 5: 'finesse', 6: 'chip', 7: 'sprint', 8: 'camera', 9: 'pause', 10: 'knock', 11: 'feint', 12: 'up', 13: 'down', 14: 'left', 15: 'right' };
     for (const k in map) {
       const b = pad.buttons[k];
       const on = b && (b.pressed || b.value > 0.5);

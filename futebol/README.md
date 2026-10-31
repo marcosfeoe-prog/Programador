@@ -156,6 +156,19 @@ Dourada (2650 m) e Vulcano (2900 m) a bola voa mais e todos se cansam mais rápi
 | Tab | trocar de jogador | trocar de jogador |
 | B · R · Esc/P | câmera · replay · pausa | |
 
+**Fintas** (com a bola; botão **Finta**, tecla **F** ou R3 no controle):
+
+| Comando | Finta |
+|---|---|
+| Esquerda + Finta | **Dois toques** — de um pé para o outro e sai para o lado |
+| Direita + Finta | **Pedalada** — perna por cima da bola e arrancada |
+| Cima + Finta | **Giro** — gira por cima da bola, protegido do desarme |
+| Qualquer direção + Finta duas vezes | **Corte seco** — muda de direção na hora; o drible mais eficiente |
+
+O marcador próximo pode ser enganado (cai para o lado errado e perde o tempo do
+lance) conforme o drible de quem finta e o desarme de quem marca. A CPU também finta.
+No direcional/analógico o jogador **anda**; para correr, segure Shift / Correr.
+
 **Controle (gamepad)**: analógico move; A passe/desarme; B chute/carrinho; X
 enfiada/pressão; Y lançamento; LB trocar; RB chute colocado; LT cavadinha/conter;
 RT correr; Start pausa; Select câmera.
@@ -166,8 +179,9 @@ Chute/Passe para carregar a força. "Efeito" deixa o próximo chute colocado.
 Em bolas paradas aparece uma dica do que apertar. No pênalti contra, escolha o
 canto do goleiro com uma direção + Chute antes da cobrança.
 
-Câmeras: **Transmissão** (padrão, da arquibancada), **TV próxima**, **Meia
-distância** (bem perto do jogador controlado), **Longa** (do alto, com o campo
+Câmeras: **Transmissão** (padrão, da arquibancada), **Normal** (nem longe nem
+perto, de lado), **TV próxima**, **Meia distância** (bem perto do jogador
+controlado), **Duelo** (de cima, a média distância), **Longa** (do alto, com o campo
 inteiro), **Alta** (cabo aéreo) e **Atrás do ataque**. Troque na pausa, com B
 ou em Configurações.
 

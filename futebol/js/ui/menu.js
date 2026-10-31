@@ -707,6 +707,7 @@ export class Menu {
       row(k('Q'), 'Segure com o chute: chute colocado (com efeito)', ''),
       row(k('E'), 'Segure com o chute: cavadinha', ''),
       row(k('Espaço'), 'Arrancada (toque longo)', 'Segure: conter (marcação de lado)'),
+      row(k('F'), 'Finta (veja abaixo)', ''),
       row(k('Tab'), 'Trocar de jogador', 'Trocar de jogador'),
       row(k('B'), 'Mudar câmera', ''),
       row(k('R'), 'Replay dos últimos lances', ''),
@@ -716,10 +717,20 @@ export class Menu {
       this.screen(
         this.top('Como jogar', () => this.main()),
         h('div.panel', pc),
+        h('h3', 'Fintas (com a bola)'),
+        h(
+          'table.tb',
+          h('tr', h('th', 'Comando'), h('th', 'Finta'), h('th', 'Para que serve')),
+          h('tr', h('td', 'Esquerda + Finta'), h('td', h('b', 'Dois toques')), h('td', 'Toca de um pé para o outro e sai para o lado em velocidade.')),
+          h('tr', h('td', 'Direita + Finta'), h('td', h('b', 'Pedalada')), h('td', 'Passa a perna por cima da bola e arranca para o lado escolhido.')),
+          h('tr', h('td', 'Cima + Finta'), h('td', h('b', 'Giro')), h('td', 'Gira por cima da bola; quase impossível de desarmar durante o giro.')),
+          h('tr', h('td', 'Qualquer direção + Finta duas vezes'), h('td', h('b', 'Corte seco')), h('td', 'Muda de direção na hora; o drible mais eficiente para sair da marcação.'))
+        ),
+        h('p.note', 'Direções da tela (analógico ou WASD). Aperte a Finta quase junto com a direção. O marcador perto pode ser enganado e perder o tempo do lance; quanto melhor o drible do seu jogador, maior a chance.'),
         h('h3', 'Controle (gamepad)'),
-        h('p.note', 'Analógico esquerdo: mover · A: passe/desarme · B: chute/carrinho · X: enfiada/pressão · Y: lançamento · LB: trocar · RB (segurar): chute colocado · LT: cavadinha/conter · RT: correr · Start: pausa · Select: câmera.'),
+        h('p.note', 'Analógico esquerdo: mover · R3: finta · A: passe/desarme · B: chute/carrinho · X: enfiada/pressão · Y: lançamento · LB: trocar · RB (segurar): chute colocado · LT: cavadinha/conter · RT: correr · Start: pausa · Select: câmera.'),
         h('h3', 'Toque (celular)'),
-        h('p.note', 'Joystick à esquerda. Botões à direita mudam quando você está sem a bola (desarme, carrinho, trocar, pressão). Segure Chute/Passe para carregar a força. "Efeito" deixa o próximo chute colocado.'),
+        h('p.note', 'Joystick à esquerda (o jogador anda; para correr, segure Correr). Botões à direita mudam quando você está sem a bola (desarme, carrinho, trocar, pressão). Segure Chute/Passe para carregar a força. "Efeito" deixa o próximo chute colocado.'),
         h('h3', 'Física e regras'),
         h('p.note', 'A bola tem arrasto aerodinâmico (com a crise de arrasto), efeito Magnus (curva e "folha seca"), quica e rola diferente no gramado seco, molhado, com poças ou neve, e voa mais na altitude. O vento desvia lançamentos. Jogadores aceleram, freiam e fazem curvas limitados pela tração e se cansam com o calor e a altitude. Valem impedimento, faltas, cartões, vantagem, recuo para o goleiro, laterais, escanteios, tiros de meta, pênaltis, acréscimos, prorrogação e disputa de pênaltis.')
       )

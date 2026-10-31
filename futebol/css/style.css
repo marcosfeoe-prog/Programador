@@ -908,7 +908,7 @@ table.tb img {
   right: max(10px, env(safe-area-inset-right));
   bottom: max(10px, env(safe-area-inset-bottom));
   width: 250px;
-  height: 230px;
+  height: 250px;
   pointer-events: auto;
 }
 .tbtn {
@@ -959,6 +959,11 @@ table.tb img {
 .tbtn[data-act='finesse'] {
   right: 176px;
   bottom: 92px;
+}
+.tbtn[data-act='feint'] {
+  right: 104px;
+  bottom: 176px;
+  background: rgba(70, 30, 110, 0.6);
 }
 .tbtn[data-act='knock'] {
   right: 18px;

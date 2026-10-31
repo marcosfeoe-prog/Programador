@@ -14,6 +14,15 @@ import { clamp, lerp, mulberry32, smoothstep } from '../util.js';
 
 const R = B.r;
 
+// Fintas: duração, momento em que o marcador é testado, alcance, eficácia e
+// quanto um desarme perde de chance durante o movimento.
+export const FEINTS = {
+  dois: { name: 'Dois toques', code: 1, dur: 0.5, judge: 0.35, range: 3, power: 0.36, tackle: 0.5 },
+  pedalada: { name: 'Pedalada', code: 2, dur: 0.75, judge: 0.55, range: 3.4, power: 0.5, tackle: 0.6 },
+  giro: { name: 'Giro', code: 3, dur: 0.7, judge: 0.5, range: 3, power: 0.42, tackle: 0.2 },
+  corte: { name: 'Corte seco', code: 4, dur: 0.38, judge: 0.2, range: 4.4, power: 0.8, tackle: 0.35 },
+};
+
 export const DIFFICULTY = {
   amador: { name: 'Amador', react: 0.36, think: 0.55, acc: 1.35, tackle: 0.7, gk: 0.82, noise: 0.35, press: 0.75 },
   profissional: { name: 'Profissional', react: 0.26, think: 0.4, acc: 1.12, tackle: 0.88, gk: 0.93, noise: 0.2, press: 0.9 },
@@ -182,7 +191,10 @@ export class Match {
       this.ai[1].idle(dt);
     }
 
-    if (this.state === 'play') this.steerPossessor();
+    if (this.state === 'play') {
+      this.steerPossessor();
+      this.updateFeints(dt);
+    }
 
     // movimento
     const fdt = onField ? dt * this.timeScale : 0;
@@ -277,6 +289,140 @@ export class Match {
     }
   }
 
+  // ------------------------------------------------------------ fintas
+
+  // dx, dz: direção do drible no mundo (para onde o jogador quer sair).
+  startFeint(p, type, dx, dz) {
+    if (p.feint || this.ball.glue !== p || this.possessor !== p || p.busy() || p.pending) return false;
+    const F = FEINTS[type];
+    const l = Math.hypot(dx, dz) || 1;
+    dx /= l;
+    dz /= l;
+    const sp = p.speed;
+    // direção "para a frente" do jogador antes da finta
+    const fx = sp > 0.5 ? p.vx / sp : Math.cos(p.face);
+    const fz = sp > 0.5 ? p.vz / sp : Math.sin(p.face);
+    p.feint = { type, t0: this.time, dur: F.dur, dx, dz, fx, fz, face0: p.face, sp0: sp, judged: false, bdx: null, bdz: null };
+    p.setState(ST.FEINT, F.dur);
+    p.aux1 = F.code;
+    p.aux2 = 0;
+    // do lado da finta (para a animação): + = esquerda do corpo
+    p.feintSide = Math.sign(-Math.sin(p.face) * dx + Math.cos(p.face) * dz) || 1;
+    p.touchCD = 0;
+    if (type === 'corte') {
+      // corte seco: muda de direção na hora, sem frear
+      const v = Math.max(sp, 4.5) * 0.95;
+      p.vx = dx * v;
+      p.vz = dz * v;
+      p.face = Math.atan2(dz, dx);
+    }
+    this.emit('feint', { player: p, type, name: F.name });
+    return true;
+  }
+
+  updateFeints(dt) {
+    for (const p of this.all) {
+      const f = p.feint;
+      if (!f) continue;
+      const b = this.ball;
+      if (this.possessor !== p || b.glue !== p || p.busy() || p.pending) {
+        this.endFeint(p);
+        continue;
+      }
+      const F = FEINTS[f.type];
+      const t = (this.time - f.t0) / f.dur;
+      if (t >= 1) {
+        this.endFeint(p);
+        continue;
+      }
+      p.aux2 = t;
+      const vmax = p.vmax(this.env);
+      p.faceTarget = null;
+      p.feintFace = null;
+      switch (f.type) {
+        case 'dois': {
+          // toca a bola de um pé para o outro, para o lado, e sai em velocidade
+          const lat = t < 0.45 ? 4.5 : 6.5;
+          p.desVx = f.dx * lat + f.fx * f.sp0 * 0.25;
+          p.desVz = f.dz * lat + f.fz * f.sp0 * 0.25;
+          f.bdx = f.dx;
+          f.bdz = f.dz;
+          break;
+        }
+        case 'pedalada': {
+          // passa a perna por cima da bola (corpo balança) e arranca para o lado escolhido
+          if (t < 0.65) {
+            p.desVx = f.fx * Math.max(1.2, f.sp0 * 0.35);
+            p.desVz = f.fz * Math.max(1.2, f.sp0 * 0.35);
+            f.bdx = f.fx;
+            f.bdz = f.fz;
+            p.feintFace = Math.atan2(f.fz, f.fx) + Math.sin(t * Math.PI * 3) * 0.35;
+          } else {
+            p.desVx = f.dx * vmax * 0.9;
+            p.desVz = f.dz * vmax * 0.9;
+            f.bdx = f.dx;
+            f.bdz = f.dz;
+          }
+          break;
+        }
+        case 'giro': {
+          // gira 360° por cima da bola, protegendo-a, e segue na direção pedida
+          const ex = f.dx;
+          const ez = f.dz;
+          p.desVx = ex * 2.6;
+          p.desVz = ez * 2.6;
+          p.feintFace = f.face0 + Math.PI * 2 * Math.min(1, t * 1.05) * (p.feintSide || 1);
+          f.bdx = ex;
+          f.bdz = ez;
+          break;
+        }
+        case 'corte':
+          p.desVx = f.dx * vmax * 0.95;
+          p.desVz = f.dz * vmax * 0.95;
+          p.feintFace = Math.atan2(f.dz, f.dx);
+          f.bdx = f.dx;
+          f.bdz = f.dz;
+          break;
+      }
+      p.intVx = p.desVx;
+      p.intVz = p.desVz;
+      // no meio da finta, os marcadores perto podem ser enganados
+      if (!f.judged && t >= F.judge) {
+        f.judged = true;
+        this.judgeFeint(p, f, F);
+      }
+    }
+  }
+
+  judgeFeint(p, f, F) {
+    let fooled = 0;
+    for (const o of p.team.opp.active) {
+      if (o.isGK && !this.canHandle(o)) continue;
+      const d = Math.hypot(o.x - p.x, o.z - p.z);
+      if (d > F.range || o.busy()) continue;
+      let chance = F.power + (p.a.dri - o.a.tac) * 0.6 + (p.a.acc - o.a.acc) * 0.15;
+      if (!o.team.user) chance /= Math.max(0.7, this.skill[o.team.side].tackle);
+      chance = clamp(chance, 0.08, 0.92);
+      if (this.r() < chance) {
+        fooled++;
+        // vai para o lado errado e perde o tempo da jogada
+        o.setState(ST.STUMBLE, 0.45 + this.r() * 0.35);
+        o.vx = -f.dx * 2.2 + o.vx * 0.3;
+        o.vz = -f.dz * 2.2 + o.vz * 0.3;
+        o.tackleT = 1.2;
+        o.reactT = 0.4;
+      }
+    }
+    if (fooled && p.team.user) this.emit('feint-ok', { player: p, n: fooled });
+  }
+
+  endFeint(p) {
+    p.feint = null;
+    p.feintFace = null;
+    p.aux2 = 0;
+    if (p.state === ST.FEINT) p.setState(ST.RUN);
+  }
+
   // Condução colada: enquanto o jogador tem a posse, a bola fica presa à
   // frente do pé e acompanha cada passo e cada virada do corpo. Ela só sai
   // num passe/chute, numa arrancada, num desarme ou se o jogador cair.
@@ -319,8 +465,11 @@ export class Match {
     // ponto à frente do pé, na direção do corpo
     const sp = p.speed;
     const off = 0.34 + Math.min(sp, 9) * 0.025;
-    const tx = p.x + Math.cos(p.face) * off;
-    const tz = p.z + Math.sin(p.face) * off;
+    // nas fintas a bola segue a direção do drible, não a do corpo
+    const fdx = p.feint && p.feint.bdx != null ? p.feint.bdx : Math.cos(p.face);
+    const fdz = p.feint && p.feint.bdx != null ? p.feint.bdz : Math.sin(p.face);
+    const tx = p.x + fdx * off;
+    const tz = p.z + fdz * off;
     const dx = tx - b.p.x;
     const dz = tz - b.p.z;
     const d = Math.hypot(dx, dz);
@@ -605,7 +754,8 @@ export class Match {
       team.idleT = 0;
       c.userAuto = false;
       c.faceTarget = null;
-      const sp = c.sprint ? vmax : vmax * 0.72;
+      // direcional/analógico: o jogador anda; corrida só com o botão Correr
+      const sp = c.sprint ? vmax : vmax * 0.5;
       c.desVx = (mx / Math.max(mag, 1e-6)) * mag * sp;
       c.desVz = (mz / Math.max(mag, 1e-6)) * mag * sp;
       // conter (marcação de lado): de frente para a bola
@@ -653,6 +803,46 @@ export class Match {
     }
 
     const rel = inp.released;
+    // fintas: direção do analógico (na tela) + botão Finta; dois toques
+    // seguidos no botão = corte seco
+    if (this.state === 'play') {
+      const owns = this.possessor === c && this.ball.glue === c;
+      if (inp.pressed.has('feint') && owns) {
+        const tap = team.feintTap;
+        if (tap && this.time - tap.t < 0.32) {
+          team.feintTap = null;
+          const dl = mag > 0.2 ? mag : 0;
+          this.startFeint(c, 'corte', dl ? mx / dl : Math.cos(c.face + 1.2), dl ? mz / dl : Math.sin(c.face + 1.2));
+        } else team.feintTap = { t: this.time, sx: inp.sx || 0, sy: inp.sy || 0, mx, mz, mag };
+      }
+      const tap = team.feintTap;
+      if (tap && this.time - tap.t >= 0.32) {
+        team.feintTap = null;
+        if (owns) {
+          // usa a direção do momento do toque (ou a atual, se estava solto)
+          let sx = tap.sx;
+          let sy = tap.sy;
+          let wx = tap.mx;
+          let wz = tap.mz;
+          let wm = tap.mag;
+          if (Math.hypot(sx, sy) < 0.35) {
+            sx = inp.sx || 0;
+            sy = inp.sy || 0;
+            wx = mx;
+            wz = mz;
+            wm = mag;
+          }
+          const fx = wm > 0.2 ? wx / wm : Math.cos(c.face);
+          const fz = wm > 0.2 ? wz / wm : Math.sin(c.face);
+          let type = 'pedalada';
+          if (Math.abs(sx) >= Math.abs(sy) * 0.8 && sx < -0.35) type = 'dois';
+          else if (Math.abs(sx) >= Math.abs(sy) * 0.8 && sx > 0.35) type = 'pedalada';
+          else if (Math.abs(sy) > 0.35) type = 'giro';
+          this.startFeint(c, type, fx, fz);
+        }
+      }
+    }
+
     // pênalti contra: o jogador escolhe o canto do goleiro
     if (this.sp && this.sp.type === 'penalty' && this.sp.team !== team) {
       const gk = team.gk();
@@ -1202,6 +1392,7 @@ export class Match {
             chance += clamp((cd - 0.4) * 0.6, -0.15, 0.3);
           }
           chance *= this.skill[p.team.side].tackle;
+          if (carrier && carrier.feint) chance *= FEINTS[carrier.feint.type].tackle;
           if (this.r() < chance) {
             // ganhou: cutuca a bola
             const a = p.face + (this.r() - 0.5) * 1.2;

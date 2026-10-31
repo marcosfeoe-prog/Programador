@@ -350,6 +350,12 @@ class App {
         this.narrator.say(`Fim de jogo. ${m.teams[0].club.short} ${m.teams[0].score}, ${m.teams[1].club.short} ${m.teams[1].score}.`, true);
         this.endT = 2.8;
         break;
+      case 'feint':
+        if (this.userSide >= 0 && e.player.team.side === this.userSide) this.hud.toast(`🌀 ${e.name}`);
+        break;
+      case 'feint-ok':
+        this.hud.toast(e.n > 1 ? 'Deixou dois para trás!' : 'Driblou o marcador!');
+        break;
       case 'sub':
         this.hud.toast(`🔁 ${e.team.club.abbr}: ${e.out.name} ⟶ ${e.inn.name}`);
         break;
@@ -422,6 +428,8 @@ class App {
             mx: inp.x * B.rx + inp.y * B.fx,
             mz: inp.x * B.rz + inp.y * B.fz,
             sprint: inp.sprint,
+            sx: inp.x,
+            sy: inp.y,
             pressed: inp.pressed,
             released: inp.released,
             held: inp.held,

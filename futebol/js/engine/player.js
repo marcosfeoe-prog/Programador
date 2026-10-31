@@ -19,6 +19,7 @@ export const ST = {
   STUMBLE: 10,
   JUMP: 11,
   OFF: 12,
+  FEINT: 13,
 };
 
 export const POSE_SIZE = 16;
@@ -196,6 +197,11 @@ export class PlayerEnt {
       case ST.THROW:
       case ST.HOLD:
         break;
+      case ST.FEINT:
+        // finta: mais agilidade para mudar de direção
+        ctrl = 1.8;
+        if (this.stateT > this.stateDur) this.setState(ST.RUN);
+        break;
       case ST.OFF:
         return;
     }
@@ -257,11 +263,15 @@ export class PlayerEnt {
 
     // orientação do corpo
     const nsp = Math.hypot(this.vx, this.vz);
-    let tf = this.faceTarget;
-    if (tf == null) tf = nsp > 0.4 ? Math.atan2(this.vz, this.vx) : this.face;
-    const rate = lerp(11, 4.5, clamp(nsp / 9, 0, 1)) * (this.state === ST.KICK ? 0.5 : 1);
-    const d = angleDiff(this.face, tf);
-    this.face += clamp(d, -rate * dt, rate * dt);
+    if (this.state === ST.FEINT && this.feintFace != null) {
+      this.face = this.feintFace;
+    } else {
+      let tf = this.faceTarget;
+      if (tf == null) tf = nsp > 0.4 ? Math.atan2(this.vz, this.vx) : this.face;
+      const rate = lerp(11, 4.5, clamp(nsp / 9, 0, 1)) * (this.state === ST.KICK ? 0.5 : this.state === ST.FEINT ? 2.2 : 1);
+      const d = angleDiff(this.face, tf);
+      this.face += clamp(d, -rate * dt, rate * dt);
+    }
 
     // fôlego
     const rel = nsp / Math.max(1, vmax);

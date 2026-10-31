@@ -4,8 +4,8 @@ import * as THREE from 'three';
 import { PITCH as P } from '../engine/constants.js';
 import { clamp, damp, lerp } from '../util.js';
 
-export const CAM_MODES = ['tv', 'tvclose', 'media', 'longa', 'alta', 'atras'];
-export const CAM_NAMES = { tv: 'Transmissão', tvclose: 'TV próxima', media: 'Meia distância', longa: 'Longa (campo todo)', alta: 'Alta (tática)', atras: 'Atrás do ataque' };
+export const CAM_MODES = ['tv', 'normal', 'tvclose', 'media', 'duelo', 'longa', 'alta', 'atras'];
+export const CAM_NAMES = { tv: 'Transmissão', normal: 'Normal', tvclose: 'TV próxima', media: 'Meia distância', duelo: 'Duelo (de cima)', longa: 'Longa (campo todo)', alta: 'Alta (tática)', atras: 'Atrás do ataque' };
 
 export class BroadcastCam {
   constructor(camera) {
@@ -68,6 +68,27 @@ export class BroadcastCam {
           pz = P.HW + 16;
           fov = 25 * narrow;
           break;
+        case 'normal': {
+          // nem longe nem perto: acompanha a bola de lado, a meia altura
+          tx = clamp(tx, -P.HL + 3, P.HL - 3);
+          px = tx;
+          py = 13;
+          pz = Math.min(tz + 32, P.HW + 16);
+          fov = 36 * narrow;
+          break;
+        }
+        case 'duelo': {
+          // de cima, a média distância, centrada no lance
+          const pl = ctx.player || { x: b.x, z: b.z };
+          tx = (pl.x + b.x) / 2;
+          tz = (pl.z + b.z) / 2;
+          ty = 0;
+          px = tx;
+          py = 24;
+          pz = tz + 9;
+          fov = 46 * Math.min(narrow, 1.3);
+          break;
+        }
         case 'longa': {
           // bem do alto, enquadrando o campo inteiro
           const cx = clamp(b.x * 0.18, -12, 12);
@@ -125,7 +146,7 @@ export class BroadcastCam {
       this.fov = fov;
       this.first = false;
     }
-    const k = special ? 3 : mode === 'media' ? 4.5 : mode === 'atras' ? 3.5 : 2.6;
+    const k = special ? 3 : mode === 'media' || mode === 'duelo' ? 4.5 : mode === 'atras' ? 3.5 : 2.6;
     this.pos.x = damp(this.pos.x, px, k, dt);
     this.pos.y = damp(this.pos.y, py, k, dt);
     this.pos.z = damp(this.pos.z, pz, k, dt);

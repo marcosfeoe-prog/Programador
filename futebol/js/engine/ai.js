@@ -819,7 +819,10 @@ export class TeamAI {
         const sprint = o.space > 7 && p.stamina > 0.3;
         // drible curto para escapar do marcador
         if (pressure > 0.9 && o.space < 2.5 && m.r() < 0.35 + p.a.dri * 0.4) {
-          p.knockOn = m.time;
+          // finta para sair da marcação (o corte seco é o preferido)
+          const types = ['corte', 'dois', 'pedalada', 'giro'];
+          const type = m.r() < 0.45 ? 'corte' : types[1 + Math.floor(m.r() * 3)];
+          if (!m.startFeint(p, type, o.dx, o.dz)) p.knockOn = m.time;
           p.intent = { type: 'dribble', dx: o.dx, dz: o.dz, sprint: true };
         } else if (pressure > 1.1 && o.space < 1.5) {
           p.intent = { type: 'shield' };
