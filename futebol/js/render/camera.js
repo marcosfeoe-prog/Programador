@@ -4,8 +4,8 @@ import * as THREE from 'three';
 import { PITCH as P } from '../engine/constants.js';
 import { clamp, damp, lerp } from '../util.js';
 
-export const CAM_MODES = ['tv', 'tvclose', 'alta', 'atras'];
-export const CAM_NAMES = { tv: 'Transmissão', tvclose: 'TV próxima', alta: 'Alta (tática)', atras: 'Atrás do ataque' };
+export const CAM_MODES = ['tv', 'tvclose', 'media', 'longa', 'alta', 'atras'];
+export const CAM_NAMES = { tv: 'Transmissão', tvclose: 'TV próxima', media: 'Meia distância', longa: 'Longa (campo todo)', alta: 'Alta (tática)', atras: 'Atrás do ataque' };
 
 export class BroadcastCam {
   constructor(camera) {
@@ -68,6 +68,31 @@ export class BroadcastCam {
           pz = P.HW + 16;
           fov = 25 * narrow;
           break;
+        case 'longa': {
+          // bem do alto, enquadrando o campo inteiro
+          const cx = clamp(b.x * 0.18, -12, 12);
+          px = cx;
+          py = 100;
+          pz = P.HW + 26;
+          tx = cx;
+          tz = 1.5;
+          ty = 0;
+          fov = 38 * narrow;
+          break;
+        }
+        case 'media': {
+          // perto do jogador controlado (ou de quem está com a bola)
+          const pl = ctx.player || { x: b.x, z: b.z };
+          const d = ctx.attackDir || 1;
+          px = pl.x - d * 3.5;
+          py = 4.3;
+          pz = Math.min(pl.z + 8.5, P.HW + 6);
+          tx = pl.x + (b.x - pl.x) * 0.3 + d * 1.5;
+          tz = pl.z + (b.z - pl.z) * 0.3;
+          ty = 0.9;
+          fov = 44 * Math.min(narrow, 1.3);
+          break;
+        }
         case 'alta':
           // "cabo aéreo" sobre a lateral
           px = clamp(tx * 0.6, -30, 30);
@@ -100,7 +125,7 @@ export class BroadcastCam {
       this.fov = fov;
       this.first = false;
     }
-    const k = special ? 3 : mode === 'atras' ? 3.5 : 2.6;
+    const k = special ? 3 : mode === 'media' ? 4.5 : mode === 'atras' ? 3.5 : 2.6;
     this.pos.x = damp(this.pos.x, px, k, dt);
     this.pos.y = damp(this.pos.y, py, k, dt);
     this.pos.z = damp(this.pos.z, pz, k, dt);

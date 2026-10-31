@@ -332,27 +332,40 @@ export function shirtTexture(kit, opts = {}) {
   return t;
 }
 
-export function ballTexture(color = 'branca') {
-  const c = canvas(512, 256);
-  const g = c.getContext('2d');
-  const base = color === 'laranja' ? '#ff7a1a' : '#f4f4f2';
-  g.fillStyle = base;
-  g.fillRect(0, 0, 512, 256);
-  const cols = color === 'laranja' ? ['#1d2a6b', '#ffd23b'] : ['#1d2a6b', '#d4252f', '#f0b81c'];
-  // faixas curvas (deixam a rotação visível)
-  for (let i = 0; i < 6; i++) {
+// Modelos de bola. metal/rough vão para o material.
+export const BALL_SKINS = {
+  classica: { name: 'Clássica', metal: 0, rough: 0.45 },
+  retro: { name: 'Retrô', metal: 0, rough: 0.5 },
+  neon: { name: 'Neon', metal: 0, rough: 0.4 },
+  dourada: { name: 'Dourada', metal: 0.75, rough: 0.28 },
+  listrada: { name: 'Listrada', metal: 0, rough: 0.45 },
+  galaxia: { name: 'Galáxia', metal: 0.1, rough: 0.35 },
+};
+export const BALL_SKIN_KEYS = Object.keys(BALL_SKINS);
+
+// Direção na esfera de um texel da textura equirretangular (como no SphereGeometry).
+function texDir(u, v) {
+  const lon = u * Math.PI * 2;
+  const lat = (0.5 - v) * Math.PI;
+  return [-Math.cos(lon) * Math.cos(lat), Math.sin(lat), Math.sin(lon) * Math.cos(lat)];
+}
+
+function curvedBands(g, cols, width, amp, freq) {
+  for (let i = 0; i < cols.length * 2; i++) {
     g.strokeStyle = cols[i % cols.length];
-    g.lineWidth = 16;
+    g.lineWidth = width;
     g.beginPath();
     for (let x = 0; x <= 512; x += 8) {
-      const y = 128 + Math.sin((x / 512) * Math.PI * 2 * 2 + i * 1.05) * 70 + (i - 2.5) * 6;
+      const y = 128 + Math.sin((x / 512) * Math.PI * 2 * freq + i * 1.05) * amp + (i - cols.length + 0.5) * 6;
       if (x === 0) g.moveTo(x, y);
       else g.lineTo(x, y);
     }
     g.stroke();
   }
-  // costuras
-  g.strokeStyle = 'rgba(60,60,60,0.35)';
+}
+
+function seams(g, alpha = 0.35) {
+  g.strokeStyle = `rgba(60,60,60,${alpha})`;
   g.lineWidth = 2;
   for (let i = 0; i < 8; i++) {
     g.beginPath();
@@ -360,12 +373,147 @@ export function ballTexture(color = 'branca') {
     g.bezierCurveTo(i * 64 + 30, 80, i * 64 - 30, 176, i * 64, 256);
     g.stroke();
   }
+}
+
+// Desenha a bola no canvas 512×256 (equirretangular).
+export function ballCanvas(skin = 'classica') {
+  const c = canvas(512, 256);
+  const g = c.getContext('2d');
+  switch (skin) {
+    case 'laranja':
+      g.fillStyle = '#ff7a1a';
+      g.fillRect(0, 0, 512, 256);
+      curvedBands(g, ['#1d2a6b', '#ffd23b'], 16, 70, 2);
+      seams(g);
+      break;
+    case 'retro': {
+      // gomos pretos (pentágonos) e costuras como a bola clássica de 32 gomos
+      const phi = (1 + Math.sqrt(5)) / 2;
+      const V = [];
+      for (const a of [-1, 1]) for (const b of [-1, 1]) V.push([0, a, b * phi], [a, b * phi, 0], [b * phi, 0, a]);
+      for (const v of V) {
+        const l = Math.hypot(...v);
+        v[0] /= l;
+        v[1] /= l;
+        v[2] /= l;
+      }
+      const img = g.createImageData(512, 256);
+      for (let y = 0; y < 256; y++) {
+        for (let x = 0; x < 512; x++) {
+          const d = texDir((x + 0.5) / 512, (y + 0.5) / 256);
+          let b1 = -2;
+          let b2 = -2;
+          for (const v of V) {
+            const dot = d[0] * v[0] + d[1] * v[1] + d[2] * v[2];
+            if (dot > b1) {
+              b2 = b1;
+              b1 = dot;
+            } else if (dot > b2) b2 = dot;
+          }
+          const ang = Math.acos(Math.min(1, b1));
+          let col = 244;
+          if (ang < 0.33) col = 22; // pentágono preto
+          else if (Math.abs(b1 - b2) < 0.012 || Math.abs(ang - 0.33) < 0.012) col = 150; // costura
+          const k = (y * 512 + x) * 4;
+          img.data[k] = col;
+          img.data[k + 1] = col;
+          img.data[k + 2] = col;
+          img.data[k + 3] = 255;
+        }
+      }
+      g.putImageData(img, 0, 0);
+      break;
+    }
+    case 'neon':
+      g.fillStyle = '#d6ff1f';
+      g.fillRect(0, 0, 512, 256);
+      curvedBands(g, ['#111111', '#ff2d95'], 14, 80, 3);
+      seams(g, 0.25);
+      break;
+    case 'dourada': {
+      const gr = g.createLinearGradient(0, 0, 0, 256);
+      gr.addColorStop(0, '#f7dc7a');
+      gr.addColorStop(0.5, '#c99419');
+      gr.addColorStop(1, '#8a6210');
+      g.fillStyle = gr;
+      g.fillRect(0, 0, 512, 256);
+      g.globalAlpha = 0.9;
+      curvedBands(g, ['#fff6d6'], 5, 75, 2);
+      g.globalAlpha = 1;
+      seams(g, 0.3);
+      break;
+    }
+    case 'listrada':
+      // gomos vermelhos e brancos com faixa azul no meio
+      for (let i = 0; i < 12; i++) {
+        g.fillStyle = i % 2 ? '#f4f4f2' : '#d4252f';
+        g.fillRect((i * 512) / 12, 0, 512 / 12 + 1, 256);
+      }
+      g.fillStyle = '#1d3f8f';
+      g.fillRect(0, 116, 512, 24);
+      g.fillStyle = '#f4f4f2';
+      g.fillRect(0, 114, 512, 3);
+      g.fillRect(0, 139, 512, 3);
+      seams(g, 0.2);
+      break;
+    case 'galaxia': {
+      g.fillStyle = '#0b0f2e';
+      g.fillRect(0, 0, 512, 256);
+      const r = new RNG(77);
+      for (let i = 0; i < 40; i++) {
+        const x = r.float(0, 512);
+        const y = r.float(30, 226);
+        const rad = r.float(20, 70);
+        const gr = g.createRadialGradient(x, y, 0, x, y, rad);
+        gr.addColorStop(0, r.chance(0.5) ? 'rgba(160,60,220,0.45)' : 'rgba(40,190,210,0.4)');
+        gr.addColorStop(1, 'rgba(0,0,0,0)');
+        g.fillStyle = gr;
+        g.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+      }
+      for (let i = 0; i < 260; i++) {
+        g.fillStyle = `rgba(255,255,255,${r.float(0.4, 1)})`;
+        const sz = r.float(0.8, 2.4);
+        g.fillRect(r.float(0, 512), r.float(0, 256), sz, sz);
+      }
+      g.strokeStyle = 'rgba(255,255,255,0.55)';
+      curvedBands(g, ['rgba(255,255,255,0.5)'], 3, 70, 2);
+      break;
+    }
+    default:
+      g.fillStyle = '#f4f4f2';
+      g.fillRect(0, 0, 512, 256);
+      curvedBands(g, ['#1d2a6b', '#d4252f', '#f0b81c'], 16, 70, 2);
+      seams(g);
+  }
+  // leve sombreado nos polos
   g.fillStyle = 'rgba(0,0,0,0.05)';
   g.fillRect(0, 0, 512, 24);
   g.fillRect(0, 232, 512, 24);
-  const t = new THREE.CanvasTexture(c);
+  return c;
+}
+
+export function ballTexture(skin = 'classica') {
+  const t = new THREE.CanvasTexture(ballCanvas(skin));
   t.colorSpace = THREE.SRGBColorSpace;
   return t;
+}
+
+// Miniatura redonda da bola para os menus (data URL).
+export function ballPreview(skin, size = 44) {
+  const src = ballCanvas(skin);
+  const c = canvas(size, size);
+  const g = c.getContext('2d');
+  g.beginPath();
+  g.arc(size / 2, size / 2, size / 2 - 1, 0, Math.PI * 2);
+  g.clip();
+  g.drawImage(src, 128, 0, 256, 256, 0, 0, size, size);
+  const gr = g.createRadialGradient(size * 0.35, size * 0.3, 2, size / 2, size / 2, size / 2);
+  gr.addColorStop(0, 'rgba(255,255,255,0.35)');
+  gr.addColorStop(0.6, 'rgba(255,255,255,0)');
+  gr.addColorStop(1, 'rgba(0,0,0,0.35)');
+  g.fillStyle = gr;
+  g.fillRect(0, 0, size, size);
+  return c.toDataURL();
 }
 
 const SPONSORS = [

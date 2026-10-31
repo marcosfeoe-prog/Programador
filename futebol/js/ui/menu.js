@@ -5,6 +5,7 @@ import { WEATHERS, WEATHER_KEYS, TIMES, TIME_KEYS } from '../engine/weather.js';
 import { DIFFICULTY } from '../engine/match.js';
 import { FORMATION_KEYS, MENTALITY } from '../engine/team.js';
 import { CAM_MODES, CAM_NAMES } from '../render/camera.js';
+import { BALL_SKINS, BALL_SKIN_KEYS, ballPreview } from '../render/textures.js';
 import { crestURL } from './crest.js';
 import * as C from '../comp/career.js';
 import { sortedTable } from '../comp/competitions.js';
@@ -116,6 +117,15 @@ export class Menu {
     this.root.appendChild(dlg);
   }
 
+  ballChips() {
+    if (!this.ballImgs) this.ballImgs = Object.fromEntries(BALL_SKIN_KEYS.map((k) => [k, ballPreview(k, 40)]));
+    return chips(
+      BALL_SKIN_KEYS.map((k) => [k, [h('img', { src: this.ballImgs[k], width: 22, height: 22, alt: '', style: 'vertical-align:middle;margin-right:6px' }), BALL_SKINS[k].name]]),
+      BALL_SKINS[this.s.ball] ? this.s.ball : 'classica',
+      (v) => this.app.setSetting('ball', v)
+    );
+  }
+
   // ------------------------------------------------------------ início
 
   main() {
@@ -219,6 +229,8 @@ export class Menu {
         chips(DURATIONS.map((d) => [d, d + ' min']), s.halfMinutes, (v) => this.app.setSetting('halfMinutes', v)),
         h('h3', 'Dificuldade'),
         chips(Object.entries(DIFFICULTY).map(([k, d]) => [k, d.name]), s.difficulty, (v) => this.app.setSetting('difficulty', v)),
+        h('h3', 'Bola'),
+        this.ballChips(),
         h('div.row', { style: 'margin-top:22px' }, h('button.btn.pri', { onclick: go }, 'Começar partida ▶'))
       )
     );
@@ -663,6 +675,9 @@ export class Menu {
         h('p.note', 'Baixa: sem sombras reais, menos torcida e gramado em resolução menor (melhor no celular).'),
         h('h3', 'Câmera padrão'),
         chips(CAM_MODES.map((k) => [k, CAM_NAMES[k]]), s.camera, (v) => this.app.setSetting('camera', v)),
+        h('h3', 'Bola'),
+        this.ballChips(),
+        h('p.note', 'Na neve, a bola Clássica vira laranja para ser vista.'),
         h('h3', 'Volume'),
         vol,
         h('h3', 'Narração por voz (voz do navegador)'),

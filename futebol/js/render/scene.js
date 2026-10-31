@@ -6,7 +6,7 @@ import { Stadium } from './stadium.js';
 import { PlayerModel, readPose, blobTexture } from './players3d.js';
 import { Sky, Precip } from './weatherfx.js';
 import { BroadcastCam } from './camera.js';
-import { ballTexture } from './textures.js';
+import { ballTexture, BALL_SKINS } from './textures.js';
 import { POSE_SIZE, ST } from '../engine/player.js';
 import { PITCH as P, BALL as B } from '../engine/constants.js';
 import { clamp, lerp } from '../util.js';
@@ -17,7 +17,7 @@ const LOOKS = {
 };
 
 export class MatchView {
-  constructor(renderer, match, { quality, kits, camMode = 'tv' }) {
+  constructor(renderer, match, { quality, kits, camMode = 'tv', ballSkin = 'classica' }) {
     this.renderer = renderer;
     this.m = match;
     this.q = quality;
@@ -29,6 +29,7 @@ export class MatchView {
     this.camera = new THREE.PerspectiveCamera(24, 16 / 9, 0.3, 3200);
     this.cam = new BroadcastCam(this.camera);
     this.cam.mode = camMode;
+    this.ballSkin = ballSkin;
     this.night = env.time === 'noite';
     this.time = 0;
 
@@ -236,9 +237,12 @@ export class MatchView {
   }
 
   buildBall() {
-    const tex = ballTexture(this.env.ballColor);
+    const skin = BALL_SKINS[this.ballSkin] ? this.ballSkin : 'classica';
+    // na neve a bola padrão vira laranja (como nos jogos de verdade)
+    const tex = ballTexture(skin === 'classica' && this.env.ballColor === 'laranja' ? 'laranja' : skin);
     this.ballTex = tex;
-    const mat = new THREE.MeshStandardMaterial({ map: tex, roughness: this.env.rain > 0 ? 0.25 : 0.45, metalness: 0 });
+    const S = BALL_SKINS[skin];
+    const mat = new THREE.MeshStandardMaterial({ map: tex, roughness: this.env.rain > 0 ? Math.min(0.25, S.rough) : S.rough, metalness: S.metal });
     this.ball = new THREE.Mesh(new THREE.SphereGeometry(B.r, 24, 16), mat);
     this.ball.castShadow = !!this.q.shadows;
     this.scene.add(this.ball);
@@ -390,6 +394,7 @@ export class MatchView {
         state: m.state,
         sp: m.sp,
         focus,
+        player: ut.ctrlMark && ut.ctrlMark.active ? ut.ctrlMark : m.possessor || null,
         aspect: this.camera.aspect,
       });
     }

@@ -22,7 +22,7 @@ const QUALITY = {
 const SETTINGS_KEY = 'gramado-config-v1';
 
 function loadSettings(mobile) {
-  const def = { quality: mobile ? 'baixa' : 'alta', camera: 'tv', volume: 0.8, narration: false, autoReplay: true, showFps: false, difficulty: 'profissional', halfMinutes: 4, touch: 'auto' };
+  const def = { quality: mobile ? 'baixa' : 'alta', camera: 'tv', ball: 'classica', volume: 0.8, narration: false, autoReplay: true, showFps: false, difficulty: 'profissional', halfMinutes: 4, touch: 'auto' };
   try {
     const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
     const out = { ...def, ...s };
@@ -200,7 +200,7 @@ class App {
     const kits = chooseKits(hc, ac);
     const match = new Match({ home: hc, away: ac, homeKit: kits.team[0], awayKit: kits.team[1], env, halfMinutes: o.halfMinutes, difficulty: o.difficulty, userSide: o.userSide, knockout: o.knockout, seed });
     const q = QUALITY[this.settings.quality];
-    this.view = new MatchView(this.renderer, match, { quality: q, kits, camMode: this.settings.camera });
+    this.view = new MatchView(this.renderer, match, { quality: q, kits, camMode: this.settings.camera, ballSkin: this.settings.ball });
     this.view.onLightning = (d) => this.audio.thunder(d);
     this.match = match;
     this.kits = kits;

@@ -166,8 +166,13 @@ Chute/Passe para carregar a força. "Efeito" deixa o próximo chute colocado.
 Em bolas paradas aparece uma dica do que apertar. No pênalti contra, escolha o
 canto do goleiro com uma direção + Chute antes da cobrança.
 
-Câmeras: **Transmissão** (padrão, da arquibancada), **TV próxima**, **Alta**
-(cabo aéreo) e **Atrás do ataque**.
+Câmeras: **Transmissão** (padrão, da arquibancada), **TV próxima**, **Meia
+distância** (bem perto do jogador controlado), **Longa** (do alto, com o campo
+inteiro), **Alta** (cabo aéreo) e **Atrás do ataque**. Troque na pausa, com B
+ou em Configurações.
+
+Bolas: **Clássica**, **Retrô** (gomos pretos), **Neon**, **Dourada**,
+**Listrada** e **Galáxia** — escolha em Configurações ou na Partida rápida.
 
 ## Estrutura do código
 
