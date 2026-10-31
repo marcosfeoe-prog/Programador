@@ -154,3 +154,17 @@ Segundo jogo do repositório: exploração em primeira pessoa pelos **Níveis 0,
 noturna, câmera térmica…), qualidade gráfica **Baixa, Média, Alta e Ultra** e
 controles feitos para **celular**. Com o servidor rodando (`npm start`), abra
 `http://localhost:8080/liminar/`. Detalhes em [`liminar/README.md`](liminar/README.md).
+
+---
+
+# Gramado — Futebol 3D (pasta `futebol/`)
+
+Terceiro jogo do repositório: futebol 3D realista com **física da bola** (arrasto,
+efeito Magnus, quique e rolagem que mudam com o clima, vento e altitude),
+**30 clubes** fictícios com estádios e elencos próprios, **carreira** com Série A e
+B (acesso e rebaixamento), Copa Nacional e Taça Continental, **torneios** avulsos,
+**partida rápida** e **8 climas** (sol, nublado, chuva, tempestade com poças e
+raios, neve, neblina, ventania e calor) em 3 horários. Funciona no PC (teclado ou
+controle) e no celular (toque). Com o servidor rodando (`npm start`), abra
+`http://localhost:8080/futebol/`. Detalhes em [`futebol/README.md`](futebol/README.md).
+

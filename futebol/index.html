@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b1410" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="description" content="Gramado: futebol 3D realista no navegador, com física da bola, 30 clubes, campeonatos, carreira e climas." />
+    <title>Gramado — Futebol 3D</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/style.css" />
+    <script type="importmap">
+      { "imports": { "three": "../vendor/three/three.module.min.js" } }
+    </script>
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+
+    <!-- HUD da partida -->
+    <div id="hud" class="hidden">
+      <div id="score">
+        <div class="sb-team"><img id="sb-c0" alt="" /><span id="sb-n0">---</span></div>
+        <div id="sb-score"><span id="sb-s0">0</span><b>-</b><span id="sb-s1">0</span></div>
+        <div class="sb-team"><span id="sb-n1">---</span><img id="sb-c1" alt="" /></div>
+        <div id="sb-time"><span id="sb-clock">00:00</span><span id="sb-add"></span></div>
+      </div>
+      <div id="sb-info"></div>
+      <div id="pens" class="hidden"></div>
+      <div id="banner" class="hidden"></div>
+      <div id="toast"></div>
+      <div id="feed"></div>
+      <div id="pinfo"><span id="pi-num"></span><span id="pi-name"></span><div class="bar"><i id="pi-sta"></i></div></div>
+      <div id="hint" class="hidden"></div>
+      <div id="power" class="hidden"><span id="power-lbl"></span><div><i id="power-bar"></i></div></div>
+      <canvas id="radar" width="210" height="136"></canvas>
+      <div id="tag" class="hidden"></div>
+      <button id="b-pause" aria-label="Pausar">II</button>
+      <div id="replay-tag" class="hidden">REPLAY <small>(qualquer botão pula)</small></div>
+      <div id="fps" class="hidden"></div>
+    </div>
+
+    <!-- controles de toque -->
+    <div id="touch" class="hidden">
+      <div id="t-left"><div id="t-stick"><div id="t-knob"></div></div></div>
+      <div id="t-right">
+        <button class="tbtn big" data-act="shoot"><span class="a">Chute</span><span class="d">Carrinho</span></button>
+        <button class="tbtn" data-act="pass"><span class="a">Passe</span><span class="d">Desarme</span></button>
+        <button class="tbtn" data-act="lob"><span class="a">Alto</span><span class="d">Trocar</span></button>
+        <button class="tbtn" data-act="through"><span class="a">Enfiada</span><span class="d">Pressão</span></button>
+        <button class="tbtn sm" data-act="sprint">Correr</button>
+        <button class="tbtn sm" data-act="finesse">Efeito</button>
+        <button class="tbtn sm" data-act="knock"><span class="a">Arrancar</span><span class="d">Conter</span></button>
+      </div>
+    </div>
+
+    <div id="screens"></div>
+    <div id="loading" class="hidden"><div class="ld-ball"></div><div id="loading-txt">Preparando o estádio…</div></div>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
