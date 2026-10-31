@@ -81,13 +81,13 @@ export class Player {
     this.vel.z = damp(this.vel.z, wz, acc, dt);
     // fôlego
     if (this.sprinting) {
-      this.stamina = Math.max(0, this.stamina - dt * 0.19);
-      this.staminaDelay = 0.9;
+      this.stamina = Math.max(0, this.stamina - dt * 0.0625); // ~16 s de corrida
+      this.staminaDelay = 0.6;
       if (this.stamina <= 0) this.exhausted = true;
     } else {
       this.staminaDelay = Math.max(0, (this.staminaDelay || 0) - dt);
-      if (this.staminaDelay <= 0) this.stamina = Math.min(1, this.stamina + dt * (moving ? 0.12 : 0.2));
-      if (this.exhausted && this.stamina > 0.35) this.exhausted = false;
+      if (this.staminaDelay <= 0) this.stamina = Math.min(1, this.stamina + dt * (moving ? 0.16 : 0.26));
+      if (this.exhausted && this.stamina > 0.25) this.exhausted = false;
     }
     // pulo e gravidade
     if (!this.frozen && input.take('jump') && this.onGround && !this.crouching && this.alive) {
