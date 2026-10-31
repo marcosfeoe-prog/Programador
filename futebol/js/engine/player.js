@@ -233,7 +233,7 @@ export class PlayerEnt {
       along = along > 0 ? Math.min(along, aFwd * dt) : Math.max(along, -aBrake * dt);
       if (lat > aLat * dt) {
         // curva fechada demais em gramado escorregadio: pode escorregar
-        if (trac < 0.9 && sp > 6.2 && lat / dt > aLat * 2.4 && rng && rng() < (1 - trac) * 0.05) {
+        if (!this.hasBall && trac < 0.9 && sp > 6.2 && lat / dt > aLat * 2.4 && rng && rng() < (1 - trac) * 0.05) {
           this.setState(ST.FALLEN, 0.9);
           this.slipped = true;
         }

@@ -186,13 +186,17 @@ export class Match {
 
     // movimento
     const fdt = onField ? dt * this.timeScale : 0;
-    for (const p of this.all) p.step(dt, this.env, fdt, this.r);
+    for (const p of this.all) {
+      p.hasBall = this.ball.glue === p;
+      p.step(dt, this.env, fdt, this.r);
+    }
     this.moveOfficials(dt);
     this.collidePlayers();
 
     // ações pendentes (chutes) e bola
     for (const p of this.all) if (p.pending) this.processPending(p, dt);
     this.ball.step(dt, this.env, 4);
+    this.updateGlue(dt);
     if (this.ball.held) this.updateHeld();
 
     if (live || this.state === 'goal' || this.state === 'dead') {
@@ -273,6 +277,82 @@ export class Match {
     }
   }
 
+  // Condução colada: enquanto o jogador tem a posse, a bola fica presa à
+  // frente do pé e acompanha cada passo e cada virada do corpo. Ela só sai
+  // num passe/chute, numa arrancada, num desarme ou se o jogador cair.
+  updateGlue(dt) {
+    const b = this.ball;
+    const p = this.possessor;
+    const ok = p && !b.held && !b.fixed && p.active && !p.sentOff && (this.state === 'play' || this.state === 'goal') && b.p.y < 0.7;
+    if (!ok) {
+      // passe, chute, desarme ou bola parada: a velocidade já foi definida
+      b.glue = null;
+      return;
+    }
+    if (p.busy()) {
+      // tropeçou, caiu ou foi derrubado: a bola escapa
+      if (b.glue === p) this.releaseGlue(p, 0.9);
+      return;
+    }
+    // arrancada pedida: toque longo à frente e a bola fica solta
+    if (p.knockOn && this.time - p.knockOn < 0.4) {
+      p.knockOn = 0;
+      const dvx = p.intVx != null ? p.intVx : p.desVx;
+      const dvz = p.intVz != null ? p.intVz : p.desVz;
+      const dl = Math.hypot(dvx, dvz);
+      const ux = dl > 0.3 ? dvx / dl : Math.cos(p.face);
+      const uz = dl > 0.3 ? dvz / dl : Math.sin(p.face);
+      const v = p.speed + 4 + p.a.pac * 2.5;
+      const control = p.a.dri * 0.7 + p.a.con * 0.3;
+      const a = Math.atan2(uz, ux) + this.gauss() * (0.02 + 0.06 * (1 - control));
+      b.glue = null;
+      b.v.x = Math.cos(a) * v;
+      b.v.z = Math.sin(a) * v;
+      b.v.y = 0;
+      this.rollSpin();
+      p.glueBlock = this.time + 0.45;
+      p.touchCD = 0.25;
+      this.emit('touch', { player: p });
+      return;
+    }
+    if (p.glueBlock && this.time < p.glueBlock) return;
+    // ponto à frente do pé, na direção do corpo
+    const sp = p.speed;
+    const off = 0.34 + Math.min(sp, 9) * 0.025;
+    const tx = p.x + Math.cos(p.face) * off;
+    const tz = p.z + Math.sin(p.face) * off;
+    const dx = tx - b.p.x;
+    const dz = tz - b.p.z;
+    const d = Math.hypot(dx, dz);
+    if (b.glue !== p) {
+      // só prende quando a bola está ao alcance do pé
+      if (d > 1.1) return;
+      b.glue = p;
+      if (b.glue && p.team.user) this.emit('touch', { player: p });
+    }
+    // aproxima suavemente se veio de longe (domínio), depois fica colada
+    const pull = Math.min(1, dt * 18);
+    const nx = d > 0.05 ? b.p.x + dx * pull : tx;
+    const nz = d > 0.05 ? b.p.z + dz * pull : tz;
+    b.v.x = (nx - b.p.x) / dt;
+    b.v.z = (nz - b.p.z) / dt;
+    b.v.y = 0;
+    b.p.x = nx;
+    b.p.z = nz;
+    b.p.y = R;
+    this.rollSpin();
+    this.lastTouch = { p, kind: 'dribble', t: this.time };
+  }
+
+  releaseGlue(p, k) {
+    const b = this.ball;
+    b.glue = null;
+    b.v.x = p.vx * k;
+    b.v.z = p.vz * k;
+    b.v.y = 0;
+    this.rollSpin();
+  }
+
   // O condutor ajusta o passo até a bola entre um toque e outro; a direção
   // pedida (pelo jogador ou pela IA) fica guardada para o próximo toque.
   steerPossessor() {
@@ -281,7 +361,7 @@ export class Match {
     p.intVx = p.desVx;
     p.intVz = p.desVz;
     const b = this.ball;
-    if (p.pending || p.state !== ST.RUN || b.held) return;
+    if (p.pending || p.state !== ST.RUN || b.held || b.glue === p) return;
     const ds = Math.hypot(p.desVx, p.desVz);
     if (ds < 0.5) return;
     const ux = p.desVx / ds;
@@ -1015,6 +1095,7 @@ export class Match {
       this.sp = null;
     }
     this.possessor = null;
+    this.ball.glue = null;
     this.possTeam = team;
     this.lastTouch = { p, kind: 'kick', t: this.time, spType };
     this.lastKick = { p, spec, t: this.time, x: this.ball.p.x, z: this.ball.p.z };
@@ -1188,6 +1269,7 @@ export class Match {
 
   touchBy(p, kind) {
     const prev = this.lastTouch;
+    this.ball.glue = null;
     // impedimento: participou da jogada estando em posição irregular
     if (this.offside && this.state === 'play') {
       if (p.team === this.offside.team && this.offside.cands.has(p) && kind !== 'deflect') {
@@ -1253,13 +1335,14 @@ export class Match {
     for (const { p, d } of cands) {
       if (p.pending) continue; // vai chutar
       if (p === own) {
+        if (b.glue === p) continue;
         if (this.dribbleTouch(p, d)) return;
         continue;
       }
       // bola dominada pelo adversário (colada no pé): só com desarme
       if (own && own.team !== p.team) {
         const od = Math.hypot(bx - own.x, bz - own.z);
-        if (od < 0.5) continue;
+        if (od < 0.5 || b.glue === own) continue;
       }
       // companheiro: só domina se for o destinatário, se a bola estiver solta, ou se for o controlado
       if (p.team === this.possTeam && own && own !== p) continue;

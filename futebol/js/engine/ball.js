@@ -65,6 +65,7 @@ export class Ball {
     this.w = { x: 0, y: 0, z: 0 };
     this.prev = { x: 0, y: R, z: 0 };
     this.held = null; // jogador segurando (goleiro, lateral)
+    this.glue = null; // jogador conduzindo com a bola colada ao pé
     this.fixed = false; // parada para cobrança
     this.seed = Math.random() * 100;
     this.events = []; // {type:'trave'|'rede'|'quique'|'placa', ...}
@@ -72,6 +73,7 @@ export class Ball {
   }
 
   place(x, z, y = R) {
+    this.glue = null;
     this.p.x = x;
     this.p.y = y;
     this.p.z = z;
@@ -96,7 +98,7 @@ export class Ball {
     this.prev.x = this.p.x;
     this.prev.y = this.p.y;
     this.prev.z = this.p.z;
-    if (this.held || this.fixed) {
+    if (this.held || this.fixed || this.glue) {
       this.time += dt;
       return;
     }
