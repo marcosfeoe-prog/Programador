@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#11151a" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="description" content="Caçador de tornados numa planície enorme: tornados volumétricos realistas, supercélula, fotos e sondas." />
+    <title>Planície — Caçador de Tornados</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <script type="importmap">
+      { "imports": { "three": "../vendor/three/three.module.min.js" } }
+    </script>
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+
+    <div id="hud" class="hidden">
+      <div id="status" class="panel">
+        <div id="phase">Tempestade em organização</div>
+        <div class="row"><span>Tornado</span><b id="t-shape">—</b></div>
+        <div class="row"><span>Intensidade (est.)</span><b id="t-ef">—</b></div>
+        <div class="row"><span>Posição</span><b id="t-dist">—</b></div>
+        <div class="row"><span>Vento aqui</span><b id="t-wind">0 km/h</b></div>
+        <div class="bar"><div id="wind-bar"></div></div>
+      </div>
+
+      <div id="compass"><span>N 0°</span><div id="c-mark">▼</div></div>
+      <div id="alert" class="hidden"></div>
+
+      <div id="scorebox" class="panel">
+        <div class="big" id="score">0</div>
+        <div class="row"><span>Fotos</span><b id="photos">0</b></div>
+        <div class="row"><span>Sondas</span><b id="probes">3</b></div>
+        <div id="fps"></div>
+      </div>
+
+      <div id="vitals" class="panel">
+        <div class="vl"><span>Vida</span><div class="bar"><div id="health-bar"></div></div></div>
+        <div class="vl"><span>Fôlego</span><div class="bar thin"><div id="stamina-bar"></div></div></div>
+      </div>
+
+      <canvas id="map" width="190" height="190"></canvas>
+      <div id="crosshair"></div>
+      <div id="prompt" class="hidden"></div>
+      <div id="toast"></div>
+      <div id="thumb"><img id="thumb-img" alt="" /><div id="thumb-txt"></div></div>
+      <div id="report"></div>
+
+      <div id="touch">
+        <div id="stick"><div id="knob"></div></div>
+        <div id="tbtns">
+          <button data-key="KeyF">📷</button>
+          <button data-key="KeyP">Sonda</button>
+          <button data-key="KeyE">Picape</button>
+          <button data-key="Run">Correr</button>
+          <button data-key="Space">Pular</button>
+          <button data-key="KeyC">Câm.</button>
+          <button data-key="KeyM">Mapa</button>
+          <button data-key="Menu">☰</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="loading">Gerando a planície…</div>
+
+    <div id="menu" class="overlay hidden">
+      <div class="card">
+        <h1>Planície</h1>
+        <p class="sub">Caçador de tornados nas Grandes Planícies</p>
+        <div class="opts">
+          <label>Qualidade <select id="opt-q"></select></label>
+          <label>Céu <select id="opt-clima"></select></label>
+          <label>Formato do tornado <select id="opt-shape"></select></label>
+          <label>Aparência <select id="opt-look"></select></label>
+          <label>Duração no solo <select id="opt-dur"></select></label>
+        </div>
+        <button id="btn-play" class="primary">Jogar</button>
+        <details>
+          <summary>Como jogar</summary>
+          <p>Uma supercélula cruza a planície e produz tornados. Chegue perto, fotografe e coloque sondas
+          no caminho deles — quanto mais perto e mais bem enquadrada a foto, mais pontos. Mas o vento
+          acima de ~150 km/h fere, e dentro do núcleo você é arremessado.</p>
+          <table>
+            <tr><td>WASD / setas</td><td>andar / dirigir</td></tr>
+            <tr><td>Mouse</td><td>olhar</td></tr>
+            <tr><td>Shift</td><td>correr</td></tr>
+            <tr><td>Espaço</td><td>pular / freio</td></tr>
+            <tr><td>E</td><td>entrar/sair da picape</td></tr>
+            <tr><td>F ou clique</td><td>fotografar</td></tr>
+            <tr><td>P</td><td>posicionar sonda (recarrega na picape)</td></tr>
+            <tr><td>C</td><td>câmera da picape (3ª pessoa / cabine)</td></tr>
+            <tr><td>M</td><td>zoom do mapa</td></tr>
+            <tr><td>T</td><td>forçar tornadogênese</td></tr>
+            <tr><td>H</td><td>esconder HUD</td></tr>
+            <tr><td>Esc</td><td>pausa</td></tr>
+          </table>
+        </details>
+      </div>
+    </div>
+
+    <div id="pause" class="overlay hidden"></div>
+
+    <div id="death" class="overlay hidden">
+      <div class="card">
+        <h1>Fim da caçada</h1>
+        <p id="death-cause"></p>
+        <p id="death-stats"></p>
+        <button id="btn-restart" class="primary">Recomeçar</button>
+      </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>

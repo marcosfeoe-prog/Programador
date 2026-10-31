@@ -154,3 +154,13 @@ Segundo jogo do repositório: exploração em primeira pessoa pelos **Níveis 0,
 noturna, câmera térmica…), qualidade gráfica **Baixa, Média, Alta e Ultra** e
 controles feitos para **celular**. Com o servidor rodando (`npm start`), abra
 `http://localhost:8080/liminar/`. Detalhes em [`liminar/README.md`](liminar/README.md).
+
+---
+
+# Planície — Caçador de Tornados (pasta `planicie/`)
+
+Terceiro jogo: caça a tornados numa **planície enorme** (talhões, estradas de cascalho,
+cercas, postes, sítios), com **tornado volumétrico** de textura suave (funil com estrias
+girando, poeira, subvórtices, nuvem parede, cortinas de chuva), fotos, sondas, picape e
+destruição com física. Com o servidor rodando (`npm start`), abra
+`http://localhost:8080/planicie/`. Detalhes em [`planicie/README.md`](planicie/README.md).
