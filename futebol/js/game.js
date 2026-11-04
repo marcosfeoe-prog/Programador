@@ -33,6 +33,18 @@ const STADIUMS = {
   },
 };
 
+STADIUMS.futsal = {
+  // quadra de futsal para 3x3: piso de madeira, gols pequenos, área em "D" e quase sem espaço fora da linha
+  kind: 'futsal', W: 300, H: 140, goal: 50, depth: 22, circle: 50, margin: 22, size: 3,
+  phys: { ballDamping: 0.985, kickStrength: 5.2, ballBounce: 0.45 },
+};
+STADIUMS.power = {
+  // Power Ball: cada passe entre companheiros carrega a bola (até 3 níveis); o adversário descarrega
+  kind: 'power', W: 360, H: 165, goal: 62, depth: 28, circle: 70, margin: 45, size: 3, power: true,
+};
+const POWER_MULT = [1, 1.35, 1.7, 2.1];
+const POWER_COLOR = ['#ffffff', '#ffe066', '#ff9f43', '#ff4d6d'];
+
 const ZOOMS = [1.5, 1.75, 2, 2.25, 2.5];
 
 const BOT_NAMES = ['Tico', 'Bola7', 'Zé', 'Rafa', 'Nando', 'Lulu', 'Pedrão', 'Kaká', 'Juba',
@@ -180,6 +192,14 @@ const Audio = {
       o.start(t); lfo.start(t); o.stop(t + len); lfo.stop(t + len);
     }
   },
+  charge(lv) {
+    if (!this.on || !this.ctx) return;
+    const c = this.ctx, t = c.currentTime;
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = 'sawtooth'; o.frequency.setValueAtTime(300 + lv * 160, t); o.frequency.exponentialRampToValueAtTime(600 + lv * 260, t + 0.18);
+    g.gain.setValueAtTime(0.06, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+    o.connect(g).connect(c.destination); o.start(t); o.stop(t + 0.23);
+  },
   cheer() {
     if (!this.on || !this.ctx) return;
     const c = this.ctx, t = c.currentTime;
@@ -271,6 +291,7 @@ function readOptions() {
     diff: +$('opt-diff').value,
     stadium: $('opt-stadium').value,
     zoom: +$('opt-zoom').value || 1.5,
+    extrap: Math.max(0, Math.min(100, +$('opt-extrap').value || 0)),
     time: +$('opt-time').value * 60,
     goals: +$('opt-goals').value,
     sound: $('opt-sound').value === '1',
@@ -347,6 +368,7 @@ function resetPositions() {
   }
   game.state = 'kickoff';
   game.lastTouch = game.prevTouch = null;
+  game.power = 0;
 }
 
 function inputFor(p) {
@@ -378,10 +400,11 @@ function step() {
     if (p.kicking) {
       const dx = ball.x - p.x, dy = ball.y - p.y, d = Math.hypot(dx, dy);
       if (d - p.r - ball.r < PHYS.kickReach && d > 0) {
-        ball.vx += (dx / d) * PHYS.kickStrength * ball.invMass;
-        ball.vy += (dy / d) * PHYS.kickStrength * ball.invMass;
-        p.kickReady = false; p.kicking = false;
         touchBall(p);
+        const ks = PHYS.kickStrength * (st.power ? POWER_MULT[g.power] : 1);
+        ball.vx += (dx / d) * ks * ball.invMass;
+        ball.vy += (dy / d) * ks * ball.invMass;
+        p.kickReady = false; p.kicking = false;
         Audio.kick();
       }
     }
@@ -433,7 +456,15 @@ function step() {
 }
 
 function touchBall(p) {
-  if (game.lastTouch !== p) { game.prevTouch = game.lastTouch; game.lastTouch = p; }
+  const g = game;
+  if (g.lastTouch !== p) {
+    if (g.st.power && g.lastTouch) {
+      const lv = g.lastTouch.team === p.team ? Math.min(3, g.power + 1) : 0;
+      if (lv > g.power) Audio.charge(lv);
+      g.power = lv;
+    }
+    g.prevTouch = g.lastTouch; g.lastTouch = p;
+  }
 }
 
 function kickoffBarrier(p) {
@@ -657,9 +688,15 @@ function draw() {
   const W = canvas.width, H = canvas.height;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   if (!game) { ctx.fillStyle = '#3f5a36'; ctx.fillRect(0, 0, W, H); return drawIdle(); }
-  const { st, players, ball } = game;
+  const { st } = game;
+  // extrapolação: desenha as posições previstas alguns ms à frente
+  const k = paused || game.state === 'over' ? 0 : game.opt.extrap / (1000 / 60);
+  const ahead = (d) => ({ ...d, x: d.x + d.vx * k, y: d.y + d.vy * k });
+  const players = k ? game.players.map(ahead) : game.players;
+  const ball = k ? ahead(game.ball) : game.ball;
   const hock = st.kind === 'hock';
-  ctx.fillStyle = hock ? '#2a3440' : '#3f5a36'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = { hock: '#2a3440', futsal: '#5a3a28', power: '#141a2e' }[st.kind] || '#3f5a36';
+  ctx.fillRect(0, 0, W, H);
 
   // câmera: escala pelo zoom (relativa ao tamanho da tela) e segue a bola
   const base = Math.max(0.4, Math.min(1, innerWidth / 1280, innerHeight / 720));
@@ -674,7 +711,10 @@ function draw() {
   cam.x = clampC(cam.x, hw, ex); cam.y = clampC(cam.y, hh, ey);
   ctx.setTransform(s, 0, 0, s, W / 2 - cam.x * s, top + (H - top) / 2 - cam.y * s);
 
-  if (hock) drawRink(st); else drawPitch(st);
+  if (hock) drawRink(st);
+  else if (st.kind === 'futsal') drawFutsal(st);
+  else if (st.kind === 'power') drawPower(st);
+  else drawPitch(st);
 
   // barreira da saída de bola
   if (game.state === 'kickoff') {
@@ -719,6 +759,16 @@ function draw() {
   // bola
   ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
   ctx.fillStyle = hock ? '#15181c' : '#fff'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = hock ? '#000' : '#111'; ctx.stroke();
+  if (st.power && game.power > 0) {
+    const c = POWER_COLOR[game.power];
+    ctx.save();
+    ctx.shadowColor = c; ctx.shadowBlur = 10 + game.power * 6;
+    ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+    ctx.fillStyle = c; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#111'; ctx.stroke();
+    ctx.restore();
+    ctx.font = 'bold 10px system-ui, sans-serif'; ctx.fillStyle = c;
+    ctx.fillText(`x${POWER_MULT[game.power]}`, ball.x, ball.y - ball.r - 9);
+  }
   if (hock) { ctx.beginPath(); ctx.arc(ball.x - 1.5, ball.y - 1.5, ball.r * 0.45, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.fill(); }
 }
 
@@ -738,6 +788,83 @@ function drawPitch(st) {
     ctx.beginPath();
     ctx.arc(sx * st.W, 0, st.goal + 55, sx < 0 ? -Math.PI / 2 : Math.PI / 2, sx < 0 ? Math.PI / 2 : Math.PI * 1.5);
     ctx.stroke();
+  }
+}
+
+function drawFutsal(st) {
+  const { W, H } = st;
+  // piso de madeira em tábuas
+  ctx.fillStyle = '#c98c52'; ctx.fillRect(-W - st.margin, -H - st.margin, (W + st.margin) * 2, (H + st.margin) * 2);
+  for (let y = -H - st.margin, i = 0; y < H + st.margin; y += 14, i++) {
+    ctx.fillStyle = i % 2 ? 'rgba(90,50,20,.07)' : 'rgba(255,230,190,.06)';
+    ctx.fillRect(-W - st.margin, y, (W + st.margin) * 2, 14);
+    ctx.fillStyle = 'rgba(80,45,20,.12)';
+    for (let x = -W - st.margin + ((i * 53) % 120); x < W + st.margin; x += 120) ctx.fillRect(x, y, 1, 14);
+  }
+  // quadra pintada
+  ctx.fillStyle = 'rgba(30,105,175,.82)'; ctx.fillRect(-W, -H, W * 2, H * 2);
+  ctx.fillStyle = 'rgba(236,124,48,.85)';
+  for (const sx of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(sx * W, -st.goal - 45);
+    ctx.arc(sx * W, -st.goal + 10, 55, sx < 0 ? -Math.PI / 2 : -Math.PI / 2, sx < 0 ? 0 : -Math.PI, sx > 0);
+    ctx.lineTo(sx * (W - 55), st.goal - 10);
+    ctx.arc(sx * W, st.goal - 10, 55, sx < 0 ? 0 : Math.PI, Math.PI / 2, sx > 0);
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3;
+  ctx.strokeRect(-W, -H, W * 2, H * 2);
+  ctx.beginPath(); ctx.moveTo(0, -H); ctx.lineTo(0, H); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, 0, st.circle, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI * 2); ctx.fill();
+  for (const sx of [-1, 1]) {
+    // marca do pênalti e do tiro livre (10 m)
+    ctx.beginPath(); ctx.arc(sx * (W - 75), 0, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(sx * (W - 120), 0, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(sx * W, -st.goal - 45);
+    ctx.arc(sx * W, -st.goal + 10, 55, -Math.PI / 2, sx < 0 ? 0 : -Math.PI, sx > 0);
+    ctx.lineTo(sx * (W - 55), st.goal - 10);
+    ctx.arc(sx * W, st.goal - 10, 55, sx < 0 ? 0 : Math.PI, Math.PI / 2, sx > 0);
+    ctx.stroke();
+  }
+  // escanteios
+  for (const sx of [-1, 1]) for (const sy of [-1, 1]) {
+    ctx.beginPath(); ctx.arc(sx * W, sy * H, 10, sy < 0 ? (sx < 0 ? 0 : Math.PI / 2) : (sx < 0 ? -Math.PI / 2 : Math.PI), sy < 0 ? (sx < 0 ? Math.PI / 2 : Math.PI) : (sx < 0 ? 0 : -Math.PI / 2)); ctx.stroke();
+  }
+}
+
+function drawPower(st) {
+  const { W, H } = st;
+  ctx.fillStyle = '#1b2340'; ctx.fillRect(-W, -H, W * 2, H * 2);
+  // grade de LED
+  ctx.strokeStyle = 'rgba(120,150,255,.08)'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let x = -W; x <= W; x += 30) { ctx.moveTo(x, -H); ctx.lineTo(x, H); }
+  for (let y = -H; y <= H; y += 30) { ctx.moveTo(-W, y); ctx.lineTo(W, y); }
+  ctx.stroke();
+  // metades com a cor de cada time
+  for (const [sx, c] of [[-1, 'rgba(229,86,75,.10)'], [1, 'rgba(79,134,232,.10)']]) {
+    ctx.fillStyle = c; ctx.fillRect(sx < 0 ? -W : 0, -H, W, H * 2);
+  }
+  const lvl = game.power || 0;
+  ctx.save();
+  ctx.shadowColor = POWER_COLOR[lvl] === '#ffffff' ? '#7ea8ff' : POWER_COLOR[lvl]; ctx.shadowBlur = 12;
+  ctx.strokeStyle = lvl ? POWER_COLOR[lvl] : '#a9bcff'; ctx.lineWidth = 3;
+  ctx.strokeRect(-W, -H, W * 2, H * 2);
+  ctx.beginPath(); ctx.moveTo(0, -H); ctx.lineTo(0, H); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, 0, st.circle, 0, Math.PI * 2); ctx.stroke();
+  for (const sx of [-1, 1]) {
+    ctx.beginPath();
+    ctx.arc(sx * W, 0, st.goal + 50, sx < 0 ? -Math.PI / 2 : Math.PI / 2, sx < 0 ? Math.PI / 2 : Math.PI * 1.5);
+    ctx.stroke();
+  }
+  ctx.restore();
+  // medidor de carga no círculo central
+  for (let i = 1; i <= 3; i++) {
+    ctx.beginPath(); ctx.arc(0, 0, st.circle - 12, -Math.PI / 2 + (i - 1) * (Math.PI * 2 / 3) + 0.08, -Math.PI / 2 + i * (Math.PI * 2 / 3) - 0.08);
+    ctx.strokeStyle = i <= lvl ? POWER_COLOR[i] : 'rgba(169,188,255,.15)'; ctx.lineWidth = 5; ctx.stroke();
   }
 }
 
@@ -830,11 +957,17 @@ function loadPrefs() {
 }
 function savePrefs() {
   try {
-    const ids = ['opt-name', 'opt-avatar', 'opt-mode', 'opt-team', 'opt-size', 'opt-diff', 'opt-stadium', 'opt-zoom', 'opt-time', 'opt-goals', 'opt-sound'];
+    const ids = ['opt-name', 'opt-avatar', 'opt-mode', 'opt-team', 'opt-size', 'opt-diff', 'opt-stadium', 'opt-zoom', 'opt-extrap', 'opt-time', 'opt-goals', 'opt-sound'];
     localStorage.setItem('chutebol', JSON.stringify(Object.fromEntries(ids.map((i) => [i, $(i).value]))));
   } catch { /* sem armazenamento */ }
 }
 
+$('opt-stadium').addEventListener('change', () => {
+  const st = STADIUMS[$('opt-stadium').value];
+  if (st && st.size) $('opt-size').value = String(st.size);
+});
+const showExtrap = () => { $('extrap-val').textContent = `${$('opt-extrap').value} ms`; };
+$('opt-extrap').addEventListener('input', showExtrap);
 $('btn-start').addEventListener('click', () => { savePrefs(); newGame(readOptions()); });
 $('btn-resume').addEventListener('click', togglePause);
 $('btn-pause').addEventListener('click', togglePause);
@@ -848,6 +981,7 @@ $('btn-menu').addEventListener('click', () => {
 addEventListener('touchstart', () => { touch.active = true; }, { once: true, passive: true });
 
 loadPrefs();
+showExtrap();
 setupTouch();
 resize();
 requestAnimationFrame(frame);

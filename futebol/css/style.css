@@ -98,3 +98,6 @@ kbd { background: #10160e; border: 1px solid #3a4a33; border-radius: 4px; paddin
 }
 #kick-btn.on { background: rgba(10,16,10,.6); }
 #banner.zoom { font-size: 28px; top: 70px; color: #fff; animation: none; }
+label.wide { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+label.wide input[type="range"] { flex: 1 1 100%; padding: 0; accent-color: #5fae4e; background: transparent; border: 0; }
+#extrap-val { font-variant-numeric: tabular-nums; opacity: .8; }

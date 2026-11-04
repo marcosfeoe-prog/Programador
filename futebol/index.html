@@ -76,6 +76,8 @@
             <option value="classic" selected>Clássico</option>
             <option value="big">Grande</option>
             <option value="hock">Hock (rinque de hóquei)</option>
+            <option value="futsal">Futsal x3 Bazinga</option>
+            <option value="power">Power Ball x3</option>
           </select>
         </label>
         <label>Zoom
@@ -86,6 +88,9 @@
             <option value="2.25">2.25x</option>
             <option value="2.5">2.5x</option>
           </select>
+        </label>
+        <label class="wide">Extrapolation <span id="extrap-val">0 ms</span>
+          <input id="opt-extrap" type="range" min="0" max="100" step="1" value="0" />
         </label>
         <label>Tempo
           <select id="opt-time">
@@ -118,6 +123,7 @@
         <p><b>1 jogador:</b> setas ou WASD para andar, <kbd>Espaço</kbd> ou <kbd>X</kbd> para chutar.</p>
         <p><b>2 jogadores:</b> J1 = WASD + <kbd>Espaço</kbd> · J2 = setas + <kbd>Enter</kbd> (ou <kbd>L</kbd>).</p>
         <p>Durante o jogo, as teclas <kbd>1</kbd> a <kbd>5</kbd> trocam o zoom (1.5x a 2.5x).</p>
+        <p><b>Extrapolation</b> (0 a 100 ms) desenha jogadores e bola um pouco à frente, na posição prevista.</p>
         <p>Segure o chute: o anel branco aparece e a bola sai quando encostar em você. <kbd>Esc</kbd> pausa.</p>
         <p>No celular: joystick à esquerda, botão de chute à direita.</p>
       </div>

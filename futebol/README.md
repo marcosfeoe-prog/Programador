@@ -31,6 +31,14 @@ e ele anda um pouco mais devagar. Para chutar de novo é preciso soltar e aperta
 - Quatro mapas: Pequeno, Clássico, Grande e **Hock**, um rinque de hóquei no gelo. No Hock
   os cantos são arredondados, os gols ficam dentro do rinque (dá para passar por trás deles),
   a bola vira um disco menor e o gelo escorrega: todos deslizam mais e o disco quase não perde velocidade.
+- **Futsal x3 Bazinga**: quadra coberta para 3×3, com piso de madeira, quadra azul, área em "D"
+  laranja, gols menores e pouca margem fora das linhas. A bola é mais pesada e quica menos.
+- **Power Ball x3**: campo escuro com linhas de LED para 3×3. Cada passe entre companheiros carrega
+  a bola: o chute fica 1,35x, 1,7x e até 2,1x mais forte. A bola muda de cor e o medidor no círculo
+  central mostra a carga. Quando o adversário toca na bola, ou quando sai gol, a carga zera.
+  Ao escolher um desses dois mapas, o menu já põe 3 jogadores por time.
+- **Extrapolation** de 0 (padrão) a 100 ms: jogadores e bola são desenhados um pouco à frente,
+  na posição prevista pela velocidade. A física não muda, só o desenho.
 - **Zoom** de 1.5x (padrão), 1.75x, 2.00x, 2.25x ou 2.5x, escolhido no menu ou trocado durante
   o jogo com as teclas `1` a `5`. A câmera segue a bola quando o campo não cabe na tela.
 - O placar mostra quem marcou, a assistência e os gols contra.
