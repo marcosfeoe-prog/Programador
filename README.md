@@ -154,3 +154,12 @@ Segundo jogo do repositório: exploração em primeira pessoa pelos **Níveis 0,
 noturna, câmera térmica…), qualidade gráfica **Baixa, Média, Alta e Ultra** e
 controles feitos para **celular**. Com o servidor rodando (`npm start`), abra
 `http://localhost:8080/liminar/`. Detalhes em [`liminar/README.md`](liminar/README.md).
+
+---
+
+# Chutebol — Futebol de Discos (pasta `futebol/`)
+
+Terceiro jogo do repositório: futebol com física visto de cima, de 1×1 a 4×4, contra
+bots ou com dois jogadores no mesmo teclado, com controles de toque para celular.
+Com o servidor rodando (`npm start`), abra `http://localhost:8080/futebol/`.
+Detalhes em [`futebol/README.md`](futebol/README.md).
