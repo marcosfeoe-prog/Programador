@@ -6,7 +6,7 @@ const TEAM_COLOR = ['#e5564b', '#4f86e8'];
 const TEAM_NAME = ['Vermelho', 'Azul'];
 
 // ---------------------------------------------------------------- física
-const PHYS = {
+const BASE_PHYS = {
   playerRadius: 15,
   playerInvMass: 0.5,
   playerDamping: 0.96,
@@ -25,7 +25,15 @@ const STADIUMS = {
   small:   { W: 300, H: 135, goal: 60, depth: 26, circle: 65, margin: 50 },
   classic: { W: 370, H: 170, goal: 64, depth: 30, circle: 75, margin: 60 },
   big:     { W: 550, H: 240, goal: 80, depth: 34, circle: 90, margin: 70 },
+  // Rinque de hóquei: cantos arredondados, gols dentro do rinque (dá para passar por trás),
+  // disco menor e gelo escorregadio.
+  hock: {
+    kind: 'hock', W: 400, H: 185, goal: 48, depth: 24, circle: 60, margin: 0, corner: 75, goalX: 330,
+    phys: { accel: 0.05, kickingAccel: 0.035, playerDamping: 0.985, ballRadius: 7, ballDamping: 0.996, ballBounce: 0.8, kickStrength: 4.6 },
+  },
 };
+
+const ZOOMS = [1.5, 1.75, 2, 2.25, 2.5];
 
 const BOT_NAMES = ['Tico', 'Bola7', 'Zé', 'Rafa', 'Nando', 'Lulu', 'Pedrão', 'Kaká', 'Juba',
   'Dudu', 'Mel', 'Tuca', 'Biel', 'Lia', 'Caju', 'Fumaça'];
@@ -36,29 +44,50 @@ function disc(x, y, r, invMass, damping, bounce) {
 
 function buildStadium(s) {
   const { W, H, goal, depth } = s;
+  const hock = s.kind === 'hock';
+  const GX = s.goalX ?? W;   // x da linha do gol
   const ballSegs = [];   // só a bola colide (linhas do campo)
-  const allSegs = [];    // bola e jogadores (redes)
+  const allSegs = [];    // bola e jogadores (redes, muretas)
+  const netSegs = [];
   const seg = (ax, ay, bx, by, bounce) => ({ ax, ay, bx, by, bounce });
-  ballSegs.push(seg(-W, -H, W, -H, 1), seg(-W, H, W, H, 1));
+  if (hock) {
+    // mureta do rinque com cantos arredondados
+    const rc = s.corner, pts = [];
+    const corners = [[W - rc, -H + rc, -Math.PI / 2], [W - rc, H - rc, 0], [-W + rc, H - rc, Math.PI / 2], [-W + rc, -H + rc, Math.PI]];
+    for (const [cx, cy, a0] of corners) {
+      for (let i = 0; i <= 8; i++) {
+        const a = a0 + (Math.PI / 2) * (i / 8);
+        pts.push([cx + rc * Math.cos(a), cy + rc * Math.sin(a)]);
+      }
+    }
+    for (let i = 0; i < pts.length; i++) {
+      const [ax, ay] = pts[i], [bx, by] = pts[(i + 1) % pts.length];
+      allSegs.push(seg(ax, ay, bx, by, 1));
+    }
+  } else {
+    ballSegs.push(seg(-W, -H, W, -H, 1), seg(-W, H, W, H, 1));
+    for (const sx of [-1, 1]) ballSegs.push(seg(sx * W, -H, sx * W, -goal, 1), seg(sx * W, goal, sx * W, H, 1));
+  }
   for (const sx of [-1, 1]) {
-    ballSegs.push(seg(sx * W, -H, sx * W, -goal, 1), seg(sx * W, goal, sx * W, H, 1));
     // Rede curva (meia elipse) atrás de cada gol
     const n = 14;
-    let px = sx * W, py = -goal;
+    let px = sx * GX, py = -goal;
     for (let i = 1; i <= n; i++) {
       const a = -Math.PI / 2 + (Math.PI * i) / n;
-      const x = sx * (W + depth * Math.cos(a)), y = goal * Math.sin(a);
-      allSegs.push(seg(px, py, x, y, 0.1));
+      const x = sx * (GX + depth * Math.cos(a)), y = goal * Math.sin(a);
+      const sg = seg(px, py, x, y, 0.1);
+      allSegs.push(sg); netSegs.push(sg);
       px = x; py = y;
     }
   }
   const posts = [];
   for (const sx of [-1, 1]) for (const sy of [-1, 1]) {
-    const p = disc(sx * W, sy * goal, 8, 0, 0, 0.5);
+    const p = disc(sx * GX, sy * goal, hock ? 6 : 8, 0, 0, 0.5);
     p.team = sx < 0 ? RED : BLUE;
     posts.push(p);
   }
-  return { ...s, ballSegs, allSegs, posts };
+  const AX = hock ? W : W + s.margin, AY = hock ? H : H + s.margin;
+  return { ...s, goalX: GX, ballSegs, allSegs, netSegs, posts, AX, AY };
 }
 
 function collideDiscs(a, b) {
@@ -168,6 +197,8 @@ addEventListener('keydown', (e) => {
   if (e.target instanceof HTMLInputElement) return;
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
   if (e.code === 'Escape' || e.code === 'KeyP') { if (!e.repeat) togglePause(); return; }
+  const zi = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5'].indexOf(e.code);
+  if (zi >= 0 && game) { setZoom(ZOOMS[zi]); return; }
   keys.add(e.code);
 });
 addEventListener('keyup', (e) => keys.delete(e.code));
@@ -239,6 +270,7 @@ function readOptions() {
     size: +$('opt-size').value,
     diff: +$('opt-diff').value,
     stadium: $('opt-stadium').value,
+    zoom: +$('opt-zoom').value || 1.5,
     time: +$('opt-time').value * 60,
     goals: +$('opt-goals').value,
     sound: $('opt-sound').value === '1',
@@ -246,7 +278,8 @@ function readOptions() {
 }
 
 function newGame(opt) {
-  const st = buildStadium(STADIUMS[opt.stadium]);
+  const st = buildStadium(STADIUMS[opt.stadium] || STADIUMS.classic);
+  const PHYS = { ...BASE_PHYS, ...(st.phys || {}) };
   const players = [];
   const names = BOT_NAMES.slice().sort(() => Math.random() - 0.5);
   let botN = 0;
@@ -271,7 +304,7 @@ function newGame(opt) {
   }
   const ball = disc(0, 0, PHYS.ballRadius, PHYS.ballInvMass, PHYS.ballDamping, PHYS.ballBounce);
   game = {
-    opt, st, players, ball,
+    opt, st, players, ball, phys: PHYS, zoom: opt.zoom, cam: { x: 0, y: 0 },
     score: [0, 0], ticks: 0, state: 'kickoff', kickoffTeam: Math.random() < 0.5 ? RED : BLUE,
     timer: 0, overtime: false, lastTouch: null, prevTouch: null, flash: 0, over: false,
   };
@@ -307,7 +340,7 @@ function resetPositions() {
     const side = team === RED ? -1 : 1;
     list.forEach((p, i) => {
       const [fx, fy] = formation(list.length, i);
-      p.x = side * fx * st.W; p.y = fy * st.H;
+      p.x = side * fx * st.goalX; p.y = fy * st.H * (st.kind === "hock" ? 0.8 : 1);
       if (i === 0 && team === game.kickoffTeam) p.x = side * (st.circle * 0.5);
       p.vx = p.vy = 0; p.kickReady = true;
     });
@@ -323,7 +356,7 @@ function inputFor(p) {
 }
 
 function step() {
-  const g = game, { st, players, ball } = g;
+  const g = game, { st, players, ball } = g, PHYS = g.phys;
   g.ticks++;
   if (g.state === 'goal' || g.state === 'over') {
     g.flash--;
@@ -387,7 +420,8 @@ function step() {
   if (g.state === 'kickoff' && (Math.abs(ball.vx) > 0.01 || Math.abs(ball.vy) > 0.01)) g.state = 'play';
   if (g.state === 'play') {
     g.timer++;
-    if (Math.abs(ball.x) > st.W + ball.r * 0 && Math.abs(ball.y) < st.goal) {
+    const ax = Math.abs(ball.x);
+    if (ax > st.goalX && ax < st.goalX + st.depth + 4 && Math.abs(ball.y) < st.goal) {
       const scorer = ball.x > 0 ? RED : BLUE;
       goal(scorer);
     } else if (g.opt.time && g.timer >= g.opt.time * 60 && !g.overtime) {
@@ -476,7 +510,7 @@ function botThink(p) {
   // na saída de bola, o time que não sai espera
   if (g.state === 'kickoff' && p.team !== g.kickoffTeam) return seek(p, p.x, p.y, 0);
 
-  const attackX = p.team === RED ? st.W : -st.W;
+  const attackX = p.team === RED ? st.goalX : -st.goalX;
   const ownX = -attackX;
   const mates = players.filter((q) => q.team === p.team);
   const dist = (q) => Math.hypot(q.x - ball.x, q.y - ball.y);
@@ -502,8 +536,9 @@ function botThink(p) {
 
   if (rank === 0 || (rank === 1 && mates.length >= 4 && dist(p) < 120)) {
     // atacante: posiciona atrás da bola na direção do gol
-    const aimY = Math.max(-st.goal * 0.6, Math.min(st.goal * 0.6, by * 0.3)) + (b.err || 0);
-    let dx = attackX - bx, dy = aimY - by;
+    let aimX = attackX, aimY = Math.max(-st.goal * 0.6, Math.min(st.goal * 0.6, by * 0.3)) + (b.err || 0);
+    if (Math.abs(bx) > st.goalX - 10) { aimX = attackX * 0.75; aimY = 0; }
+    let dx = aimX - bx, dy = aimY - by;
     const dl = Math.hypot(dx, dy); dx /= dl; dy /= dl;
     const behind = (p.x - bx) * dx + (p.y - by) * dy; // < 0 = atrás da bola (bom)
     const reach = p.r + ball.r;
@@ -520,7 +555,7 @@ function botThink(p) {
     const tb = Math.hypot(ball.x - p.x, ball.y - p.y);
     const nx = (ball.x - p.x) / tb, ny = (ball.y - p.y) / tb;
     const aligned = nx * dx + ny * dy;
-    const near = tb - reach < PHYS.kickReach + 1;
+    const near = tb - reach < g.phys.kickReach + 1;
     // chuta se alinhado com o gol, ou afasta o perigo perto do próprio gol
     const danger = Math.abs(ball.x - ownX) < st.W * 0.45 && nx * Math.sign(ownX) < 0.2;
     const distGoal = Math.abs(attackX - ball.x);
@@ -550,6 +585,15 @@ function seek(p, tx, ty, eager, kick = false) {
   const il = Math.hypot(ix, iy);
   if (il > 1) { ix /= il; iy /= il; }
   return { x: ix, y: iy, kick };
+}
+
+function setZoom(z) {
+  game.zoom = z;
+  $('opt-zoom').value = String(z);
+  savePrefs();
+  if (game.state === 'goal' || game.bannerT > 0 && !$('banner').classList.contains('zoom')) return;
+  showBanner(`Zoom ${z.toFixed(2)}x`, '', 'zoom');
+  game.bannerT = 50;
 }
 
 // ---------------------------------------------------------------- HUD
@@ -612,46 +656,38 @@ function grassPattern(s) {
 function draw() {
   const W = canvas.width, H = canvas.height;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.fillStyle = '#3f5a36'; ctx.fillRect(0, 0, W, H);
-  if (!game) return drawIdle();
+  if (!game) { ctx.fillStyle = '#3f5a36'; ctx.fillRect(0, 0, W, H); return drawIdle(); }
   const { st, players, ball } = game;
-  const fw = (st.W + st.margin) * 2, fh = (st.H + st.margin) * 2;
-  const s = Math.min(W / fw, (H - 50 * view.dpr) / fh) * 0.98;
-  ctx.setTransform(s, 0, 0, s, W / 2, H / 2 + 18 * view.dpr);
+  const hock = st.kind === 'hock';
+  ctx.fillStyle = hock ? '#2a3440' : '#3f5a36'; ctx.fillRect(0, 0, W, H);
 
-  // campo
-  ctx.save();
-  ctx.translate(-st.W, 0);
-  ctx.fillStyle = grassPattern(1);
-  ctx.fillRect(0, -st.H, st.W * 2, st.H * 2);
-  ctx.restore();
+  // câmera: escala pelo zoom (relativa ao tamanho da tela) e segue a bola
+  const base = Math.max(0.4, Math.min(1, innerWidth / 1280, innerHeight / 720));
+  const s = game.zoom * base * view.dpr;
+  const top = 50 * view.dpr; // espaço do placar
+  const hw = W / (2 * s), hh = (H - top) / (2 * s);
+  const cam = game.cam;
+  const ex = st.AX + 20, ey = st.AY + 20;
+  const clampC = (v, half, ext) => (half >= ext ? 0 : Math.max(-ext + half, Math.min(ext - half, v)));
+  const tx = clampC(ball.x, hw, ex), ty = clampC(ball.y, hh, ey);
+  cam.x += (tx - cam.x) * 0.12; cam.y += (ty - cam.y) * 0.12;
+  cam.x = clampC(cam.x, hw, ex); cam.y = clampC(cam.y, hh, ey);
+  ctx.setTransform(s, 0, 0, s, W / 2 - cam.x * s, top + (H - top) / 2 - cam.y * s);
 
-  ctx.strokeStyle = '#d2e8c6'; ctx.lineWidth = 3;
-  ctx.strokeRect(-st.W, -st.H, st.W * 2, st.H * 2);
-  ctx.beginPath(); ctx.moveTo(0, -st.H); ctx.lineTo(0, st.H); ctx.stroke();
-  ctx.beginPath(); ctx.arc(0, 0, st.circle, 0, Math.PI * 2); ctx.stroke();
-  ctx.fillStyle = '#d2e8c6';
-  ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI * 2); ctx.fill();
-  // áreas
-  for (const sx of [-1, 1]) {
-    ctx.beginPath();
-    ctx.arc(sx * st.W, 0, st.goal + 55, sx < 0 ? -Math.PI / 2 : Math.PI / 2, sx < 0 ? Math.PI / 2 : Math.PI * 1.5);
-    ctx.stroke();
-  }
+  if (hock) drawRink(st); else drawPitch(st);
+
   // barreira da saída de bola
   if (game.state === 'kickoff') {
     const side = game.kickoffTeam === RED ? 1 : -1;
-    ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.setLineDash([6, 6]);
+    ctx.strokeStyle = hock ? 'rgba(30,40,60,.4)' : 'rgba(255,255,255,.35)'; ctx.lineWidth = 2; ctx.setLineDash([6, 6]);
     ctx.beginPath(); ctx.arc(0, 0, st.circle, side > 0 ? -Math.PI / 2 : Math.PI / 2, side > 0 ? Math.PI / 2 : Math.PI * 1.5);
     ctx.stroke(); ctx.setLineDash([]);
   }
   // redes
   ctx.strokeStyle = '#111'; ctx.lineWidth = 3; ctx.lineCap = 'round';
-  for (const sx of [-1, 1]) {
-    ctx.beginPath();
-    for (const sg of st.allSegs) if (Math.sign(sg.ax) === sx) { ctx.moveTo(sg.ax, sg.ay); ctx.lineTo(sg.bx, sg.by); }
-    ctx.stroke();
-  }
+  ctx.beginPath();
+  for (const sg of st.netSegs) { ctx.moveTo(sg.ax, sg.ay); ctx.lineTo(sg.bx, sg.by); }
+  ctx.stroke();
   // traves
   for (const p of st.posts) {
     ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
@@ -664,7 +700,7 @@ function draw() {
   for (const p of players) {
     if (p.control !== 'bot') {
       ctx.beginPath(); ctx.arc(p.x, p.y, p.r + 9, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(255,255,255,.28)'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.strokeStyle = hock ? 'rgba(20,30,45,.3)' : 'rgba(255,255,255,.28)'; ctx.lineWidth = 2; ctx.stroke();
     }
     ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
     ctx.fillStyle = TEAM_COLOR[p.team]; ctx.fill();
@@ -677,12 +713,92 @@ function draw() {
       ctx.fillText(p.avatar, p.x, p.y + 1);
     }
     ctx.font = '600 11px system-ui, sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,.88)';
+    ctx.fillStyle = hock ? 'rgba(20,30,45,.85)' : 'rgba(255,255,255,.88)';
     ctx.fillText(p.name, p.x, p.y + p.r + 12);
   }
   // bola
   ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
-  ctx.fillStyle = '#fff'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#111'; ctx.stroke();
+  ctx.fillStyle = hock ? '#15181c' : '#fff'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = hock ? '#000' : '#111'; ctx.stroke();
+  if (hock) { ctx.beginPath(); ctx.arc(ball.x - 1.5, ball.y - 1.5, ball.r * 0.45, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.fill(); }
+}
+
+function drawPitch(st) {
+  ctx.save();
+  ctx.translate(-st.W, 0);
+  ctx.fillStyle = grassPattern(1);
+  ctx.fillRect(0, -st.H, st.W * 2, st.H * 2);
+  ctx.restore();
+  ctx.strokeStyle = '#d2e8c6'; ctx.lineWidth = 3;
+  ctx.strokeRect(-st.W, -st.H, st.W * 2, st.H * 2);
+  ctx.beginPath(); ctx.moveTo(0, -st.H); ctx.lineTo(0, st.H); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, 0, st.circle, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = '#d2e8c6';
+  ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI * 2); ctx.fill();
+  for (const sx of [-1, 1]) {
+    ctx.beginPath();
+    ctx.arc(sx * st.W, 0, st.goal + 55, sx < 0 ? -Math.PI / 2 : Math.PI / 2, sx < 0 ? Math.PI / 2 : Math.PI * 1.5);
+    ctx.stroke();
+  }
+}
+
+function rinkPath(st, inset = 0) {
+  const W = st.W - inset, H = st.H - inset, r = st.corner - inset;
+  ctx.beginPath();
+  ctx.moveTo(-W + r, -H);
+  ctx.arcTo(W, -H, W, H, r); ctx.arcTo(W, H, -W, H, r);
+  ctx.arcTo(-W, H, -W, -H, r); ctx.arcTo(-W, -H, W, -H, r);
+  ctx.closePath();
+}
+
+function drawRink(st) {
+  // gelo
+  rinkPath(st);
+  const g = ctx.createLinearGradient(0, -st.H, 0, st.H);
+  g.addColorStop(0, '#eef5f9'); g.addColorStop(0.5, '#e2edf3'); g.addColorStop(1, '#eef5f9');
+  ctx.fillStyle = g; ctx.fill();
+  ctx.save(); rinkPath(st); ctx.clip();
+  // marcas de patins
+  ctx.strokeStyle = 'rgba(120,150,175,.12)'; ctx.lineWidth = 1;
+  let seed = 7;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  for (let i = 0; i < 60; i++) {
+    const x = (rnd() * 2 - 1) * st.W, y = (rnd() * 2 - 1) * st.H, a = rnd() * Math.PI;
+    ctx.beginPath(); ctx.arc(x, y, 30 + rnd() * 80, a, a + 0.6 + rnd()); ctx.stroke();
+  }
+  // linhas: central vermelha, azuis, linhas do gol
+  ctx.fillStyle = 'rgba(200,40,45,.75)'; ctx.fillRect(-3, -st.H, 6, st.H * 2);
+  ctx.fillStyle = 'rgba(40,80,190,.7)';
+  for (const sx of [-1, 1]) ctx.fillRect(sx * st.W * 0.33 - 4, -st.H, 8, st.H * 2);
+  ctx.fillStyle = 'rgba(200,40,45,.6)';
+  for (const sx of [-1, 1]) ctx.fillRect(sx * st.goalX - 1.5, -st.H, 3, st.H * 2);
+  ctx.restore();
+  // área do goleiro (semicírculo azul claro)
+  for (const sx of [-1, 1]) {
+    ctx.beginPath();
+    ctx.arc(sx * st.goalX, 0, st.goal + 14, sx < 0 ? -Math.PI / 2 : Math.PI / 2, sx < 0 ? Math.PI / 2 : Math.PI * 1.5);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(90,160,230,.28)'; ctx.fill();
+    ctx.strokeStyle = 'rgba(200,40,45,.6)'; ctx.lineWidth = 2; ctx.stroke();
+  }
+  // círculos de face-off
+  ctx.strokeStyle = 'rgba(40,80,190,.75)'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(0, 0, st.circle, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = 'rgba(40,80,190,.85)';
+  ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(200,40,45,.6)'; ctx.lineWidth = 2;
+  for (const sx of [-1, 1]) for (const sy of [-1, 1]) {
+    const x = sx * (st.goalX - 75), y = sy * st.H * 0.5;
+    ctx.beginPath(); ctx.arc(x, y, 36, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = 'rgba(200,40,45,.7)';
+    ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
+  }
+  // mureta
+  rinkPath(st, -4);
+  ctx.strokeStyle = '#f4f6f8'; ctx.lineWidth = 8; ctx.stroke();
+  rinkPath(st, -9);
+  ctx.strokeStyle = '#d8b13a'; ctx.lineWidth = 3; ctx.stroke();
+  rinkPath(st);
+  ctx.strokeStyle = '#1b222b'; ctx.lineWidth = 2; ctx.stroke();
 }
 
 function drawIdle() {
@@ -714,7 +830,7 @@ function loadPrefs() {
 }
 function savePrefs() {
   try {
-    const ids = ['opt-name', 'opt-avatar', 'opt-mode', 'opt-team', 'opt-size', 'opt-diff', 'opt-stadium', 'opt-time', 'opt-goals', 'opt-sound'];
+    const ids = ['opt-name', 'opt-avatar', 'opt-mode', 'opt-team', 'opt-size', 'opt-diff', 'opt-stadium', 'opt-zoom', 'opt-time', 'opt-goals', 'opt-sound'];
     localStorage.setItem('chutebol', JSON.stringify(Object.fromEntries(ids.map((i) => [i, $(i).value]))));
   } catch { /* sem armazenamento */ }
 }

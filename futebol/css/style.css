@@ -85,7 +85,7 @@ kbd { background: #10160e; border: 1px solid #3a4a33; border-radius: 4px; paddin
 #touch { position: fixed; inset: 0; pointer-events: none; }
 #stick {
   position: absolute; left: 28px; bottom: 28px; width: 130px; height: 130px; border-radius: 50%;
-  background: rgba(255,255,255,.1); border: 2px solid rgba(255,255,255,.25); pointer-events: auto;
+  background: rgba(10,16,10,.28); border: 2px solid rgba(255,255,255,.35); pointer-events: auto;
 }
 #knob {
   position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px;
@@ -93,7 +93,8 @@ kbd { background: #10160e; border: 1px solid #3a4a33; border-radius: 4px; paddin
 }
 #kick-btn {
   position: absolute; right: 30px; bottom: 40px; width: 96px; height: 96px; border-radius: 50%;
-  background: rgba(255,255,255,.18); border: 2px solid rgba(255,255,255,.4);
+  background: rgba(10,16,10,.35); border: 2px solid rgba(255,255,255,.45);
   color: #fff; font-weight: 900; pointer-events: auto;
 }
-#kick-btn.on { background: rgba(255,255,255,.45); }
+#kick-btn.on { background: rgba(10,16,10,.6); }
+#banner.zoom { font-size: 28px; top: 70px; color: #fff; animation: none; }

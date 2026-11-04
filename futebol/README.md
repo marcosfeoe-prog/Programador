@@ -28,7 +28,11 @@ e ele anda um pouco mais devagar. Para chutar de novo é preciso soltar e aperta
   no próprio campo e fora do círculo até a bola ser tocada. O cronômetro só corre com a bola em jogo.
 - Limite de **tempo** (2, 3, 5, 10 min ou sem limite) e de **gols** (3, 5, 7 ou sem limite).
   Empate no fim do tempo leva à **prorrogação com gol de ouro**.
-- Três estádios: Pequeno, Clássico e Grande.
+- Quatro mapas: Pequeno, Clássico, Grande e **Hock**, um rinque de hóquei no gelo. No Hock
+  os cantos são arredondados, os gols ficam dentro do rinque (dá para passar por trás deles),
+  a bola vira um disco menor e o gelo escorrega: todos deslizam mais e o disco quase não perde velocidade.
+- **Zoom** de 1.5x (padrão), 1.75x, 2.00x, 2.25x ou 2.5x, escolhido no menu ou trocado durante
+  o jogo com as teclas `1` a `5`. A câmera segue a bola quando o campo não cabe na tela.
 - O placar mostra quem marcou, a assistência e os gols contra.
 
 ## Física (passo fixo de 60 Hz)
