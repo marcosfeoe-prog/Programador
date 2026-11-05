@@ -454,6 +454,21 @@ export class Level1 extends Level {
     this.lever.rotation.x = this.leverA;
   }
 
+  compassTarget() {
+    const E = this.elev;
+    if (this.shutterY > 2.4 || this.powered) return { x: (E.x0 + E.x1) / 2, z: (E.z0 + E.z1) / 2 };
+    if (this.inserted || this.fuses >= 3) return { x: this.breaker.x, z: this.breaker.z + 0.9 };
+    const p = this.game.player.pos;
+    let best = null;
+    for (const k of this.pickups) {
+      if (k.kind !== 'fuse' || k.taken) continue;
+      const o = k.obj.position;
+      const d = Math.hypot(o.x - p.x, o.z - p.z);
+      if (!best || d < best.d) best = { x: o.x, z: o.z, d };
+    }
+    return best;
+  }
+
   surfaceAt(x, z) {
     for (const p of this.puddles) if (Math.hypot(p.x - x, p.z - z) < p.r) return 'wet';
     return 'concrete';

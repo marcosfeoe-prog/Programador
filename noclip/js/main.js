@@ -403,6 +403,10 @@ class Game {
     this.playTime += dt;
     if (inp.take('pause')) return this.pause();
     if (inp.take('hud')) document.getElementById('hud').classList.toggle('hidden');
+    if (inp.take('compass')) {
+      settings.compass = !settings.compass;
+      save();
+    }
     if (inp.take('fs')) {
       if (document.fullscreenElement) document.exitFullscreen();
       else document.documentElement.requestFullscreen && document.documentElement.requestFullscreen().catch(() => {});
@@ -464,6 +468,7 @@ class Game {
       this._objT = 0.25;
       this.updateObjective();
     }
+    this.updateCompass();
     if (p.battery < 0.15 && !this._lowWarn && p.flashOn) {
       this._lowWarn = true;
       this.ui.toast(t('t_flash_low'));
@@ -478,6 +483,36 @@ class Game {
       save();
       this.ui.setPrompt(null);
     }
+  }
+
+  // Bússola: aponta pelo caminho (campo de fluxo) até o próximo objetivo / a saída.
+  updateCompass() {
+    const c = (this._cmp ||= { root: document.getElementById('compass'), arrow: document.getElementById('compass-arrow'), dist: document.getElementById('compass-dist') });
+    const L = this.level;
+    const tg = settings.compass && L.nav && L.compassTarget ? L.compassTarget() : null;
+    c.root.classList.toggle('hidden', !tg);
+    if (!tg) return;
+    const p = this.player.pos, g = L.grid;
+    let dx = tg.x - p.x, dz = tg.z - p.z;
+    const straight = Math.hypot(dx, dz);
+    if (straight > 2.5 && !g.visible(p.x, 1.2, p.z, tg.x, 1.2, tg.z)) {
+      const f = L.nav.field(tg.x, tg.z, 'compass', 0, L.time);
+      let x = p.x, z = p.z;
+      for (let k = 0; k < 10; k++) {
+        const d = L.nav.descend(f, x, z);
+        if (!d) break;
+        x += d.x * g.cs;
+        z += d.z * g.cs;
+      }
+      if (Math.hypot(x - p.x, z - p.z) > 0.2) {
+        dx = x - p.x;
+        dz = z - p.z;
+      }
+    }
+    const rel = wrapAngle(Math.atan2(-dx, -dz) - this.player.yaw);
+    c.arrow.style.transform = `rotate(${(-rel * 180) / Math.PI}deg)`;
+    const txt = Math.round(straight) + ' m';
+    if (c.dist.textContent !== txt) c.dist.textContent = txt;
   }
 
   dyingFrame(dt) {

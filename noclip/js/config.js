@@ -21,6 +21,7 @@ const defaults = () => ({
   bob: true,
   fps: false,
   dynres: isTouch(),
+  compass: true,
 });
 
 export const settings = defaults();

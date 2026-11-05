@@ -44,6 +44,7 @@ export class Player {
     if (this.battery === undefined) this.battery = 1;
     if (this.flashOn === undefined) this.flashOn = true;
     this.frozen = false;
+    this.pit = false;
   }
 
   update(dt, input, level) {
@@ -98,7 +99,7 @@ export class Player {
     if (!this.onGround) {
       this.vy -= 9.8 * dt;
       this.pos.y += this.vy * dt;
-      if (this.pos.y <= 0) {
+      if (this.pos.y <= 0 && !this.pit) {
         this.pos.y = 0;
         this.land = Math.min(1, -this.vy / 5);
         this.vy = 0;

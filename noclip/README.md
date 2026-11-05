@@ -24,7 +24,7 @@ precisa ser servido por HTTP (abrir o arquivo direto do disco não funciona).
 
 | Nível | Como é | Perigo | Saída |
 |---|---|---|---|
-| **Nível 0 — O Saguão** | Labirinto de papel de parede amarelo listrado, carpete úmido com manchas, forro de placas e luminárias fluorescentes que zumbem e piscam; salões com pilares, corredores estreitos e zonas escuras. | **O Rastejador**: humanoide magro e pálido, de quatro, cabelo preto comprido. Vaga, fareja, ouve passos (correr faz barulho, agachar é quase silencioso), persegue e ataca. | Quatro dígitos pintados em vermelho nas paredes, um em cada canto do saguão. Olhe para eles para anotar; digite o código no teclado da **porta de manutenção**. |
+| **Nível 0 — O Saguão** | Labirinto de papel de parede amarelo listrado, carpete úmido com manchas, forro de placas e luminárias fluorescentes que zumbem e piscam; salões com pilares, corredores estreitos e zonas escuras. Num canto fica **As Armadilhas**: um salão de carpete podre com uma grade de poços no chão e passarelas estreitas; alguns buracos estão escondidos sob o carpete e cedem quando você pisa. Quem cai vai parar direto no Nível 1. | **O Rastejador**: humanoide magro e pálido, de quatro, cabelo preto comprido. Vaga, fareja, ouve passos (correr faz barulho, agachar é quase silencioso), persegue e ataca. | Quatro dígitos pintados em vermelho nas paredes, um em cada canto do saguão. Olhe para eles para anotar; digite o código no teclado da **porta de manutenção**. |
 | **Nível 1 — Zona Habitável** | Armazém de concreto sem fim: pilares, paredes de bloco pintado, estantes metálicas com caixas, caixotes, paletes, poças d'água que refletem a lanterna e lâmpadas industriais penduradas. | **Apagões** de tempos em tempos, e no escuro aparecem os **Sorridentes**: olhos e sorriso que brilham, se aproximam devagar e somem com a luz forte da lanterna. | Ache os **3 fusíveis** (brilham em cima de caixotes), coloque-os no **quadro de força**, puxe a **alavanca** e entre no **elevador de carga** quando a porta de enrolar subir. |
 | **Nível Fun =) — A Festa** | Salas amarelas ligadas por arcos rosa-salmão com batentes azuis, carpete vinho com confete, desenhos de giz de cera nas paredes, varais de lâmpadas coloridas, balões que balançam, mesas com toalha, pratos, copos, chapéus e bolo. | **Os Festeiros**: figuras altas cor de mostarda com um sorriso desenhado. Andam gingando, acenam, inclinam a cabeça quando veem você, riem e correm para "abraçar". | Abra os **presentes de fita dourada** para pegar as **3 chaves** (os outros às vezes só soltam confete, às vezes trazem itens… às vezes fazem barulho demais). Destranque os **3 cadeados** da porta **FUN EXIT**. |
 
@@ -40,6 +40,7 @@ podem ser escolhidos no menu **Níveis**.
   **Pilhas** recarregam.
 - **Fôlego**: correr gasta; sem fôlego você fica lento até recuperar.
 - **Microfone** (canto inferior direito): mostra quanto barulho você está fazendo.
+- **Bússola** (topo da tela): a seta aponta pelo caminho, contornando as paredes, até o próximo objetivo (dígito, fusível, presente dourado) e depois até a saída, com a distância em metros. Liga e desliga com N ou em Configurações.
 - **Bilhetes** contam o que aconteceu com quem passou antes (e dão dicas).
 
 ## Controles
@@ -54,6 +55,7 @@ podem ser escolhidos no menu **Níveis**.
 | E ou clique | usar / pegar / ler |
 | F ou botão direito | lanterna |
 | R | chacoalhar a lanterna |
+| N | bússola |
 | Esc / P | pausa |
 | H | esconder o HUD |
 | G | tela cheia |

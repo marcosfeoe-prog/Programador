@@ -167,7 +167,7 @@ export class Level {
     const lmOpts = { lightMap: res.lm, flickMap: res.flick };
     const s = this.surf;
     const surface = (def, kinds) => {
-      const geo = quadsGeometry(quads, atlas, kinds, def.scale);
+      const geo = quadsGeometry(quads, atlas, kinds, def.scale, grid);
       const m = gameMaterial({
         map: def.tex ? tex(def.tex + '.jpg') : null,
         normalMap: def.tex && def.normal !== false ? tex(def.tex + '_n.jpg', { srgb: false }) : null,

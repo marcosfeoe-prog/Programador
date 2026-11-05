@@ -236,10 +236,11 @@ const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const at = (q, s, t) => [q.o[0] + q.u[0] * s + q.v[0] * t, q.o[1] + q.u[1] * s + q.v[1] * t, q.o[2] + q.u[2] * s + q.v[2] * t];
 
 // Geometria das faces de um tipo, com uv0 em metros/escala e uv1 do atlas.
-export function quadsGeometry(quads, atlas, kinds, scale) {
+export function quadsGeometry(quads, atlas, kinds, scale, grid = null) {
   const gb = new GeoBuilder();
   for (const q of quads) {
     if (!kinds.includes(q.kind)) continue;
+    if (q.kind === K_FLOOR && grid && floorWithHoles(gb, q, atlas, scale, grid)) continue;
     const P = [at(q, 0, 0), at(q, q.lu, 0), at(q, q.lu, q.lv), at(q, 0, q.lv)];
     const su = Array.isArray(scale) ? scale[0] : scale, sv = Array.isArray(scale) ? scale[1] : scale;
     const uv = P.map((p) => [dot(p, q.u) / su, dot(p, q.v) / sv]);
@@ -247,6 +248,43 @@ export function quadsGeometry(quads, atlas, kinds, scale) {
     gb.quad(P, q.n, uv, L);
   }
   return gb.build();
+}
+
+// Piso recortado pelos buracos da grade: uma faixa por corrida de células sem buraco.
+function floorWithHoles(gb, q, atlas, scale, grid) {
+  const cs = grid.cs;
+  const x0 = q.o[0], z1 = q.o[2], z0 = z1 - q.lv;
+  const c0 = Math.round(x0 / cs), c1 = Math.round((x0 + q.lu) / cs);
+  const r0 = Math.round(z0 / cs), r1 = Math.round(z1 / cs);
+  let any = false;
+  for (let r = r0; r < r1 && !any; r++) for (let c = c0; c < c1; c++) if (grid.holes[r * grid.w + c]) any = true;
+  if (!any) return false;
+  const su = Array.isArray(scale) ? scale[0] : scale, sv = Array.isArray(scale) ? scale[1] : scale;
+  for (let r = r0; r < r1; r++) {
+    let a = -1;
+    for (let c = c0; c <= c1; c++) {
+      const solid = c < c1 && !grid.holes[r * grid.w + c];
+      if (solid && a < 0) a = c;
+      if (!solid && a >= 0) {
+        floorRect(gb, q, atlas, a * cs, r * cs, c * cs, (r + 1) * cs, su, sv);
+        a = -1;
+      }
+    }
+  }
+  return true;
+}
+
+// Retângulo de piso [xa,xb]x[za,zb] com uv0 em metros e uv1 do chart da face q.
+export function floorRect(gb, q, atlas, xa, za, xb, zb, su = 1, sv = 1, y = 0) {
+  const P = [
+    [xa, y, zb],
+    [xb, y, zb],
+    [xb, y, za],
+    [xa, y, za],
+  ];
+  const uv = P.map((p) => [p[0] / su, -p[2] / sv]);
+  const L = P.map((p) => chartUV(q, atlas, p[0] - q.o[0], q.o[2] - p[2]));
+  gb.quad(P, [0, 1, 0], uv, L);
 }
 
 // Rodapé ao longo das paredes que tocam o chão.

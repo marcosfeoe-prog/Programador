@@ -12,6 +12,7 @@ const ACTIONS = {
   KeyP: 'pause',
   KeyH: 'hud',
   KeyG: 'fs',
+  KeyN: 'compass',
   Enter: 'enter',
   Backspace: 'back',
 };

@@ -150,6 +150,7 @@ export class UI {
       },
     ];
     row('s_invert', ...tog('invertY'));
+    row('s_compass', ...tog('compass'));
     row('s_bob', ...tog('bob'));
     row('s_dynres', ...tog('dynres'));
     row('s_fps', ...tog('fps'));

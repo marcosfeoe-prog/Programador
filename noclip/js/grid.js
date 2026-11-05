@@ -18,6 +18,7 @@ export class Grid {
     this.propLo = new Float32Array(w * h).fill(1e9);
     this.propHi = new Float32Array(w * h).fill(-1e9);
     this.nav = new Uint8Array(w * h);
+    this.holes = new Uint8Array(w * h); // 1 = buraco aberto no piso, 2 = buraco escondido
     this.colliders = [];
     this.buckets = new Map();
   }
@@ -118,7 +119,7 @@ export class Grid {
       }
       this.lo[i] = lo;
       this.hi[i] = hi;
-      if (t === WALL) this.nav[i] = 1;
+      if (t === WALL || this.holes[i]) this.nav[i] = 1;
       else if (this.nav[i] !== 2) this.nav[i] = 0;
     }
   }
@@ -204,6 +205,11 @@ export class Grid {
     if (t === WALL) return true;
     if (t === LINTEL) return y1 > this.doorH;
     return false;
+  }
+
+  hole(x, z) {
+    const cx = this.cell(x), cz = this.cell(z);
+    return this.inside(cx, cz) ? this.holes[cz * this.w + cx] : 0;
   }
 
   // Ponto aleatório caminhável.

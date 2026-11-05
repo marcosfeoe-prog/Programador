@@ -721,6 +721,20 @@ export class LevelFun extends Level {
     }
   }
 
+  compassTarget() {
+    if (!this.door) return null;
+    const n = this.door.q.n;
+    if (this.keys >= 3) return { x: this.door.center.x + n[0] * 1.0, z: this.door.center.z + n[2] * 1.0 };
+    const p = this.game.player.pos;
+    let best = null;
+    for (const P of this.presents) {
+      if (!P.gold || P.opened) continue;
+      const d = Math.hypot(P.x - p.x, P.z - p.z);
+      if (!best || d < best.d) best = { x: P.x, z: P.z, d };
+    }
+    return best;
+  }
+
   surfaceAt() {
     return 'carpet';
   }

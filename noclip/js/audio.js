@@ -461,6 +461,16 @@ export class AudioEngine {
     });
     return notes.length * 0.32 + 4 + Math.random() * 8;
   }
+  crack() {
+    if (!this.ctx) return;
+    for (let i = 0; i < 5; i++) this.burst({ dur: 0.05, type: 'bandpass', f: 700 + i * 250, q: 2, gain: 0.35, at: i * 0.05 });
+    this.burst({ dur: 0.4, f: 400, gain: 0.3, at: 0.2 });
+  }
+  fall() {
+    if (!this.ctx) return;
+    this.burst({ dur: 1.2, type: 'bandpass', f: 900, q: 0.7, gain: 0.25, attack: 0.3 });
+    this.tone({ f: 300, f2: 60, dur: 1.2, gain: 0.08, type: 'sawtooth' });
+  }
   elevator() {
     this.tone({ f: 70, dur: 3, gain: 0.25, type: 'sawtooth', attack: 0.5 });
     this.tone({ f: 1046, dur: 0.6, gain: 0.08, at: 3.2 });
