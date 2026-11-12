@@ -549,7 +549,6 @@ export function buildVehicle(model, country, opts = {}) {
   tablet.rotation.y = Math.PI;
   tablet.rotation.x = 0.25;
   interior.add(dash, hoodIn, wheelR, gauges, tablet);
-  const roofY = spec.cabin.roof;
   for (const sx of [-1, 1]) {
     // Coluna A (inclinada como o para-brisa) e borda do teto.
     const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.95, 0.09), trimMat);

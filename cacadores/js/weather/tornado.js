@@ -266,7 +266,7 @@ export class Tornado {
     let Rt = Rg * kTop;
     Rt = Math.min(Rt, Math.max(Rg * 1.1, H * 0.45));
     // Forma de V: topo muito largo e base estreita.
-    const vk = this.vness * smoothstep(0.03, 0.12, S) * (1 - smoothstep(0.45, 0.9, S)) * (1 - rope);
+    const vk = this.vness * smoothstep(0.015, 0.06, S) * (1 - smoothstep(0.45, 0.9, S)) * (1 - rope);
     Rt = lerp(Rt, Math.max(Rt, H * lerp(0.5, 0.95, this.vness)), vk);
     let pexp = lerp(lerp(1.15, 1.5, this.coneness), 1.0, smoothstep(0.05, 0.22, S));
     pexp = lerp(pexp, 0.55, smoothstep(0.3, 0.9, S));

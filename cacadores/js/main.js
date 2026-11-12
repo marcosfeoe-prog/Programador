@@ -827,7 +827,6 @@ function handleWeatherEvents() {
       audio.alert();
       hud.notify(`⚠ ${G.world.country.alertName}: rotação forte em ${e.storm.name}. Abrigue-se!`, 'danger', 9);
     } else if (e.type === 'funnel') {
-      if (w.onFunnelHook) w.onFunnelHook(e.tornado);
       e.tornado.name = tornadoName(e.tornado);
       const d = Math.hypot(e.tornado.x - v.x, e.tornado.z - v.z);
       if (d < 20000) hud.notify(`Nuvem funil descendo a ${fmtDist(d)} ${compass(bearingDeg(e.tornado.x - v.x, e.tornado.z - v.z))}!`, 'warn', 7);
@@ -1214,9 +1213,11 @@ function closeMap() {
 
 // ------------------------------------------------------------------ laço principal
 let last = performance.now();
-function loop(now) {
+function loop() {
   requestAnimationFrame(loop);
-  const dt = Math.min(0.1, (now - last) / 1000);
+  // Tempo real decorrido (o carimbo do rAF pode não acompanhar quadros lentos).
+  const now = performance.now();
+  const dt = Math.min(0.1, Math.max(0.001, (now - last) / 1000));
   last = now;
   G.time += dt;
   G.frame++;

@@ -100,6 +100,8 @@ export class Storm {
       const pt = plan[this.nextTor++];
       const tr = new Tornado({ storm: this, world: this.world, rng: this.rng.fork('tor' + this.nextTor), ef: pt.ef, carga: pt.carga, env: this.env });
       tr.onTouch = (x) => weather.onTouchdown?.(x, this);
+      // Laboratório: aplica o formato escolhido logo no nascimento.
+      weather.onFunnelHook?.(tr);
       this.tornadoes.push(tr);
       weather.onFunnel?.(tr, this);
     }
