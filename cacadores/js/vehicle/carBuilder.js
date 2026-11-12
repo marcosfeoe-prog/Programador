@@ -538,14 +538,14 @@ export function buildVehicle(model, country, opts = {}) {
   const hoodIn = new THREE.Mesh(new THREE.BoxGeometry(spec.W * 0.9, 0.04, 1.6), bodyMat);
   hoodIn.position.set(0, curve(spec.deck, 0.85) - 0.02, zW + 1.1);
   const wheelR = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.025, 8, 24), trimMat);
-  wheelR.position.set(-spec.W * 0.2, yB + 0.12, zW - 0.18);
+  wheelR.position.set(spec.W * 0.2, yB + 0.12, zW - 0.18);
   wheelR.rotation.x = -0.35;
   const gauges = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.12), new THREE.MeshStandardMaterial({ color: '#0a0c10', emissive: '#3fa9ff', emissiveIntensity: 0.35 }));
-  gauges.position.set(-spec.W * 0.2, yB + 0.14, zW + 0.0);
+  gauges.position.set(spec.W * 0.2, yB + 0.14, zW + 0.0);
   gauges.rotation.x = -0.35;
   gauges.rotation.y = Math.PI;
   const tablet = new THREE.Mesh(new THREE.PlaneGeometry(0.26, 0.17), new THREE.MeshStandardMaterial({ color: '#05080b', emissive: '#64e0a0', emissiveIntensity: 0.25 }));
-  tablet.position.set(spec.W * 0.05, yB + 0.24, zW - 0.02);
+  tablet.position.set(-spec.W * 0.05, yB + 0.24, zW - 0.02);
   tablet.rotation.y = Math.PI;
   tablet.rotation.x = 0.25;
   interior.add(dash, hoodIn, wheelR, gauges, tablet);

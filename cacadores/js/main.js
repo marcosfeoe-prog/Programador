@@ -108,6 +108,8 @@ async function boot() {
   G.radar = new Radar($('radar'));
   G.probeGroup = new THREE.Group();
   G.scene.add(G.probeGroup);
+  G.chaser = makeChaser();
+  G.scene.add(G.chaser);
   setupShadows();
   setupEnvironment();
   window.addEventListener('resize', resize);
@@ -1006,8 +1008,8 @@ function spend(v, text) {
   return true;
 }
 
-function visibleTornado(maxD = 16000) {
-  const v = G.vehicle;
+function visibleTornado(maxD = 16000, from = null) {
+  const v = from || G.obs || G.vehicle;
   let best = null;
   for (const t of G.weather.tornadoes) {
     const d = Math.hypot(t.x - v.x, t.z - v.z);
@@ -1054,9 +1056,11 @@ function scorePhoto() {
       t.photographedShapes.add(t.label);
       title = `${t.onGround ? t.name : 'Nuvem funil'} — ${t.shapeName}`;
       text = `${fmtDist(d)} · ${t.shapeName}`;
+      if (G.rig.mode === 'fly') title = `Foto aérea: ${title}`;
     }
   } else {
-    const ns = G.weather.nearestStorm(v.x, v.z);
+    const o = G.obs || v;
+    const ns = G.weather.nearestStorm(o.x, o.z);
     if (ns && ns.s.meso > 0.5 && ns.d < 15000) {
       value = 60;
       title = 'Estrutura da supercélula';
@@ -1103,7 +1107,7 @@ function updateScan(dt) {
     v.scanning = false;
     return;
   }
-  const vt = visibleTornado(11000);
+  const vt = visibleTornado(11000, G.vehicle);
   if (!vt || !vt.t.onGround) {
     G.scanT = 0;
     return;
@@ -1146,14 +1150,15 @@ function interact() {
 
 function lookAtTornado() {
   const v = G.vehicle;
-  const vt = G.weather.nearestTornado(v.x, v.z);
+  const o = G.obs || v;
+  const vt = G.weather.nearestTornado(o.x, o.z);
   if (vt && vt.d < 25000) {
     const t = vt.t;
     G.rig.lookAtWorld(t.x, t.render.y + Math.min(250, t.render.H * 0.3), t.z, v);
     return;
   }
-  const ns = G.weather.nearestStorm(v.x, v.z);
-  if (ns) G.rig.lookAtWorld(ns.s.x, ns.s.base, ns.s.z, v);
+  const ns = G.weather.nearestStorm(o.x, o.z);
+  if (ns) G.rig.lookAtWorld(ns.s.x, ns.s.base - (G.rig.mode === 'fly' ? 300 : 0), ns.s.z, v);
 }
 
 // ------------------------------------------------------------------ acidente
@@ -1201,14 +1206,94 @@ function openMap() {
   G.prevState = G.state;
   G.state = 'pause';
   screen('mapview');
-  drawMap($('map-canvas'), G.world, G.weather, G.vehicle, G.tracks.concat(G.weather.tornadoes.filter((t) => t.onGround).map((t) => ({ path: t.path }))), G.warnings);
-  $('map-legend').innerHTML = `<b>${G.world.country.flag} ${G.world.country.region}</b><br>🔵 você · 🔺 tornado · linhas vermelhas: trilhas de danos · polígonos: alertas`;
+  const drone = G.rig.mode === 'fly' ? { x: G.rig.flyPos.x, z: G.rig.flyPos.z, yaw: G.rig.flyYaw } : null;
+  drawMap($('map-canvas'), G.world, G.weather, G.vehicle, G.tracks.concat(G.weather.tornadoes.filter((t) => t.onGround).map((t) => ({ path: t.path }))), G.warnings, drone);
+  $('map-legend').innerHTML = `<b>${G.world.country.flag} ${G.world.country.region}</b><br>🔵 seu carro${drone ? ' · 🟢 câmera de sobrevoo' : ''} · 🔺 tornado · linhas vermelhas: trilhas de danos · polígonos: alertas`;
   applyTouchMode();
 }
 
 function closeMap() {
   G.mapOpen = false;
   enterPlay();
+}
+
+// ------------------------------------------------------------------ sobrevoo
+// O caçador em pé ao lado do carro enquanto a câmera voa (corpo simples, low-poly).
+function makeChaser() {
+  const g = new THREE.Group();
+  const mat = (c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.8 });
+  const jeans = mat('#2c3e5c');
+  const jacket = mat('#e8701c');
+  const skin = mat('#c99272');
+  const dark = mat('#1b1d20');
+  for (const sx of [-1, 1]) {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.86, 0.17), jeans);
+    leg.position.set(sx * 0.1, 0.43, 0);
+    const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.08, 0.26), dark);
+    shoe.position.set(sx * 0.1, 0.04, 0.04);
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.5, 0.12), jacket);
+    arm.position.set(sx * 0.27, 1.22, 0.14);
+    arm.rotation.x = -0.9;
+    g.add(leg, shoe, arm);
+  }
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.62, 0.25), jacket);
+  torso.position.y = 1.18;
+  const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.05, 0.26), mat('#f2f2f0'));
+  stripe.position.y = 1.08;
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.115, 14, 10), skin);
+  head.position.y = 1.62;
+  const cap = new THREE.Mesh(new THREE.SphereGeometry(0.12, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), mat('#1d3f7a'));
+  cap.position.y = 1.64;
+  const brim = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.02, 0.12), mat('#1d3f7a'));
+  brim.position.set(0, 1.65, 0.12);
+  // Controle remoto nas mãos (o sobrevoo é guiado daqui).
+  const ctrl = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.04, 0.12), dark);
+  ctrl.position.set(0, 1.05, 0.42);
+  g.add(torso, stripe, head, cap, brim, ctrl);
+  g.traverse((o) => (o.castShadow = true));
+  g.visible = false;
+  return g;
+}
+
+// De onde o jogador está olhando: a câmera voando (sobrevoo) ou o carro.
+function observer() {
+  const v = G.vehicle;
+  if (G.rig.mode === 'fly') {
+    const p = G.rig.flyPos;
+    return { x: p.x, y: p.y, z: p.z, yaw: G.rig.flyYaw, probes: G.probes, fly: true, car: { x: v.x, z: v.z } };
+  }
+  return { x: v.x, y: v.y, z: v.z, yaw: v.yaw, probes: G.probes, fly: false };
+}
+
+function startFly() {
+  G.rig.enterFly(G.vehicle, G.world);
+  G.flyWarnT = 0;
+  G.vehicle.lights = G.vehicle.lights || G.sky.night > 0.5;
+  hud.notify('Sobrevoo: você desceu do carro. WASD (ou joystick) voa, Espaço sobe, Shift desce, roda do mouse muda a altitude, Q aponta para o tornado, V volta ao carro.', 'good', 10);
+}
+
+function endFly() {
+  G.rig.setMode('chase');
+  hud.notify('De volta ao carro.', '', 2);
+}
+
+function toggleFly() {
+  if (G.rig.mode === 'fly') return endFly();
+  if (G.vehicle.speed > 3) return hud.notify('Pare o carro para descer e sobrevoar (V).', '', 3);
+  startFly();
+}
+
+function cycleCamera() {
+  if (G.rig.mode === 'fly') return endFly();
+  const next = G.rig.nextMode();
+  if (next === 'fly') {
+    if (G.vehicle.speed <= 3) return startFly();
+    G.rig.setMode('chase');
+    hud.notify('Câmera: Perseguição (pare o carro para usar o Sobrevoo)', '', 3);
+    return;
+  }
+  G.rig.setMode(next);
+  hud.notify(`Câmera: ${CAM_NAMES[G.rig.mode]}`, '', 2);
 }
 
 // ------------------------------------------------------------------ laço principal
@@ -1243,10 +1328,8 @@ function handleActions() {
   const v = G.vehicle;
   if (a('menu')) return pauseGame();
   if (a('map')) return openMap();
-  if (a('camera')) {
-    G.rig.next();
-    hud.notify(`Câmera: ${CAM_NAMES[G.rig.mode]}`, '', 2);
-  }
+  if (a('camera')) cycleCamera();
+  if (a('fly')) toggleFly();
   if (a('photo')) takePhoto();
   if (a('radar')) G.radar.toggleMode();
   if (a('zoomRadar')) G.radar.cycleRange();
@@ -1292,7 +1375,9 @@ function update(dt) {
   }
   const pdt = dt * G.warp;
   G.clock += pdt * CLOCK_SCALE;
-  const ctrl = input.driveAxes();
+  // No sobrevoo o carro fica estacionado (freio de mão puxado).
+  const flying = G.rig.mode === 'fly';
+  const ctrl = flying ? { steer: 0, throttle: 0, brake: 1, handbrake: true, boost: false } : input.driveAxes();
   if (v.anchored) {
     ctrl.throttle = 0;
   }
@@ -1318,8 +1403,10 @@ function update(dt) {
   updateProbes();
   updateScan(dt);
   audio.horn(v.horn);
-  // Tornado em foco (mais próximo) e "visto".
-  const nt = w.nearestTornado(v.x, v.z);
+  // Tornado em foco (o mais próximo de onde se está olhando) e "visto".
+  const o = observer();
+  G.obs = o;
+  const nt = w.nearestTornado(o.x, o.z);
   G.focusTornado = nt && nt.d < 30000 ? nt : null;
   if (nt) {
     const t = nt.t;
@@ -1327,11 +1414,23 @@ function update(dt) {
       t.shapesSeen = t.shapesSeen || new Set();
       t.shapesSeen.add(t.label);
       if (nt.d < 20000 && !t.seen) t.seen = true;
-      if (nt.d < 3000 && !t.intercepted && !G.lab) {
+      // A interceptação conta pela posição do carro (do caçador), não da câmera voando.
+      const dCar = Math.hypot(t.x - v.x, t.z - v.z);
+      if (dCar < 3000 && !t.intercepted && !G.lab) {
         t.intercepted = true;
         G.save.stats.intercepts += 1;
-        earn(Math.round(250 + t.efTrue * 120), `Interceptação! Você está a ${fmtDist(nt.d)} de ${t.name}`);
+        earn(Math.round(250 + t.efTrue * 120), `Interceptação! Você está a ${fmtDist(dCar)} de ${t.name}`);
       }
+    }
+  }
+  // Sobrevoo: avisa quando um tornado chega perto do carro estacionado.
+  if (flying) {
+    G.flyWarnT = (G.flyWarnT || 0) - dt;
+    const tc = w.nearestTornado(v.x, v.z);
+    if (tc && tc.t.onGround && tc.d < 2500 && G.flyWarnT <= 0) {
+      G.flyWarnT = 20;
+      hud.notify(`⚠ ${tc.t.name || 'O tornado'} está a ${fmtDist(tc.d)} do seu carro estacionado! Volte (V).`, 'danger', 7);
+      audio.alert();
     }
   }
   // Alertas expiram.
@@ -1358,11 +1457,26 @@ function render(dt) {
   const sens = G.settings.sens;
   look.x *= sens;
   look.y *= sens;
-  if (G.state === 'play') G.rig.update(dt, v, look, world);
+  const flying = G.rig.mode === 'fly';
+  if (G.state === 'play') {
+    const fly = flying ? { axes: input.flyAxes(), ceiling: w.baseAt(G.rig.flyPos.x, G.rig.flyPos.z) - 90 } : null;
+    G.rig.update(dt, v, look, world, fly);
+  }
+  G.obs = observer();
+  const obs = G.obs;
   // Na câmera do motorista, mostra o interior e esconde a cabine vista de fora.
   const inside = G.rig.mode === 'cockpit';
   v.v.interior.visible = inside;
   v.v.cabin.visible = !inside;
+  // No sobrevoo o caçador fica em pé ao lado da porta do motorista.
+  G.chaser.visible = flying && !v.tossed;
+  if (flying) {
+    const side = v.spec.W / 2 + 0.75;
+    const cx = v.x + Math.cos(v.yaw) * side + Math.sin(v.yaw) * 0.6;
+    const cz = v.z - Math.sin(v.yaw) * side + Math.cos(v.yaw) * 0.6;
+    G.chaser.position.set(cx, world.groundAt(cx, cz), cz);
+    G.chaser.rotation.y = G.rig.flyYaw;
+  }
   const cam = G.camera;
   cam.updateMatrixWorld();
   // Céu e luz na posição da câmera.
@@ -1377,7 +1491,7 @@ function render(dt) {
   G.shade.rain = damp(G.shade.rain, sh.rain, 1.5, dt);
   G.shade.hail = sh.hail;
   G.shade.tint = sh.hail;
-  G.hailSize = w.hailAt(v.x, v.z).size;
+  G.hailSize = w.hailAt(obs.x, obs.z).size;
   G.wet = clamp(G.wet + (G.shade.rain > 0.15 ? dt * 0.08 * G.shade.rain : -dt * 0.004), 0, 1);
   // Volume: tempestades e tornados.
   const vol = G.volume;
@@ -1421,10 +1535,26 @@ function render(dt) {
     if (G.powerFlash.t <= 0) G.powerFlash = null;
   }
   updateEnvironment(dt);
-  // Sombra do sol acompanha o carro.
+  // Sombra do sol acompanha quem está olhando (o carro ou o chão sob a câmera voando),
+  // cobrindo uma área maior quanto mais alto se voa.
   const L = G.sky.sunLight;
-  L.target.position.set(v.x, v.y, v.z);
-  L.position.set(v.x + _sunDir.x * 600, v.y + Math.max(80, _sunDir.y * 600), v.z + _sunDir.z * 600);
+  const gy = world.groundAt(clamp(obs.x, -11900, 11900), clamp(obs.z, -11900, 11900));
+  const agl = flying ? Math.max(0, obs.y - gy) : 0;
+  const ext = clamp(90 + agl * 0.7, 90, 700);
+  const sc = L.shadow.camera;
+  if (Math.abs(sc.right - ext) > 20) {
+    sc.left = -ext;
+    sc.right = ext;
+    sc.top = ext;
+    sc.bottom = -ext;
+    sc.far = 1400 + ext * 2;
+    sc.updateProjectionMatrix();
+  }
+  const sx = flying ? obs.x + Math.sin(obs.yaw) * ext * 0.5 : v.x;
+  const sz = flying ? obs.z + Math.cos(obs.yaw) * ext * 0.5 : v.z;
+  const sy = flying ? world.groundAt(clamp(sx, -11900, 11900), clamp(sz, -11900, 11900)) : v.y;
+  L.target.position.set(sx, sy, sz);
+  L.position.set(sx + _sunDir.x * (600 + ext), sy + Math.max(80, _sunDir.y * (600 + ext)), sz + _sunDir.z * (600 + ext));
   L.target.updateMatrixWorld();
   // Exposição automática (olho/câmera se adaptando ao escuro da tempestade).
   // Exposição automática pela luminância medida da imagem (como um fotômetro).
@@ -1441,7 +1571,7 @@ function render(dt) {
   world.update(G.time, ws);
   G.radarT = (G.radarT || 0) - dt;
   if (G.radarT <= 0) {
-    G.radar.draw(w, world, v, G.clock, 0.1 - G.radarT, G.warnings);
+    G.radar.draw(w, world, obs, G.clock, 0.1 - G.radarT, G.warnings);
     G.radarT = 0.1;
   }
   // Composição.
@@ -1473,17 +1603,23 @@ function render(dt) {
   const nt = G.focusTornado;
   const inCity = world.nearestCity(v.x, v.z);
   const siren = c.sirens && inCity && inCity.d < inCity.city.radius + 600 && inWarning(inCity.city.x, inCity.city.z, 'tor') ? 1 : 0;
+  let windHere = v.wind;
+  if (flying) {
+    const wc = w.windAt(obs.x, Math.max(2, agl), obs.z, { x: 0, y: 0, z: 0 });
+    windHere = Math.hypot(wc.x, wc.z) + agl * 0.01;
+  }
   audio.update(dt, {
-    wind: v.wind,
+    wind: windHere,
     rain: G.shade.rain,
-    hail: G.shade.hail,
+    hail: flying ? 0 : G.shade.hail,
     hailSize: G.hailSize,
-    speed: v.speed,
-    throttle: input.driveAxes().throttle,
-    driving: true,
+    speed: flying ? 0 : v.speed,
+    throttle: flying ? 0 : input.driveAxes().throttle,
+    driving: !flying,
     offroad: v.surface && v.surface.kind !== 'road',
     inside: G.rig.mode === 'cockpit',
-    tornado: nt ? { vmax: nt.t.onGround ? nt.t.Vmax : nt.t.Vmax * 0.3, dist: nt.d } : null,
+    drone: flying ? Math.hypot(G.rig.flyVel.x, G.rig.flyVel.y, G.rig.flyVel.z) : -1,
+    tornado: nt ? { vmax: nt.t.onGround ? nt.t.Vmax : nt.t.Vmax * 0.3, dist: Math.hypot(nt.t.x - obs.x, nt.t.z - obs.z, Math.max(0, agl - 100)) } : null,
     siren,
   });
   if (v.wind > 25) G.rig.shake = Math.max(G.rig.shake, (v.wind - 25) * 0.004);
@@ -1498,7 +1634,7 @@ function render(dt) {
     const vf = $('viewfinder');
     vf.classList.toggle('hidden', G.rig.mode !== 'tripod');
     if (G.settings.fps) $('fps').textContent = `${Math.round(1 / Math.max(1e-3, G.avgDt || dt))} FPS · escala ${G.pipeline.scale.toFixed(2)} · detritos ${G.debris.count()}`;
-    const near = world.registry.near(v.x, v.z, 45).find((x) => x.kind === 'gas' && x.state < 3);
+    const near = !flying && world.registry.near(v.x, v.z, 45).find((x) => x.kind === 'gas' && x.state < 3);
     const pr = $('prompt');
     if (near && v.speed < 2) {
       pr.textContent = 'E — abastecer e consertar';

@@ -109,7 +109,8 @@ Melhorias: grade antigranizo, pneus para lama, câmera profissional, sondas e ki
 | W A S D / setas | dirigir |
 | Espaço / Shift | freio de mão / arrancada |
 | Mouse (arrastar), roda | olhar em volta, zoom |
-| C | câmera: perseguição, motorista, teto, órbita, tripé |
+| C | câmera: perseguição, motorista, teto, órbita, tripé, sobrevoo |
+| V | **sobrevoo**: desce do carro e voa por todo o mapa em busca do tornado |
 | Q | olhar para o tornado (ou tempestade) mais próximo |
 | F | foto |
 | P / N / G | sonda / radar móvel / relatar tornado |
@@ -119,7 +120,21 @@ Melhorias: grade antigranizo, pneus para lama, câmera profissional, sondas e ki
 | M | mapa · T acelerar o tempo · L faróis · H buzina · Esc pausa |
 
 **Celular** (na horizontal): joystick de direção à esquerda, pedais à direita, arrastar a
-tela para olhar e botões de foto, câmera, olhar o tornado, sonda, relato, mapa e radar.
+tela para olhar e botões de foto, câmera, sobrevoo (🚁), olhar o tornado, sonda, relato, mapa
+e radar.
+
+### Câmera de sobrevoo
+
+Com o carro parado, aperte **V** (ou 🚁, ou avance as câmeras com C): o caçador desce e fica
+em pé ao lado do carro, e a câmera decola dali e voa livre por **todo o mapa** — do chão até
+logo abaixo da base das nuvens. **W A S D** (ou o joystick) voam, **Espaço** sobe, **Shift**
+desce (no celular, os pedais viram SUBIR/DESCER), a **roda do mouse** muda a altitude e
+**Q** aponta para o tornado mais próximo. Quanto mais alto, mais rápido se cruza o mapa; seguir
+em frente por alguns segundos dá um embalo extra. No topo da tela, uma bússola aponta para o
+tornado (ou a supercélula) mais próxima, o radar passa a acompanhar a câmera e mostra onde
+ficou o carro, e o painel indica a altitude e a distância até o carro. Fotos tiradas lá de cima
+viram "fotos aéreas". O carro fica estacionado e **pode ser atingido**: se um tornado chegar a
+menos de 2,5 km dele, um alarme avisa para voltar (V).
 
 ## Laboratório de tornados
 

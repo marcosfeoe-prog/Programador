@@ -205,7 +205,16 @@ export class Radar {
       c.fillStyle = p.hit ? '#64e0a0' : '#ffb23f';
       c.fillRect(a - 2, b - 2, 4, 4);
     }
-    // Anéis de distância e o carro.
+    // Carro estacionado (durante o sobrevoo o radar acompanha a câmera).
+    if (player.car) {
+      const [a, b] = toPx(player.car.x, player.car.z);
+      c.fillStyle = '#3fa9ff';
+      c.strokeStyle = '#ffffff';
+      c.lineWidth = 1.5;
+      c.fillRect(a - 4, b - 4, 8, 8);
+      c.strokeRect(a - 4, b - 4, 8, 8);
+    }
+    // Anéis de distância e o observador.
     c.strokeStyle = 'rgba(255,255,255,0.12)';
     for (const rr of [0.25, 0.5]) {
       c.beginPath();
@@ -232,7 +241,7 @@ export class Radar {
 }
 
 // Mapa completo do país.
-export function drawMap(canvas, world, weather, player, tracks, warnings) {
+export function drawMap(canvas, world, weather, player, tracks, warnings, drone = null) {
   const c = canvas.getContext('2d');
   const W = canvas.width;
   const S = WORLD.size;
@@ -306,6 +315,33 @@ export function drawMap(canvas, world, weather, player, tracks, warnings) {
     c.lineTo(a, b + 8);
     c.closePath();
     c.fill();
+  }
+  if (drone) {
+    const [dx, dz] = toPx(drone.x, drone.z);
+    const [cx, cz] = toPx(player.x, player.z);
+    c.strokeStyle = 'rgba(100,224,160,0.6)';
+    c.setLineDash([5, 5]);
+    c.lineWidth = 1.5;
+    c.beginPath();
+    c.moveTo(cx, cz);
+    c.lineTo(dx, dz);
+    c.stroke();
+    c.setLineDash([]);
+    c.save();
+    c.translate(dx, dz);
+    c.rotate(-drone.yaw + Math.PI);
+    c.fillStyle = '#64e0a0';
+    c.strokeStyle = '#fff';
+    c.lineWidth = 2;
+    c.beginPath();
+    c.moveTo(0, -10);
+    c.lineTo(7, 0);
+    c.lineTo(0, 10);
+    c.lineTo(-7, 0);
+    c.closePath();
+    c.fill();
+    c.stroke();
+    c.restore();
   }
   const [px, pz] = toPx(player.x, player.z);
   c.save();

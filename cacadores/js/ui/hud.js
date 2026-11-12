@@ -54,14 +54,16 @@ export class Hud {
 
   update(G) {
     const v = G.vehicle;
+    const o = G.obs || v;
+    const fly = G.rig.mode === 'fly';
     const c = G.world.country;
     $('h-flag').textContent = c.flag;
     $('h-clock').textContent = fmtClock(G.clock);
     $('h-day').textContent = G.lab ? 'Laboratório' : `Dia ${G.save.day}`;
     $('h-warp').textContent = G.warp > 1 ? `▶▶ ${G.warp}×` : '';
-    const near = G.world.nearestCity(v.x, v.z);
-    const where = near && near.d < near.city.radius + 300 ? near.city.name : near ? `${fmtDist(near.d)} ${compass(bearingDeg(v.x - near.city.x, v.z - near.city.z))} de ${near.city.name}` : '';
-    $('h-place').textContent = `${c.name} · ${where}`;
+    const near = G.world.nearestCity(o.x, o.z);
+    const where = near && near.d < near.city.radius + 300 ? near.city.name : near ? `${fmtDist(near.d)} ${compass(bearingDeg(o.x - near.city.x, o.z - near.city.z))} de ${near.city.name}` : '';
+    $('h-place').textContent = `${c.name} · ${fly ? 'sobrevoando ' : ''}${where}`;
     const sh = G.shade;
     const wx = [];
     if (sh.hail > 0.05) wx.push(`granizo ${G.hailSize.toFixed(1)} cm`);
@@ -72,7 +74,8 @@ export class Hud {
     if (v.model.station || G.save.upgrades.station) wx.push(`vento ${Math.round(v.wind * MS_TO_KMH)} km/h`);
     wx.push(`${G.env.temp}°C / orvalho ${G.env.dewpoint}°C`);
     $('h-wx').textContent = wx.join(' · ');
-    $('h-speed').textContent = Math.round(v.speed * MS_TO_KMH);
+    const flySpeed = fly ? Math.hypot(G.rig.flyVel.x, G.rig.flyVel.y, G.rig.flyVel.z) : 0;
+    $('h-speed').textContent = Math.round((fly ? flySpeed : v.speed) * MS_TO_KMH);
     const hp = v.health / v.maxHealth;
     const hb = $('h-health');
     hb.style.width = `${Math.max(0, hp * 100)}%`;
@@ -80,6 +83,11 @@ export class Hud {
     $('h-fuel').style.width = `${(v.fuel / v.model.fuel) * 100}%`;
     $('h-money').textContent = G.lab ? 'Modo laboratório' : fmtMoney(G.save.money);
     const extra = [];
+    if (fly) {
+      const agl = G.rig.flyAGL(G.world);
+      extra.push(`🚁 altitude ${Math.round(agl)} m`);
+      extra.push(`carro a ${fmtDist(Math.hypot(v.x - o.x, v.z - o.z))} ${compass(bearingDeg(v.x - o.x, v.z - o.z))}`);
+    }
     const probes = G.probesLeft();
     if (probes > 0) extra.push(`sondas: ${probes}`);
     if (v.anchored) extra.push('ÂNCORAS FIXADAS');
@@ -101,12 +109,42 @@ export class Hud {
       badge.style.background = t.ratingSoFar >= 0 ? EF_COLORS[t.ratingSoFar] : '#888';
       $('t-shape').textContent = t.shapeName;
       $('t-dist').textContent = fmtDist(d);
-      $('t-dir').textContent = compass(bearingDeg(t.x - v.x, t.z - v.z));
+      $('t-dir').textContent = compass(bearingDeg(t.x - o.x, t.z - o.z));
       $('t-move').textContent = `${compass(bearingDeg(t.vx, t.vz))} ${Math.round(Math.hypot(t.vx, t.vz) * MS_TO_KMH)} km/h`;
       $('t-width').textContent = t.onGround ? fmtDist(Math.max(t.width || 0, t.render.Rg * 2)) : '—';
       $('t-time').textContent = t.onGround ? fmtDuration(t.age) : '—';
       if (shown) $('t-sub').textContent += ` · medido ${Math.round(shown * MS_TO_KMH)} km/h`;
     } else br.classList.add('hidden');
+    // Pedais do celular: no sobrevoo viram subir/descer.
+    $('pedal-gas').textContent = fly ? 'SUBIR' : 'ACEL.';
+    $('pedal-brake').textContent = fly ? 'DESCER' : 'FREIO';
+    // Bússola do sobrevoo: aponta para o tornado (ou a supercélula) mais próximo.
+    const fd = $('finder');
+    fd.classList.toggle('hidden', !fly);
+    if (fly) {
+      let tx = null;
+      let tz = null;
+      let label = 'Nenhuma tempestade ativa — veja o radar';
+      if (nt) {
+        tx = nt.t.x;
+        tz = nt.t.z;
+        label = `${nt.t.onGround ? '🌪️ ' + (nt.t.name || 'Tornado') : '🌀 Nuvem funil'} · ${fmtDist(nt.d)}`;
+      } else {
+        const ns = G.weather.nearestStorm(o.x, o.z);
+        if (ns && ns.s.maturity > 0.3) {
+          tx = ns.s.x;
+          tz = ns.s.z;
+          label = `⛈️ ${ns.s.name}${ns.s.meso > 0.5 ? ' (rotação)' : ''} · ${fmtDist(ns.d)}`;
+        }
+      }
+      $('finder-txt').textContent = label;
+      const arrow = $('finder-arrow');
+      if (tx !== null) {
+        const rel = bearingDeg(tx - o.x, tz - o.z) - bearingDeg(Math.sin(o.yaw), Math.cos(o.yaw));
+        arrow.style.transform = `rotate(${rel}deg)`;
+        arrow.style.opacity = 1;
+      } else arrow.style.opacity = 0.25;
+    }
   }
 }
 

@@ -616,6 +616,27 @@ input[type='range'] {
     opacity: 0;
   }
 }
+#finder {
+  top: max(10px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  max-width: 46vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#finder-arrow {
+  display: inline-block;
+  font-size: 20px;
+  color: var(--accent);
+  transition: transform 0.12s linear;
+}
 #prompt {
   position: absolute;
   bottom: 22%;

@@ -1,10 +1,13 @@
-// Câmeras: perseguição (3ª pessoa), capô, motorista, órbita livre e câmera fixa de tripé.
+// Câmeras: perseguição (3ª pessoa), teto, motorista, órbita livre, tripé e sobrevoo
+// (o jogador desce do carro e a visão voa livre por todo o mapa).
 
 import * as THREE from 'three';
 import { clamp, damp, dampAngle, wrapAngle } from '../core/math.js';
 
-export const CAM_MODES = ['chase', 'cockpit', 'hood', 'orbit', 'tripod'];
-export const CAM_NAMES = { chase: 'Perseguição', cockpit: 'Motorista', hood: 'Teto', orbit: 'Órbita livre', tripod: 'Tripé (câmera fixa)' };
+export const CAM_MODES = ['chase', 'cockpit', 'hood', 'orbit', 'tripod', 'fly'];
+export const CAM_NAMES = { chase: 'Perseguição', cockpit: 'Motorista', hood: 'Teto', orbit: 'Órbita livre', tripod: 'Tripé (câmera fixa)', fly: 'Sobrevoo' };
+
+const MAP_LIMIT = 11950;
 
 export class CameraRig {
   constructor(camera) {
@@ -21,11 +24,48 @@ export class CameraRig {
     this.tripodPitch = 0.15;
     this.first = true;
     this.shake = 0;
+    // Sobrevoo.
+    this.flyPos = new THREE.Vector3();
+    this.flyVel = new THREE.Vector3();
+    this.flyYaw = 0;
+    this.flyPitch = 0;
+    this.flyRoll = 0;
+    this.flyHold = 0;
+    this.takeoff = 0;
+  }
+
+  // Próximo modo do ciclo (C).
+  nextMode() {
+    const i = CAM_MODES.indexOf(this.mode);
+    return CAM_MODES[(i + 1) % CAM_MODES.length];
   }
 
   next() {
-    const i = CAM_MODES.indexOf(this.mode);
-    this.setMode(CAM_MODES[(i + 1) % CAM_MODES.length]);
+    this.setMode(this.nextMode());
+  }
+
+  // O jogador sai pela porta do motorista e a câmera decola dali.
+  enterFly(vehicle, world) {
+    const yaw = vehicle.yaw + this.yawOff;
+    const side = vehicle.spec.W / 2 + 0.9;
+    // Lado do motorista (esquerdo, no +x local do carro).
+    const x = vehicle.x + Math.cos(vehicle.yaw) * side;
+    const z = vehicle.z - Math.sin(vehicle.yaw) * side;
+    this.mode = 'fly';
+    this.flyPos.set(x, world.groundAt(x, z) + 1.7, z);
+    this.flyVel.set(0, 6, 0);
+    this.flyYaw = yaw;
+    this.flyPitch = 0.02;
+    this.flyRoll = 0;
+    this.flyHold = 0;
+    this.takeoff = 2.2;
+    this.cam.fov = 66;
+    this.first = true;
+  }
+
+  // Velocidade de cruzeiro: cresce com a altitude (para cruzar o mapa todo).
+  flySpeed(agl) {
+    return clamp(16 + agl * 0.32, 16, 240);
   }
 
   setMode(m) {
@@ -44,6 +84,13 @@ export class CameraRig {
 
   // Aponta a câmera para um alvo (ex.: o tornado mais próximo).
   lookAtWorld(x, y, z, vehicle) {
+    if (this.mode === 'fly') {
+      const dx = x - this.flyPos.x;
+      const dz = z - this.flyPos.z;
+      this.flyYaw = Math.atan2(dx, dz);
+      this.flyPitch = clamp(Math.atan2(y - this.flyPos.y, Math.hypot(dx, dz)), -1.4, 1.2);
+      return;
+    }
     if (this.mode === 'tripod') {
       const dx = x - this.tripod.x;
       const dz = z - this.tripod.z;
@@ -58,11 +105,12 @@ export class CameraRig {
     this.idle = -6;
   }
 
-  update(dt, vehicle, look, world) {
+  update(dt, vehicle, look, world, fly = null) {
     const cam = this.cam;
     const sens = 0.0042;
     if (look.x || look.y) this.idle = 0;
     else this.idle += dt;
+    if (this.mode === 'fly') return this.updateFly(dt, look, world, fly);
     if (this.mode === 'tripod') {
       this.tripodYaw -= look.x * sens;
       this.tripodPitch = clamp(this.tripodPitch - look.y * sens, -0.6, 1.2);
@@ -123,5 +171,76 @@ export class CameraRig {
     }
     this.first = false;
     cam.updateProjectionMatrix();
+  }
+
+  // Voo livre: frente/lado no plano, subir/descer, velocidade pela altitude e um
+  // "embalo" progressivo quando se segue em frente por alguns segundos.
+  updateFly(dt, look, world, fly) {
+    const cam = this.cam;
+    const sens = 0.0042;
+    const ax = fly?.axes || { fwd: 0, strafe: 0, up: 0 };
+    this.flyYaw = wrapAngle(this.flyYaw - look.x * sens);
+    this.flyPitch = clamp(this.flyPitch - look.y * sens, -1.45, 1.25);
+    const p = this.flyPos;
+    const g = world.groundAt(clamp(p.x, -MAP_LIMIT, MAP_LIMIT), clamp(p.z, -MAP_LIMIT, MAP_LIMIT));
+    const agl = p.y - g;
+    // Decolagem automática ao sair do carro.
+    let up = ax.up;
+    if (this.takeoff > 0) {
+      this.takeoff -= dt;
+      if (!ax.up && agl < 28) up = 1;
+    }
+    if (Math.abs(ax.fwd) > 0.3) this.flyHold = Math.min(4, this.flyHold + dt);
+    else this.flyHold = Math.max(0, this.flyHold - dt * 3);
+    const boost = 1 + this.flyHold * 0.6;
+    const sp = this.flySpeed(agl) * boost;
+    const vsp = clamp(7 + agl * 0.25, 7, 90);
+    const fx = Math.sin(this.flyYaw);
+    const fz = Math.cos(this.flyYaw);
+    const rx = -Math.cos(this.flyYaw);
+    const rz = Math.sin(this.flyYaw);
+    const tx = (fx * ax.fwd + rx * ax.strafe) * sp;
+    const tz = (fz * ax.fwd + rz * ax.strafe) * sp;
+    let ty = up * vsp;
+    // Roda do mouse: muda a altitude em degraus.
+    if (look.zoom) ty -= look.zoom * vsp * 6;
+    const k = 1 - Math.exp(-3.2 * dt);
+    this.flyVel.x += (tx - this.flyVel.x) * k;
+    this.flyVel.z += (tz - this.flyVel.z) * k;
+    this.flyVel.y += (ty - this.flyVel.y) * (1 - Math.exp(-4 * dt));
+    p.addScaledVector(this.flyVel, dt);
+    // Limites: acima do chão, abaixo da base das nuvens e dentro do mapa.
+    p.x = clamp(p.x, -MAP_LIMIT, MAP_LIMIT);
+    p.z = clamp(p.z, -MAP_LIMIT, MAP_LIMIT);
+    const g2 = world.groundAt(p.x, p.z);
+    if (p.y < g2 + 2) {
+      p.y = g2 + 2;
+      if (this.flyVel.y < 0) this.flyVel.y = 0;
+    }
+    const ceil = Math.max(g2 + 30, fly?.ceiling ?? g2 + 1200);
+    if (p.y > ceil) {
+      p.y = ceil;
+      if (this.flyVel.y > 0) this.flyVel.y = 0;
+    }
+    // Inclina nas curvas laterais.
+    this.flyRoll += (-ax.strafe * 0.14 - this.flyRoll) * (1 - Math.exp(-4 * dt));
+    cam.position.copy(p);
+    const cp = Math.cos(this.flyPitch);
+    cam.up.set(0, 1, 0);
+    cam.lookAt(p.x + Math.sin(this.flyYaw) * cp, p.y + Math.sin(this.flyPitch), p.z + Math.cos(this.flyYaw) * cp);
+    cam.rotateZ(this.flyRoll);
+    if (this.shake > 0.001) {
+      cam.position.x += (Math.random() - 0.5) * this.shake;
+      cam.position.y += (Math.random() - 0.5) * this.shake;
+      this.shake *= Math.exp(-5 * dt);
+    }
+    cam.fov += (66 - cam.fov) * (1 - Math.exp(-3 * dt));
+    this.first = false;
+    cam.updateProjectionMatrix();
+  }
+
+  // Altitude da câmera de sobrevoo acima do chão.
+  flyAGL(world) {
+    return this.flyPos.y - world.groundAt(clamp(this.flyPos.x, -MAP_LIMIT, MAP_LIMIT), clamp(this.flyPos.z, -MAP_LIMIT, MAP_LIMIT));
   }
 }

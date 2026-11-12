@@ -18,6 +18,7 @@ export const KEYMAP = {
   interact: ['KeyE'],
   anchor: ['KeyX'],
   zoomRadar: ['KeyZ'],
+  fly: ['KeyV'],
 };
 
 export class Input {
@@ -29,7 +30,7 @@ export class Input {
     this.lookX = 0;
     this.lookY = 0;
     this.zoom = 0;
-    this.touch = { steer: 0, throttle: 0, brake: 0, active: false };
+    this.touch = { steer: 0, fwd: 0, throttle: 0, brake: 0, active: false };
     this.enabled = true;
     this.dragging = false;
     this.lastX = 0;
@@ -120,6 +121,7 @@ export class Input {
           dy /= l;
         }
         this.touch.steer = dx;
+        this.touch.fwd = -dy;
         knob.style.transform = `translate(${dx * r.width * 0.32}px, ${dy * r.height * 0.32}px)`;
       };
       joy.addEventListener('pointerdown', (e) => {
@@ -136,6 +138,7 @@ export class Input {
         if (e.pointerId !== this.joyPointer) return;
         this.joyPointer = null;
         this.touch.steer = 0;
+        this.touch.fwd = 0;
         knob.style.transform = '';
       };
       joy.addEventListener('pointerup', release);
@@ -192,6 +195,26 @@ export class Input {
       handbrake: k.has('Space'),
       boost: k.has('ShiftLeft') || k.has('ShiftRight'),
     };
+  }
+
+  // Eixos do sobrevoo: frente/trás, lados, subir (Espaço) e descer (Shift).
+  // No toque: o joystick move e os pedais sobem/descem.
+  flyAxes() {
+    const k = this.down;
+    let fwd = 0;
+    let strafe = 0;
+    let up = 0;
+    if (k.has('KeyW') || k.has('ArrowUp')) fwd += 1;
+    if (k.has('KeyS') || k.has('ArrowDown')) fwd -= 1;
+    if (k.has('KeyD') || k.has('ArrowRight')) strafe += 1;
+    if (k.has('KeyA') || k.has('ArrowLeft')) strafe -= 1;
+    if (k.has('Space') || k.has('PageUp')) up += 1;
+    if (k.has('ShiftLeft') || k.has('ShiftRight') || k.has('PageDown')) up -= 1;
+    fwd += this.touch.fwd;
+    strafe += this.touch.steer;
+    up += this.touch.throttle - this.touch.brake;
+    const c = (v) => Math.max(-1, Math.min(1, v));
+    return { fwd: c(fwd), strafe: c(strafe), up: c(up) };
   }
 
   consumeAction(name) {

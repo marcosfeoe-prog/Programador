@@ -87,6 +87,25 @@ export class Audio {
     so.start();
     so2.start();
     this.siren = { so, so2, g: sg };
+    // Zumbido do sobrevoo (hélices).
+    const d1 = ctx.createOscillator();
+    d1.type = 'sawtooth';
+    d1.frequency.value = 190;
+    const d2 = ctx.createOscillator();
+    d2.type = 'triangle';
+    d2.frequency.value = 383;
+    const df = ctx.createBiquadFilter();
+    df.type = 'bandpass';
+    df.frequency.value = 600;
+    df.Q.value = 0.8;
+    const dg = ctx.createGain();
+    dg.gain.value = 0;
+    d1.connect(df);
+    d2.connect(df);
+    df.connect(dg).connect(this.master);
+    d1.start();
+    d2.start();
+    this.droneNodes = { d1, d2, g: dg };
     this.hailT = 0;
   }
 
@@ -120,6 +139,13 @@ export class Audio {
         this.hailT += 0.02 + Math.random() * (0.12 / (0.2 + s.hail * 3));
         this.click(0.06 + Math.random() * s.hail * 0.4, 1800 + Math.random() * 2400, s.hailSize);
       }
+    }
+    // Hélices do sobrevoo: o tom sobe com a velocidade.
+    const dr = s.drone ?? -1;
+    set(this.droneNodes.g.gain, dr >= 0 ? 0.018 + Math.min(0.02, dr * 0.0002) : 0, 0.2);
+    if (dr >= 0) {
+      set(this.droneNodes.d1.frequency, 185 + Math.min(120, dr * 0.9) + Math.sin(t * 7) * 3, 0.15);
+      set(this.droneNodes.d2.frequency, 377 + Math.min(240, dr * 1.8), 0.15);
     }
     // Sirene: sobe e desce lentamente.
     const sv = s.siren || 0;

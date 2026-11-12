@@ -167,6 +167,7 @@ que crescem sem limite fixo e mudam de forma (corda, cone, cilindro, forma de V,
 multivórtice e, raramente, a massa rebaixada que toma o horizonte); frequência de tornados
 por país (EUA todo dia; Brasil e Canadá a cada 2–3 dias; Argentina e Uruguai a cada 3; Chile a
 cada 5–7), quase sempre EF0/EF1 porque a nota vem só dos danos. Carros de caça modelados e
-texturizados do zero, radar Doppler, previsão diária, garagem, laboratório e controles de
+texturizados do zero, radar Doppler, previsão diária, garagem, laboratório, câmera de
+sobrevoo (o jogador desce do carro e voa pelo mapa em busca do tornado) e controles de
 celular. Com o servidor rodando (`npm start`), abra `http://localhost:8080/cacadores/`.
 Detalhes em [`cacadores/README.md`](cacadores/README.md).

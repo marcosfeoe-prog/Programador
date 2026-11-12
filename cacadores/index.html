@@ -157,7 +157,8 @@
             <tr><td>Espaço</td><td>freio de mão</td></tr>
             <tr><td>Shift</td><td>arrancada</td></tr>
             <tr><td>Mouse (arrastar) / roda</td><td>olhar em volta / zoom</td></tr>
-            <tr><td>C</td><td>trocar câmera (perseguição, motorista, teto, órbita, tripé)</td></tr>
+            <tr><td>C</td><td>trocar câmera (perseguição, motorista, teto, órbita, tripé, sobrevoo)</td></tr>
+            <tr><td>V</td><td>sobrevoo: descer do carro e voar por todo o mapa em busca do tornado (WASD voa, Espaço sobe, Shift desce, roda do mouse muda a altitude; V volta ao carro)</td></tr>
             <tr><td>Q</td><td>olhar para o tornado ou tempestade mais próxima</td></tr>
             <tr><td>F</td><td>tirar foto</td></tr>
             <tr><td>P</td><td>soltar sonda no caminho do tornado</td></tr>
@@ -265,6 +266,7 @@
           <span>No solo há</span><b id="t-time">—</b>
         </div>
       </div>
+      <div id="finder" class="glass hidden"><span id="finder-arrow">⬆</span><span id="finder-txt"></span></div>
       <div id="feed"></div>
       <div id="prompt" class="hidden"></div>
       <div id="viewfinder" class="hidden"><div class="vf-c"></div><div class="vf-txt" id="vf-txt"></div></div>
@@ -282,6 +284,7 @@
       <div id="tbtns">
         <button data-action="photo">📷</button>
         <button data-action="camera">🎥</button>
+        <button data-action="fly">🚁</button>
         <button data-action="lookTornado">🌪️</button>
         <button data-action="probe">📡</button>
         <button data-action="report">📢</button>
