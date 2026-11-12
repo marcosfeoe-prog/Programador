@@ -527,13 +527,50 @@ export function buildVehicle(model, country, opts = {}) {
     ws.rotation.x = -0.6;
     g.add(ws);
   }
+  // Interior (visível só na câmera do motorista): painel, volante, colunas e teto.
+  const interior = new THREE.Group();
+  const dashMat = new THREE.MeshStandardMaterial({ color: '#16181b', roughness: 0.85 });
+  const trimMat = new THREE.MeshStandardMaterial({ color: '#2a2d31', roughness: 0.8 });
+  const zW = zmin + spec.cabin.r1 * spec.L;
+  const yB = curve(spec.belt, spec.cabin.r1);
+  const dash = new THREE.Mesh(new THREE.BoxGeometry(spec.W * 0.92, 0.28, 0.55), dashMat);
+  dash.position.set(0, yB - 0.02, zW + 0.18);
+  const hoodIn = new THREE.Mesh(new THREE.BoxGeometry(spec.W * 0.9, 0.04, 1.6), bodyMat);
+  hoodIn.position.set(0, curve(spec.deck, 0.85) - 0.02, zW + 1.1);
+  const wheelR = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.025, 8, 24), trimMat);
+  wheelR.position.set(-spec.W * 0.2, yB + 0.12, zW - 0.18);
+  wheelR.rotation.x = -0.35;
+  const gauges = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.12), new THREE.MeshStandardMaterial({ color: '#0a0c10', emissive: '#3fa9ff', emissiveIntensity: 0.35 }));
+  gauges.position.set(-spec.W * 0.2, yB + 0.14, zW + 0.0);
+  gauges.rotation.x = -0.35;
+  gauges.rotation.y = Math.PI;
+  const tablet = new THREE.Mesh(new THREE.PlaneGeometry(0.26, 0.17), new THREE.MeshStandardMaterial({ color: '#05080b', emissive: '#64e0a0', emissiveIntensity: 0.25 }));
+  tablet.position.set(spec.W * 0.05, yB + 0.24, zW - 0.02);
+  tablet.rotation.y = Math.PI;
+  tablet.rotation.x = 0.25;
+  interior.add(dash, hoodIn, wheelR, gauges, tablet);
+  const roofY = spec.cabin.roof;
+  for (const sx of [-1, 1]) {
+    // Coluna A (inclinada como o para-brisa) e borda do teto.
+    const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.95, 0.09), trimMat);
+    pillar.position.set(sx * spec.W * 0.4, (yB + roofY) / 2, zW - 0.25);
+    pillar.rotation.x = 0.55;
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, spec.L * 0.32), trimMat);
+    rail.position.set(sx * spec.W * 0.38, roofY - 0.06, zW - 0.6 - spec.L * 0.16);
+    interior.add(pillar, rail);
+  }
+  const roofIn = new THREE.Mesh(new THREE.BoxGeometry(spec.W * 0.78, 0.04, spec.L * 0.3), trimMat);
+  roofIn.position.set(0, roofY - 0.05, zW - 0.65 - spec.L * 0.15);
+  interior.add(roofIn);
+  interior.visible = false;
+  g.add(interior);
   g.traverse((o) => {
     if (o.isMesh) {
       o.castShadow = true;
       o.receiveShadow = true;
     }
   });
-  return { group: g, wheels, headMat, tailMat, parts, spec, bodyMat, cabinMat };
+  return { group: g, wheels, headMat, tailMat, parts, spec, bodyMat, cabinMat, interior, cabin: cab };
 }
 
 // Carros estacionados (versão simples e instanciada).

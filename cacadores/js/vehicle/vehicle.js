@@ -337,6 +337,6 @@ export class Vehicle {
   // Ponto da câmera do motorista (local do carro).
   driverEye() {
     const s = this.spec;
-    return new THREE.Vector3(-s.W * 0.2, (s.cabin.roof + s.belt[1][1]) * 0.5 + 0.05, -s.L / 2 + s.L * (s.cabin.r1 - 0.06));
+    return new THREE.Vector3(-s.W * 0.2, s.belt[1][1] + (s.cabin.roof - s.belt[1][1]) * 0.55, -s.L / 2 + s.L * s.cabin.r1 - 0.62);
   }
 }

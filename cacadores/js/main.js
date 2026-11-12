@@ -1358,6 +1358,10 @@ function render(dt) {
   look.x *= sens;
   look.y *= sens;
   if (G.state === 'play') G.rig.update(dt, v, look, world);
+  // Na câmera do motorista, mostra o interior e esconde a cabine vista de fora.
+  const inside = G.rig.mode === 'cockpit';
+  v.v.interior.visible = inside;
+  v.v.cabin.visible = !inside;
   const cam = G.camera;
   cam.updateMatrixWorld();
   // Céu e luz na posição da câmera.
@@ -1489,6 +1493,7 @@ function render(dt) {
     G.hudT = 0.1;
     for (const t of w.tornadoes) if (t.onGround && t.ratingSoFar === undefined) t.ratingSoFar = -1;
     hud.update(G);
+    $('radar-label').textContent = `${G.radar.mode === 'refl' ? 'Refletividade' : 'Velocidade radial'} · ${G.radar.range / 1000} km · ${world.country.radar.name}`;
     const vf = $('viewfinder');
     vf.classList.toggle('hidden', G.rig.mode !== 'tripod');
     if (G.settings.fps) $('fps').textContent = `${Math.round(1 / Math.max(1e-3, G.avgDt || dt))} FPS · escala ${G.pipeline.scale.toFixed(2)} · detritos ${G.debris.count()}`;
