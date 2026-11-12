@@ -36,8 +36,7 @@ export class UI {
     const unlock = () => {
       if (game.audio) game.audio.unlock();
     };
-    addEventListener('pointerdown', unlock, { capture: true });
-    addEventListener('keydown', unlock, { capture: true });
+    for (const ev of ['pointerdown', 'touchend', 'click', 'keydown']) addEventListener(ev, unlock, { capture: true });
 
     document.querySelectorAll('#ui button').forEach((b) => {
       b.addEventListener('pointerenter', () => game.audio && game.audio.uiHover());

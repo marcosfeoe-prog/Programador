@@ -141,7 +141,7 @@ input[type='checkbox'] { width: 18px; height: 18px; accent-color: var(--rose); }
 .pause-where { margin: -8px 0 14px; font-family: var(--display); font-style: italic; color: var(--ink-soft); }
 
 /* ---------- história (intro e final), sobre o branco do sonho */
-#story { background: transparent; pointer-events: none; }
+#story { background: transparent; pointer-events: auto; cursor: default; }
 #story-text {
   max-width: min(680px, calc(100vw - 48px));
   margin: 0; padding: 0 16px;

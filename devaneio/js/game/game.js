@@ -467,6 +467,11 @@ export class Game {
         const b = lvl.bounds;
         if (this.state === 'play' && Math.hypot(this.player.pos.x - b.x, this.player.pos.z - b.z) > b.r) this.dreamWrap();
         this.idle += dt;
+        // dica gentil para quem está perdido há muito tempo
+        if (this.state === 'play' && this.idle > 75 && this.hintLevel !== this.levelIndex && this.memories.count < this.memories.total) {
+          this.hintLevel = this.levelIndex;
+          this.whisper('escute: as lembranças fazem um som baixinho. procure o brilho.');
+        }
       } else if (this.state === 'title' || this.state === 'title-loading' || this.state === 'starting') {
         if (this.state !== 'starting') this.updateTitleCam(dt);
       } else if (this.params.shot) {
