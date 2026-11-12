@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#0a0b0d" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="description" content="Ferrugem: survival horror em terceira pessoa no navegador. Mira com laser, infectados, munição escassa e o Ferreiro." />
+    <title>Ferrugem</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Grenze+Gotisch:wght@600;800&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="css/style.css" />
+    <script type="importmap">
+      { "imports": { "three": "../vendor/three/three.module.min.js" } }
+    </script>
+  </head>
+  <body>
+<!-- BEGIN BODY -->
+<div id="app">
+  <canvas id="view" aria-label="Cena do jogo"></canvas>
+  <div id="fx-vignette"></div>
+  <div id="fx-low"></div>
+  <div id="fx-hurt"></div>
+  <div id="fx-heal"></div>
+  <div id="fx-grain"></div>
+  <div id="fx-fade"></div>
+
+  <div id="hud" hidden>
+    <div id="hud-obj"><span class="lbl">Objetivo</span><span id="obj-text"></span></div>
+    <div id="compass" hidden><div id="compass-mark"><span id="compass-arrow">◆</span><span id="compass-dist"></span></div></div>
+    <div id="bossbar" hidden><div id="boss-name">O Ferreiro</div><div class="bar"><div id="boss-fill"></div></div></div>
+    <div id="msgs" aria-live="polite"></div>
+    <div id="prompt" hidden>
+      <span id="prompt-key">E</span><span id="prompt-text"></span>
+      <div id="prompt-hold"><div id="prompt-hold-fill"></div></div>
+    </div>
+    <div id="hitmark"></div>
+    <div id="dotsight"></div>
+    <div id="vital">
+      <div class="lbl">Vitalidade</div>
+      <div class="bar"><div id="hp-fill"></div></div>
+    </div>
+    <div id="weapon">
+      <div id="w-name">Pistola P-9</div>
+      <div id="w-ammo"><span id="w-mag">12</span><span id="w-res">/ 24</span></div>
+      <div id="w-state"></div>
+      <div id="w-items"><span id="i-tonic"></span><span id="i-grenade"></span></div>
+    </div>
+    <div id="clickhint" hidden>Clique na tela para controlar a câmera</div>
+    <div id="saved" hidden>Progresso salvo</div>
+    <div id="fps" hidden></div>
+  </div>
+
+  <div id="bosscard" hidden>
+    <div class="bc-name">O Ferreiro</div>
+    <div class="bc-sub">Bento, o primeiro a enferrujar</div>
+  </div>
+
+  <div id="touch" hidden>
+    <div id="t-joy"><div class="knob"></div></div>
+    <div class="tcluster">
+      <button class="tbtn t-fire" data-act="fire">Atirar</button>
+      <button class="tbtn t-aim" data-act="aim">Mirar</button>
+      <button class="tbtn t-act" data-act="act">Ação</button>
+      <button class="tbtn t-reload" data-act="reload">Recarregar</button>
+    </div>
+    <div class="trow">
+      <button class="tbtn small" data-act="wnext">Arma</button>
+      <button class="tbtn small" data-act="heal">Curar</button>
+      <button class="tbtn small" data-act="grenade">Granada</button>
+      <button class="tbtn small" data-act="turn180">180°</button>
+      <button class="tbtn small" data-act="run">Correr</button>
+    </div>
+    <div class="ttop">
+      <button class="tbtn small" data-act="inv">Mochila</button>
+      <button class="tbtn small" data-act="menu">Pausa</button>
+    </div>
+  </div>
+
+  <section id="s-title" class="screen title-screen" hidden>
+    <div class="title-block">
+      <h1 class="logo">Ferrugem</h1>
+      <p class="tagline">Vale dos Corvos · outubro de 2004</p>
+      <nav class="menu" aria-label="Menu principal">
+        <button class="btn primary" id="b-continue" hidden>Continuar</button>
+        <button class="btn primary" id="b-new">Novo jogo</button>
+        <button class="btn" id="b-controls">Controles</button>
+        <button class="btn" id="b-options">Opções</button>
+      </nav>
+      <p class="foot">Survival horror em terceira pessoa. Use fone de ouvido.</p>
+      <p class="rotate-hint">Gire o celular para jogar na horizontal.</p>
+    </div>
+  </section>
+
+  <section id="s-new" class="screen" hidden>
+    <div class="panel">
+      <h2>Dificuldade</h2>
+      <div class="choices" id="diff-list"></div>
+      <div class="row-btns"><button class="btn" data-back>Voltar</button></div>
+    </div>
+  </section>
+
+  <section id="s-options" class="screen" hidden>
+    <div class="panel">
+      <h2>Opções</h2>
+      <div class="form">
+        <label class="field"><span>Qualidade gráfica</span>
+          <select id="o-quality"><option value="baixa">Baixa · celulares simples, sem sombras</option><option value="media">Média · celulares bons e notebooks</option><option value="alta">Alta · PC com placa de vídeo</option></select>
+        </label>
+        <label class="field"><span>Sensibilidade do mouse <output id="o-sens-v"></output></span><input id="o-sens" type="range" min="0.3" max="3" step="0.05" /></label>
+        <label class="field"><span>Sensibilidade do toque <output id="o-tsens-v"></output></span><input id="o-tsens" type="range" min="0.3" max="3" step="0.05" /></label>
+        <label class="field"><span>Volume geral <output id="o-vol-v"></output></span><input id="o-vol" type="range" min="0" max="1" step="0.05" /></label>
+        <label class="field"><span>Música <output id="o-music-v"></output></span><input id="o-music" type="range" min="0" max="1" step="0.05" /></label>
+        <label class="check"><input id="o-invert" type="checkbox" /> Inverter eixo vertical</label>
+        <label class="check"><input id="o-compass" type="checkbox" /> Indicador do objetivo</label>
+        <label class="check"><input id="o-assist" type="checkbox" /> Ajuda de mira no toque</label>
+        <label class="check"><input id="o-dyn" type="checkbox" /> Resolução dinâmica (mantém o FPS)</label>
+        <label class="check"><input id="o-fps" type="checkbox" /> Mostrar FPS</label>
+      </div>
+      <div class="row-btns"><button class="btn" data-back>Voltar</button></div>
+    </div>
+  </section>
+
+  <section id="s-controls" class="screen" hidden>
+    <div class="panel wide">
+      <h2>Controles</h2>
+      <div class="cols">
+        <table class="keys">
+          <caption>Teclado e mouse</caption>
+          <tr><td><kbd>W A S D</kbd></td><td>Andar</td></tr>
+          <tr><td><kbd>Shift</kbd></td><td>Correr</td></tr>
+          <tr><td><kbd>Mouse</kbd></td><td>Olhar e girar</td></tr>
+          <tr><td><kbd>Botão direito</kbd> ou <kbd>X</kbd></td><td>Mirar (laser)</td></tr>
+          <tr><td><kbd>Botão esquerdo</kbd></td><td>Atirar · sem mirar: faca</td></tr>
+          <tr><td><kbd>E</kbd></td><td>Pegar, ler, abrir, girar, chutar</td></tr>
+          <tr><td><kbd>R</kbd></td><td>Recarregar</td></tr>
+          <tr><td><kbd>1</kbd> <kbd>2</kbd> / roda</td><td>Pistola / escopeta</td></tr>
+          <tr><td><kbd>G</kbd></td><td>Granada</td></tr>
+          <tr><td><kbd>H</kbd></td><td>Usar tônico</td></tr>
+          <tr><td><kbd>Q</kbd></td><td>Giro de 180°</td></tr>
+          <tr><td><kbd>Tab</kbd> / <kbd>I</kbd></td><td>Mochila</td></tr>
+          <tr><td><kbd>Esc</kbd> / <kbd>P</kbd></td><td>Pausa</td></tr>
+          <tr><td><kbd>← →</kbd></td><td>Girar sem mouse</td></tr>
+        </table>
+        <div class="tips">
+          <h3>Celular</h3>
+          <p>Joystick à esquerda para andar (empurre até o fim para correr). Arraste no lado direito para olhar. <b>Mirar</b> liga e desliga a mira; <b>Atirar</b> sem mira usa a faca.</p>
+          <h3>Como sobreviver</h3>
+          <p>Tiros na <b>cabeça</b> ou nos <b>joelhos</b> deixam o infectado atordoado. Chegue perto e aperte <kbd>E</kbd> para dar um chute que derruba todos à sua frente.</p>
+          <p>Barris vermelhos explodem. Caixas escondem munição. Leia os documentos: eles dizem para onde ir.</p>
+        </div>
+      </div>
+      <div class="row-btns"><button class="btn" data-back>Voltar</button></div>
+    </div>
+  </section>
+
+  <section id="s-intro" class="screen intro" hidden>
+    <div id="intro-lines"></div>
+    <p class="skip">Clique ou aperte qualquer tecla para pular</p>
+  </section>
+
+  <section id="s-pause" class="screen" hidden>
+    <div class="panel narrow">
+      <h2>Pausado</h2>
+      <nav class="menu">
+        <button class="btn primary" id="b-resume">Continuar</button>
+        <button class="btn" id="b-inv">Mochila</button>
+        <button class="btn" id="b-pcontrols">Controles</button>
+        <button class="btn" id="b-poptions">Opções</button>
+        <button class="btn" id="b-retry">Voltar ao último checkpoint</button>
+        <button class="btn" id="b-quit">Sair para o título</button>
+      </nav>
+      <p class="hint" id="pause-hint"></p>
+    </div>
+  </section>
+
+  <section id="s-inv" class="screen" hidden>
+    <div class="panel wide inv">
+      <div class="inv-head"><h2>Mochila</h2><div id="inv-hp"></div></div>
+      <div class="inv-body">
+        <div id="inv-grid" role="list"></div>
+        <aside id="inv-detail">
+          <div id="inv-icon"></div>
+          <h3 id="inv-name"></h3>
+          <p id="inv-desc"></p>
+          <div class="row-btns" id="inv-actions"></div>
+        </aside>
+      </div>
+      <div class="row-btns"><button class="btn" id="b-inv-close">Fechar</button></div>
+    </div>
+  </section>
+
+  <section id="s-note" class="screen" hidden>
+    <article class="paper" id="note-paper">
+      <h2 id="note-title"></h2>
+      <div id="note-body"></div>
+      <div class="row-btns"><button class="btn" id="b-note-close">Fechar</button></div>
+    </article>
+  </section>
+
+  <section id="s-dead" class="screen dead" hidden>
+    <div class="panel narrow center">
+      <h2 class="big">Você morreu</h2>
+      <p id="dead-tip" class="tip"></p>
+      <nav class="menu">
+        <button class="btn primary" id="b-dead-retry">Continuar do checkpoint</button>
+        <button class="btn" id="b-dead-quit">Sair para o título</button>
+      </nav>
+    </div>
+  </section>
+
+  <section id="s-win" class="screen" hidden>
+    <div class="panel narrow center">
+      <h2 class="big">Você sobreviveu</h2>
+      <div id="win-text"></div>
+      <div class="rank"><span>Classificação</span><b id="win-rank">A</b></div>
+      <table class="stats" id="win-stats"></table>
+      <nav class="menu">
+        <button class="btn primary" id="b-win-again">Jogar de novo</button>
+        <button class="btn" id="b-win-title">Título</button>
+      </nav>
+    </div>
+  </section>
+
+  <section id="s-loading" class="screen loading">
+    <div class="load-box">
+      <div class="logo small">Ferrugem</div>
+      <div class="lbar"><div id="load-fill"></div></div>
+      <p id="load-text">Carregando…</p>
+    </div>
+  </section>
+</div>
+<!-- END BODY -->
+    <script>
+      // Se o motor não iniciar (sem WebGL ou falha ao baixar o three.js), avisa em vez de ficar travado.
+      setTimeout(function () {
+        if (window.__ferrugemReady) return;
+        var t = document.getElementById('load-text');
+        if (t) t.textContent = 'O jogo não conseguiu iniciar. Verifique a conexão e se o navegador suporta WebGL 2, depois recarregue a página.';
+      }, 20000);
+    </script>
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>

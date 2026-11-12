@@ -154,3 +154,15 @@ Segundo jogo do repositório: exploração em primeira pessoa pelos **Níveis 0,
 noturna, câmera térmica…), qualidade gráfica **Baixa, Média, Alta e Ultra** e
 controles feitos para **celular**. Com o servidor rodando (`npm start`), abra
 `http://localhost:8080/liminar/`. Detalhes em [`liminar/README.md`](liminar/README.md).
+
+---
+
+# Ferrugem — Survival Horror 3D (pasta `ferrugem/`)
+
+Terceiro jogo do repositório: **survival horror em terceira pessoa** com câmera por cima do
+ombro, **mira laser**, tiros na cabeça e nos joelhos que atordoam os inimigos para um **chute**,
+munição escassa, aldeões infectados pela Ferrugem, rastejantes e o chefe **O Ferreiro**.
+História, personagens e mapa originais; texturas, modelos e sons gerados por código. Funciona
+no PC e no celular. Com o servidor rodando (`npm start`), abra `http://localhost:8080/ferrugem/`.
+Detalhes em [`ferrugem/README.md`](ferrugem/README.md).
+
