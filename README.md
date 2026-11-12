@@ -154,3 +154,16 @@ Segundo jogo do repositório: exploração em primeira pessoa pelos **Níveis 0,
 noturna, câmera térmica…), qualidade gráfica **Baixa, Média, Alta e Ultra** e
 controles feitos para **celular**. Com o servidor rodando (`npm start`), abra
 `http://localhost:8080/liminar/`. Detalhes em [`liminar/README.md`](liminar/README.md).
+
+---
+
+# Devaneio — Espaços Liminares em estilo dreamcore (pasta `devaneio/`)
+
+Terceiro jogo do repositório, feito do zero: exploração em primeira pessoa por
+**cinco lugares liminares** em tons pastel — um caminho rosa num campo infinito,
+um deserto infravermelho, um bosque de cogumelos gigantes, um bairro ao
+entardecer e um posto de gasolina com neon. Encontre as lembranças (polaroides)
+de cada lugar para fazer a porta aparecer. Céu com nuvens em *ray march*, grama
+instanciada, pós-processamento com gradação de cor e áudio 100% procedural.
+Com o servidor rodando (`npm start`), abra `http://localhost:8080/devaneio/`.
+Detalhes em [`devaneio/README.md`](devaneio/README.md).

@@ -290,7 +290,7 @@ gcol *= 0.8 + 0.4 * fract(vSeed * 13.7);
 #endif
 #ifdef GRASS_FLOWER
   vec3 fc = mix(uHead, uHead2, step(0.5, fract(vSeed * 7.1)));
-  fc *= 0.78 + 0.32 * sin(vT * 70.0 + vSeed * 20.0);
+  fc *= 0.86 + 0.18 * sin(vT * 55.0 + vSeed * 20.0) * sin(vT * 23.0 + vSeed * 7.0);
   gcol = mix(gcol, fc, smoothstep(0.42, 0.5, vT));
 #endif
 gcol *= mix(uAO, 1.0, smoothstep(0.0, 0.65, vT));

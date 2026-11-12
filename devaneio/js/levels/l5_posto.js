@@ -52,7 +52,7 @@ export class Level5 extends Level {
     this.titleCam = { from: [-9.5, 1.5, 19], to: [-7.5, 1.6, 15], yaw: -0.36, pitch: 0.1, dur: 80 };
     this.env = {
       sky: {
-        zenith: '#4866c8',
+        zenith: '#3c60c8',
         horizon: '#b4b2dc',
         ground: '#6a5a50',
         horizonSun: '#ffb08c',
@@ -77,9 +77,9 @@ export class Level5 extends Level {
         cloudShade: '#7a6ab8',
         band: [25, 7, 14, 1],
         bandSpan: 1.15,
-        bandGlow: 2.2,
-        bandLit: '#ffd070',
-        bandLit2: '#ff5aa0',
+        bandGlow: 1.7,
+        bandLit: '#ffa63d',
+        bandLit2: '#ff5c98',
         bandShade: '#9a6ab8',
         skyFog: 3000,
         skyHaze: 0.22,
@@ -111,7 +111,7 @@ export class Level5 extends Level {
         vigColor: '#1a1030',
         sat: 1.14,
         contrast: 1.03,
-        split: 0.08,
+        split: 0.04,
         tintShadow: '#22309a',
         tintHigh: '#ffe0d8',
         lift: '#120c22',
@@ -328,19 +328,19 @@ export class Level5 extends Level {
       cross: true,
       tile: 10,
       slots: Math.max(3, q.grassSlots - 2),
-      density: 4 * q.grassDensity,
+      density: 2 * q.grassDensity,
       height: [0.5, 0.95],
       width: [0.03, 0.045],
       base: '#3a4a2a',
       tip: '#6a8a4a',
       dry: '#6a8a4a',
-      head: '#ff6fb0',
-      head2: '#ff9ccc',
+      head: '#f2849c',
+      head2: '#ffa6b8',
       dryAmount: 0,
       ao: 0.5,
       lean: 0.2,
       patch: 0.3,
-      clump: 0.7,
+      clump: 0.74,
       clumpScale: 0.22,
       seed: 25,
       sss: '#ff80b0',
@@ -360,16 +360,16 @@ export class Level5 extends Level {
       const stem = paint(new THREE.CylinderGeometry(0.008, 0.012, h * 0.55, 4), '#4a6a3a');
       tf(stem, [x, h * 0.275, z]);
       fg.push(stem);
-      const spike = paint(new THREE.CylinderGeometry(0.01, 0.03, h * 0.4, 6, 3), rand() < 0.5 ? '#f77aa8' : '#ff9ec2', 0.1, rand);
-      const sp = spike.attributes.position;
-      for (let k = 0; k < sp.count; k++) {
-        const n = 0.75 + rand() * 0.5;
-        sp.setX(k, sp.getX(k) * n);
-        sp.setZ(k, sp.getZ(k) * n);
+      // espiga fofa: bolinhas empilhadas que afinam para cima
+      const col = rand() < 0.5 ? '#f2849c' : '#ffa6b8';
+      const nb = 7;
+      for (let k = 0; k < nb; k++) {
+        const t = k / nb;
+        const r = 0.035 * (1 - t * 0.7) * (0.8 + rand() * 0.4);
+        const bl = paint(new THREE.IcosahedronGeometry(r, 0), col, 0.12, rand);
+        tf(bl, [x + (rand() - 0.5) * 0.03, h * 0.55 + t * h * 0.42, z + (rand() - 0.5) * 0.03], [rand() * 3, rand() * 3, 0], [1, 1.5, 1]);
+        fg.push(bl);
       }
-      spike.computeVertexNormals();
-      tf(spike, [x + (rand() - 0.5) * 0.05, h * 0.55 + h * 0.22, z], [(rand() - 0.5) * 0.2, 0, (rand() - 0.5) * 0.2]);
-      fg.push(spike);
     }
     const fgMesh = this.mesh(merge(fg), std('#ffffff', { vertexColors: true, roughness: 0.7 }), { cast: false });
     this.flowerPatch = fgMesh;

@@ -166,9 +166,9 @@ export class Level4 extends Level {
         fogFalloff: 0.3,
         wind: [0.6, 0.6, 0.3],
       },
-      sun: { color: '#ff7cb0', intensity: 2.6, elev: 6, azim: -92 },
-      hemi: { sky: '#6f84ea', ground: '#3d4a36', intensity: 0.55 },
-      envIntensity: 1.0,
+      sun: { color: '#ff86b4', intensity: 3.6, elev: 15, azim: -92 },
+      hemi: { sky: '#6f84ea', ground: '#3d5a36', intensity: 0.45 },
+      envIntensity: 0.8,
       exposure: 1.18,
       shadowExtent: 42,
       memoryColor: '#ffd8ec',
@@ -183,7 +183,7 @@ export class Level4 extends Level {
         vigColor: '#1a0f2a',
         sat: 1.16,
         contrast: 1.05,
-        split: 0.1,
+        split: 0.05,
         tintShadow: '#1f2ea0',
         tintHigh: '#ffc6e2',
         lift: '#100c26',
@@ -195,8 +195,8 @@ export class Level4 extends Level {
     };
 
     // chão (gramado) e asfalto
-    const gtex = TX.grassGround({ a: '#2f5a2c', b: '#3e6a34', c: '#6a7a44', d: '#4a4a34', seed: 44 });
-    const lawn = groundMaterial({ map: gtex.map, normalMap: gtex.normalMap, roughness: 1, far: '#2f5530', farStart: 25, farEnd: 90, farMix: 0.6, macro: 0.15 });
+    const gtex = TX.grassGround({ a: '#3a7234', b: '#4a7e3c', c: '#6e8a48', d: '#4a5a34', seed: 44 });
+    const lawn = groundMaterial({ map: gtex.map, normalMap: gtex.normalMap, roughness: 1, far: '#3a6e38', farStart: 25, farEnd: 90, farMix: 0.6, macro: 0.15 });
     this.mesh(ground(4000, 4000, 4, 100, 100), lawn, { cast: false });
     const at = TX.asphalt(5);
     const asphaltMat = groundMaterial({ map: at.map, normalMap: at.normalMap, roughness: 0.92, color: '#d4ccdc', macro: 0.12, second: 0.5, secondMix: 0.35 });
@@ -570,8 +570,8 @@ export class Level4 extends Level {
       density: 44 * q.grassDensity,
       height: [0.06, 0.13],
       width: [0.03, 0.055],
-      base: '#123214',
-      tip: '#3f7c38',
+      base: '#17401a',
+      tip: '#4a9442',
       dry: '#6a8a40',
       dryAmount: 0.25,
       ao: 0.5,

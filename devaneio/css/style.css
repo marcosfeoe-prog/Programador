@@ -40,6 +40,7 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .screen { position: absolute; inset: 0; display: grid; place-items: center; }
 #title { pointer-events: auto; background: radial-gradient(ellipse at 50% 55%, rgba(255, 240, 248, 0.0) 0%, rgba(40, 20, 44, 0.28) 100%); }
 .title-wrap {
+  position: relative;
   display: flex; flex-direction: column; align-items: center; gap: 10px;
   padding: max(24px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
   text-align: center;
@@ -71,8 +72,8 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
   font-family: var(--display);
   font-size: clamp(19px, 2.4vw, 25px);
   font-weight: 300;
-  color: var(--ink-soft);
-  text-shadow: 0 0 10px rgba(255, 190, 230, 0.4);
+  color: rgba(255, 248, 252, 0.86);
+  text-shadow: 0 1px 2px rgba(50, 18, 50, 0.45), 0 0 14px rgba(60, 20, 60, 0.35), 0 0 10px rgba(255, 190, 230, 0.35);
   transition: color 0.25s, text-shadow 0.25s, letter-spacing 0.35s;
 }
 .menu button small { font-family: var(--ui); font-size: 12px; opacity: 0.7; letter-spacing: 0.05em; }
@@ -81,6 +82,13 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
   content: '✦'; position: absolute; left: 0; top: 50%; transform: translateY(-52%); font-size: 12px; color: var(--rose);
 }
 .hint { margin-top: 26px; font-size: 12px; letter-spacing: 0.12em; color: var(--ink-soft); opacity: 0.8; }
+
+.title-wrap::before {
+  content: ''; position: absolute; left: 50%; top: 58%; width: min(560px, 90vw); height: 62%; transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse at center, rgba(40, 16, 44, 0.26) 0%, rgba(40, 16, 44, 0) 70%);
+  z-index: -1; pointer-events: none;
+}
+.hint { text-shadow: 0 1px 2px rgba(50, 18, 50, 0.5); }
 
 @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
 

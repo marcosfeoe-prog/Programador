@@ -164,6 +164,10 @@ export class Post {
     this.scene.add(this.quad);
     this.levels = 6;
     this.samples = 0;
+    // sem render target de ponto flutuante, cai para 8 bits (sem HDR, mas funciona)
+    const ext = renderer.extensions;
+    this.hdr = ext.has('EXT_color_buffer_float') || ext.has('EXT_color_buffer_half_float');
+    this.rtType = this.hdr ? THREE.HalfFloatType : THREE.UnsignedByteType;
     this.mips = [];
     this.sceneRT = null;
     this.w = 0;
@@ -233,8 +237,8 @@ export class Post {
     if (this.sceneRT) this.sceneRT.dispose();
     for (const m of this.mips) m.dispose();
     this.sceneRT = new THREE.WebGLRenderTarget(w, h, {
-      type: THREE.HalfFloatType,
-      samples,
+      type: this.rtType,
+      samples: this.hdr ? samples : 0,
       depthBuffer: true,
       stencilBuffer: false,
     });
@@ -244,7 +248,7 @@ export class Post {
     for (let i = 0; i < this.levels; i++) {
       mw = Math.max(1, Math.floor(mw / 2));
       mh = Math.max(1, Math.floor(mh / 2));
-      const rt = new THREE.WebGLRenderTarget(mw, mh, { type: THREE.HalfFloatType, depthBuffer: false });
+      const rt = new THREE.WebGLRenderTarget(mw, mh, { type: this.rtType, depthBuffer: false });
       rt.texture.generateMipmaps = false;
       this.mips.push(rt);
     }

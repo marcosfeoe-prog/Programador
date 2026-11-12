@@ -216,6 +216,7 @@ export class Game {
 
   applyEnv(env) {
     this.sky.set(env.sky || {});
+    this.sky.uniforms.uCloudSteps.value = Math.min((env.sky && env.sky.cloudSteps) || 6, this.q.skySteps || 6);
     setAtmosphere(env.atmo || {});
     ATMO.uFogSunDir.value.copy(this.sky.sunDir);
     const s = env.sun || {};

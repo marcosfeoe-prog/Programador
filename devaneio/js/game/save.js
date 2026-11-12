@@ -2,9 +2,9 @@
 // o armazenamento não estiver disponível).
 
 export const QUALITY = {
-  baixa: { label: 'baixa', pixel: 0.8, maxPixel: 1, msaa: 0, shadows: false, shadowSize: 1024, grassSlots: 5, grassDensity: 0.5, bloomLevels: 5 },
-  media: { label: 'média', pixel: 1, maxPixel: 1.3, msaa: 0, shadows: true, shadowSize: 1024, grassSlots: 7, grassDensity: 0.72, bloomLevels: 6 },
-  alta: { label: 'alta', pixel: 1, maxPixel: 1.75, msaa: 4, shadows: true, shadowSize: 2048, grassSlots: 9, grassDensity: 1, bloomLevels: 6 },
+  baixa: { label: 'baixa', pixel: 0.8, maxPixel: 1, msaa: 0, shadows: false, shadowSize: 1024, grassSlots: 5, grassDensity: 0.5, bloomLevels: 5, skySteps: 4 },
+  media: { label: 'média', pixel: 1, maxPixel: 1.3, msaa: 0, shadows: true, shadowSize: 1024, grassSlots: 7, grassDensity: 0.72, bloomLevels: 6, skySteps: 6 },
+  alta: { label: 'alta', pixel: 1, maxPixel: 1.75, msaa: 4, shadows: true, shadowSize: 2048, grassSlots: 9, grassDensity: 1, bloomLevels: 6, skySteps: 8 },
 };
 
 const KEY_SET = 'devaneio.config.v1';
