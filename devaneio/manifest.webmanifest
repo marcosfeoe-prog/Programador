@@ -1,0 +1,10 @@
+{
+  "name": "Devaneio — Espaços Liminares",
+  "short_name": "Devaneio",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#f3d3e3",
+  "theme_color": "#f3d3e3",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
