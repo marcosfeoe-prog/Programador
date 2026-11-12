@@ -71,7 +71,7 @@ export class Terrain {
     const H = this.half;
     // Altura de referência das cidades (média local suavizada).
     for (const c of this.country.cities) {
-      const r = [600, 900, 1300, 1700][c.size] || 900;
+      const r = [420, 420, 650, 900][c.size] || 650;
       this.cityFlat.push({ x: c.x, z: c.z, r, h: 0 });
     }
     const saved = this.cityFlat;

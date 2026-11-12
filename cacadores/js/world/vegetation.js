@@ -52,7 +52,7 @@ function speciesGeometry(name) {
         [-w * 0.3, th + (1 - th) * 0.55, -0.1, 0.4],
         [0.05, th + (1 - th) * 0.4, -w * 0.28, 0.34],
       ];
-      blobs.forEach(([x, y, z, s], i) => {
+      blobs.slice(0, 3).forEach(([x, y, z, s], i) => {
         const g = lumpy(new THREE.IcosahedronGeometry(1, 1), 11 + i, 0.2);
         g.scale((s * w) / 0.75, s * (1 - th) * 0.95, (s * w) / 0.75);
         g.translate(x, y, z);
@@ -77,7 +77,7 @@ function speciesGeometry(name) {
     }
     case 'pine': {
       // Copa irregular no alto (pinus radiata de plantação).
-      for (let k = 0; k < 4; k++) {
+      for (let k = 0; k < 3; k++) {
         const g = lumpy(new THREE.IcosahedronGeometry(1, 1), 41 + k, 0.25);
         g.scale(w * (0.55 - k * 0.08), 0.13, w * (0.55 - k * 0.08));
         g.translate((k % 2 ? 0.02 : -0.02) * w, 0.6 + k * 0.11, (k % 3 ? 0.02 : -0.03) * w);
@@ -86,7 +86,7 @@ function speciesGeometry(name) {
       break;
     }
     case 'euca': {
-      for (let k = 0; k < 4; k++) {
+      for (let k = 0; k < 3; k++) {
         const g = lumpy(new THREE.IcosahedronGeometry(1, 1), 51 + k, 0.3);
         const s = w * (0.45 - k * 0.06);
         g.scale(s, 0.11, s);
@@ -284,6 +284,13 @@ export class Vegetation {
     const rng = this.rng;
     const d = this.density;
     const types = c.treeTypes;
+    // Orçamento de árvores (desempenho): as matas já são escuras no mapa de cor; as
+    // árvores 3D ficam concentradas nas bordas, que é o que se vê da estrada.
+    const budget = Math.round(13000 * d);
+    const forestBudget = budget * 0.55;
+    let candidates = 0;
+    for (const f of land.forestFields()) candidates += f.cells.length * 2.2;
+    const keep = Math.min(1, forestBudget / Math.max(1, candidates));
     // Florestas e plantações: bordas densas, interior esparso.
     for (const f of land.forestFields()) {
       const sp = f.info.forest === 'broadleaf' ? (c.id === 'brasil' ? null : rng.pick(types)) : f.info.forest;
@@ -306,7 +313,8 @@ export class Vegetation {
           if (ni < 0 || nj < 0 || ni >= Q || nj >= Q) continue;
           if (land.qgrid[nj * Q + ni] !== land.qgrid[idx]) edge = true;
         }
-        const n = Math.round((edge ? 7 : 1.2) * d * (rng.next() + 0.5));
+        if (!edge && rng.next() > keep * 0.35) continue;
+        const n = Math.round((edge ? 7 : 1.2) * Math.min(1, keep * 1.6) * (rng.next() + 0.5));
         for (let k = 0; k < n; k++) {
           const x = cx + rng.range(-0.5, 0.5) * land.qcell;
           const z = cz + rng.range(-0.5, 0.5) * land.qcell;
@@ -375,6 +383,17 @@ export class Vegetation {
         const sp = c.id === 'brasil' && rng.chance(0.15) ? 'araucaria' : rng.pick(types.filter((t) => t !== 'pine' && t !== 'eucalyptus')) || 'broadleaf';
         this.add(sp, lot.treeX, lot.treeZ, rng.range(0.6, 1));
       }
+    }
+    // Corta o excesso (as árvores são sorteadas para sair, sem padrão visível).
+    if (this.trees.length > budget * 0.85) {
+      const target = Math.round(budget * 0.85);
+      for (let k = this.trees.length - 1; k > 0; k--) {
+        const j = rng.int(0, k);
+        const t = this.trees[k];
+        this.trees[k] = this.trees[j];
+        this.trees[j] = t;
+      }
+      this.trees.length = target;
     }
     // Arvoredos das fazendas.
     for (const farm of farms) {

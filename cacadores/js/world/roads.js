@@ -492,7 +492,7 @@ function addMarkings(mat, style) {
           float m = 0.0;
           vec3 mc = white;
           if (lanes > 0.5) {
-            float edge = sstep(0.035 + fw, 0.035, abs(u - 0.06)) + sstep(0.035 + fw, 0.035, abs(u - 0.94));
+            float edge = sstep(0.013 + fw, 0.013, abs(u - 0.05)) + sstep(0.013 + fw, 0.013, abs(u - 0.95));
             m = max(m, edge * 0.85);
             float dash = step(fract(along / 12.0), 0.45);
             if (lanes > 2.5) {

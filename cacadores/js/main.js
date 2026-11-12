@@ -362,7 +362,7 @@ async function chooseCountry(id) {
   if (s.country && s.country !== id) {
     const tr = travelInfo(s.country, id);
     if (s.money < tr.cost) {
-      alert('Dinheiro insuficiente para a viagem.');
+      $('c-status').textContent = `Dinheiro insuficiente para viajar (${fmtMoney(tr.cost)}). Cace no país atual para juntar mais.`;
       return;
     }
     s.money -= tr.cost;
@@ -586,13 +586,19 @@ function makeVehicle(id) {
 
 function spawnAtCity(name) {
   const city = G.world.cities.find((c) => c.name === name) || G.world.cities[0];
-  // Procura um ponto de estrada perto do centro.
+  // Começa na rodovia, logo na saída da cidade (estrada livre à frente).
   let best = null;
+  const want = city.radius + 60;
   for (const r of G.world.roads.roads) {
-    if (r.type === 'street') continue;
-    for (let i = 0; i < r.pts.length - 1; i += 2) {
+    if (r.type !== 'highway' && r.type !== 'interstate' && r.type !== 'paved') continue;
+    for (let i = 0; i < r.pts.length - 1; i++) {
       const d = Math.hypot(r.pts[i][0] - city.x, r.pts[i][1] - city.z);
-      if (!best || d < best.d) best = { d, p: r.pts[i], q: r.pts[i + 1] };
+      const score = Math.abs(d - want) + (r.bridge?.[i] ? 500 : 0);
+      if (!best || score < best.score) {
+        // Aponta para fora da cidade.
+        const out = Math.hypot(r.pts[i + 1][0] - city.x, r.pts[i + 1][1] - city.z) > d;
+        best = { score, p: out ? r.pts[i] : r.pts[i + 1], q: out ? r.pts[i + 1] : r.pts[i] };
+      }
     }
   }
   const p = best ? best.p : [city.x, city.z];
@@ -1428,7 +1434,11 @@ function render(dt) {
   const light = clamp(0.35 + lum(G.sky.ambSky) * 1.4, 0.25, 0.9);
   G.precip.update(dt, cam, depth, G.shade.rain, G.shade.hail, amb, light);
   world.update(G.time, ws);
-  G.radar.draw(w, world, v, G.clock, dt, G.warnings);
+  G.radarT = (G.radarT || 0) - dt;
+  if (G.radarT <= 0) {
+    G.radar.draw(w, world, v, G.clock, 0.1 - G.radarT, G.warnings);
+    G.radarT = 0.1;
+  }
   // Composição.
   const night = G.sky.night;
   G.pipeline.render(G.scene, cam, vol, {

@@ -26,12 +26,12 @@ import { BuildingSet } from './structures.js';
 import { patchWorld } from '../render/materials.js';
 
 const STYLE = {
-  us: { block: [125, 108], front: 22, setback: 10, depth: 40, ang: 0, palette: ['#f2efe6', '#e9e1cf', '#d8dcdf', '#efe3b8', '#c9d6df', '#c5ceb4', '#d9c6a5', '#ffffff', '#b8c4cc'], roofs: ['#5a5856', '#3c3b3a', '#6b5a4a', '#77736e', '#4a4e55'] },
-  ca: { block: [125, 108], front: 22, setback: 10, depth: 40, ang: 0, palette: ['#f2efe6', '#e2d8c6', '#d0d8de', '#b9c9b0', '#e8e0c8', '#c84a3a', '#ffffff', '#9fb4c4'], roofs: ['#4a4846', '#2e2d2c', '#5e5246', '#6a6d72'] },
-  br: { block: [96, 84], front: 13, setback: 4, depth: 30, ang: 0.45, palette: ['#f2d16b', '#f4b49a', '#b8dcb0', '#a8cde8', '#ffffff', '#f2e6c8', '#d8b8e0', '#f0a25a', '#e8e4dc', '#9fd4c8'], roofs: ['#ffffff', '#f0e0d8', '#e8d0c0', '#ffffff'] },
-  ar: { block: [100, 100], front: 11, setback: 1.5, depth: 32, ang: 0.15, palette: ['#f2efe8', '#efe2c4', '#dcd8d0', '#e8c890', '#d8a888', '#ffffff', '#c8c4bc'], roofs: ['#ffffff', '#efe0d4', '#f0f0f0'] },
-  uy: { block: [100, 100], front: 11, setback: 1.5, depth: 32, ang: 0.3, palette: ['#f2efe8', '#efe2c4', '#dcd8d0', '#e8c890', '#cfe0e8', '#ffffff', '#e8d8b0'], roofs: ['#ffffff', '#efe0d4', '#f0f0f0'] },
-  cl: { block: [100, 92], front: 13, setback: 3, depth: 30, ang: 0.4, palette: ['#e8eef2', '#f2d16b', '#9ec2dc', '#e88a7a', '#a8d0a0', '#ffffff', '#f2e6c8', '#c84a3a', '#5a8ac0'], roofs: ['#a8aaac', '#8c3a2e', '#c8c8c8', '#4a6a8a', '#ffffff'] },
+  us: { block: [125, 108], front: 25, setback: 10, depth: 40, ang: 0, palette: ['#f2efe6', '#e9e1cf', '#d8dcdf', '#efe3b8', '#c9d6df', '#c5ceb4', '#d9c6a5', '#ffffff', '#b8c4cc'], roofs: ['#5a5856', '#3c3b3a', '#6b5a4a', '#77736e', '#4a4e55'] },
+  ca: { block: [125, 108], front: 25, setback: 10, depth: 40, ang: 0, palette: ['#f2efe6', '#e2d8c6', '#d0d8de', '#b9c9b0', '#e8e0c8', '#c84a3a', '#ffffff', '#9fb4c4'], roofs: ['#4a4846', '#2e2d2c', '#5e5246', '#6a6d72'] },
+  br: { block: [96, 84], front: 16, setback: 4, depth: 30, ang: 0.45, palette: ['#f2d16b', '#f4b49a', '#b8dcb0', '#a8cde8', '#ffffff', '#f2e6c8', '#d8b8e0', '#f0a25a', '#e8e4dc', '#9fd4c8'], roofs: ['#ffffff', '#f0e0d8', '#e8d0c0', '#ffffff'] },
+  ar: { block: [100, 100], front: 15, setback: 1.5, depth: 32, ang: 0.15, palette: ['#f2efe8', '#efe2c4', '#dcd8d0', '#e8c890', '#d8a888', '#ffffff', '#c8c4bc'], roofs: ['#ffffff', '#efe0d4', '#f0f0f0'] },
+  uy: { block: [100, 100], front: 15, setback: 1.5, depth: 32, ang: 0.3, palette: ['#f2efe8', '#efe2c4', '#dcd8d0', '#e8c890', '#cfe0e8', '#ffffff', '#e8d8b0'], roofs: ['#ffffff', '#efe0d4', '#f0f0f0'] },
+  cl: { block: [100, 92], front: 16, setback: 3, depth: 30, ang: 0.4, palette: ['#e8eef2', '#f2d16b', '#9ec2dc', '#e88a7a', '#a8d0a0', '#ffffff', '#f2e6c8', '#c84a3a', '#5a8ac0'], roofs: ['#a8aaac', '#8c3a2e', '#c8c8c8', '#4a6a8a', '#ffffff'] },
 };
 
 const CORRUGATED = ['#a8aaac', '#9a4a32', '#4f6f4f', '#8c8e90', '#c0c2c4', '#6a3a2a', '#5a6e8a'];
@@ -47,7 +47,8 @@ export function layoutSettlements(country, terrain, roads, seed) {
   const noise = new Noise(seed + 3);
   const cities = [];
   for (const def of country.cities) {
-    const r = [0, 520, 850, 1200][def.size] || 700;
+    // Cidades pequenas de propósito: servem de palco para os tornados.
+    const r = [0, 380, 600, 850][def.size] || 500;
     const city = { ...def, radius: r, lots: [], landmarks: [], streets: [], plaza: null, rng: rng.fork(def.name) };
     const crng = city.rng;
     city.ang = st.ang ? crng.range(-st.ang, st.ang) : 0;
@@ -86,13 +87,32 @@ export function layoutSettlements(country, terrain, roads, seed) {
     // Quarteirões e lotes.
     const latin = country.houseStyle !== 'us' && country.houseStyle !== 'ca';
     const sw = 9;
+    // A praça fica no quarteirão central que não seja cortado por rodovia.
+    let plazaIJ = null;
+    if (latin) {
+      for (const [pi, pj] of [
+        [-1, -1],
+        [0, -1],
+        [-1, 0],
+        [0, 0],
+        [-2, -1],
+        [-1, -2],
+      ]) {
+        const [px, pz] = toW((pi + 1) * bx, (pj + 1) * bz);
+        const hw = roads.query(px, pz, 120, (r) => r.type !== 'street');
+        if (!hw || hw.d > Math.max(bx, bz) * 0.6) {
+          plazaIJ = [pi, pj];
+          break;
+        }
+      }
+    }
     for (let i = -nu; i < nu; i++)
       for (let j = -nv; j < nv; j++) {
         const cu = (i + 1) * bx;
         const cv = (j + 1) * bz;
         if (!inside(cu, cv)) continue;
         const dc = Math.hypot(cu, cv) / r;
-        const isPlaza = latin && i === -1 && j === -1;
+        const isPlaza = plazaIJ && i === plazaIJ[0] && j === plazaIJ[1];
         if (isPlaza) {
           const [px, pz] = toW(cu, cv);
           city.plaza = { x: px, z: pz, u: cu, v: cv, w: bx - sw, d: bz - sw };

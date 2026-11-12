@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { clamp, damp, dampAngle, wrapAngle } from '../core/math.js';
 
 export const CAM_MODES = ['chase', 'cockpit', 'hood', 'orbit', 'tripod'];
-export const CAM_NAMES = { chase: 'Perseguição', cockpit: 'Motorista', hood: 'Capô', orbit: 'Órbita livre', tripod: 'Tripé (câmera fixa)' };
+export const CAM_NAMES = { chase: 'Perseguição', cockpit: 'Motorista', hood: 'Teto', orbit: 'Órbita livre', tripod: 'Tripé (câmera fixa)' };
 
 export class CameraRig {
   constructor(camera) {
