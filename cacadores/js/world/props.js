@@ -107,7 +107,15 @@ export class Props {
     this.wireGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     spans.forEach((s, k) => this.writeSpan(k));
     this.wireGeo.computeBoundingSphere();
-    const wire = new THREE.LineSegments(this.wireGeo, new THREE.LineBasicMaterial({ color: '#1a1a1a', transparent: true, opacity: 0.85 }));
+    // Fios somem com a distância (uma linha de 1 px seria forte demais ao longe).
+    const wireMat = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      uniforms: { uCol: { value: new THREE.Color(0.02, 0.02, 0.02) } },
+      vertexShader: 'varying float vD; void main() { vec4 mv = modelViewMatrix * vec4(position, 1.0); vD = -mv.z; gl_Position = projectionMatrix * mv; }',
+      fragmentShader: 'uniform vec3 uCol; varying float vD; void main() { float a = clamp(1.0 - (vD - 60.0) / 260.0, 0.0, 1.0) * 0.8; if (a < 0.01) discard; gl_FragColor = vec4(uCol, a); }',
+    });
+    const wire = new THREE.LineSegments(this.wireGeo, wireMat);
     this.wires = wire;
     this.group.add(wire);
   }

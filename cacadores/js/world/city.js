@@ -81,7 +81,7 @@ export function layoutSettlements(country, terrain, roads, seed) {
         if (run.length > 2) city.streets.push(run);
       }
     }
-    for (const s of city.streets) roads.add('street', s, '', { city: def.name });
+    for (const s of city.streets) roads.index(roads.add('street', s, '', { city: def.name }));
 
     // Quarteirões e lotes.
     const latin = country.houseStyle !== 'us' && country.houseStyle !== 'ca';
@@ -127,7 +127,9 @@ export function layoutSettlements(country, terrain, roads, seed) {
             const [tx, tz] = toW(u + fw * 0.35 * crng.sign(), tv);
             lot.treeX = tx;
             lot.treeZ = tz;
-            if (!roads.query(x, z, 5)) city.lots.push(lot);
+            // Nada de casas em cima de rodovias e estradas que cruzam a cidade.
+            const big = roads.query(x, z, 40, (r) => r.type !== 'street');
+            if ((!big || big.d > big.road.def.width / 2 + (down ? 9 : 11)) && !roads.query(x, z, 3.5)) city.lots.push(lot);
           }
         }
       }

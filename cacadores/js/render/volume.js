@@ -44,6 +44,8 @@ varying vec2 vUv;
 
 #define PI 3.14159265
 float sat(float x) { return clamp(x, 0.0, 1.0); }
+// smoothstep seguro também com bordas invertidas (a > b).
+float ss(float a, float b, float x) { float t = clamp((x - a) / (b - a), 0.0, 1.0); return t * t * (3.0 - 2.0 * t); }
 float ign(vec2 p) { return fract(52.9829189 * fract(dot(p, vec2(0.06711056, 0.00583715)))); }
 float hg(float c, float g) { float g2 = g * g; return (1.0 - g2) / (12.566 * pow(max(1.0 + g2 - 2.0 * g * c, 1e-4), 1.5)); }
 vec4 nz(vec3 p) { return texture(tNoise, p); }
@@ -67,29 +69,44 @@ vec2 stormLocal(int i, vec2 xz) {
   vec2 R = vec2(-F.y, F.x);
   return vec2(dot(rel, F), dot(rel, R) * uS0[i].w);
 }
-// Cobertura 2D da tempestade (para sombras e escurecimento do céu).
-float stormCover2D(vec2 xz) {
-  float c = 0.0;
+// Cobertura 2D das partes da tempestade (para sombras e escurecimento do céu).
+// x = teto baixo (base), y = torre/updraft, z = bigorna.
+vec3 stormParts(vec2 xz) {
+  vec3 c = vec3(0.0);
   for (int i = 0; i < ${MAX_STORMS}; i++) {
     if (i >= uNS) break;
     vec2 L = stormLocal(i, xz);
     float k = uS3[i].x;
     float m = uS0[i].z;
-    float dB = length(L / (vec2(6500.0, 5500.0) * k));
-    float dF = length((L - vec2(5000.0, -3000.0) * k) / (vec2(7500.0, 4500.0) * k));
-    float deck = smoothstep(1.0, 0.6, min(dB, dF)) * smoothstep(0.1, 0.45, m);
+    float dB = length(L / (vec2(7200.0, 6500.0) * k));
+    float dF = length((L - vec2(5500.0, -3500.0) * k) / (vec2(9500.0, 6800.0) * k));
+    float deck = ss(1.0, 0.6, min(dB, dF)) * ss(0.1, 0.45, m);
+    // Fenda de céu limpo do RFD atrás da nuvem parede.
+    float slot = ss(2600.0 * k, 900.0 * k, length(L - vec2(-2600.0, 1400.0) * k)) * uS3[i].w;
+    deck *= 1.0 - slot * 0.85;
+    float tw = ss(1.0, 0.55, length((L - vec2(1200.0, -700.0) * k) / (vec2(5200.0, 5200.0) * k))) * ss(0.15, 0.5, m);
     float aR = uS3[i].z;
     float dA = length((L - vec2(aR * 0.55, -1500.0 * k)) / vec2(aR, aR * 0.62));
-    float anv = smoothstep(1.0, 0.45, dA) * 0.6 * smoothstep(0.25, 0.7, m);
-    // Fenda de céu limpo do RFD atrás da nuvem parede.
-    float slot = smoothstep(2600.0 * k, 900.0 * k, length(L - vec2(-2600.0, 1400.0) * k)) * uS3[i].w;
-    c = max(c, max(deck * (1.0 - slot * 0.85), anv));
+    float anv = ss(1.0, 0.35, dA) * ss(0.25, 0.7, m);
+    c = max(c, vec3(deck, tw, anv));
   }
   return c;
 }
+float stormCover2D(vec2 xz) {
+  vec3 c = stormParts(xz);
+  return max(c.x, c.z * 0.75);
+}
+vec3 hazeAt(vec3 p) {
+  return uHaze * mix(1.0, 0.32, stormCover2D(p.xz));
+}
 float sunVis(vec3 p) {
-  vec2 off = uSunDir.xz / max(uSunDir.y, 0.08) * max(uBase + 900.0 - p.y, 0.0);
-  return 1.0 - 0.93 * stormCover2D(p.xz + off);
+  // Cada camada faz sombra a partir da sua altitude: com o sol baixo, a sombra da
+  // torre e da bigorna se estende por dezenas de quilômetros.
+  vec2 dir = uSunDir.xz / max(uSunDir.y, 0.06);
+  float a = stormParts(p.xz + dir * max(uBase + 900.0 - p.y, 0.0)).x;
+  float b = stormParts(p.xz + dir * max(uBase + 5000.0 - p.y, 0.0)).y;
+  float c = stormParts(p.xz + dir * max(uBase + 9500.0 - p.y, 0.0)).z;
+  return (1.0 - 0.94 * a) * (1.0 - 0.92 * b) * (1.0 - 0.85 * c);
 }
 `;
 
@@ -121,20 +138,20 @@ float storm(int i, vec3 p) {
   float m = uS0[i].z;
   float top = uS3[i].y;
   float h = p.y - uBase;
-  if (h < -10.0 || p.y > top + 2500.0) return 0.0;
+  if (h < -120.0 || p.y > top + 2500.0) return 0.0;
   float towerH = max(top - uBase, 1.0);
   float hn = h / towerH;
   vec2 tc = L - vec2(1200.0, -700.0) * k;
   float R0 = mix(1600.0, 4800.0, m) * k;
   vec4 n1 = nz(vec3(p.x, p.y * 0.8, p.z) / 5200.0 + vec3(0.0, -uTime * 0.003, 0.0));
   float bump = (n1.r - 0.5) * 2000.0 * k + (n1.g - 0.5) * 800.0;
-  float Rt = R0 * (0.8 + 0.3 * sat(hn)) * (1.0 - 0.5 * smoothstep(0.8, 1.06, hn));
+  float Rt = R0 * (0.8 + 0.3 * sat(hn)) * (1.0 - 0.5 * ss(0.8, 1.06, hn));
   float dT = length(tc) - Rt - bump;
-  float tower = smoothstep(450.0, -250.0, dT) * smoothstep(1.07, 0.97, hn);
+  float tower = ss(450.0, -250.0, dT) * ss(1.07, 0.97, hn) * step(0.0, h);
   // Topo penetrante (domo acima da bigorna).
   vec3 ot = vec3(tc.x + 500.0 * k, h - towerH, tc.y);
   float dO = length(ot / vec3(R0 * 0.6, R0 * 0.32, R0 * 0.6)) - 1.0;
-  tower = max(tower, smoothstep(0.15, -0.25, dO + (n1.b - 0.5) * 0.5) * smoothstep(0.5, 0.9, m));
+  tower = max(tower, ss(0.15, -0.25, dO + (n1.b - 0.5) * 0.5) * ss(0.5, 0.9, m));
   // Bigorna.
   float aR = uS3[i].z;
   float aTop = top - 150.0;
@@ -143,24 +160,27 @@ float storm(int i, vec3 p) {
   float ea = length(ac / vec2(aR, aR * 0.62));
   vec4 n2 = nz(vec3(p.x / 9000.0 + uTime * 0.0015, p.y / 2600.0, p.z / 9000.0));
   float edge = sat(1.0 - ea + (n2.r - 0.5) * 0.35);
-  float th = mix(0.3, 1.0, smoothstep(0.0, 0.45, edge));
+  float th = mix(0.3, 1.0, ss(0.0, 0.45, edge));
   float aMid = mix(aBot, aTop, 0.6);
   float aHalf = (aTop - aBot) * 0.5 * th;
-  float band = smoothstep(aHalf + 250.0, aHalf - 250.0, abs(p.y - aMid - (1.0 - th) * 450.0));
-  float anvil = band * smoothstep(0.0, 0.18, edge) * smoothstep(0.2, 0.65, m);
+  float band = ss(aHalf + 250.0, aHalf - 250.0, abs(p.y - aMid - (1.0 - th) * 450.0));
+  float anvil = band * ss(0.0, 0.18, edge) * ss(0.2, 0.65, m);
   // Mamatos sob a bigorna, perto da torre.
   float mam = 0.0;
   if (abs(p.y - aBot) < 700.0) {
     vec4 nm = nz(vec3(p.x / 1400.0, 0.5, p.z / 1400.0));
     float lump = (nm.g - 0.45) * 900.0;
-    mam = smoothstep(0.0, 180.0, p.y - (aBot - lump)) * smoothstep(aBot + 100.0, aBot - 50.0, p.y) * smoothstep(0.55, 0.85, edge) * smoothstep(0.5, 0.9, m);
+    mam = ss(0.0, 180.0, p.y - (aBot - lump)) * ss(aBot + 100.0, aBot - 50.0, p.y) * ss(0.55, 0.85, edge) * ss(0.5, 0.9, m);
   }
   // "Teto" baixo e escuro (base livre de chuva + região de precipitação).
   float dB = length(L / (vec2(6500.0, 5500.0) * k));
   float dF = length((L - vec2(5000.0, -3000.0) * k) / (vec2(7500.0, 4500.0) * k));
-  float deck = smoothstep(1.0, 0.72, min(dB, dF) + (n1.r - 0.5) * 0.35) * smoothstep(2800.0, 1000.0, h) * smoothstep(0.1, 0.4, m);
+  // Base irregular: ondulações e "bolsões" pendurados sob o teto.
+  vec4 nb = nz(vec3(p.x / 1700.0, 0.21, p.z / 1700.0) + vec3(uTime * 0.002, 0.0, 0.0));
+  float under = (nb.r - 0.5) * 160.0 + (nb.g - 0.5) * 70.0;
+  float deck = ss(1.0, 0.72, min(dB, dF) + (n1.r - 0.5) * 0.35) * ss(2800.0, 1000.0, h) * ss(under - 30.0, under + 140.0, h) * ss(0.1, 0.4, m);
   // Fenda do RFD.
-  float slot = smoothstep(2600.0 * k, 900.0 * k, length(L - vec2(-2600.0, 1400.0) * k)) * uS3[i].w;
+  float slot = ss(2600.0 * k, 900.0 * k, length(L - vec2(-2600.0, 1400.0) * k)) * uS3[i].w;
   deck *= 1.0 - slot;
   // Linha de flanco (torres que descem em degraus para trás/direita).
   float flank = 0.0;
@@ -170,7 +190,7 @@ float storm(int i, vec3 p) {
     float fh = towerH * (0.6 - 0.13 * ff) * m;
     float fr = (1700.0 - 250.0 * ff) * k;
     float df = length(vec3(fc.x, (h - fh * 0.5) * fr / max(fh * 0.5, 1.0), fc.y)) - fr - bump * 0.35;
-    flank = max(flank, smoothstep(250.0, -200.0, df) * step(0.0, h));
+    flank = max(flank, ss(250.0, -200.0, df) * step(0.0, h));
   }
   float total = max(max(tower, flank), max(max(anvil, mam) * 0.55, deck));
   if (total < 0.003) return 0.0;
@@ -229,7 +249,7 @@ void main() {
   float tb[5];
   int n = 0;
   if (rd.y > 0.0) {
-    float a = max((uBase - ro.y) / rd.y, 0.0);
+    float a = max((uBase - 130.0 - ro.y) / rd.y, 0.0);
     float b = min((uBase + 2600.0 - ro.y) / rd.y, min(tEnd, 32000.0));
     if (b > a) { ta[n] = a; tb[n] = b; n++; }
   }
@@ -243,7 +263,7 @@ void main() {
     float rad = max(aR * 1.05, 9000.0 * k) + 2500.0;
     float a;
     float b;
-    if (cyl(ro, rd, c, rad, uBase - 20.0, uS3[i].y + 2600.0, a, b)) {
+    if (cyl(ro, rd, c, rad, uBase - 130.0, uS3[i].y + 2600.0, a, b)) {
       b = min(b, tEnd);
       if (b > a) { ta[n] = a; tb[n] = b; n++; }
     }
@@ -269,11 +289,13 @@ void main() {
     float b = tb[j];
     if (b <= a) continue;
     covered = b;
-    int ns = int(max(6.0, float(steps) * (b - a) / max(total, 1.0)));
-    float dt = (b - a) / float(ns);
+    int ns = int(max(8.0, float(steps) * (b - a) / max(total, 1.0)));
     for (int s = 0; s < 96; s++) {
       if (s >= ns || T < 0.02) break;
-      float t = a + (float(s) + jit) * dt;
+      float u0 = (float(s) + jit) / float(ns);
+      float u1 = (float(s) + 1.0 + jit) / float(ns);
+      float t = a + (b - a) * u0 * u0;
+      float dt = (b - a) * (u1 * u1 - u0 * u0);
       vec3 p = ro + rd * t;
       float d = density(p);
       if (d <= 1e-6) continue;
@@ -284,17 +306,38 @@ void main() {
       float Tl = exp(-od * 1.15);
       float powder = 1.0 - exp(-d * 260.0);
       float hgt = sat((p.y - uBase) / 9000.0);
-      vec3 amb = mix(uAmbGnd * 1.4 + uAmbSky * 0.25, uAmbSky * 1.15, sat(hgt * 1.6 + 0.15));
-      vec3 S = uSunCol * (Tl * phase + 0.35 * pow(Tl, 0.25) * 0.25) * mix(0.6, 1.0, powder) + amb;
+      // Embaixo a nuvem só recebe a luz refletida pelo chão e a do horizonte.
+      float cov = stormCover2D(p.xz);
+      vec3 ambLow = uAmbGnd * 1.1 + uHaze * mix(0.22, 0.06, cov);
+      vec3 amb = mix(ambLow, uAmbSky * 1.1, sat(pow(hgt * 1.4, 0.6)));
+      vec3 S = uSunCol * (Tl * phase + 0.35 * pow(max(Tl, 1e-6), 0.25) * 0.25) * mix(0.6, 1.0, powder) + amb;
       // Relâmpago dentro da nuvem.
       if (uFlash.w > 0.0) S += vec3(0.75, 0.8, 1.0) * uFlash.w * 3.0 * exp(-length(p - uFlash.xyz) / 5000.0);
       S *= 0.9;
       float fogT = exp(-t / (uVis * 1.4));
-      S = mix(uHaze, S, fogT);
+      S = mix(hazeAt(p), S, fogT);
       float ex = exp(-d * dt);
       col += T * S * (1.0 - ex);
       T *= ex;
     }
+  }
+  // Horizonte: além das nuvens, a névoa distante (escura sob as tempestades).
+  if (T > 0.01 && rd.y < 0.3 && depth >= 0.99999) {
+    vec3 hz = vec3(0.0);
+    float wsum = 0.0;
+    for (int k = 0; k < 5; k++) {
+      float d = 4000.0 * pow(2.0, float(k));
+      vec3 p = ro + rd * d;
+      float w = exp(-max(p.y - uGround, 0.0) / 2500.0);
+      hz += hazeAt(p) * w;
+      wsum += w;
+    }
+    hz /= max(wsum, 1e-3);
+    float amt = (1.0 - ss(0.0, 0.3, rd.y)) * 0.92;
+    // A névoa sob o temporal escurece o "céu" atrás da chuva.
+    float dark = 1.0 - dot(hz, vec3(0.333)) / max(dot(uHaze, vec3(0.333)), 1e-3);
+    col += T * hz * amt * dark;
+    T *= 1.0 - amt * dark;
   }
   gl_FragColor = vec4(col, 1.0 - T);
 }
@@ -313,6 +356,24 @@ uniform vec4 uT4[${MAX_TOR}]; // x ângulo de giro, y densidade, z chuva envolve
 uniform vec4 uT5[${MAX_TOR}]; // rgb cor dos detritos, w raio do núcleo
 uniform vec4 uT6[${MAX_TOR}]; // x turbulência, y subida, z torção, w giro dos detritos (rad/s)
 
+// Luz difusa abaixo da base: pouca vinda de cima (teto escuro), mais vinda do horizonte.
+vec3 ambBelow(float cov) {
+  return uAmbSky * mix(0.55, 0.07, cov) + uHaze * mix(0.35, 0.2, cov) + uAmbGnd * 0.45;
+}
+
+// Comprimento que o raio de sol percorre dentro de um cilindro vertical de raio R,
+// saindo do ponto à distância radial r (direção radial rad) — sombra própria do funil.
+float chordSun(vec2 rad, float r, float R, vec2 sh) {
+  float b = r * dot(rad, sh);
+  float disc = b * b - r * r + R * R;
+  if (disc <= 0.0) return 0.0;
+  float q = sqrt(disc);
+  float t1 = -b - q;
+  float t2 = -b + q;
+  if (t2 <= 0.0) return 0.0;
+  return t2 - max(t1, 0.0);
+}
+
 vec2 torAxis(int i, float hn) {
   vec2 c = uT2[i].xy * pow(hn, 1.25);
   float amp = uT2[i].z;
@@ -322,26 +383,34 @@ vec2 torAxis(int i, float hn) {
   return c;
 }
 
-// x = condensação, y = detritos, zw = direção radial (para a luz)
-vec4 tornado(int i, vec3 p) {
+// x = condensação, y = detritos, zw = direção radial (para a luz).
+// shade: oclusão das reentrâncias do funil; hn: altura normalizada.
+vec4 tornado(int i, vec3 p, out float shade, out float hnOut, out vec3 geo) {
+  shade = 1.0;
+  hnOut = 0.0;
+  geo = vec3(0.0, 1.0, 1.0);
   vec3 q = p - uT0[i].xyz;
   float H = uT0[i].w;
   if (q.y < -3.0 || q.y > H + 120.0) return vec4(0.0);
   float hn = clamp(q.y / H, 0.0, 1.0);
+  hnOut = hn;
   vec2 ax = torAxis(i, hn);
   vec2 d = q.xz - ax;
   float r = length(d);
   float Rg = uT1[i].x;
   float Rt = uT1[i].y;
   float R = mix(Rg, Rt, pow(hn, uT1[i].z));
-  float fl = smoothstep(0.76, 1.0, hn);
-  R += fl * fl * (Rt * 0.9 + 70.0);
+  float fl = ss(0.74, 1.0, hn);
+  R += fl * fl * (60.0 + Rt * 0.7 * (1.0 - ss(150.0, 700.0, Rt)));
   float cond = uT1[i].w;
-  float tipK = smoothstep(cond - 0.015, cond + 0.14 * (1.0 - cond) + 0.03, hn);
+  // Ponta afinada só quando o funil ainda não chegou ao chão.
+  float span = (0.14 * (1.0 - cond) + 0.03) * ss(0.0, 0.06, cond) + 1e-3;
+  float tipK = ss(cond - 0.01, cond + span, hn);
   float Rc = R * mix(0.05, 1.0, tipK);
   float Rd = uT3[i].w;
   if (r > max(Rc * 1.8 + 30.0, Rd * 1.6 + 30.0)) return vec4(0.0);
   vec2 radial = d / max(r, 1e-3);
+  geo = vec3(r, Rc, Rd);
   float spin = uT4[i].x;
   float ang = atan(d.y, d.x);
   float Rref = 0.5 * (Rg + Rt) + 12.0;
@@ -352,15 +421,18 @@ vec4 tornado(int i, vec3 p) {
   float hc = q.y / (Rref * 2.8) - uTime * uT6[i].y;
   vec4 n1 = nz(vec3(cs * 0.45, hc * 0.45));
   vec4 n2 = nz(vec3(cs * 1.4, hc * 1.1 + a1 * 0.05) + vec3(0.37, 0.11, 0.53));
-  // Estrias helicoidais (anéis e faixas que sobem girando).
+  // Estrias: faixas finas esticadas ao longo da espiral (o ar sobe girando).
+  vec4 n3 = nz(vec3(cs * 2.6, hc * 0.25 - a1 * 0.08) + vec3(0.71, 0.29, 0.13));
   float hel = sin(a1 * 3.0 + q.y / (Rref * 0.55) * uT6[i].z * 2.0 + n1.b * 3.0);
-  float disp = ((n1.b - 0.5) * 1.1 + (n2.a - 0.5) * 0.6 + hel * 0.08) * Rc * (0.18 + 0.7 * turb);
-  float ew = Rc * (0.08 + 0.3 * turb) + 1.2;
-  float funnel = smoothstep(Rc + ew, Rc - ew * 0.6, r + disp) * tipK;
+  float disp = ((n1.b - 0.5) * 1.0 + (n2.a - 0.5) * 0.6 + (n3.b - 0.5) * 0.4 + hel * 0.08) * Rc * (0.1 + 0.45 * turb);
+  float ew = Rc * (0.035 + 0.11 * turb) + 0.6;
+  float funnel = ss(Rc + ew, Rc - ew * 0.6, r + disp) * tipK;
+  // Reentrâncias mais escuras, saliências mais claras.
+  shade = mix(0.42, 1.18, sat(n1.b * 0.7 + n2.a * 0.35 + (n3.b - 0.5) * 0.6 - 0.05));
   // Partes "rasgadas" do funil (corda se desfazendo).
-  funnel *= mix(1.0, smoothstep(0.25, 0.55, n2.r + 0.15), uT4[i].w * 0.0 + turb * 0.15);
+  funnel *= mix(1.0, ss(0.25, 0.55, n2.r + 0.15), uT4[i].w * 0.0 + turb * 0.15);
   float mv = uT3[i].x;
-  funnel *= mix(1.0, mix(0.18, 1.0, smoothstep(0.3, 0.85, hn)), mv);
+  funnel *= mix(1.0, mix(0.18, 1.0, ss(0.3, 0.85, hn)), mv);
   float dens = funnel * uT4[i].y;
   // Subvórtices de sucção (multivórtice).
   if (mv > 0.02) {
@@ -377,7 +449,7 @@ vec4 tornado(int i, vec3 p) {
       float life = 0.5 + 0.5 * sin(uTime * (0.33 + 0.08 * fk) + fk * 2.3);
       sub = max(sub, exp(-dot(dd, dd) / (rs * rs)) * life);
     }
-    sub *= (1.0 - smoothstep(0.25, 0.8, hn)) * mv;
+    sub *= (1.0 - ss(0.25, 0.8, hn)) * mv;
     dens += sub * uT4[i].y * 1.3;
   }
   // Nuvem de detritos (poeira, terra, palha) girando e subindo junto ao chão.
@@ -389,7 +461,7 @@ vec4 tornado(int i, vec3 p) {
     float hd = max(Rd * 0.55, 22.0) * (0.55 + 0.9 * dA);
     float vprof = exp(-max(q.y, 0.0) / hd);
     // Capa de detritos: mais larga embaixo, abraçando o funil.
-    float rprof = smoothstep(Rd * (1.0 + 0.25 * vprof), Rd * 0.25, rg - q.y * 0.15);
+    float rprof = ss(Rd * (1.0 + 0.25 * vprof), Rd * 0.25, rg - q.y * 0.15);
     float w0 = fract(uTime * 0.12);
     float om = uT6[i].w * clamp(pow(Rd / max(rg, Rd * 0.2), 1.2), 0.3, 3.0);
     float ga = atan(g.y, g.x);
@@ -400,10 +472,10 @@ vec4 tornado(int i, vec3 p) {
     vec4 dn2 = nz(vec3(vec2(cos(ag2), sin(ag2)) * rg / (Rd * 1.7 + 1.0), hz) + vec3(0.5, 0.3, 0.1));
     float wb = 1.0 - abs(2.0 * w0 - 1.0);
     float dn = mix(dn2.r, dn1.r, wb) * 0.7 + mix(dn2.a, dn1.a, wb) * 0.3;
-    deb = dA * vprof * rprof * sat(dn * 2.0 - 0.45) * 0.05;
+    deb = dA * vprof * rprof * sat(dn * 1.8 - 0.25) * 0.085;
     // Jatos de poeira em espiral no chão (afluxo).
     float arms = sin(ga * 3.0 + log(rg + 1.0) * 5.0 * sign(spin + 1e-4) - uTime * 1.5);
-    deb += dA * smoothstep(Rd * 2.6, Rd * 0.8, rg) * smoothstep(14.0, 0.0, q.y) * sat(arms * 0.5 + dn - 0.4) * 0.012;
+    deb += dA * ss(Rd * 2.6, Rd * 0.8, rg) * ss(14.0, 0.0, q.y) * sat(arms * 0.5 + dn - 0.4) * 0.012;
   }
   return vec4(dens, deb, radial);
 }
@@ -421,22 +493,22 @@ float wallCloud(int i, vec3 p) {
   vec2 cs = vec2(cos(a), sin(a)) * (rm / 2200.0);
   vec4 n = nz(vec3(cs.x, p.y / 1100.0, cs.y) + vec3(0.13, 0.0, 0.71));
   vec4 nf = nz(vec3(cs.x * 3.0, p.y / 300.0, cs.y * 3.0) + vec3(0.4, 0.2, 0.1));
-  float prof = smoothstep(Rw * 1.12, Rw * 0.72, rm + (n.r - 0.5) * Rw * 0.55);
+  float prof = ss(Rw * 1.12, Rw * 0.72, rm + (n.r - 0.5) * Rw * 0.55);
   // Base em degraus (estrias) que sobem para fora.
   float terr = floor((rm / Rw) * 3.0 + n.g * 0.8) / 3.0;
   float bot = bottom + (n.g - 0.5) * L * 0.45 + terr * L * 0.38 + (nf.a - 0.5) * 30.0;
-  float v = smoothstep(bot - 15.0, bot + 45.0, p.y);
+  float v = ss(bot - 15.0, bot + 45.0, p.y);
   // Nuvem cauda em direção à precipitação.
   vec2 Lc = stormLocal(i, p.xz);
-  float tail = smoothstep(1.0, 0.45, length((Lc - vec2(1500.0, -1100.0)) / vec2(1500.0, 420.0)) + (n.b - 0.5) * 0.45);
+  float tail = ss(1.0, 0.45, length((Lc - vec2(1500.0, -1100.0)) / vec2(1500.0, 420.0)) + (n.b - 0.5) * 0.45);
   float tailBot = uBase - L * 0.55;
-  float vt = smoothstep(tailBot - 20.0, tailBot + 70.0, p.y + (n.r - 0.5) * 90.0);
+  float vt = ss(tailBot - 20.0, tailBot + 70.0, p.y + (n.r - 0.5) * 90.0);
   float dens = max(prof * v, tail * vt * 0.85);
   // Fractos (scud) sendo sugados.
   vec4 ns = nz(vec3(p.x / 520.0 + uTime * 0.012, p.y / 240.0, p.z / 520.0));
-  float scud = sat((ns.r - 0.66) * 4.0) * smoothstep(Rw * 2.4, Rw * 0.9, rm) * smoothstep(bottom - 160.0, bottom + 40.0, p.y) * smoothstep(uBase + 10.0, uBase - 150.0, p.y);
+  float scud = sat((ns.r - 0.66) * 4.0) * ss(Rw * 2.4, Rw * 0.9, rm) * ss(bottom - 160.0, bottom + 40.0, p.y) * ss(uBase + 10.0, uBase - 150.0, p.y);
   dens = max(dens, scud * 0.75);
-  return dens * 0.011 * smoothstep(0.0, 0.25, uS2[i].x);
+  return dens * 0.011 * ss(0.0, 0.25, uS2[i].x);
 }
 
 // x = densidade de chuva, y = fração de granizo
@@ -448,18 +520,18 @@ vec2 rain(int i, vec3 p) {
   vec4 n = nz(vec3(p.x / 1500.0, p.y / 7000.0 - uTime * 0.02, p.z / 1500.0));
   vec4 n2 = nz(vec3(p.x / 420.0, p.y / 3000.0 - uTime * 0.06, p.z / 420.0) + vec3(0.3));
   float e = length((L - vec2(5200.0, -3100.0) * k) / (vec2(6600.0, 4000.0) * k));
-  float ffd = smoothstep(1.0, 0.3, e + (n.r - 0.5) * 0.55);
+  float ffd = ss(1.0, 0.3, e + (n.r - 0.5) * 0.55);
   // Gancho: cortina do RFD enrolando em volta do mesociclone.
   float r = length(L);
   float ph = atan(-L.y, L.x);
   if (ph < -0.6) ph += 6.2831853;
   float hr = mix(3300.0, 700.0, sat((ph - 0.7) / 3.2)) * k;
-  float onArc = smoothstep(0.6, 1.2, ph) * smoothstep(4.3, 3.7, ph);
-  float hook = onArc * smoothstep(1000.0 * k, 250.0 * k, abs(r - hr) + (n2.r - 0.5) * 700.0) * (0.35 + uS3[i].w);
+  float onArc = ss(0.6, 1.2, ph) * ss(4.3, 3.7, ph);
+  float hook = onArc * ss(1000.0 * k, 250.0 * k, abs(r - hr) + (n2.r - 0.5) * 700.0) * (0.35 + uS3[i].w);
   float dens = (ffd * (0.55 + 0.9 * n2.g) + hook) * pr;
   // Pé de chuva: mais denso perto do chão, evapora em cima.
-  dens *= mix(0.45, 1.0, smoothstep(uBase, uBase - 1400.0, p.y));
-  float hail = uS1[i].w * smoothstep(1.0, 0.2, length((L - vec2(2400.0, -1300.0) * k) / (vec2(1900.0, 1300.0) * k)));
+  dens *= mix(0.45, 1.0, ss(uBase, uBase - 1400.0, p.y));
+  float hail = uS1[i].w * ss(1.0, 0.2, length((L - vec2(2400.0, -1300.0) * k) / (vec2(1900.0, 1300.0) * k)));
   return vec2(dens * 0.00105, hail);
 }
 
@@ -567,19 +639,37 @@ void main() {
     // Tornados.
     for (int i = 0; i < ${MAX_TOR}; i++) {
       if (i >= uNT) break;
-      vec4 tr = tornado(i, p);
+      float shd;
+      float hnn;
+      vec3 geo;
+      vec4 tr = tornado(i, p, shd, hnn, geo);
       float s = tr.x + tr.y;
       if (s > 1e-6) {
         if (sv < 0.0) {
           sv = sunVis(p);
           float cov = stormCover2D(p.xz);
-          amb = uAmbSky * mix(1.0, 0.3, cov) + uAmbGnd * 0.6;
+          amb = ambBelow(cov);
         }
-        float lam = sat(dot(tr.zw, sxz) * 0.55 + 0.45);
+        // Sombra própria: com o sol atrás do funil, o lado visível fica escuro e só as
+        // bordas brilham; com o sol atrás de quem olha, o funil fica claro.
+        float slant = 1.0 / max(sqrt(1.0 - uSunDir.y * uSunDir.y), 0.3);
+        float cC = chordSun(tr.zw, geo.x, geo.y, sxz) * slant;
+        float cD = chordSun(tr.zw, geo.x, geo.z, sxz) * slant;
+        float selfC = exp(-cC * uT4[i].y * mix(0.55, 0.25, uT3[i].x));
+        float selfD = exp(-cD * uT3[i].z * 0.018);
+        // Espalhamento múltiplo aproximado: a sombra própria não é totalmente preta.
+        float lam = mix(selfC, sqrt(selfC), 0.35);
         float hfac = sat((p.y - uT0[i].y) / 60.0) * 0.4 + 0.6;
-        vec3 sunL = uSunCol * sv * (lam * 0.5 + phCond * 0.5);
-        vec3 cCond = (sunL + amb * hfac) * 0.88;
-        vec3 cDeb = (sunL * 0.75 + amb * hfac) * uT5[i].rgb;
+        // Parte de cima do funil fica na sombra da nuvem parede; cunhas largas e
+        // envoltas em chuva recebem pouco sol direto.
+        float svT = sv * mix(1.0, 0.2, ss(0.5, 0.95, hnn)) * mix(1.0, 0.4, ss(250.0, 900.0, uT1[i].x)) * (1.0 - 0.6 * uT4[i].z);
+        vec3 sunL = uSunCol * svT * lam * (0.45 + phCond * 0.55);
+        vec3 cCond = (sunL * shd + amb * hfac * mix(0.7, 1.0, shd)) * 0.8;
+        // Poeira levantada tinge a parte de baixo do funil.
+        vec3 dustTint = mix(vec3(1.0), uT5[i].rgb / max(uT5[i].r, 1e-3), 0.45) * 0.8;
+        cCond = mix(cCond, cCond * dustTint, uT3[i].z * 0.7 * pow(1.0 - hnn, 2.5));
+        vec3 dcol = mix(vec3(dot(uT5[i].rgb, vec3(0.333))), uT5[i].rgb, 0.62);
+        vec3 cDeb = (uSunCol * svT * selfD * (0.45 + phCond * 0.55) * 0.7 + amb * hfac) * dcol;
         sig += s;
         Ls += tr.x * cCond + tr.y * cDeb;
       }
@@ -589,11 +679,11 @@ void main() {
         vec2 g = p.xz - uT0[i].xz;
         float rr = length(g);
         float R0 = max(uT1[i].x, uT1[i].y * 0.6) + 40.0;
-        float ring = smoothstep(R0 * 0.9, R0 * 1.6, rr) * smoothstep(R0 * 5.0 + 600.0, R0 * 2.0, rr);
+        float ring = ss(R0 * 0.9, R0 * 1.6, rr) * ss(R0 * 5.0 + 600.0, R0 * 2.0, rr);
         vec4 nr = nz(vec3(p.x / 260.0, p.y / 1800.0 - uTime * 0.08, p.z / 260.0));
         float rd2 = ring * rw * (0.4 + nr.g) * 0.0022 * step(p.y, uBase);
         if (rd2 > 1e-6) {
-          if (sv < 0.0) { sv = sunVis(p); amb = uAmbSky * mix(1.0, 0.3, stormCover2D(p.xz)) + uAmbGnd * 0.6; }
+          if (sv < 0.0) { sv = sunVis(p); amb = ambBelow(stormCover2D(p.xz)); }
           sig += rd2;
           Ls += rd2 * (uSunCol * sv * phRain * 0.25 + amb) * 0.75;
         }
@@ -608,11 +698,14 @@ void main() {
         if (sv < 0.0) {
           sv = sunVis(p);
           float cov = stormCover2D(p.xz);
-          amb = uAmbSky * mix(1.0, 0.3, cov) + uAmbGnd * 0.6;
+          amb = ambBelow(cov);
         }
         // A base da nuvem parede recebe pouca luz (só de baixo e dos lados).
-        vec3 cw = (uSunCol * sv * 0.35 * phCond + amb * 0.75) * 0.85;
-        vec3 cr = (uSunCol * sv * phRain * 0.3 + amb) * mix(vec3(0.72, 0.76, 0.8), vec3(0.9, 1.0, 0.95), rn.y);
+        // Auto-sombreamento: a chuva densa e a nuvem parede bloqueiam o próprio sol.
+        float svR = sv * exp(-rn.x * 2200.0);
+        float svW = sv * exp(-w * 260.0);
+        vec3 cw = (uSunCol * svW * 0.3 * phCond + amb * 0.55) * 0.85;
+        vec3 cr = (uSunCol * svR * phRain * 0.3 + amb) * mix(vec3(0.72, 0.76, 0.8), vec3(0.9, 1.0, 0.95), rn.y);
         sig += w + rn.x;
         Ls += w * cw + rn.x * cr;
       }
@@ -621,7 +714,7 @@ void main() {
       vec3 S = Ls / sig;
       if (uFlash.w > 0.0) S += vec3(0.75, 0.8, 1.0) * uFlash.w * 2.5 * exp(-length(p - uFlash.xyz) / 3500.0);
       float tt = t + dt * jit;
-      S = mix(uHaze, S, exp(-tt / uVis));
+      S = mix(hazeAt(p), S, exp(-tt / uVis));
       float ex = exp(-sig * dt);
       col += T * S * (1.0 - ex);
       T *= ex;
@@ -646,7 +739,7 @@ void main() {
   vec2 q = (xz + off) / 9000.0 + uWindOff;
   float cov = nz(vec3(q.x, 0.37, q.y)).r;
   cov = sat((cov - (1.0 - uCover)) / max(uCover, 0.08));
-  v *= 1.0 - 0.75 * smoothstep(0.0, 0.35, cov);
+  v *= 1.0 - 0.75 * ss(0.0, 0.35, cov);
   gl_FragColor = vec4(v, v, v, 1.0);
 }
 `;

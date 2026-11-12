@@ -20,6 +20,7 @@ export const SHARED = {
 
 const VERT_DECL = /* glsl */ `
 varying vec3 vWPos;
+float sstep(float a, float b, float x) { float t = clamp((x - a) / (b - a), 0.0, 1.0); return t * t * (3.0 - 2.0 * t); }
 uniform float uTime;
 uniform vec4 uWind;
 uniform vec4 uTor0;
@@ -30,7 +31,7 @@ vec3 swayOffset(vec3 origin, float h) {
   float s = uWind.z * 0.02;
   vec2 d = origin.xz - uTor0.xy;
   float r = length(d) + 1.0;
-  float tor = uTor0.w * smoothstep(uTor0.z * 6.0, uTor0.z, r);
+  float tor = uTor0.w * sstep(uTor0.z * 6.0, uTor0.z, r);
   vec2 tang = vec2(-d.y, d.x) / r * sign(uTor0b.x + 1e-4);
   vec2 inflow = -d / r;
   vec2 tdir = normalize(tang + inflow * 0.6);
@@ -44,6 +45,7 @@ vec3 swayOffset(vec3 origin, float h) {
 
 const FRAG_DECL = /* glsl */ `
 varying vec3 vWPos;
+float sstep(float a, float b, float x) { float t = clamp((x - a) / (b - a), 0.0, 1.0); return t * t * (3.0 - 2.0 * t); }
 uniform sampler2D uCloudShadow;
 uniform float uShadowHalf;
 uniform float uWet;

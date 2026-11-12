@@ -99,6 +99,7 @@ export class RoadNetwork {
     }
     if (c.grid) this.makeGrid(c.grid, H);
     else this.makeLocalRoads();
+    this.reindex();
     return this;
   }
 
@@ -234,7 +235,7 @@ export class RoadNetwork {
   }
 
   // Estrada mais próxima de (x, z): distância, tipo, altura do leito, direção.
-  query(x, z, maxD = 30) {
+  query(x, z, maxD = 30, filter = null) {
     const cs = this.cellSize;
     const gx = Math.floor(x / cs);
     const gz = Math.floor(z / cs);
@@ -245,6 +246,7 @@ export class RoadNetwork {
         if (!arr) continue;
         for (let k = 0; k < arr.length; k += 2) {
           const r = this.roads[arr[k]];
+          if (filter && !filter(r)) continue;
           const i = arr[k + 1];
           const a = r.pts[i];
           const b = r.pts[i + 1];
@@ -490,22 +492,22 @@ function addMarkings(mat, style) {
           float m = 0.0;
           vec3 mc = white;
           if (lanes > 0.5) {
-            float edge = smoothstep(0.035 + fw, 0.035, abs(u - 0.06)) + smoothstep(0.035 + fw, 0.035, abs(u - 0.94));
+            float edge = sstep(0.035 + fw, 0.035, abs(u - 0.06)) + sstep(0.035 + fw, 0.035, abs(u - 0.94));
             m = max(m, edge * 0.85);
             float dash = step(fract(along / 12.0), 0.45);
             if (lanes > 2.5) {
               // Rodovia de 4 faixas: canteiro amarelo duplo no centro e tracejado nas pistas.
-              float c1 = smoothstep(0.012 + fw, 0.012, abs(u - 0.485)) + smoothstep(0.012 + fw, 0.012, abs(u - 0.515));
-              float d1 = (smoothstep(0.012 + fw, 0.012, abs(u - 0.27)) + smoothstep(0.012 + fw, 0.012, abs(u - 0.73))) * dash;
+              float c1 = sstep(0.012 + fw, 0.012, abs(u - 0.485)) + sstep(0.012 + fw, 0.012, abs(u - 0.515));
+              float d1 = (sstep(0.012 + fw, 0.012, abs(u - 0.27)) + sstep(0.012 + fw, 0.012, abs(u - 0.73))) * dash;
               if (c1 > 0.01) { mc = yellow; m = max(m, c1); }
               m = max(m, d1 * 0.9);
             } else {
               #ifdef MARK_YELLOW
-                float c2 = smoothstep(0.018 + fw, 0.018, abs(u - 0.475)) + smoothstep(0.018 + fw, 0.018, abs(u - 0.525));
+                float c2 = sstep(0.018 + fw, 0.018, abs(u - 0.475)) + sstep(0.018 + fw, 0.018, abs(u - 0.525));
                 if (c2 > 0.01) mc = yellow;
                 m = max(m, c2);
               #else
-                float c2 = smoothstep(0.02 + fw, 0.02, abs(u - 0.5)) * dash;
+                float c2 = sstep(0.02 + fw, 0.02, abs(u - 0.5)) * dash;
                 m = max(m, c2);
               #endif
             }

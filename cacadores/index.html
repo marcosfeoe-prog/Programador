@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b0d10" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="description" content="Simulador de caça a tornados: supercélulas com ciclo de vida, tornados volumétricos que mudam de forma, seis países reais, cidades, radar Doppler e carros de caça." />
+    <title>Caçadores de Tornados</title>
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="css/style.css" />
+    <script type="importmap">
+      { "imports": { "three": "../vendor/three/three.module.min.js" } }
+    </script>
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+
+    <!-- Carregamento -->
+    <div id="loading" class="screen">
+      <div class="load-box">
+        <div class="brand small">CAÇADORES <span>DE TORNADOS</span></div>
+        <div class="bar"><div id="load-bar"></div></div>
+        <div id="load-msg">Preparando…</div>
+      </div>
+    </div>
+
+    <!-- Menu principal -->
+    <div id="menu" class="screen hidden">
+      <div class="menu-box">
+        <div class="brand">CAÇADORES <span>DE TORNADOS</span></div>
+        <div class="tagline">Simulador de caça a tempestades — EUA, Brasil, Argentina, Canadá, Chile e Uruguai</div>
+        <div class="menu-buttons">
+          <button data-go="continue" id="btn-continue" class="primary">Continuar</button>
+          <button data-go="new" class="primary" id="btn-new">Nova temporada</button>
+          <button data-go="lab">Laboratório de tornados</button>
+          <button data-go="settings">Configurações</button>
+          <button data-go="help">Como jogar</button>
+        </div>
+        <div class="foot">Tudo é gerado proceduralmente: cidades, texturas, carros, nuvens e tornados.</div>
+      </div>
+    </div>
+
+    <!-- Escolha do país -->
+    <div id="countries" class="screen hidden">
+      <div class="panel-box wide">
+        <div class="head-row">
+          <h2>Para onde vamos caçar hoje?</h2>
+          <div id="c-status" class="status"></div>
+        </div>
+        <div id="country-grid" class="country-grid"></div>
+        <div class="row-buttons">
+          <button data-go="garage">Garagem</button>
+          <button data-go="journal">Diário de caça</button>
+          <button data-go="menu">Menu</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Previsão do dia -->
+    <div id="briefing" class="screen hidden">
+      <div class="panel-box wide">
+        <div class="head-row">
+          <h2 id="b-title">Previsão</h2>
+          <div id="b-date" class="status"></div>
+        </div>
+        <div class="brief-grid">
+          <canvas id="b-map" width="420" height="420"></canvas>
+          <div>
+            <div id="b-risk" class="risk-badge"></div>
+            <p id="b-text" class="brief-text"></p>
+            <div id="b-params" class="params"></div>
+            <label class="pick">Começar em <select id="b-city"></select></label>
+          </div>
+        </div>
+        <div class="row-buttons">
+          <button id="b-start" class="primary">Começar o dia</button>
+          <button data-go="garage">Garagem</button>
+          <button data-go="countries">Trocar de país</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Garagem -->
+    <div id="garage" class="screen hidden">
+      <div class="panel-box wide">
+        <div class="head-row">
+          <h2>Garagem</h2>
+          <div id="g-money" class="status"></div>
+        </div>
+        <div id="g-list" class="garage-list"></div>
+        <h3>Melhorias</h3>
+        <div id="g-upgrades" class="garage-list small"></div>
+        <div class="row-buttons"><button id="g-back" class="primary">Voltar</button></div>
+      </div>
+    </div>
+
+    <!-- Laboratório -->
+    <div id="lab" class="screen hidden">
+      <div class="panel-box">
+        <h2>Laboratório de tornados</h2>
+        <p class="muted">Gere uma supercélula com tornado a poucos quilômetros de você para estudar formatos, danos e o ciclo de vida. Sem custos nem prêmios.</p>
+        <div class="form">
+          <label>País <select id="l-country"></select></label>
+          <label>Formato inicial <select id="l-shape">
+            <option value="auto">Automático (pela natureza)</option>
+            <option value="rope">Corda</option>
+            <option value="cone">Cone</option>
+            <option value="cylinder">Cilindro</option>
+            <option value="vshape">Forma de V</option>
+            <option value="wedge">Cunha</option>
+            <option value="multi">Multivórtice</option>
+            <option value="mass">Massa rebaixada (rara)</option>
+          </select></label>
+          <label>Intensidade real <select id="l-ef">
+            <option value="0">EF0</option><option value="1">EF1</option><option value="2" selected>EF2</option><option value="3">EF3</option><option value="4">EF4</option><option value="5">EF5</option>
+          </select></label>
+          <label>Carga da supercélula <input id="l-carga" type="range" min="0.3" max="2.2" step="0.1" value="1" /><b id="l-carga-v">1.0</b></label>
+          <label>Hora <select id="l-hour"><option>14</option><option>16</option><option selected>17.5</option><option>19</option><option>20.3</option><option>22</option></select></label>
+          <label>Chuva envolvente (HP) <input id="l-hp" type="checkbox" /></label>
+          <label>Carro <select id="l-car"></select></label>
+        </div>
+        <div class="row-buttons">
+          <button id="l-go" class="primary">Gerar tempestade</button>
+          <button data-go="menu">Voltar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Configurações -->
+    <div id="settings" class="screen hidden">
+      <div class="panel-box">
+        <h2>Configurações</h2>
+        <div class="form">
+          <label>Qualidade gráfica <select id="s-quality"></select></label>
+          <label>Resolução dinâmica (mira 50 FPS) <input id="s-dyn" type="checkbox" checked /></label>
+          <label>Volume <input id="s-vol" type="range" min="0" max="1" step="0.05" value="0.8" /></label>
+          <label>Sensibilidade do olhar <input id="s-sens" type="range" min="0.3" max="2" step="0.1" value="1" /></label>
+          <label>Mostrar FPS <input id="s-fps" type="checkbox" /></label>
+          <label>Controles de toque <select id="s-touch"><option value="auto">Automático</option><option value="on">Sempre</option><option value="off">Nunca</option></select></label>
+        </div>
+        <div class="row-buttons"><button id="s-back" class="primary">Voltar</button></div>
+      </div>
+    </div>
+
+    <!-- Ajuda -->
+    <div id="help" class="screen hidden">
+      <div class="panel-box">
+        <h2>Como jogar</h2>
+        <div class="help">
+          <p><b>Objetivo:</b> ler a previsão, posicionar-se, interceptar tornados com segurança e documentar tudo — fotos, sondas, varreduras de radar e relatos rendem dinheiro para melhores carros.</p>
+          <table>
+            <tr><td>W A S D / setas</td><td>dirigir</td></tr>
+            <tr><td>Espaço</td><td>freio de mão</td></tr>
+            <tr><td>Shift</td><td>arrancada</td></tr>
+            <tr><td>Mouse (arrastar) / roda</td><td>olhar em volta / zoom</td></tr>
+            <tr><td>C</td><td>trocar câmera (perseguição, motorista, capô, órbita, tripé)</td></tr>
+            <tr><td>Q</td><td>olhar para o tornado ou tempestade mais próxima</td></tr>
+            <tr><td>F</td><td>tirar foto</td></tr>
+            <tr><td>P</td><td>soltar sonda no caminho do tornado</td></tr>
+            <tr><td>N</td><td>varredura com o radar móvel (van, parado)</td></tr>
+            <tr><td>G</td><td>relatar tornado ao serviço meteorológico</td></tr>
+            <tr><td>X</td><td>âncoras hidráulicas (blindado)</td></tr>
+            <tr><td>E</td><td>abastecer / consertar (no posto, parado)</td></tr>
+            <tr><td>R / Z</td><td>radar: refletividade ↔ velocidade / alcance</td></tr>
+            <tr><td>M</td><td>mapa</td></tr>
+            <tr><td>T</td><td>acelerar o tempo (quando seguro)</td></tr>
+            <tr><td>L / H</td><td>faróis / buzina</td></tr>
+            <tr><td>Esc</td><td>pausa</td></tr>
+          </table>
+          <p><b>Classificação EF:</b> como na vida real, a nota oficial vem só dos danos. Um tornado violento que cruza apenas lavouras termina como EF0 ou EF1. Sondas e o radar móvel registram o vento real.</p>
+          <p><b>Formatos:</b> corda, cone, cilindro, forma de V, cunha e multivórtice. Com a supercélula carregada, o tornado engrossa aos poucos e muda de forma — em casos raros vira uma massa baixa que ocupa o horizonte.</p>
+        </div>
+        <div class="row-buttons"><button data-go="back" class="primary">Voltar</button></div>
+      </div>
+    </div>
+
+    <!-- Pausa -->
+    <div id="pause" class="screen hidden">
+      <div class="panel-box narrow">
+        <h2>Pausa</h2>
+        <div class="menu-buttons">
+          <button id="p-resume" class="primary">Continuar</button>
+          <button id="p-map">Mapa</button>
+          <button id="p-forecast">Previsão do dia</button>
+          <button id="p-skip">Avançar o tempo até as tempestades</button>
+          <button id="p-endday">Encerrar o dia</button>
+          <button id="p-journal">Diário de caça</button>
+          <button id="p-settings">Configurações</button>
+          <button id="p-exit">Salvar e sair</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mapa -->
+    <div id="mapview" class="screen hidden">
+      <div class="map-wrap">
+        <canvas id="map-canvas" width="900" height="900"></canvas>
+        <div class="map-legend" id="map-legend"></div>
+        <button id="map-close" class="primary map-close">Fechar (M)</button>
+      </div>
+    </div>
+
+    <!-- Relatório de levantamento de danos -->
+    <div id="report" class="screen hidden">
+      <div class="panel-box">
+        <div class="head-row">
+          <h2 id="r-title">Levantamento de danos</h2>
+          <div id="r-badge" class="ef-badge">EF0</div>
+        </div>
+        <div id="r-body"></div>
+        <div class="row-buttons"><button id="r-ok" class="primary">Continuar</button></div>
+      </div>
+    </div>
+
+    <!-- Fim do dia -->
+    <div id="dayend" class="screen hidden">
+      <div class="panel-box">
+        <h2 id="d-title">Fim do dia</h2>
+        <div id="d-body"></div>
+        <div class="row-buttons"><button id="d-ok" class="primary">Próximo dia</button></div>
+      </div>
+    </div>
+
+    <!-- Diário -->
+    <div id="journal" class="screen hidden">
+      <div class="panel-box wide">
+        <div class="head-row"><h2>Diário de caça</h2><div id="j-stats" class="status"></div></div>
+        <div id="j-list" class="journal"></div>
+        <div class="row-buttons"><button id="j-back" class="primary">Voltar</button></div>
+      </div>
+    </div>
+
+    <!-- HUD -->
+    <div id="hud" class="hidden">
+      <div id="hud-tl" class="glass">
+        <div class="clock-row"><span id="h-flag"></span><b id="h-clock">12:00</b><span id="h-day"></span><span id="h-warp"></span></div>
+        <div id="h-place" class="sub"></div>
+        <div id="h-wx" class="sub"></div>
+      </div>
+      <div id="hud-tr" class="glass">
+        <canvas id="radar" width="256" height="256"></canvas>
+        <div id="radar-label">Refletividade · 30 km</div>
+      </div>
+      <div id="hud-bl" class="glass">
+        <div class="speed"><b id="h-speed">0</b><span>km/h</span></div>
+        <div class="bars">
+          <div class="barline"><span>Carro</span><div class="hb"><div id="h-health"></div></div></div>
+          <div class="barline"><span>Comb.</span><div class="hb"><div id="h-fuel"></div></div></div>
+        </div>
+        <div id="h-money" class="money"></div>
+        <div id="h-extra" class="sub"></div>
+      </div>
+      <div id="hud-br" class="glass hidden">
+        <div class="tc-head"><div id="t-badge" class="ef-badge">EF?</div><div><div id="t-title">Tornado</div><div id="t-sub" class="sub"></div></div></div>
+        <div class="tc-grid">
+          <span>Formato</span><b id="t-shape">—</b>
+          <span>Distância</span><b id="t-dist">—</b>
+          <span>Direção</span><b id="t-dir">—</b>
+          <span>Movimento</span><b id="t-move">—</b>
+          <span>Largura</span><b id="t-width">—</b>
+          <span>No solo há</span><b id="t-time">—</b>
+        </div>
+      </div>
+      <div id="feed"></div>
+      <div id="prompt" class="hidden"></div>
+      <div id="viewfinder" class="hidden"><div class="vf-c"></div><div class="vf-txt" id="vf-txt"></div></div>
+      <div id="flashfx"></div>
+      <div id="fps" class="hidden"></div>
+    </div>
+
+    <!-- Controles de toque -->
+    <div id="touch" class="hidden">
+      <div id="joy"><div id="joy-knob"></div></div>
+      <div id="pedals">
+        <div id="pedal-brake" class="pedal">FREIO</div>
+        <div id="pedal-gas" class="pedal gas">ACEL.</div>
+      </div>
+      <div id="tbtns">
+        <button data-action="photo">📷</button>
+        <button data-action="camera">🎥</button>
+        <button data-action="lookTornado">🌪️</button>
+        <button data-action="probe">📡</button>
+        <button data-action="report">📢</button>
+        <button data-action="map">🗺️</button>
+        <button data-action="radar">R</button>
+        <button data-action="interact">E</button>
+        <button data-action="anchor">⚓</button>
+        <button data-action="warp">⏩</button>
+        <button data-action="menu">☰</button>
+      </div>
+    </div>
+
+    <div id="death" class="screen hidden">
+      <div class="panel-box narrow">
+        <h2 id="death-title">O tornado pegou você</h2>
+        <p id="death-text"></p>
+        <div class="row-buttons"><button id="death-ok" class="primary">Continuar</button></div>
+      </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>

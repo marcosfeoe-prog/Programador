@@ -416,23 +416,19 @@ export function terrainMaterial(land, textures, patchWorld) {
           vec4 d3 = texture2D(tDetail, wp / 410.0);
           float veg = land.r;
           // Grama (folhas) e torrões de solo.
-          float grassD = mix(1.0, (d1.r * 0.6 + d2.r * 0.4) * 2.0, 0.55 * veg * smoothstep(260.0, 20.0, dist));
-          float soilD = mix(1.0, (d1.g * 0.5 + d2.g * 0.5) * 2.0, 0.6 * (1.0 - veg) * smoothstep(300.0, 15.0, dist));
+          float grassD = mix(1.0, (d1.r * 0.6 + d2.r * 0.4) * 2.0, 0.55 * veg * sstep(260.0, 20.0, dist));
+          float soilD = mix(1.0, (d1.g * 0.5 + d2.g * 0.5) * 2.0, 0.6 * (1.0 - veg) * sstep(300.0, 15.0, dist));
           float big = 0.86 + d3.a * 0.28;
           diffuseColor.rgb *= grassD * soilD * big;
-          // Linhas de plantio (sulcos), somem com a distância para não serrilhar.
-          if (landN.b > 0.5) {
+          // Linhas de plantio (só culturas espaçadas: milho, soja, sorgo, girassol, sulcos).
+          float spacing = landN.a;
+          if (landN.b > 0.5 && spacing > 0.4) {
             float ang = landN.g * 3.14159265;
-            float spacing = max(landN.a, 0.12);
             float rc = dot(wp, vec2(cos(ang), sin(ang))) / spacing;
             float fw = fwidth(rc);
             float rows = 0.5 + 0.5 * cos(rc * 6.2831853);
-            float fade = 1.0 - smoothstep(0.25, 0.6, fw);
-            diffuseColor.rgb *= 1.0 - fade * 0.32 * (1.0 - rows);
-            // De longe, as linhas viram uma textura levemente listrada.
-            float rc2 = rc / 12.0;
-            float fade2 = 1.0 - smoothstep(0.3, 0.7, fwidth(rc2));
-            diffuseColor.rgb *= 1.0 - fade2 * 0.08 * (0.5 + 0.5 * cos(rc2 * 6.2831853));
+            float fade = 1.0 - smoothstep(0.035, 0.11, fw);
+            diffuseColor.rgb *= 1.0 - fade * 0.24 * (1.0 - rows);
           }
         }`,
       );
