@@ -1,17 +1,17 @@
-// Jogador: câmera por cima do ombro, mira com laser, tiros com zonas de acerto, faca,
-// chute de contexto, recarga, troca de arma, granadas, cura, dano e morte.
+// Jogador: câmera por cima do ombro, mira com laser (luneta no rifle), cinco armas com zonas
+// de acerto, tiro automático e balas que atravessam, faca, chute de contexto, recarga,
+// granadas e molotovs, cura, fogo, ser agarrado, dano, morte e o modo "cena" (sem controle).
 import * as THREE from 'three';
 import { Humanoid, BOX, CYL, charMat } from './rig.js';
-import { makePistol, makeShotgun, makeKnife } from './models.js';
+import { makePistol, makeShotgun, makeSMG, makeRifle, makeMagnum, makeKnife } from './models.js';
 import { tex } from './textures.js';
 import { clamp, lerp, damp, dampAngle, rand, noise1, easeInOut } from './util.js';
 import { raycastAll } from './combat.js';
-import { ARENA } from './world.js';
+import { WEAPONS, WEAPON_ORDER, AMMO, newLoadout, normalizeLoadout } from './weapons.js';
+import { ITEMS } from './story.js';
 
-export const WEAPONS = {
-  pistol: { id: 'pistol', name: 'Pistola P-9', mag: 12, dmg: 34, rate: 0.24, reload: 1.35, pellets: 1, spread: 0, range: 90, recoil: 0.024, noise: 32, ammo: 'pistol', shake: 0.05 },
-  shotgun: { id: 'shotgun', name: 'Escopeta', mag: 6, dmg: 16, rate: 0.95, reload: 0.55, pellets: 9, spread: 0.075, range: 34, recoil: 0.08, noise: 42, ammo: 'shotgun', shake: 0.22 },
-};
+export { WEAPONS };
+const PICKUP_BONUS = { shotgun: 4, smg: 20, rifle: 3, magnum: 3 };
 
 const UP = new THREE.Vector3(0, 1, 0);
 const ZERO = new THREE.Vector3();
@@ -25,7 +25,7 @@ const _m = new THREE.Matrix4();
 const _o = { x: 0, y: 0, z: 0 };
 const _d = { x: 0, y: 0, z: 0 };
 const _p = { x: 0, z: 0 };
-const PART_ORDER = ['arm', 'leg', 'body', 'core', 'head'];
+const PART_ORDER = ['shield', 'arm', 'leg', 'body', 'sac', 'tumor', 'core', 'head'];
 
 export class Player {
   constructor(G) {
@@ -62,7 +62,7 @@ export class Player {
     R.optimize();
     G.scene.add(R.root);
 
-    this.guns = { pistol: makePistol(), shotgun: makeShotgun() };
+    this.guns = { pistol: makePistol(), shotgun: makeShotgun(), smg: makeSMG(), rifle: makeRifle(), magnum: makeMagnum() };
     this.gunMount = new THREE.Group();
     R.mountR.add(this.gunMount);
     for (const k in this.guns) this.gunMount.add(this.guns[k]);
@@ -105,12 +105,14 @@ export class Player {
     this.camPitch = -0.06;
     this.maxHp = 100;
     this.hp = 100;
-    this.weapons = { pistol: { owned: true, mag: 12 }, shotgun: { owned: false, mag: 0 } };
-    this.ammo = { pistol: 24, shotgun: 0 };
-    this.items = { tonic: 1, medkit: 0, grenade: 0 };
+    const L = newLoadout();
+    this.weapons = L.weapons;
+    this.ammo = L.ammo;
+    this.items = L.items;
     this.keys = {};
     this.notes = [];
     this.current = 'pistol';
+    this.throwSel = 'grenade';
     this.clearTransient();
   }
 
@@ -137,6 +139,11 @@ export class Player {
     this.burnSound = 0;
     this.kickTarget = null;
     this.hidden = false;
+    this.burnT = 0;
+    this.cine = null;
+    this.scoped = false;
+    this.scopeK = 0;
+    this.pendingShell = false;
     this.rig.j.head.visible = true;
     this.rig.resetPose();
     this.rig.snap();
@@ -154,17 +161,20 @@ export class Player {
       keys: { ...this.keys },
       notes: [...this.notes],
       current: this.current,
+      throwSel: this.throwSel,
     };
   }
 
   restore(d, pos) {
-    this.hp = clamp(d.hp, 1, this.maxHp);
-    this.weapons = JSON.parse(JSON.stringify(d.weapons));
-    this.ammo = { ...d.ammo };
-    this.items = { ...d.items };
-    this.keys = { ...d.keys };
-    this.notes = [...d.notes];
+    const L = normalizeLoadout(d);
+    this.hp = clamp(d.hp ?? 100, 1, this.maxHp);
+    this.weapons = L.weapons;
+    this.ammo = L.ammo;
+    this.items = L.items;
+    this.keys = { ...(d.keys || {}) };
+    this.notes = [...(d.notes || [])];
     this.current = this.weapons[d.current] && this.weapons[d.current].owned ? d.current : 'pistol';
+    this.throwSel = d.throwSel === 'molotov' ? 'molotov' : 'grenade';
     this.pos.set(pos.x, 0, pos.z);
     this.vel.set(0, 0, 0);
     this.knock.set(0, 0, 0);
@@ -200,6 +210,22 @@ export class Player {
     return !this.dead && (!a || a.type === 'reload' || a.type === 'reloadSG');
   }
 
+  // Armas que o jogador tem, na ordem das teclas.
+  ownedWeapons() {
+    return WEAPON_ORDER.filter((id) => this.weapons[id] && this.weapons[id].owned);
+  }
+
+  cycleWeapon(dir) {
+    const list = this.ownedWeapons();
+    if (list.length < 2) return;
+    const i = list.indexOf(this.current);
+    this.switchTo(list[(i + dir + list.length) % list.length]);
+  }
+
+  get grabbed() {
+    return !!(this.action && this.action.type === 'grabbed');
+  }
+
   // ------------------------------------------------------------------ atualização
   update(dt) {
     const G = this.G,
@@ -211,6 +237,11 @@ export class Player {
     if (this.fireBuffer > 0) this.fireBuffer -= dt;
     this.recoil = Math.max(0, this.recoil - dt * 6);
     if (this.burnSound > 0) this.burnSound -= dt;
+    if (this.burnT > 0 && !this.dead) {
+      this.burnT -= dt;
+      this.burn(7 * dt);
+      if (Math.random() < 0.7) this.G.fx.fire({ x: this.pos.x + rand(-0.2, 0.2), y: 0.4 + rand(0, 0.9), z: this.pos.z + rand(-0.2, 0.2) }, 1, 0.5);
+    }
     if (this.autoReload > 0) {
       this.autoReload -= dt;
       if (this.autoReload <= 0 && !this.action && !this.dead) this.startReload();
@@ -236,7 +267,7 @@ export class Player {
     const a = this.action;
     const stunned = a && a.type === 'knockdown';
     if (!stunned) {
-      const sens = (I.touchMode ? 0.0034 : 0.0022) * (I.touchMode ? S.touchSens : S.sens) * (this.aimBlend > 0.5 ? 0.62 : 1);
+      const sens = (I.touchMode ? 0.0034 : 0.0022) * (I.touchMode ? S.touchSens : S.sens) * (this.aimBlend > 0.5 ? (this.scoped ? 0.3 : 0.62) : 1);
       this.camYaw -= look.x * sens;
       this.camPitch -= look.y * sens * (S.invertY ? -1 : 1);
       const turn = (I.isHeld('turnL') ? 1 : 0) - (I.isHeld('turnR') ? 1 : 0);
@@ -274,12 +305,14 @@ export class Player {
       } else if (I.pressed('reload')) this.startReload();
       else if (I.pressed('w1')) this.switchTo('pistol');
       else if (I.pressed('w2')) this.switchTo('shotgun');
-      else if (I.wheel || I.pressed('wnext')) this.switchTo(this.current === 'pistol' ? 'shotgun' : 'pistol');
+      else if (I.pressed('w3')) this.switchTo('smg');
+      else if (I.pressed('w4')) this.switchTo('rifle');
+      else if (I.pressed('w5')) this.switchTo('magnum');
+      else if (I.wheel || I.pressed('wnext')) this.cycleWeapon(I.wheel < 0 ? -1 : 1);
       else if (I.pressed('grenade')) this.startThrow();
       else if (I.pressed('heal')) this.useHeal(false);
-    } else if (this.action.type === 'reloadSG' && I.pressed('reload')) {
-      /* já recarregando */
     }
+    if (I.pressed('throwSwap')) this.swapThrowable();
 
     this.progressAction(dt);
 
@@ -309,7 +342,7 @@ export class Player {
     if (act === 'reload' || act === 'reloadSG') speed *= this.running ? 0.75 : 0.9;
     else if (act === 'heal') speed *= 0.45;
     else if (act === 'knife' || act === 'throw' || act === 'switch') speed *= 0.5;
-    else if (act === 'kick' || act === 'knockdown') speed = 0;
+    else if (act === 'kick' || act === 'knockdown' || act === 'grabbed') speed = 0;
     else if (act === 'hurt') speed *= 0.35;
     if (this.hp < 25) speed *= 0.85;
     const k = Math.min(1, il);
@@ -344,19 +377,19 @@ export class Player {
     this.updateFlashlight();
 
     // ---- disparo (depois da mira, para o tiro sair exatamente onde está o ponto vermelho)
-    if (this.fireBuffer > 0 && this.aimBlend > 0.82 && this.fireCd <= 0) {
+    const w = this.weapon;
+    const wantFire = this.fireBuffer > 0 || (w.auto && I.isHeld('fire') && this.weapons[this.current].mag > 0);
+    if (wantFire && this.aimBlend > 0.82 && this.fireCd <= 0) {
       const a2 = this.action;
-      if (!a2 || (a2.type === 'reloadSG' && this.weapons.shotgun.mag > 0)) {
+      if (!a2 || (a2.type === 'reloadSG' && this.weapons[this.current].mag > 0)) {
         this.fireBuffer = 0;
         if (a2) this.action = null;
         this.fire();
-      } else if (a2.type === 'reload' && this.fireBuffer > 0.2) {
-        /* espera a recarga terminar */
       }
     }
     if (this.pendingEject > 0) {
       this.pendingEject -= dt;
-      if (this.pendingEject <= 0) this.ejectCasing(true);
+      if (this.pendingEject <= 0) this.ejectCasing(this.pendingShell);
     }
     this.footsteps(hs);
   }
@@ -369,23 +402,24 @@ export class Player {
     switch (a.type) {
       case 'reload':
         if (a.t >= a.dur) {
-          const w = WEAPONS.pistol,
-            st = this.weapons.pistol;
-          const n = Math.min(w.mag - st.mag, this.ammo.pistol);
+          const w = WEAPONS[a.weapon] || this.weapon,
+            st = this.weapons[w.id];
+          const n = Math.min(w.mag - st.mag, this.ammo[w.ammo]);
           st.mag += n;
-          this.ammo.pistol -= n;
+          this.ammo[w.ammo] -= n;
           this.action = null;
         }
         break;
       case 'reloadSG':
         if (a.t >= a.dur) {
-          const st = this.weapons.shotgun;
-          if (this.ammo.shotgun > 0 && st.mag < WEAPONS.shotgun.mag) {
+          const w = WEAPONS[a.weapon] || this.weapon,
+            st = this.weapons[w.id];
+          if (this.ammo[w.ammo] > 0 && st.mag < w.mag) {
             st.mag++;
-            this.ammo.shotgun--;
+            this.ammo[w.ammo]--;
             G.audio.click(G.audio.ctx ? G.audio.ctx.currentTime : 0, 1400, 0.5);
           }
-          if (st.mag < WEAPONS.shotgun.mag && this.ammo.shotgun > 0) {
+          if (st.mag < w.mag && this.ammo[w.ammo] > 0) {
             a.t = 0;
           } else {
             this.action = null;
@@ -393,6 +427,22 @@ export class Player {
           }
         }
         break;
+      case 'grabbed': {
+        const I = G.input;
+        if (I.pressed('act')) {
+          I.consume('act');
+          a.mash++;
+          G.audio.whoosh(0.35);
+          G.fx.shake(0.12);
+        }
+        const by = a.by;
+        if (a.mash >= 3 || a.t >= a.dur || !by || !by.alive) {
+          this.action = null;
+          this.invuln = Math.max(this.invuln, 0.6);
+          if (by && by.alive && by.release) by.release(a.mash >= 3);
+        }
+        break;
+      }
       case 'switch':
         if (!a.fired && a.t >= a.dur * 0.5) {
           a.fired = true;
@@ -448,8 +498,9 @@ export class Player {
           _v2.normalize().multiplyScalar(11.5);
           _v2.x += this.vel.x * 0.5;
           _v2.z += this.vel.z * 0.5;
-          G.proj.spawnGrenade(_v, _v2);
-          this.items.grenade = Math.max(0, this.items.grenade - 1);
+          if (a.item === 'molotov') G.proj.spawnMolotov(_v, _v2);
+          else G.proj.spawnGrenade(_v, _v2);
+          this.items[a.item] = Math.max(0, this.items[a.item] - 1);
           G.audio.whoosh(0.4);
         }
         if (a.t >= a.dur) this.action = null;
@@ -469,11 +520,19 @@ export class Player {
     const w = this.weapon,
       st = this.weapons[this.current];
     if (this.action || st.mag >= w.mag || this.ammo[w.ammo] <= 0) return false;
-    if (w.id === 'pistol') {
-      this.startAction('reload', w.reload);
-      this.G.audio.reload('pistol');
-    } else this.startAction('reloadSG', w.reload);
+    if (w.perShell) this.startAction('reloadSG', w.reload, { weapon: w.id });
+    else {
+      this.startAction('reload', w.reload, { weapon: w.id });
+      this.G.audio.reload(w.id);
+    }
     return true;
+  }
+
+  swapThrowable() {
+    const other = this.throwSel === 'grenade' ? 'molotov' : 'grenade';
+    this.throwSel = other;
+    this.G.audio.ui('move');
+    this.G.ui.msg(`Arremesso: ${ITEMS[other].name} (${this.items[other] || 0})`);
   }
 
   switchTo(id) {
@@ -496,11 +555,33 @@ export class Player {
 
   startThrow() {
     if (this.action) return;
-    if (this.items.grenade <= 0) {
-      this.G.ui.msg('Você não tem granadas.');
-      return;
+    let it = this.throwSel;
+    if (!(this.items[it] > 0)) {
+      const other = it === 'grenade' ? 'molotov' : 'grenade';
+      if (this.items[other] > 0) it = this.throwSel = other;
+      else {
+        this.G.ui.msg('Você não tem granadas nem molotovs.');
+        return;
+      }
     }
-    this.startAction('throw', 0.75);
+    this.startAction('throw', 0.75, { item: it });
+  }
+
+  // Um Arrastado agarrou a perna do jogador: aperte Ação três vezes para se soltar.
+  grab(by) {
+    if (this.dead || this.G.state !== 'play' || this.invuln > 0) return false;
+    if (this.action && (this.action.type === 'kick' || this.action.type === 'knockdown' || this.action.type === 'grabbed')) return false;
+    this.startAction('grabbed', 2.4, { by, mash: 0 });
+    this.G.input.setTouchAim(false);
+    this.G.audio.hurt();
+    this.G.fx.shake(0.3);
+    return true;
+  }
+
+  ignite(sec = 2.5) {
+    if (this.dead || this.G.state !== 'play') return;
+    if (this.burnT <= 0) this.G.ui.msg('Você está pegando fogo!');
+    this.burnT = Math.max(this.burnT, sec);
   }
 
   useHeal(instant) {
@@ -543,34 +624,46 @@ export class Player {
   }
 
   addItem(type, n = 1) {
+    if (type.startsWith('ammo_')) {
+      const k = type.slice(5);
+      this.ammo[k] = (this.ammo[k] || 0) + n;
+      return `+${n} ${AMMO[k] ? AMMO[k].name : k}`;
+    }
+    if (type.startsWith('weapon_')) {
+      const id = type.slice(7),
+        w = WEAPONS[id],
+        st = this.weapons[id];
+      if (!w || !st) return '';
+      if (st.owned) {
+        const b = PICKUP_BONUS[id] || 4;
+        this.ammo[w.ammo] += b;
+        return `+${b} ${AMMO[w.ammo].name}`;
+      }
+      st.owned = true;
+      st.mag = id === 'shotgun' ? 4 : w.mag;
+      if (!this.action) {
+        this.current = id;
+        this.updateGunVisibility();
+        this.G.ui.weaponChanged();
+      }
+      return `${w.name} (tecla ${WEAPON_ORDER.indexOf(id) + 1})`;
+    }
+    if (type.startsWith('mission_')) {
+      this.keys[type] = (this.keys[type] || 0) + n;
+      const nm = ITEMS[type] ? ITEMS[type].name : type;
+      return n > 1 ? `${nm} ×${n}` : nm;
+    }
     switch (type) {
-      case 'ammo_pistol':
-        this.ammo.pistol += n;
-        return `+${n} Munição 9 mm`;
-      case 'ammo_shotgun':
-        this.ammo.shotgun += n;
-        return `+${n} Cartuchos calibre 12`;
       case 'tonic':
       case 'medkit':
       case 'grenade':
-        this.items[type] += n;
-        return type === 'tonic' ? 'Tônico' : type === 'medkit' ? 'Kit de primeiros socorros' : n > 1 ? `${n} Granadas` : 'Granada';
+      case 'molotov':
+        this.items[type] = (this.items[type] || 0) + n;
+        if (type === 'molotov' && this.items.grenade <= 0) this.throwSel = 'molotov';
+        return n > 1 ? `${ITEMS[type].name} ×${n}` : ITEMS[type].name;
       case 'key':
         this.keys.cemetery = true;
         return 'Chave do cemitério';
-      case 'weapon_shotgun':
-        if (this.weapons.shotgun.owned) {
-          this.ammo.shotgun += 4;
-          return '+4 Cartuchos calibre 12';
-        }
-        this.weapons.shotgun.owned = true;
-        this.weapons.shotgun.mag = 4;
-        if (!this.action) {
-          this.current = 'shotgun';
-          this.updateGunVisibility();
-          this.G.ui.weaponChanged();
-        }
-        return 'Escopeta calibre 12 (tecla 2)';
       default:
         return '';
     }
@@ -610,30 +703,44 @@ export class Player {
       _d.x = _v.x;
       _d.y = _v.y;
       _d.z = _v.z;
-      const hit = raycastAll(G, _o, _d, w.range);
-      if (!hit) continue;
-      let dmg = w.dmg;
-      if (w.id === 'shotgun') dmg *= clamp(1 - (hit.t - 5) / 18, 0.3, 1);
-      if (hit.kind === 'enemy') {
-        const e = hit.enemy;
-        let r = hits.get(e);
-        if (!r) {
-          r = { parts: {}, n: 0, dist: hit.t, x: hit.x, y: hit.y, z: hit.z };
-          hits.set(e, r);
+      // balas que atravessam: o inimigo atingido sai do teste e o raio continua
+      let left = 1 + (w.pierce || 0);
+      const skipped = [];
+      let falloff = 1;
+      while (left-- > 0) {
+        const hit = raycastAll(G, _o, _d, w.range);
+        if (!hit) break;
+        let dmg = w.dmg * falloff;
+        if (w.id === 'shotgun') dmg *= clamp(1 - (hit.t - 5) / 18, 0.3, 1);
+        if (hit.kind === 'enemy') {
+          const e = hit.enemy;
+          let r = hits.get(e);
+          if (!r) {
+            r = { parts: {}, n: 0, dist: hit.t, x: hit.x, y: hit.y, z: hit.z };
+            hits.set(e, r);
+          }
+          r.parts[hit.part] = (r.parts[hit.part] || 0) + dmg;
+          r.n++;
+          G.fx.blood({ x: hit.x, y: hit.y, z: hit.z }, _d, w.pellets > 1 ? 4 : 10, hit.part === 'head');
+          if (left > 0 && !e.isBoss && !(e.shieldBlocks && e.shieldBlocks(hit.part))) {
+            e.hittable = false;
+            skipped.push(e);
+            falloff *= 0.8;
+            continue;
+          }
+        } else if (hit.kind === 'object') {
+          G.fx.impact(hit, _d);
+          if (hit.owner && hit.owner.onShot) hit.owner.onShot(dmg, _d);
+        } else if (hit.kind === 'proj') {
+          G.fx.sparks({ x: hit.x, y: hit.y, z: hit.z }, { x: -_d.x, y: -_d.y, z: -_d.z }, 6);
+          G.proj.shot(hit.proj);
+        } else {
+          G.fx.impact(hit, _d);
+          if (i % 3 === 0) G.audio.hit(hit.mat === 'metal' ? 'metal' : hit.mat === 'wood' ? 'wood' : hit.mat === 'water' ? 'water' : 'stone', hit);
         }
-        r.parts[hit.part] = (r.parts[hit.part] || 0) + dmg;
-        r.n++;
-        G.fx.blood({ x: hit.x, y: hit.y, z: hit.z }, _d, w.pellets > 1 ? 4 : 10, hit.part === 'head');
-      } else if (hit.kind === 'object') {
-        G.fx.impact(hit, _d);
-        if (hit.owner && hit.owner.onShot) hit.owner.onShot(dmg, _d);
-      } else if (hit.kind === 'proj') {
-        G.fx.sparks({ x: hit.x, y: hit.y, z: hit.z }, { x: -_d.x, y: -_d.y, z: -_d.z }, 6);
-        G.proj.shot(hit.proj);
-      } else {
-        G.fx.impact(hit, _d);
-        if (i % 3 === 0) G.audio.hit(hit.mat === 'metal' ? 'metal' : hit.mat === 'wood' ? 'wood' : hit.mat === 'water' ? 'water' : 'stone', hit);
+        break;
       }
+      for (const e of skipped) e.hittable = true;
     }
     let headHit = false;
     for (const [e, r] of hits) {
@@ -641,12 +748,13 @@ export class Player {
       const dl = Math.hypot(dir.x, dir.z) || 1;
       dir.x /= dl;
       dir.z /= dl;
-      const knock = w.id === 'shotgun' && r.n >= 4 && r.dist < 8;
+      const knock = (w.id === 'shotgun' && r.n >= 4 && r.dist < 8) || (w.id === 'magnum' && r.dist < 14 && Math.random() < 0.55) || (w.id === 'rifle' && !r.parts.head);
+      const push = w.id === 'shotgun' ? 3 : w.id === 'magnum' ? 2.6 : w.id === 'rifle' ? 2.2 : w.id === 'smg' ? 0.35 : 0.9;
       const order = PART_ORDER.filter((p) => r.parts[p] !== undefined);
       order.forEach((part, i) => {
         const last = i === order.length - 1;
         if (part === 'head') headHit = true;
-        e.onHit({ dmg: r.parts[part], part, weapon: w.id, dir, knockdown: last && knock, push: w.id === 'shotgun' ? 3 : 0.9 });
+        e.onHit({ dmg: r.parts[part], part, weapon: w.id, dir, knockdown: last && knock, push });
       });
       G.audio.hit(r.parts.head ? 'head' : 'flesh', e.pos);
     }
@@ -654,14 +762,16 @@ export class Player {
       G.stats.hits++;
       G.ui.hitMarker(headHit);
     }
-    G.fx.muzzle(m, this.aimDir, w.id === 'shotgun');
-    G.audio.shot(w.id);
+    G.fx.muzzle(m, this.aimDir, w.id === 'shotgun' || w.id === 'rifle' || w.id === 'magnum');
+    G.audio.shot(w.sound || w.id);
     G.fx.shake(w.shake);
     this.recoil = 1;
-    this.camPitch += w.recoil;
+    this.camPitch += w.recoil * (this.scoped ? 0.6 : 1);
     this.camYaw += rand(-1, 1) * w.recoil * 0.25;
-    if (w.id === 'pistol') this.ejectCasing(false);
-    else this.pendingEject = 0.42;
+    if (w.lateEject) {
+      this.pendingEject = w.lateEject;
+      this.pendingShell = w.id === 'shotgun';
+    } else if (!w.noEject) this.ejectCasing(false);
     G.enemies.noise(this.pos.x, this.pos.z, w.noise);
     if (st.mag === 0 && this.ammo[w.ammo] > 0) this.autoReload = 0.35;
   }
@@ -738,6 +848,7 @@ export class Player {
       this.startAction('knockdown', 1.75);
       G.input.setTouchAim(false);
     } else if (!this.action || ['reload', 'reloadSG', 'heal', 'switch', 'hurt', 'knife', 'throw'].includes(this.action.type)) {
+      // (agarrado: continua preso, só leva o dano)
       if (this.action && this.action.type === 'throw' && !this.action.fired) {
         /* granada cancelada, nada é gasto */
       }
@@ -797,8 +908,9 @@ export class Player {
     const aim = easeInOut(this.aimBlend);
     R.gait(this.phase, amt * (1 - aim * 0.35), run);
     R.add('spine', Math.sin(this.t * 1.6) * 0.015);
+    const longGun = this.weapon.pose === 'long';
     // arma baixa (pronta)
-    if (this.current === 'pistol') {
+    if (!longGun) {
       this.blend('rSh', -0.3, 0, 0.12, 1);
       this.blend('rEl', -0.6, 0, 0, 1);
     } else {
@@ -810,7 +922,7 @@ export class Player {
     // mirando
     if (aim > 0.01) {
       const p = this.camPitch;
-      if (this.current === 'pistol') {
+      if (!longGun) {
         this.blend('rSh', -1.57 - p * 0.85, 0, 0.24, aim);
         this.blend('rEl', -0.08, 0, 0, aim);
         this.blend('lSh', -1.45 - p * 0.85, 0, -0.52, aim);
@@ -824,7 +936,7 @@ export class Player {
         this.blend('spine', -p * 0.2, 0.28, 0, aim);
       }
       this.blend('neck', -p * 0.5, -0.12, 0, aim);
-      if (this.recoil > 0) R.add('rSh', -this.recoil * (this.current === 'shotgun' ? 0.3 : 0.15));
+      if (this.recoil > 0) R.add('rSh', -this.recoil * (longGun || this.current === 'magnum' ? 0.3 : 0.15));
     }
     if (a) {
       const k = clamp(a.t / a.dur, 0, 1);
@@ -884,6 +996,17 @@ export class Player {
           R.add('spine', -0.3 * Math.sin(k * Math.PI));
           R.add('neck', -0.25 * Math.sin(k * Math.PI));
           break;
+        case 'grabbed': {
+          R.set('spine', 0.45 + Math.sin(this.t * 14) * 0.08, Math.sin(this.t * 9) * 0.2, 0);
+          R.set('neck', 0.5, 0, 0);
+          R.set('lSh', -1.0, 0, -0.4);
+          R.set('rSh', -1.0, 0, 0.4);
+          R.set('lEl', -0.6);
+          R.set('rEl', -0.6);
+          R.set('rHip', 0.25);
+          R.set('lKnee', 0.4);
+          break;
+        }
         case 'knockdown': {
           const down = k < 0.65;
           R.bodyTilt = down ? -1.45 : 0;
@@ -900,6 +1023,36 @@ export class Player {
           break;
         }
       }
+    }
+    // poses das cenas
+    const pose = this.cine && this.cine.pose;
+    if (pose === 'handsUp') {
+      R.set('lSh', -2.75, 0, -0.35);
+      R.set('rSh', -2.75, 0, 0.35);
+      R.set('lEl', -0.5);
+      R.set('rEl', -0.5);
+      R.set('spine', -0.05, 0, 0);
+    } else if (pose === 'lookUp') {
+      R.set('neck', -0.55, 0, 0);
+      R.set('spine', -0.15, 0, 0);
+    } else if (pose === 'kneel' || pose === 'hug') {
+      R.hipsY = -0.36;
+      R.set('lHip', -1.5);
+      R.set('lKnee', 1.5);
+      R.set('rHip', 0.05);
+      R.set('rKnee', 1.6);
+      R.set('rAnkle', 0.8);
+      R.set('spine', 0.2, 0, 0);
+      if (pose === 'hug') {
+        R.set('lSh', -1.4, 0, 0.7);
+        R.set('rSh', -1.4, 0, -0.7);
+        R.set('lEl', -1.4);
+        R.set('rEl', -1.4);
+      }
+    } else if (pose === 'talk' || (this.cine && this.cine.talkT > 0 && !pose)) {
+      R.add('rSh', -0.3 - Math.max(0, Math.sin(this.t * 5)) * 0.35, 0, 0);
+      R.add('rEl', -0.6);
+      R.add('neck', Math.sin(this.t * 3) * 0.05);
     }
     R.apply(dt, a && a.type === 'kick' ? 20 : 14, a && a.type === 'knockdown' ? 7 : 9);
     this.syncRig();
@@ -925,8 +1078,12 @@ export class Player {
       cam = G.camera;
     const a = easeInOut(this.aimBlend);
     const dead = this.dead;
-    let dist = lerp(2.6, 1.15, a),
-      side = lerp(0.55, 0.48, a),
+    const wantScope = this.weapon.scope && this.aiming && !this.dead;
+    this.scopeK = damp(this.scopeK, wantScope && this.aimBlend > 0.6 ? 1 : 0, 12, dt);
+    this.scoped = this.scopeK > 0.85;
+    const sk = this.scopeK;
+    let dist = lerp(lerp(2.6, 1.15, a), 0.0, sk),
+      side = lerp(lerp(0.55, 0.48, a), 0.32, sk),
       h = lerp(1.62, 1.56, a);
     if (dead) {
       dist = 3.4 + Math.min(1.5, this.deathT * 0.5);
@@ -934,7 +1091,7 @@ export class Player {
       h = 1.2;
     }
     if (this.action && this.action.type === 'knockdown') h = lerp(h, 1.1, 0.6);
-    const fovT = lerp(62, 44, a) + (this.running ? 4 : 0);
+    const fovT = lerp(lerp(62, 44, a), 15, sk) + (this.running ? 4 : 0);
     this.fov = damp(this.fov, fovT, 10, dt);
     if (Math.abs(cam.fov - this.fov) > 0.01) {
       cam.fov = this.fov;
@@ -977,7 +1134,7 @@ export class Player {
     _v.add(fx.shakeOffset);
     cam.lookAt(_v);
     if (fx.shakeRoll) cam.rotateZ(fx.shakeRoll);
-    const hide = this.camDist < 0.45 && !dead;
+    const hide = (this.camDist < 0.45 || sk > 0.5) && !dead;
     if (hide !== this.hidden) {
       this.hidden = hide;
       this.rig.root.visible = !hide;
@@ -1026,7 +1183,7 @@ export class Player {
 
   updateLaser() {
     const a = this.action;
-    const show = this.aimBlend > 0.82 && !this.dead && (!a || a.type === 'reload' || a.type === 'reloadSG') && this.rig.root.visible;
+    const show = this.aimBlend > 0.82 && !this.dead && !this.scoped && (!a || a.type === 'reload' || a.type === 'reloadSG') && this.rig.root.visible;
     if (!show) {
       this.laser.visible = this.dot.visible = false;
       return;
@@ -1068,8 +1225,13 @@ export class Player {
       f.intensity = 40 * this.flashK;
     }
     f.position.copy(_v);
-    const dir = this.aimBlend > 0.5 ? this.aimDir : this.camDir;
-    f.target.position.copy(_v).addScaledVector(dir, 8);
+    if (this.G.state === 'cutscene') {
+      _v2.set(Math.sin(this.yaw), -0.18, Math.cos(this.yaw));
+      f.target.position.copy(_v).addScaledVector(_v2, 8);
+    } else {
+      const dir = this.aimBlend > 0.5 ? this.aimDir : this.camDir;
+      f.target.position.copy(_v).addScaledVector(dir, 8);
+    }
     f.target.updateMatrixWorld();
   }
 
@@ -1079,14 +1241,73 @@ export class Player {
     if (n !== this.lastStep) {
       this.lastStep = n;
       const G = this.G;
-      let surf = 'dirt';
       const x = this.pos.x,
         z = this.pos.z;
-      if (G.world.isIndoor(x, z)) surf = 'wood';
-      else if (z > 129.5 && z < 140.5) surf = 'wood';
-      else if (Math.hypot(x, z - 32) < 12 || (Math.abs(x) < 2.6 && z > 43 && z < 72) || (z > 140 && (Math.abs(x) < 4 || Math.hypot(x - ARENA.x, z - ARENA.z) < ARENA.r))) surf = 'stone';
+      const surf = G.chapter && G.chapter.surface ? G.chapter.surface(x, z, G) : 'dirt';
       G.audio.step(null, surf, this.running ? 0.42 : 0.28);
-      if (this.running) G.enemies.noise(x, z, 9);
+      if (this.running && G.state === 'play') G.enemies.noise(x, z, 9);
     }
+  }
+
+  // ------------------------------------------------------------------ cenas
+  // Sem controle: anda por pontos (cine.path), olha para cine.face e faz cine.pose.
+  cinematic(dt) {
+    const G = this.G;
+    this.t += dt;
+    this.aimBlend = damp(this.aimBlend, 0, 8, dt);
+    this.aiming = false;
+    this.fireBuffer = 0;
+    this.burnT = 0;
+    if (this.action && this.action.type !== 'reload' && this.action.type !== 'reloadSG') this.action = null;
+    this.progressAction(dt);
+    let tvx = 0,
+      tvz = 0;
+    const c = this.cine;
+    if (c && c.talkT > 0) c.talkT -= dt;
+    if (c && c.path && c.path.length) {
+      const goal = c.path[0];
+      const dx = goal.x - this.pos.x,
+        dz = goal.z - this.pos.z;
+      const d = Math.hypot(dx, dz);
+      if (d < 0.3) {
+        c.path.shift();
+        if (!c.path.length) {
+          c.path = null;
+          const cb = c.onArrive;
+          c.onArrive = null;
+          if (cb) cb();
+        }
+      } else {
+        const sp = Math.min(c.speed || 1.6, d * 3 + 0.4);
+        tvx = (dx / d) * sp;
+        tvz = (dz / d) * sp;
+        this.yaw = dampAngle(this.yaw, Math.atan2(dx, dz), 8, dt);
+      }
+    } else if (c && c.face) {
+      this.yaw = dampAngle(this.yaw, Math.atan2(c.face.x - this.pos.x, c.face.z - this.pos.z), 5, dt);
+    }
+    this.vel.x = damp(this.vel.x, tvx, 10, dt);
+    this.vel.z = damp(this.vel.z, tvz, 10, dt);
+    this.pos.x += this.vel.x * dt;
+    this.pos.z += this.vel.z * dt;
+    this.knock.set(0, 0, 0);
+    this.resolveWorld();
+    this.running = (c && c.speed > 3) || false;
+    const hs = Math.hypot(this.vel.x, this.vel.z);
+    if (!this.rig.root.visible && !this.hiddenByScene) this.rig.root.visible = true;
+    this.hidden = false;
+    this.animate(dt, hs);
+    this.updateFlashlight();
+    this.laser.visible = this.dot.visible = false;
+    this.footsteps(hs);
+    void G;
+  }
+
+  // Volta do modo cena: câmera atrás do personagem.
+  endCinematic() {
+    this.cine = null;
+    this.camYaw = this.yaw;
+    this.camPitch = -0.06;
+    this.vel.set(0, 0, 0);
   }
 }

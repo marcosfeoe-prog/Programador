@@ -1153,3 +1153,395 @@ table.stats td:last-child {
     transition: none;
   }
 }
+
+/* ------------------------------------------------------------------ capítulos 2 e 3 */
+/* luneta do rifle */
+#scope {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at center, rgba(0, 0, 0, 0) 0, rgba(0, 0, 0, 0) min(34vh, 34vw), #000 calc(min(34vh, 34vw) + 2px));
+}
+#scope .scope-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(68vh, 68vw);
+  height: min(68vh, 68vw);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.85), 0 0 0 2px rgba(0, 0, 0, 0.9);
+}
+#scope .scope-h,
+#scope .scope-v {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  background: rgba(10, 10, 10, 0.85);
+  transform: translate(-50%, -50%);
+}
+#scope .scope-h {
+  width: min(68vh, 68vw);
+  height: 1.5px;
+}
+#scope .scope-v {
+  width: 1.5px;
+  height: min(68vh, 68vw);
+}
+
+/* lista de missões sob o objetivo */
+#missions {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 2px;
+  font-size: 14px;
+  color: var(--ash);
+}
+#missions li {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+}
+#missions li::before {
+  content: '◇';
+  color: var(--ash);
+  font-size: 11px;
+}
+#missions li.active {
+  color: var(--bone);
+}
+#missions li.active::before {
+  content: '◆';
+  color: var(--ember);
+}
+#missions li.done {
+  color: rgba(148, 143, 134, 0.6);
+  text-decoration: line-through;
+}
+#missions li.done::before {
+  content: '✓';
+  color: var(--good);
+}
+body.touch #missions {
+  display: none;
+}
+@media (max-height: 520px) {
+  #missions {
+    display: none;
+  }
+}
+
+/* fala da companheira */
+#say {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--pad-b) + 128px);
+  transform: translateX(-50%);
+  max-width: min(70vw, 560px);
+  padding: 6px 14px;
+  background: rgba(10, 11, 13, 0.6);
+  border-left: 3px solid var(--good);
+  font-size: 17px;
+  text-align: left;
+  animation: msgin 0.2s ease-out;
+}
+#say-who {
+  color: var(--good);
+  margin-right: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 14px;
+}
+
+/* cenas: faixas pretas e legendas */
+#letterbox {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+#letterbox .lb-top,
+#letterbox .lb-bot {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  background: #000;
+  transition: height 0.6s ease;
+}
+#letterbox .lb-top {
+  top: 0;
+}
+#letterbox .lb-bot {
+  bottom: 0;
+}
+#letterbox.on {
+  pointer-events: auto;
+}
+#letterbox.on .lb-top,
+#letterbox.on .lb-bot {
+  height: 11vh;
+}
+#subtitle {
+  position: absolute;
+  left: 50%;
+  bottom: calc(11vh + 18px);
+  transform: translateX(-50%);
+  width: min(86vw, 820px);
+  text-align: center;
+  font-size: clamp(18px, 2.4vw, 24px);
+  line-height: 1.35;
+  color: #fff;
+  text-shadow: 0 2px 4px #000, 0 0 12px #000;
+  pointer-events: none;
+  text-wrap: balance;
+}
+#sub-who {
+  display: block;
+  font-size: 0.7em;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ember);
+}
+#sub-skip {
+  position: absolute;
+  right: var(--pad-r);
+  bottom: calc(var(--pad-b) + 2vh);
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(221, 211, 194, 0.55);
+  pointer-events: none;
+}
+#fx-scream {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0) 40%, rgba(200, 220, 255, 0.35) 100%);
+  opacity: 0;
+}
+#fx-scream.on {
+  animation: scream 1.4s ease-out;
+}
+@keyframes scream {
+  0% { opacity: 0; transform: scale(1.04); }
+  12% { opacity: 1; }
+  100% { opacity: 0; transform: none; }
+}
+
+/* cartão de capítulo */
+#intro-card {
+  margin: auto auto 0;
+  text-align: center;
+  padding-bottom: 18px;
+}
+#intro-tag,
+#chend-tag {
+  display: block;
+  font-size: 15px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--rust);
+}
+#intro-title,
+#chend-title {
+  margin: 6px 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(40px, 8vw, 84px);
+  font-weight: 600;
+  line-height: 1;
+  color: var(--bone);
+  animation: introline 1.6s ease both;
+}
+#intro-card + #intro-lines {
+  margin-top: 22px;
+}
+.chend {
+  margin: auto;
+  max-width: 680px;
+  text-align: center;
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+}
+#chend-lines {
+  display: grid;
+  gap: 12px;
+}
+#chend-lines p {
+  margin: 0;
+  font-family: var(--font-doc);
+  font-size: clamp(18px, 2.4vw, 24px);
+  line-height: 1.4;
+  opacity: 0;
+  animation: introline 1.2s ease forwards;
+  text-wrap: balance;
+}
+
+/* seleção de capítulos */
+.chapters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+.chap {
+  font-family: var(--font-ui);
+  text-align: left;
+  color: var(--bone);
+  background: linear-gradient(180deg, rgba(36, 38, 43, 0.9), rgba(20, 21, 24, 0.9));
+  border: 1px solid rgba(221, 211, 194, 0.14);
+  border-top: 3px solid var(--rust);
+  padding: 14px;
+  cursor: pointer;
+  display: grid;
+  gap: 4px;
+  transition: transform 0.15s, border-color 0.15s;
+}
+.chap:hover,
+.chap:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--ember);
+  outline: none;
+}
+.chap .n {
+  font-size: 13px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ember);
+}
+.chap .t {
+  font-family: var(--font-display);
+  font-size: 30px;
+  line-height: 1;
+}
+.chap .d {
+  font-size: 15px;
+  color: var(--ash);
+  line-height: 1.3;
+}
+.chap[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-top-color: var(--ash);
+}
+.chap[disabled]:hover {
+  transform: none;
+}
+
+/* história */
+.lore #lore-body {
+  max-height: min(62vh, 560px);
+  overflow-y: auto;
+  padding-right: 8px;
+}
+.lore h3 {
+  margin-top: 16px;
+}
+.lore p {
+  margin: 4px 0 10px;
+  font-size: 17px;
+  line-height: 1.45;
+  color: var(--bone);
+}
+.lore .bestiary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 6px 18px;
+}
+.lore .bestiary p {
+  font-size: 15px;
+  margin: 0;
+}
+.lore .bestiary b {
+  color: var(--ember);
+}
+
+/* mapa */
+.map-head {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.map-head h2 {
+  margin-bottom: 8px;
+}
+#map-sub {
+  color: var(--ash);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 14px;
+}
+.map-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 16px;
+  align-items: start;
+}
+#map-canvas {
+  width: 100%;
+  max-height: min(64vh, 560px);
+  aspect-ratio: 1;
+  object-fit: contain;
+  background: #0d0f12;
+  border: 1px solid rgba(221, 211, 194, 0.14);
+}
+#map-missions {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+#map-missions li {
+  padding: 6px 8px;
+  background: rgba(36, 38, 43, 0.6);
+  border-left: 3px solid var(--ash);
+  font-size: 16px;
+}
+#map-missions li small {
+  display: block;
+  color: var(--ash);
+  font-size: 14px;
+  line-height: 1.3;
+}
+#map-missions li.active {
+  border-left-color: var(--ember);
+}
+#map-missions li.done {
+  border-left-color: var(--good);
+  opacity: 0.7;
+}
+@media (max-width: 760px) {
+  .map-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  #map-canvas {
+    max-height: 52vh;
+  }
+}
+@media (max-height: 520px) {
+  .map-panel h2 {
+    font-size: 26px;
+  }
+  .map-body {
+    grid-template-columns: minmax(0, 1fr) 220px;
+  }
+  #map-canvas {
+    max-height: 62vh;
+  }
+  #map-missions li {
+    font-size: 14px;
+    padding: 4px 6px;
+  }
+  #map-missions li small {
+    font-size: 12px;
+  }
+}
+#w-items span.sel {
+  color: var(--ember);
+}
+#w-items span.sel::before {
+  content: '▸ ';
+}

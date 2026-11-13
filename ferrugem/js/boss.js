@@ -4,7 +4,6 @@ import * as THREE from 'three';
 import { buildBlacksmith } from './rig.js';
 import { Enemy } from './enemy_base.js';
 import { clamp, dampAngle, turnToward, angleDiff } from './util.js';
-import { ARENA } from './world.js';
 
 const _tp = { dx: 0, dz: 0, d: 0, yaw: 0 };
 const _v = new THREE.Vector3();
@@ -29,6 +28,9 @@ export class Boss extends Enemy {
     this.summonT = 18;
     this.stepAcc = 0;
     this.alert = true;
+    this.arena = o.arena || { x: x, z: z, r: 18 };
+    this.anvil = o.anvil || null;
+    this.awake = false;
     this.coreLight = G.fx.lights.add({ x, y: 2.4, z, color: 0xff6a1a, intensity: 14, range: 7, flicker: 0.25, priority: 30 });
     G.scene.add(this.rig.root);
     this.setState('dormant');
@@ -39,6 +41,10 @@ export class Boss extends Enemy {
 
   get kickable() {
     return this.alive && (this.state === 'stagger' || this.state === 'stunned') && this.st > 0.3;
+  }
+
+  get showBar() {
+    return !!this.G.level.flags.arena && this.state !== 'dormant' && !this.removed && this.state !== 'dead';
   }
 
   get speed() {
@@ -71,14 +77,14 @@ export class Boss extends Enemy {
         rate = 14;
         if (k > 0.8 && !this.clanged) {
           this.clanged = true;
-          const a = G.world.anchors.bossAnvil;
+          const a = this.anvil || { x: this.pos.x, z: this.pos.z + 2 };
           if (Math.hypot(P.pos.x - this.pos.x, P.pos.z - this.pos.z) < 45) {
             G.audio.hit('metal', this.pos);
             G.fx.sparks({ x: a.x, y: 0.95, z: a.z - 0.4 }, { x: 0, y: 1, z: -0.5 }, 12);
           }
         }
         if (k < 0.5) this.clanged = false;
-        if (G.level.flags.arena) this.setState('intro');
+        if (this.awake) this.setState('intro');
         break;
       }
       case 'intro': {
@@ -343,12 +349,13 @@ export class Boss extends Enemy {
       if (moved < vx * this.chX * dt * 0.3 + vz * this.chZ * dt * 0.3) this.crash();
     }
     // mantém dentro da arena
-    const ax = this.pos.x - ARENA.x,
-      az = this.pos.z - ARENA.z;
+    const AR = this.arena;
+    const ax = this.pos.x - AR.x,
+      az = this.pos.z - AR.z;
     const ad = Math.hypot(ax, az);
-    if (ad > ARENA.r - 1.2) {
-      this.pos.x = ARENA.x + (ax / ad) * (ARENA.r - 1.2);
-      this.pos.z = ARENA.z + (az / ad) * (ARENA.r - 1.2);
+    if (ad > AR.r - 1.2) {
+      this.pos.x = AR.x + (ax / ad) * (AR.r - 1.2);
+      this.pos.z = AR.z + (az / ad) * (AR.r - 1.2);
     }
     R.apply(dt, rate);
     this.syncRig();
@@ -361,6 +368,10 @@ export class Boss extends Enemy {
     this.coreLight.y = _v.y;
     this.coreLight.z = _v.z;
     this.coreLight.intensity = (exposed ? 30 : 14) * pulse * (this.alive ? 1 : 0.4);
+  }
+
+  wake() {
+    this.awake = true;
   }
 
   toChase(cd) {
@@ -422,11 +433,12 @@ export class Boss extends Enemy {
   summonAdds() {
     const G = this.G,
       P = G.player;
+    const AR = this.arena;
     const pts = [
-      { x: ARENA.x + 16.4, z: ARENA.z },
-      { x: ARENA.x - 16.4, z: ARENA.z },
-      { x: ARENA.x + 11, z: ARENA.z + 10 },
-      { x: ARENA.x - 11, z: ARENA.z + 10 },
+      { x: AR.x + 16.4, z: AR.z },
+      { x: AR.x - 16.4, z: AR.z },
+      { x: AR.x + 11, z: AR.z + 10 },
+      { x: AR.x - 11, z: AR.z + 10 },
     ];
     pts.sort((a, b) => Math.hypot(b.x - P.pos.x, b.z - P.pos.z) - Math.hypot(a.x - P.pos.x, a.z - P.pos.z));
     const n = this.phaseN === 3 ? 3 : 2;

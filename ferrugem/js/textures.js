@@ -763,7 +763,273 @@ const MAKERS = {
     g.restore();
     return finish(c, { repeat: false });
   },
+
+  // ---------------------------------------------------------------- cidade
+  asphalt() {
+    const S = 512,
+      c = mk(S, S),
+      g = c.getContext('2d', { willReadFrequently: true }),
+      rng = new Rng(2101);
+    const n1 = makeFbm(5, 5, rng),
+      n2 = makeFbm(40, 2, rng);
+    fillPixels(g, S, S, (u, v, o) => {
+      const a = n1(u, v),
+        f = n2(u, v) - 0.5;
+      const patch = clamp((a - 0.62) * 5, 0, 1);
+      const base = 44 + f * 30 + patch * 10;
+      o[0] = base;
+      o[1] = base * 0.98;
+      o[2] = base * 0.96;
+    });
+    for (let i = 0; i < 2200; i++) {
+      const v = rng.int(70, 110);
+      g.fillStyle = rgb(v, v, v * 0.95, rng.range(0.2, 0.5));
+      g.fillRect(rng.next() * S, rng.next() * S, rng.range(1, 2.5), rng.range(1, 2.5));
+    }
+    g.strokeStyle = 'rgba(12,12,12,0.7)';
+    for (let i = 0; i < 9; i++) {
+      let x = rng.next() * S,
+        y = rng.next() * S;
+      g.lineWidth = rng.range(0.8, 2);
+      g.beginPath();
+      g.moveTo(x, y);
+      for (let k = 0; k < 12; k++) {
+        x += rng.range(-18, 18);
+        y += rng.range(-18, 18);
+        g.lineTo(x, y);
+      }
+      g.stroke();
+    }
+    return finish(c);
+  },
+
+  sidewalk() {
+    const S = 256,
+      c = mk(S, S),
+      g = c.getContext('2d', { willReadFrequently: true }),
+      rng = new Rng(2202);
+    const n1 = makeFbm(6, 4, rng);
+    fillPixels(g, S, S, (u, v, o) => {
+      const a = n1(u, v);
+      const b = 104 + a * 40;
+      o[0] = b;
+      o[1] = b * 0.97;
+      o[2] = b * 0.92;
+    });
+    g.fillStyle = 'rgba(30,28,26,0.75)';
+    for (let i = 0; i <= 4; i++) {
+      g.fillRect(0, i * 64 - 1, S, 2);
+      g.fillRect(i * 64 - 1, 0, 2, S);
+    }
+    for (let i = 0; i < 6; i++) {
+      g.fillStyle = `rgba(20,18,16,${rng.range(0.15, 0.35)})`;
+      g.fillRect(rng.int(0, 3) * 64 + 2, rng.int(0, 3) * 64 + 2, 60, 60);
+    }
+    noiseMultiply(g, S, makeFbm(20, 3, rng), 0.35);
+    return finish(c);
+  },
+
+  concrete() {
+    const S = 512,
+      c = mk(S, S),
+      g = c.getContext('2d', { willReadFrequently: true }),
+      rng = new Rng(2303);
+    const n1 = makeFbm(4, 6, rng),
+      n2 = makeFbm(24, 3, rng);
+    fillPixels(g, S, S, (u, v, o) => {
+      const a = n1(u, v),
+        b = n2(u, v);
+      const stain = clamp((a - 0.55) * 2.5, 0, 1);
+      const k = 0.85 + (b - 0.5) * 0.25;
+      o[0] = (150 - stain * 60) * k;
+      o[1] = (146 - stain * 62) * k;
+      o[2] = (138 - stain * 64) * k;
+    });
+    // escorridos de ferrugem e água
+    for (let i = 0; i < 18; i++) {
+      const x = rng.next() * S,
+        w = rng.range(2, 10),
+        h = rng.range(40, 200),
+        y = rng.next() * S;
+      const gr = g.createLinearGradient(0, y, 0, y + h);
+      gr.addColorStop(0, rng.next() < 0.5 ? 'rgba(90,50,30,0.35)' : 'rgba(30,30,30,0.3)');
+      gr.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = gr;
+      g.fillRect(x, y, w, h);
+    }
+    g.fillStyle = 'rgba(40,38,36,0.4)';
+    g.fillRect(0, 0, S, 2);
+    g.fillRect(0, S / 2, S, 2);
+    return finish(c);
+  },
+
+  brick() {
+    const S = 512,
+      c = mk(S, S),
+      g = c.getContext('2d', { willReadFrequently: true }),
+      rng = new Rng(2404);
+    g.fillStyle = '#3a3230';
+    g.fillRect(0, 0, S, S);
+    const bh = 32,
+      bw = 64;
+    for (let r = 0; r < S / bh; r++) {
+      const off = r % 2 ? bw / 2 : 0;
+      for (let k = -1; k < S / bw + 1; k++) {
+        const x = k * bw + off,
+          y = r * bh;
+        const t = rng.range(0.75, 1.15);
+        g.fillStyle = rgb(120 * t, 58 * t, 42 * t);
+        g.fillRect(x + 2, y + 2, bw - 4, bh - 4);
+      }
+    }
+    noiseMultiply(g, S, makeFbm(8, 4, rng), 0.5);
+    return finish(c);
+  },
+
+  // Fachada de prédio: 6 x 6 m (2 andares x 2 janelas).
+  facade() {
+    return facadeTex(2505, [150, 140, 124], false);
+  },
+
+  facadeBrick() {
+    return facadeTex(2606, [116, 62, 46], true);
+  },
+
+  facadeBlue() {
+    return facadeTex(2707, [92, 108, 118], false);
+  },
+
+  graffiti() {
+    const W = 512,
+      H = 256,
+      c = mk(W, H),
+      g = c.getContext('2d', { willReadFrequently: true });
+    g.clearRect(0, 0, W, H);
+    g.font = 'bold 70px Impact, "Arial Black", sans-serif';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.lineWidth = 6;
+    g.strokeStyle = 'rgba(20,20,20,0.8)';
+    g.fillStyle = 'rgba(170,30,24,0.9)';
+    g.save();
+    g.translate(W / 2, H / 2);
+    g.rotate(-0.06);
+    g.strokeText('NÃO BEBA A ÁGUA', 0, -40);
+    g.fillText('NÃO BEBA A ÁGUA', 0, -40);
+    g.font = 'bold 44px Impact, "Arial Black", sans-serif';
+    g.fillStyle = 'rgba(220,210,190,0.85)';
+    g.strokeText('SOBREVIVENTES → BECO', 0, 50);
+    g.fillText('SOBREVIVENTES → BECO', 0, 50);
+    g.restore();
+    return finish(c, { repeat: false });
+  },
 };
+
+function facadeTex(seed, col, brick) {
+  const S = 512,
+    c = mk(S, S),
+    g = c.getContext('2d', { willReadFrequently: true }),
+    rng = new Rng(seed);
+  const n1 = makeFbm(4, 5, rng);
+  fillPixels(g, S, S, (u, v, o) => {
+    const a = n1(u, v);
+    const k = 0.78 + a * 0.36;
+    o[0] = col[0] * k;
+    o[1] = col[1] * k;
+    o[2] = col[2] * k;
+  });
+  if (brick) {
+    g.fillStyle = 'rgba(30,20,16,0.35)';
+    for (let y = 0; y < S; y += 10) g.fillRect(0, y, S, 1.5);
+    for (let y = 0; y < S; y += 10) for (let x = (y / 10) % 2 ? 10 : 0; x < S; x += 20) g.fillRect(x, y, 1.5, 10);
+  }
+  const m = S / 6; // pixels por metro
+  for (let fl = 0; fl < 2; fl++) {
+    const y0 = fl * 3 * m;
+    // faixa entre andares
+    g.fillStyle = 'rgba(40,36,32,0.5)';
+    g.fillRect(0, y0 + 3 * m - 6, S, 6);
+    for (let wi = 0; wi < 2; wi++) {
+      const cx = (wi * 3 + 1.5) * m,
+        wy = y0 + 0.75 * m,
+        ww = 1.5 * m,
+        wh = 1.55 * m;
+      g.fillStyle = 'rgba(60,54,48,1)';
+      g.fillRect(cx - ww / 2 - 6, wy - 6, ww + 12, wh + 14);
+      const broken = rng.next() < 0.35;
+      const lit = rng.next() < 0.06;
+      g.fillStyle = lit ? '#6a4a22' : broken ? '#050506' : '#14181c';
+      g.fillRect(cx - ww / 2, wy, ww, wh);
+      if (!broken) {
+        const gr = g.createLinearGradient(cx - ww / 2, wy, cx + ww / 2, wy + wh);
+        gr.addColorStop(0, 'rgba(120,140,160,0.18)');
+        gr.addColorStop(0.5, 'rgba(0,0,0,0)');
+        gr.addColorStop(1, 'rgba(90,110,130,0.1)');
+        g.fillStyle = gr;
+        g.fillRect(cx - ww / 2, wy, ww, wh);
+      } else {
+        g.strokeStyle = 'rgba(150,160,170,0.35)';
+        g.lineWidth = 1.2;
+        g.beginPath();
+        g.moveTo(cx - ww / 2, wy + rng.range(0, wh));
+        g.lineTo(cx + rng.range(-20, 20), wy + wh / 2);
+        g.lineTo(cx + ww / 2, wy + rng.range(0, wh));
+        g.stroke();
+      }
+      g.fillStyle = 'rgba(70,64,58,1)';
+      g.fillRect(cx - 3, wy, 6, wh);
+      g.fillRect(cx - ww / 2, wy + wh * 0.45, ww, 5);
+      // peitoril
+      g.fillStyle = 'rgba(170,164,150,0.8)';
+      g.fillRect(cx - ww / 2 - 10, wy + wh + 4, ww + 20, 7);
+      // escorrido sob a janela
+      const gr2 = g.createLinearGradient(0, wy + wh + 10, 0, wy + wh + 10 + m);
+      gr2.addColorStop(0, 'rgba(40,30,24,0.35)');
+      gr2.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = gr2;
+      g.fillRect(cx - ww / 2, wy + wh + 10, ww, m);
+    }
+  }
+  return finish(c);
+}
+
+// Placas com texto (cidade, siderúrgica...). Uma textura por texto.
+const signCache = new Map();
+export function signTex(text, { bg = '#2a2e33', fg = '#d8d2c0', w = 512, h = 128, font = 'bold 60px "Barlow Condensed", "Arial Narrow", sans-serif', stripe = null } = {}) {
+  const key = text + bg + fg + w + h;
+  let t = signCache.get(key);
+  if (t) return t;
+  const c = mk(w, h),
+    g = c.getContext('2d', { willReadFrequently: true }),
+    rng = new Rng(text.length * 97 + 13);
+  g.fillStyle = bg;
+  g.fillRect(0, 0, w, h);
+  if (stripe) {
+    g.fillStyle = stripe;
+    g.fillRect(0, h - 14, w, 14);
+  }
+  g.font = font;
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillStyle = 'rgba(0,0,0,0.55)';
+  g.fillText(text, w / 2 + 2, h / 2 + 3);
+  g.fillStyle = fg;
+  g.fillText(text, w / 2, h / 2);
+  for (let i = 0; i < 160; i++) {
+    g.fillStyle = `rgba(20,14,8,${rng.range(0.08, 0.3)})`;
+    g.fillRect(rng.next() * w, rng.next() * h, rng.range(4, 40), rng.range(1, 3));
+  }
+  for (let i = 0; i < 6; i++) {
+    const gr = g.createLinearGradient(0, 0, 0, h);
+    gr.addColorStop(0, 'rgba(90,46,20,0.4)');
+    gr.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = gr;
+    g.fillRect(rng.next() * w, 0, rng.range(3, 12), h);
+  }
+  t = finish(c, { repeat: false });
+  signCache.set(key, t);
+  return t;
+}
 
 // Pré-gera as texturas usadas pelo cenário (chamado durante o carregamento).
 export const WORLD_TEXTURES = ['dirt', 'cobble', 'planks', 'stone', 'plaster', 'roof', 'rust', 'metal', 'bark', 'fabric', 'skin', 'skinRust', 'grass', 'glow', 'flame', 'flash', 'hole', 'splat', 'water', 'paper', 'moon', 'sign'];

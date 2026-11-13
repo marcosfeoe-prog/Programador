@@ -32,6 +32,13 @@ export function mats() {
     crate: new THREE.MeshStandardMaterial({ color: 0x9a7a54, map: tex('planks'), roughness: 0.85 }),
     crateEdge: new THREE.MeshStandardMaterial({ color: 0x4e3a26, map: tex('planks'), roughness: 0.85 }),
     stone: new THREE.MeshStandardMaterial({ color: 0x8a8478, map: tex('stone'), roughness: 0.95 }),
+    bottle: new THREE.MeshStandardMaterial({ color: 0x3a5a2a, roughness: 0.15, metalness: 0.1, transparent: true, opacity: 0.85 }),
+    rag: new THREE.MeshStandardMaterial({ color: 0xa89a7a, roughness: 1 }),
+    gas: new THREE.MeshStandardMaterial({ color: 0xa82418, roughness: 0.5, metalness: 0.2 }),
+    tnt: new THREE.MeshStandardMaterial({ color: 0xb03a22, roughness: 0.8 }),
+    green: new THREE.MeshStandardMaterial({ color: 0x46602e, roughness: 0.7 }),
+    badge: new THREE.MeshStandardMaterial({ color: 0xd8d2c4, roughness: 0.4, emissive: 0x101010 }),
+    blue: new THREE.MeshStandardMaterial({ color: 0x2a3a5a, roughness: 0.6 }),
   };
   return M;
 }
@@ -79,6 +86,61 @@ export function makeShotgun() {
   add(g, BOX(0.022, 0.02, 0.04), m.gunDark, 0, 0.0, 0.52);
   add(g, BOX(0.01, 0.01, 0.004), m.laser, 0, 0.0, 0.542).castShadow = false;
   g.userData = { muzzle: marker(g, 0, 0.05, 0.68), laser: marker(g, 0, 0.0, 0.546), eject: marker(g, -0.025, 0.05, 0.03) };
+  return g;
+}
+
+export function makeSMG() {
+  const m = mats(),
+    g = new THREE.Group();
+  add(g, BOX(0.044, 0.062, 0.26), m.gun, 0, 0.04, 0.06);
+  add(g, CYL(0.013, 0.013, 0.12, 8), m.gunDark, 0, 0.045, 0.24, Math.PI / 2);
+  add(g, BOX(0.03, 0.1, 0.045), m.gunDark, 0, -0.04, -0.015, 0.2);
+  add(g, BOX(0.026, 0.16, 0.034), m.gunDark, 0, -0.06, 0.1, -0.08);
+  add(g, BOX(0.03, 0.03, 0.22), m.gunDark, 0, 0.035, -0.16);
+  add(g, BOX(0.03, 0.07, 0.03), m.gunDark, 0, 0.0, -0.26);
+  add(g, BOX(0.02, 0.022, 0.05), m.gunDark, 0, 0.0, 0.17);
+  add(g, BOX(0.012, 0.012, 0.004), m.laser, 0, 0.0, 0.196).castShadow = false;
+  g.userData = { muzzle: marker(g, 0, 0.045, 0.3), laser: marker(g, 0, 0.0, 0.2), eject: marker(g, -0.025, 0.06, 0.06) };
+  return g;
+}
+
+export function makeRifle() {
+  const m = mats(),
+    g = new THREE.Group();
+  add(g, CYL(0.012, 0.014, 0.6, 8), m.gun, 0, 0.055, 0.45, Math.PI / 2);
+  add(g, BOX(0.044, 0.07, 0.3), m.gun, 0, 0.04, 0.05);
+  add(g, BOX(0.05, 0.055, 0.42), m.wood, 0, 0.02, 0.32);
+  add(g, BOX(0.036, 0.1, 0.05), m.wood, 0, -0.035, -0.07, 0.35);
+  add(g, BOX(0.044, 0.1, 0.32), m.wood, 0, -0.01, -0.27, -0.1);
+  add(g, CYL(0.022, 0.022, 0.28, 10), m.gunDark, 0, 0.115, 0.08, Math.PI / 2);
+  add(g, CYL(0.028, 0.022, 0.05, 10), m.gunDark, 0, 0.115, 0.24, Math.PI / 2);
+  add(g, CYL(0.028, 0.022, 0.05, 10), m.gunDark, 0, 0.115, -0.08, -Math.PI / 2);
+  add(g, BOX(0.012, 0.03, 0.03), m.gunDark, 0.03, 0.06, 0.0, 0, 0, 1.2);
+  add(g, BOX(0.01, 0.01, 0.004), m.laser, 0, 0.0, 0.54).castShadow = false;
+  g.userData = { muzzle: marker(g, 0, 0.055, 0.76), laser: marker(g, 0, 0.0, 0.545), eject: marker(g, -0.025, 0.06, 0.05) };
+  return g;
+}
+
+export function makeMagnum() {
+  const m = mats(),
+    g = new THREE.Group();
+  add(g, CYL(0.014, 0.014, 0.2, 8), m.iron, 0, 0.05, 0.14, Math.PI / 2);
+  add(g, BOX(0.03, 0.022, 0.2), m.iron, 0, 0.068, 0.14);
+  add(g, CYL(0.03, 0.03, 0.055, 8), m.iron, 0, 0.04, 0.02, Math.PI / 2);
+  add(g, BOX(0.03, 0.05, 0.07), m.iron, 0, 0.045, -0.025);
+  add(g, BOX(0.032, 0.11, 0.05), m.darkWood, 0, -0.035, -0.035, 0.3);
+  add(g, BOX(0.01, 0.03, 0.03), m.iron, 0, 0.005, 0.0);
+  add(g, BOX(0.012, 0.012, 0.004), m.laser, 0, 0.03, 0.24).castShadow = false;
+  g.userData = { muzzle: marker(g, 0, 0.05, 0.245), laser: marker(g, 0, 0.03, 0.245), eject: marker(g, -0.02, 0.05, 0.02) };
+  return g;
+}
+
+export function makeMolotov() {
+  const m = mats(),
+    g = new THREE.Group();
+  add(g, CYL(0.035, 0.04, 0.14, 10), m.bottle, 0, 0.07, 0);
+  add(g, CYL(0.014, 0.022, 0.07, 8), m.bottle, 0, 0.17, 0);
+  add(g, BOX(0.03, 0.08, 0.02), m.rag, 0.005, 0.22, 0, 0, 0, 0.3);
   return g;
 }
 
@@ -168,13 +230,58 @@ export function makePickupModel(type) {
       add(g, BOX(0.014, 0.04, 0.012), m.brass, 0.065, 0.0, 0);
       add(g, BOX(0.014, 0.03, 0.012), m.brass, 0.04, 0.005, 0);
       break;
-    case 'weapon_shotgun': {
-      const s = makeShotgun();
+    case 'weapon_shotgun':
+    case 'weapon_smg':
+    case 'weapon_rifle':
+    case 'weapon_magnum': {
+      const mk = { weapon_shotgun: makeShotgun, weapon_smg: makeSMG, weapon_rifle: makeRifle, weapon_magnum: makeMagnum }[type];
+      const s = mk();
       s.rotation.set(0, 0.6, Math.PI / 2);
       s.position.y = 0.05;
       g.add(s);
       break;
     }
+    case 'ammo_smg':
+      add(g, BOX(0.16, 0.1, 0.12), m.blue, 0, 0.05, 0);
+      add(g, BOX(0.162, 0.03, 0.122), m.label, 0, 0.06, 0);
+      break;
+    case 'ammo_rifle':
+      add(g, BOX(0.2, 0.06, 0.1), m.ammoBox, 0, 0.03, 0);
+      for (let i = 0; i < 4; i++) add(g, CYL(0.01, 0.01, 0.09, 6), m.brass, -0.06 + i * 0.04, 0.075, 0.02, 0.2);
+      break;
+    case 'ammo_magnum':
+      add(g, BOX(0.13, 0.08, 0.1), m.redBox, 0, 0.04, 0);
+      add(g, BOX(0.132, 0.025, 0.102), m.brass, 0, 0.04, 0);
+      break;
+    case 'molotov':
+      g.add(makeMolotov());
+      break;
+    case 'mission_meds':
+      add(g, BOX(0.26, 0.12, 0.18), m.white, 0, 0.06, 0);
+      add(g, BOX(0.12, 0.004, 0.04), m.green, 0, 0.122, 0);
+      add(g, BOX(0.04, 0.004, 0.12), m.green, 0, 0.122, 0);
+      break;
+    case 'mission_fuel':
+      add(g, BOX(0.28, 0.36, 0.16), m.gas, 0, 0.18, 0);
+      add(g, BOX(0.06, 0.08, 0.16), m.gas, 0.09, 0.4, 0);
+      add(g, CYL(0.02, 0.02, 0.07, 6), m.gunDark, -0.08, 0.39, 0, 0, 0, 0.5);
+      break;
+    case 'mission_food':
+      for (let i = 0; i < 5; i++) add(g, CYL(0.04, 0.04, 0.1, 10), i % 2 ? m.label : m.iron, -0.1 + (i % 3) * 0.09, 0.05 + Math.floor(i / 3) * 0.1, (i % 2) * 0.05, 0, 0, 0);
+      add(g, BOX(0.34, 0.02, 0.2), m.crate, 0, 0.0, 0.02);
+      break;
+    case 'mission_dynamite':
+      for (let i = 0; i < 4; i++) add(g, CYL(0.022, 0.022, 0.22, 8), m.tnt, -0.06 + i * 0.045, 0.03, 0, 0, 0, Math.PI / 2);
+      add(g, BOX(0.2, 0.012, 0.06), m.gunDark, 0, 0.055, 0);
+      break;
+    case 'mission_registry':
+      add(g, BOX(0.24, 0.03, 0.32), m.olive, 0, 0.015, 0);
+      add(g, BOX(0.22, 0.012, 0.3), m.white, 0, 0.034, 0);
+      break;
+    case 'mission_badge':
+      add(g, BOX(0.09, 0.012, 0.13), m.badge, 0, 0.01, 0);
+      add(g, BOX(0.06, 0.013, 0.03), m.red, 0, 0.012, -0.03);
+      break;
     default:
       add(g, BOX(0.1, 0.1, 0.1), m.white, 0, 0.05, 0);
   }

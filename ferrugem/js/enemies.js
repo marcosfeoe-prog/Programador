@@ -7,7 +7,7 @@ import { Enemy } from './enemy_base.js';
 import { Boss } from './boss.js';
 import { clamp, dampAngle, angleDiff, rand, randInt, pick, chance, weighted } from './util.js';
 
-const WEAPONS = {
+export const MELEE = {
   axe: { dmg: 22, range: 1.7, windup: 0.62, recover: 0.75 },
   sickle: { dmg: 15, range: 1.5, windup: 0.48, recover: 0.6 },
   pitchfork: { dmg: 18, range: 2.25, windup: 0.7, recover: 0.8 },
@@ -33,7 +33,7 @@ const DRESS = [0x4a2c2a, 0x3a3440, 0x2e3a34, 0x5a4636, 0x2a2626];
 const HAIR = [0x1a1512, 0x3a2a1e, 0x5a5048, 0x8a8278, 0x2a2018];
 const HATS = [0x2b2622, 0x4a3a2a, 0x3a2a26, 0x5a4a38];
 
-function randomLook(female) {
+export function randomLook(female) {
   const o = {
     scale: rand(0.93, 1.07),
     build: weighted([
@@ -83,11 +83,11 @@ export class Villager extends Enemy {
     super(G, x, z, o);
     this.kind = 'villager';
     const female = o.female ?? chance(0.35);
-    const look = randomLook(female);
+    const look = o.look || randomLook(female);
     this.female = female;
     this.rig = new Humanoid(look);
-    this.weaponKind = o.weapon || weighted(WEAPON_WEIGHTS);
-    this.w = WEAPONS[this.weaponKind];
+    this.weaponKind = o.weapon || (o.look ? 'none' : weighted(WEAPON_WEIGHTS));
+    this.w = MELEE[this.weaponKind];
     if (this.weaponKind !== 'none') {
       this.weaponMesh = makeEnemyWeapon(this.weaponKind);
       this.rig.mountR.add(this.weaponMesh);
@@ -383,7 +383,7 @@ export class Villager extends Enemy {
             break;
           }
         }
-        let sp = this.runner && d > 4 ? this.run : this.walk;
+        let sp = (this.runner && d > 4 ? this.run : this.walk) * this.buff;
         if (d < 2.3 && this.mgr.slots >= this.mgr.maxSlots) sp = d < 1.6 ? -0.4 : 0;
         if (d < 0.8) sp = 0;
         let mx = _dir.x,
@@ -596,7 +596,7 @@ export class Villager extends Enemy {
     }
     G.stats.kills++;
     if (h.part === 'head') G.stats.heads++;
-    G.level.enemyDrop(this.pos.x, this.pos.z, 'villager');
+    G.level.enemyDrop(this.pos.x, this.pos.z, this.kind);
     this.mgr.onDeath(this);
   }
 }
@@ -683,8 +683,8 @@ export class Crawler extends Enemy {
           s = Math.sin(z);
         const mx = _dir.x * c - _dir.z * s,
           mz = _dir.x * s + _dir.z * c;
-        vx = mx * this.speed;
-        vz = mz * this.speed;
+        vx = mx * this.speed * this.buff;
+        vz = mz * this.speed * this.buff;
         this.yaw = dampAngle(this.yaw, d < 3 ? tp.yaw : Math.atan2(mx, mz), 10, dt);
         this.phase += dt * this.speed * 3.4;
         R.gait(this.phase, 1);
@@ -829,6 +829,13 @@ export class Crawler extends Enemy {
   }
 }
 
+// Tipos extras registrados por outros módulos (infected.js, bosses.js) sem import circular.
+export const KINDS = {};
+export function registerKind(name, cls, short) {
+  KINDS[name] = cls;
+  if (short) KINDS[short] = cls;
+}
+
 // ======================================================================= GERENCIADOR
 export class EnemyManager {
   constructor(G) {
@@ -842,25 +849,32 @@ export class EnemyManager {
 
   spawn(kind, x, z, o = {}) {
     let e;
-    if (kind === 'crawler') e = new Crawler(this.G, x, z, o);
-    else if (kind === 'boss') {
-      e = new Boss(this.G, x, z, o);
-      this.boss = e;
-    } else e = new Villager(this.G, x, z, o);
+    if (kind === 'crawler' || kind === 'c') e = new Crawler(this.G, x, z, o);
+    else if (kind === 'boss' || kind === 'ferreiro') e = new Boss(this.G, x, z, o);
+    else if (KINDS[kind]) e = new KINDS[kind](this.G, x, z, o);
+    else e = new Villager(this.G, x, z, o);
+    if (e.isBoss) this.boss = e;
     this.list.push(e);
     return e;
   }
 
-  // defs: [{k:'v'|'c', x, z, idle, weapon, yaw, female}]
+  // defs: [{k:'v'|'c'|'runner'|..., x, z, idle, weapon, yaw, female}]
   spawnGroup(defs, minDist = 9) {
     const P = this.G.player;
     let n = 0;
     for (const d of defs) {
       if (d.idle === 'hunt' && P && Math.hypot(P.pos.x - d.x, P.pos.z - d.z) < minDist) continue;
-      this.spawn(d.k === 'c' ? 'crawler' : 'villager', d.x, d.z, d);
+      this.spawn(d.k || 'v', d.x, d.z, d);
       n++;
     }
     if (n) this.flowT = 0;
+    return n;
+  }
+
+  // Quantos inimigos vivos (para limitar ondas e populações do mundo aberto).
+  aliveCount() {
+    let n = 0;
+    for (const e of this.list) if (e.alive) n++;
     return n;
   }
 
@@ -903,7 +917,15 @@ export class EnemyManager {
       if (this.list.some((e) => e.alive && e.alert)) G.nav.computeFlow(P.pos.x, P.pos.z, 75);
     }
     for (const e of this.list) {
-      if (!e.removed) e.update(dt);
+      if (e.removed) continue;
+      e.update(dt);
+      if (e.buffT > 0) e.buffT -= dt;
+      if (e.burnT > 0 && e.alive && !e.removed) {
+        e.burnT -= dt;
+        e.onBurn(10 * dt);
+        if (Math.random() < 0.8) G.fx.fire({ x: e.pos.x + rand(-0.25, 0.25), y: e.pos.y + rand(0.2, e.height * 0.8), z: e.pos.z + rand(-0.25, 0.25) }, 1, 0.55);
+        if (e.burnT > 0 && Math.random() < dt * 0.6) G.audio.voice(e.pos, e.kind === 'dog' ? 'bark' : 'pain', e.pitch || 1);
+      }
     }
     // separação entre inimigos e com o jogador
     const L = this.list;
@@ -1024,7 +1046,7 @@ export class EnemyManager {
     let k = 0;
     for (const e of this.list) {
       if (!e.alive || !e.alert) continue;
-      if (e.isBoss && e.state !== 'dormant') return 1;
+      if (e.isBoss && e.awake !== false && e.state !== 'dormant') return 1;
       const d = Math.hypot(e.pos.x - P.pos.x, e.pos.z - P.pos.z);
       if (d < 26) k += d < 10 ? 0.35 : 0.2;
     }

@@ -1,8 +1,10 @@
-// Projéteis: granadas do jogador, pedras arremessadas pelos aldeões, ferro derretido do
-// Ferreiro e as poças de fogo que ele deixa.
+// Projéteis: granadas e molotovs do jogador, pedras dos aldeões, bile dos Cuspidores, ferro
+// derretido dos chefes e as áreas que ficam no chão (fogo e ácido).
 import * as THREE from 'three';
 import { raySphere, explode } from './combat.js';
 import { rand } from './util.js';
+import { makeMolotov } from './models.js';
+import { tex } from './textures.js';
 
 const GRAV = 9.8;
 
@@ -14,9 +16,12 @@ export class Projectiles {
     this.geoGrenade = new THREE.DodecahedronGeometry(0.06);
     this.geoRock = new THREE.DodecahedronGeometry(0.11);
     this.geoMolten = new THREE.IcosahedronGeometry(0.24, 1);
+    this.geoBile = new THREE.IcosahedronGeometry(0.16, 1);
     this.matGrenade = new THREE.MeshStandardMaterial({ color: 0x3e4a2c, roughness: 0.6, metalness: 0.3 });
     this.matRock = new THREE.MeshStandardMaterial({ color: 0x77736a, roughness: 1, flatShading: true });
     this.matMolten = new THREE.MeshBasicMaterial({ color: 0xff7a1a, toneMapped: false });
+    this.matBile = new THREE.MeshBasicMaterial({ color: 0x9adf3a, toneMapped: false });
+    this.flameMat = new THREE.SpriteMaterial({ map: tex('flame'), color: 0xffffff, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true });
     this._p = { x: 0, z: 0 };
   }
 
@@ -31,8 +36,27 @@ export class Projectiles {
     this.list.push({ kind: 'grenade', mesh: this._mesh(this.geoGrenade, this.matGrenade), pos: pos.clone(), vel: vel.clone(), t: 0, fuse: 1.6, r: 0.07, bounces: 0 });
   }
 
+  spawnMolotov(pos, vel) {
+    const g = makeMolotov();
+    const f = new THREE.Sprite(this.flameMat);
+    f.position.set(0, 0.26, 0);
+    f.scale.set(0.12, 0.2, 1);
+    g.add(f);
+    this.G.scene.add(g);
+    const p = { kind: 'molotov', mesh: g, pos: pos.clone(), vel: vel.clone(), t: 0, r: 0.09 };
+    p.light = this.G.fx.lights.add({ x: pos.x, y: pos.y, z: pos.z, color: 0xff8a3a, intensity: 8, range: 5, flicker: 0.3, priority: 30, instant: true, temp: true });
+    this.list.push(p);
+  }
+
   spawnRock(pos, vel, dmg) {
     this.list.push({ kind: 'rock', mesh: this._mesh(this.geoRock, this.matRock), pos: pos.clone(), vel: vel.clone(), t: 0, r: 0.16, dmg });
+  }
+
+  spawnBile(pos, vel, dmg) {
+    const p = { kind: 'bile', mesh: this._mesh(this.geoBile, this.matBile), pos: pos.clone(), vel: vel.clone(), t: 0, r: 0.22, dmg };
+    p.mesh.castShadow = false;
+    p.light = this.G.fx.lights.add({ x: pos.x, y: pos.y, z: pos.z, color: 0x8adf2a, intensity: 10, range: 5, flicker: 0.15, priority: 30, instant: true, temp: true });
+    this.list.push(p);
   }
 
   spawnMolten(pos, vel, dmg) {
@@ -57,6 +81,8 @@ export class Projectiles {
       this.remove(p);
     } else if (p.kind === 'molten') {
       this.burst(p, false);
+    } else if (p.kind === 'bile') {
+      this.splatBile(p, false);
     }
   }
 
@@ -71,9 +97,59 @@ export class Projectiles {
     this.remove(p);
   }
 
-  addFire(x, z) {
-    const light = this.G.fx.lights.add({ x, y: 0.6, z, color: 0xff7a2a, intensity: 18, range: 7, flicker: 0.35, priority: 20, temp: true });
-    this.fires.push({ x, z, r: 1.7, t: 4.5, light, acc: 0 });
+  // Molotov quebrando: vidro, labareda e uma área de fogo que queima infectados.
+  shatter(p) {
+    const G = this.G;
+    const gy = G.col.groundY(p.pos.x, p.pos.z);
+    this.remove(p);
+    G.audio.glass(p.pos);
+    if (gy < -0.1) {
+      G.fx.splash(p.pos);
+      return;
+    }
+    G.audio.ignite(p.pos);
+    G.fx.sparks({ x: p.pos.x, y: gy + 0.2, z: p.pos.z }, { x: 0, y: 1, z: 0 }, 10, [1, 0.6, 0.2]);
+    for (let i = 0; i < 14; i++) G.fx.fire({ x: p.pos.x + rand(-0.8, 0.8), y: gy + 0.05, z: p.pos.z + rand(-0.8, 0.8) }, 1, 1.2);
+    this.addFire(p.pos.x, p.pos.z, { r: 2.5, t: 7, hurtsEnemies: true, playerDps: 9 });
+    G.enemies.noise(p.pos.x, p.pos.z, 20);
+  }
+
+  splatBile(p, onPlayer) {
+    const G = this.G;
+    this.remove(p);
+    G.audio.splat(p.pos);
+    for (let i = 0; i < 16; i++) {
+      G.fx.norm.spawn(p.pos.x, Math.max(0.1, p.pos.y), p.pos.z, rand(-2, 2), rand(0.5, 3), rand(-2, 2), rand(0.4, 0.8), 0.07, 0.03, 0.45, 0.75, 0.15, 0.9, 9.8, 0.5, true);
+    }
+    if (!onPlayer && p.pos.y > 2.5) return;
+    this.addFire(p.pos.x, p.pos.z, { kind: 'acid', r: 1.5, t: 6, playerDps: 9 });
+  }
+
+  // Área no chão: fogo (molotov e ferro derretido) ou ácido (bile).
+  addFire(x, z, o = {}) {
+    const kind = o.kind || 'fire';
+    const acid = kind === 'acid';
+    const light = this.G.fx.lights.add({ x, y: 0.6, z, color: acid ? 0x7acf2a : 0xff7a2a, intensity: acid ? 8 : 18, range: 7, flicker: acid ? 0.1 : 0.35, priority: 20, temp: true });
+    this.fires.push({ kind, x, z, r: o.r || 1.7, t: o.t || 4.5, t0: o.t || 4.5, light, acc: 0, hurtsEnemies: !!o.hurtsEnemies, playerDps: o.playerDps ?? 14 });
+  }
+
+  // Inimigo ou área em chamas (usado pelo Incendiário).
+  fireAt(x, z, r = 1.2, t = 3.5, hurtsEnemies = false) {
+    if (this.fires.length > 24) return;
+    for (const f of this.fires) if (f.kind === 'fire' && Math.hypot(f.x - x, f.z - z) < r * 0.8) return;
+    this.addFire(x, z, { r, t, hurtsEnemies, playerDps: 10 });
+  }
+
+  hitsEnemy(p) {
+    for (const e of this.G.enemies.list) {
+      if (!e.alive || !e.hittable) continue;
+      const dx = e.pos.x - p.pos.x,
+        dz = e.pos.z - p.pos.z;
+      if (dx * dx + dz * dz > (e.radius + 0.25) ** 2) continue;
+      if (p.pos.y < e.pos.y - 0.1 || p.pos.y > e.pos.y + e.height + 0.1) continue;
+      return e;
+    }
+    return null;
   }
 
   update(dt) {
@@ -89,7 +165,7 @@ export class Projectiles {
         p.pos.addScaledVector(p.vel, h);
         const gy = G.col.groundY(p.pos.x, p.pos.z);
         // cenário (paredes)
-        if (p.pos.y < 6) {
+        if (p.pos.y < 8) {
           const q = this._p;
           q.x = p.pos.x;
           q.z = p.pos.z;
@@ -114,10 +190,26 @@ export class Projectiles {
               G.audio.hit('stone', p.pos);
               this.remove(p);
               break;
+            } else if (p.kind === 'molotov') {
+              p.pos.x = q.x;
+              p.pos.z = q.z;
+              this.shatter(p);
+              break;
+            } else if (p.kind === 'bile') {
+              this.splatBile(p, false);
+              break;
             } else {
               this.burst(p, true);
               break;
             }
+          }
+        }
+        if (p.kind === 'molotov') {
+          const e = this.hitsEnemy(p);
+          if (e) {
+            this.shatter(p);
+            e.burnT = Math.max(e.burnT || 0, 4);
+            break;
           }
         }
         if (p.pos.y < gy + p.r) {
@@ -137,6 +229,17 @@ export class Projectiles {
             G.fx.dust(p.pos, { x: 0, y: 1, z: 0 }, 4);
             this.remove(p);
             break;
+          } else if (p.kind === 'molotov') {
+            p.pos.y = gy + 0.05;
+            this.shatter(p);
+            break;
+          } else if (p.kind === 'bile') {
+            p.pos.y = gy + 0.05;
+            if (gy < 0) {
+              G.fx.splash(p.pos);
+              this.remove(p);
+            } else this.splatBile(p, false);
+            break;
           } else {
             p.pos.y = Math.max(p.pos.y, gy + 0.1);
             if (gy < 0) {
@@ -147,7 +250,7 @@ export class Projectiles {
           }
         }
         // acerto no jogador
-        if (!p.dead && p.kind !== 'grenade' && !P.dead) {
+        if (!p.dead && p.kind !== 'grenade' && p.kind !== 'molotov' && !P.dead) {
           const dx = P.pos.x - p.pos.x,
             dy = P.pos.y + 1.15 - p.pos.y,
             dz = P.pos.z - p.pos.z;
@@ -156,6 +259,9 @@ export class Projectiles {
               P.takeDamage(p.dmg, p.pos, {});
               G.fx.dust(p.pos, { x: 0, y: 1, z: 0 }, 4);
               this.remove(p);
+            } else if (p.kind === 'bile') {
+              P.takeDamage(p.dmg, p.pos, {});
+              this.splatBile(p, true);
             } else {
               this.burst(p, true);
             }
@@ -164,14 +270,21 @@ export class Projectiles {
       }
       if (p.dead) continue;
       p.mesh.position.copy(p.pos);
-      p.mesh.rotation.x += dt * 9;
-      p.mesh.rotation.z += dt * 7;
+      if (p.kind === 'molotov') {
+        p.mesh.rotation.x += dt * 8;
+        p.mesh.rotation.z += dt * 3;
+        if (Math.random() < 0.5) G.fx.embers(p.pos, 1, 0.05, 0.4);
+      } else {
+        p.mesh.rotation.x += dt * 9;
+        p.mesh.rotation.z += dt * 7;
+      }
       if (p.light) {
         p.light.x = p.pos.x;
         p.light.y = p.pos.y;
         p.light.z = p.pos.z;
       }
       if (p.kind === 'molten') G.fx.embers(p.pos, 1, 0.1, 0.5);
+      if (p.kind === 'bile' && Math.random() < 0.6) G.fx.norm.spawn(p.pos.x, p.pos.y, p.pos.z, 0, -0.5, 0, 0.4, 0.06, 0.02, 0.45, 0.75, 0.15, 0.8, 4, 0);
       if (p.kind === 'grenade') {
         p.fuse -= dt;
         if (p.fuse <= 0) {
@@ -184,17 +297,35 @@ export class Projectiles {
     this.list = this.list.filter((p) => !p.dead);
     for (const f of this.fires) {
       f.t -= dt;
-      f.acc += dt * 30;
+      const life = Math.min(1, f.t / Math.min(1.5, f.t0));
+      f.acc += dt * (f.kind === 'acid' ? 14 : 30) * Math.min(1.6, f.r / 1.7);
       const n = Math.floor(f.acc);
       if (n) {
         f.acc -= n;
         for (let i = 0; i < n; i++) {
           const a = Math.random() * Math.PI * 2,
             r = Math.sqrt(Math.random()) * f.r;
-          G.fx.fire({ x: f.x + Math.cos(a) * r, y: 0.05, z: f.z + Math.sin(a) * r }, 1, rand(0.6, 1.1) * Math.min(1, f.t));
+          const x = f.x + Math.cos(a) * r,
+            z = f.z + Math.sin(a) * r;
+          if (f.kind === 'acid') {
+            G.fx.add.spawn(x, 0.05, z, 0, rand(0.2, 0.6), 0, rand(0.5, 1), rand(0.12, 0.22), 0.02, 0.45, 0.85, 0.15, 0.55 * life, -0.2, 1);
+          } else G.fx.fire({ x, y: 0.05, z }, 1, rand(0.6, 1.1) * life);
         }
       }
-      if (!P.dead && Math.hypot(P.pos.x - f.x, P.pos.z - f.z) < f.r + 0.2) P.burn(14 * dt);
+      if (f.light) f.light.intensity = (f.kind === 'acid' ? 8 : 18) * life;
+      if (!P.dead && Math.hypot(P.pos.x - f.x, P.pos.z - f.z) < f.r + 0.2) {
+        P.burn(f.playerDps * dt);
+        if (f.kind === 'fire' && f.hurtsEnemies === false && Math.random() < dt * 0.5) P.ignite(1.5);
+      }
+      if (f.hurtsEnemies) {
+        for (const e of G.enemies.list) {
+          if (!e.alive) continue;
+          if (Math.hypot(e.pos.x - f.x, e.pos.z - f.z) < f.r + e.radius) {
+            e.burnT = Math.max(e.burnT || 0, 3);
+            if (e.onBurn) e.onBurn(26 * dt);
+          }
+        }
+      }
       if (f.t <= 0) G.fx.lights.remove(f.light);
     }
     this.fires = this.fires.filter((f) => f.t > 0);
@@ -204,7 +335,7 @@ export class Projectiles {
     let best = null,
       bt = maxT;
     for (const p of this.list) {
-      if (p.dead || p.kind === 'grenade') continue;
+      if (p.dead || p.kind === 'grenade' || p.kind === 'molotov') continue;
       const t = raySphere(o, d, p.pos, p.r + 0.06);
       if (t >= 0 && t < bt) {
         bt = t;

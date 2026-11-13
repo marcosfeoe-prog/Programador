@@ -51,16 +51,17 @@ function cached(key, make) {
 const r3 = (v) => Math.round(v * 1000) / 1000;
 export const BOX = (w, h, d) => cached(`b${r3(w)},${r3(h)},${r3(d)}`, () => new THREE.BoxGeometry(w, h, d));
 export const CYL = (rt, rb, h, seg = 7) => cached(`c${r3(rt)},${r3(rb)},${r3(h)},${seg}`, () => new THREE.CylinderGeometry(rt, rb, h, seg));
+export { cached };
 export const SPH = (seg = 10, rings = 8, cap = 1) =>
   cached(`s${seg},${rings},${cap}`, () => new THREE.SphereGeometry(1, seg, rings, 0, Math.PI * 2, 0, Math.PI * cap));
 export const CONE = (r, h, seg = 5) => cached(`k${r3(r)},${r3(h)},${seg}`, () => new THREE.ConeGeometry(r, h, seg));
 
-const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
+export const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 
 const HUMAN_JOINTS = ['hips', 'spine', 'neck', 'head', 'lSh', 'lEl', 'lHand', 'rSh', 'rEl', 'rHand', 'lHip', 'lKnee', 'lAnkle', 'rHip', 'rKnee', 'rAnkle'];
 
 // Base comum: juntas com alvos de rotação suavizados.
-class RigBase {
+export class RigBase {
   constructor() {
     this.root = new THREE.Group();
     this.body = new THREE.Group();

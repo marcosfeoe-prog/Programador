@@ -15,6 +15,14 @@ const VOICES = {
   bossDeath: { f0: 70, fm: 60, f1: 28, dur: 3.2, gain: 1.6, formants: [[300, 4, 1], [650, 5, 0.85], [1400, 6, 0.4]] },
   hurt: { f0: 120, fm: 150, f1: 95, dur: 0.3, gain: 0.7, formants: [[600, 5, 1], [1100, 7, 0.6], [2500, 9, 0.2]] },
   playerDie: { f0: 130, fm: 115, f1: 70, dur: 1.0, gain: 0.75, formants: [[560, 5, 1], [1000, 7, 0.6], [2400, 9, 0.2]] },
+  scream: { f0: 380, fm: 720, f1: 520, dur: 1.9, gain: 1.4, formants: [[900, 4, 1], [1700, 5, 0.8], [3200, 6, 0.5]] },
+  bark: { f0: 300, fm: 420, f1: 180, dur: 0.28, gain: 0.9, formants: [[700, 4, 1], [1500, 5, 0.6]] },
+  dogDie: { f0: 520, fm: 300, f1: 120, dur: 0.8, gain: 0.8, formants: [[900, 4, 1], [1800, 5, 0.5]] },
+  roar: { f0: 62, fm: 92, f1: 48, dur: 1.7, gain: 1.4, formants: [[320, 4, 1], [760, 5, 0.8], [1500, 6, 0.35]] },
+  gurgle: { f0: 70, fm: 60, f1: 52, dur: 1.3, gain: 0.7, formants: [[260, 3, 1], [600, 4, 0.7]] },
+  whisper: { f0: 180, fm: 200, f1: 150, dur: 1.4, gain: 0.35, formants: [[2400, 2, 1], [4200, 3, 0.6]] },
+  spit: { f0: 240, fm: 300, f1: 140, dur: 0.45, gain: 0.8, formants: [[600, 3, 1], [2000, 4, 0.5]] },
+  vidal: { f0: 95, fm: 120, f1: 70, dur: 2.0, gain: 1.3, formants: [[420, 5, 1], [980, 6, 0.8], [2300, 8, 0.35]] },
 };
 
 export class AudioEngine {
@@ -224,6 +232,26 @@ export class AudioEngine {
   shot(kind, pos = null) {
     if (!this.ok) return;
     const t = this.ctx.currentTime;
+    if (kind === 'smg') {
+      const o = this.out(pos, 0.7, 0.45);
+      this.noise(t, o, { type: 'highpass', freq: 1300, q: 0.5, gain: 0.9, a: 0.001, rel: 0.08 });
+      this.noise(t, o, { type: 'bandpass', freq: 2600, q: 1, gain: 0.6, a: 0.001, rel: 0.05 });
+      this.tone(t, o, { freq: 190, freqEnd: 50, gain: 0.6, a: 0.001, rel: 0.09 });
+      return;
+    }
+    if (kind === 'rifle' || kind === 'magnum') {
+      const rifle = kind === 'rifle';
+      const o = this.out(pos, rifle ? 1.3 : 1.15, 0.9);
+      this.noise(t, o, { type: 'highpass', freq: rifle ? 700 : 600, q: 0.5, gain: 1.1, a: 0.001, rel: rifle ? 0.5 : 0.35 });
+      this.noise(t, o, { type: 'bandpass', freq: rifle ? 1500 : 1100, q: 0.8, gain: 0.9, a: 0.001, rel: 0.18 });
+      this.tone(t, o, { freq: rifle ? 130 : 120, freqEnd: 30, gain: 1.2, a: 0.001, rel: 0.45 });
+      this.noise(t + 0.05, o, { type: 'lowpass', freq: 380, gain: 0.6, a: 0.01, rel: 1.1 });
+      if (rifle) {
+        this.click(t + 0.55, 1300, 0.45);
+        this.click(t + 0.75, 1700, 0.5);
+      }
+      return;
+    }
     const big = kind === 'shotgun';
     const o = this.out(pos, big ? 1.2 : 0.9, big ? 0.75 : 0.6);
     this.noise(t, o, { type: 'highpass', freq: big ? 500 : 1000, q: 0.5, gain: 1, a: 0.001, rel: big ? 0.42 : 0.17 });
@@ -256,6 +284,25 @@ export class AudioEngine {
   reload(kind) {
     if (!this.ok) return;
     const t = this.ctx.currentTime;
+    if (kind === 'smg') {
+      this.click(t + 0.15, 2000, 0.45);
+      this.click(t + 1.1, 1500, 0.6);
+      this.click(t + 1.6, 2500, 0.55);
+      return;
+    }
+    if (kind === 'rifle') {
+      this.click(t + 0.2, 1300, 0.5);
+      for (let i = 0; i < 5; i++) this.click(t + 0.6 + i * 0.28, 2400, 0.35);
+      this.click(t + 2.2, 1700, 0.55);
+      return;
+    }
+    if (kind === 'magnum') {
+      this.click(t + 0.15, 1800, 0.5);
+      this.noise(t + 0.4, this.out(null, 0.4, 0.05), { type: 'bandpass', freq: 3500, q: 2, gain: 0.6, rel: 0.2 });
+      for (let i = 0; i < 6; i++) this.click(t + 0.9 + i * 0.16, 2800, 0.3);
+      this.click(t + 2.1, 1500, 0.6);
+      return;
+    }
     if (kind === 'pistol') {
       this.click(t + 0.1, 2200, 0.45);
       this.click(t + 0.75, 1600, 0.6);
@@ -382,6 +429,118 @@ export class AudioEngine {
     osc.onended = () => {
       this.voices = Math.max(0, this.voices - 1);
     };
+  }
+
+  // ------------------------------------------------------------ fogo, vidro, ácido
+  glass(pos) {
+    if (!this.ok) return;
+    const t = this.ctx.currentTime;
+    const o = this.out(pos, 0.9, 0.3);
+    for (let i = 0; i < 7; i++) this.tone(t + rand(0, 0.08), o, { type: 'triangle', freq: rand(2500, 5200), freqEnd: rand(1800, 3000), gain: 0.25, rel: rand(0.08, 0.2) });
+    this.noise(t, o, { type: 'highpass', freq: 3000, gain: 0.7, rel: 0.15 });
+  }
+
+  ignite(pos) {
+    if (!this.ok) return;
+    const t = this.ctx.currentTime;
+    const o = this.out(pos, 1.0, 0.4);
+    this.noise(t, o, { type: 'lowpass', freq: 300, freqEnd: 1600, gain: 1, a: 0.08, rel: 0.7 });
+    this.noise(t + 0.1, o, { type: 'bandpass', freq: 900, q: 0.6, gain: 0.4, a: 0.2, rel: 1.2 });
+  }
+
+  splat(pos) {
+    if (!this.ok) return;
+    const t = this.ctx.currentTime;
+    const o = this.out(pos, 0.7, 0.2);
+    this.noise(t, o, { type: 'lowpass', freq: 600, freqEnd: 200, gain: 0.9, rel: 0.25 });
+    this.noise(t + 0.03, o, { type: 'bandpass', freq: 1800, q: 2, gain: 0.3, rel: 0.12 });
+  }
+
+  // Estática e voz de rádio (frequência do exército).
+  radio(dur = 4) {
+    if (!this.ok) return;
+    const t = this.ctx.currentTime;
+    const o = this.out(null, 0.5, 0.1);
+    this.noise(t, o, { type: 'bandpass', freq: 2200, q: 0.8, gain: 0.5, a: 0.05, rel: dur });
+    for (let i = 0; i < dur * 3; i++) this.tone(t + i * 0.33 + rand(0, 0.1), o, { type: 'square', freq: rand(180, 320), gain: 0.06, rel: 0.12 });
+  }
+
+  // Helicóptero: zumbido de rotor em laço, com volume e pan pela posição.
+  startHeli() {
+    if (!this.ok) return null;
+    const c = this.ctx;
+    const t = c.currentTime;
+    const src = c.createBufferSource();
+    src.buffer = this.brownBuf;
+    src.loop = true;
+    const lp = c.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 520;
+    const chop = c.createGain();
+    chop.gain.value = 0.55;
+    const lfo = c.createOscillator();
+    lfo.type = 'square';
+    lfo.frequency.value = 11.5;
+    const lg = c.createGain();
+    lg.gain.value = 0.45;
+    lfo.connect(lg);
+    lg.connect(chop.gain);
+    const g = c.createGain();
+    g.gain.value = 0.0001;
+    const pan = c.createStereoPanner ? c.createStereoPanner() : null;
+    src.connect(lp);
+    lp.connect(chop);
+    chop.connect(g);
+    if (pan) {
+      g.connect(pan);
+      pan.connect(this.sfx);
+    } else g.connect(this.sfx);
+    const whine = c.createOscillator();
+    whine.type = 'sawtooth';
+    whine.frequency.value = 410;
+    const wg = c.createGain();
+    wg.gain.value = 0.012;
+    const wf = c.createBiquadFilter();
+    wf.type = 'bandpass';
+    wf.frequency.value = 820;
+    wf.Q.value = 4;
+    whine.connect(wf);
+    wf.connect(wg);
+    wg.connect(g);
+    src.start(t);
+    lfo.start(t);
+    whine.start(t);
+    return { src, lfo, whine, g, pan, lp };
+  }
+
+  setHeli(h, pos) {
+    if (!h || !this.ok) return;
+    const dx = pos.x - this.listener.x,
+      dz = pos.z - this.listener.z;
+    const d = Math.hypot(dx, dz, pos.y || 30);
+    const vol = 2.6 / (1 + d * d * 0.0022);
+    const t = this.ctx.currentTime;
+    h.g.gain.setTargetAtTime(vol, t, 0.1);
+    h.lp.frequency.setTargetAtTime(300 + 1800 / (1 + d * 0.03), t, 0.2);
+    if (h.pan) {
+      const rx = -Math.cos(this.listener.yaw),
+        rz = Math.sin(this.listener.yaw);
+      const hd = Math.hypot(dx, dz) || 1;
+      h.pan.pan.setTargetAtTime(clamp((dx * rx + dz * rz) / hd, -1, 1) * 0.7, t, 0.1);
+    }
+  }
+
+  stopHeli(h) {
+    if (!h || !this.ok) return;
+    const t = this.ctx.currentTime;
+    h.g.gain.setTargetAtTime(0.0001, t, 0.3);
+    for (const n of [h.src, h.lfo, h.whine]) {
+      try {
+        n.stop(t + 1.5);
+      } catch (e) {
+        /* já parado */
+      }
+    }
   }
 
   // ------------------------------------------------------------ mundo

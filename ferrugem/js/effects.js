@@ -307,6 +307,16 @@ class LightPool {
   clearTemp() {
     for (let i = this.sources.length - 1; i >= 0; i--) if (this.sources[i].temp) this.remove(this.sources[i]);
   }
+
+  // Troca de capítulo: apaga todas as fontes de luz.
+  clearAll() {
+    for (const s of this.sources) s.light = null;
+    this.sources = [];
+    for (const l of this.lights) {
+      l.userData.src = null;
+      l.intensity = 0;
+    }
+  }
 }
 
 export class Effects {

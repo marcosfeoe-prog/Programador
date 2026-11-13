@@ -159,10 +159,13 @@ controles feitos para **celular**. Com o servidor rodando (`npm start`), abra
 
 # Ferrugem — Survival Horror 3D (pasta `ferrugem/`)
 
-Terceiro jogo do repositório: **survival horror em terceira pessoa** com câmera por cima do
-ombro, **mira laser**, tiros na cabeça e nos joelhos que atordoam os inimigos para um **chute**,
-munição escassa, aldeões infectados pela Ferrugem, rastejantes e o chefe **O Ferreiro**.
-História, personagens e mapa originais; texturas, modelos e sons gerados por código. Funciona
+Terceiro jogo do repositório: **survival horror em terceira pessoa** em **três capítulos**.
+Ryan atravessa a Serra da Aurora atrás da mulher e da filha: o Vale dos Corvos, a cidade
+abandonada de Ferrópolis (com um grupo de sobreviventes, a companheira Clara, cinco missões e
+helicópteros que nunca pousam) e um **mundo aberto** com três missões até a Siderúrgica Aurora.
+Câmera por cima do ombro, **mira laser**, cinco armas (incluindo submetralhadora, rifle com
+luneta e revólver), granadas e molotovs, **doze tipos de infectados** e **quatro chefes**.
+História, personagens e mapas originais; texturas, modelos e sons gerados por código. Funciona
 no PC e no celular. Com o servidor rodando (`npm start`), abra `http://localhost:8080/ferrugem/`.
 Detalhes em [`ferrugem/README.md`](ferrugem/README.md).
 

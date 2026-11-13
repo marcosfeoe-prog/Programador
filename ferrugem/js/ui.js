@@ -2,9 +2,10 @@
 // telas (título, dificuldade, opções, controles, introdução, pausa, mochila, documentos,
 // morte e vitória) e controles de toque.
 import { IS_TOUCH, DIFFICULTY } from './config.js';
-import { NOTES, ITEMS, TIPS, ENDING, INTRO, rankOf } from './story.js';
+import { NOTES, ITEMS, TIPS, ENDING, LORE, BESTIARY, CHAPTER_TEXT, rankOf } from './story.js';
 import { angleDiff, pick } from './util.js';
-import { WEAPONS } from './player.js';
+import { WEAPONS, WEAPON_ORDER, AMMO } from './weapons.js';
+import { CHAPTERS, CHAPTER_COUNT } from './chapters/index.js';
 
 const ICON = {
   pistol: '<svg viewBox="0 0 48 48" fill="currentColor" aria-hidden="true"><path d="M5 15h31l3 2v5h-9l-2 3h-5l-3 12H12l3-12H9l-4-4z"/><path d="M39 17h5v3h-5z"/></svg>',
@@ -17,6 +18,12 @@ const ICON = {
   grenade: '<svg viewBox="0 0 48 48" fill="currentColor" aria-hidden="true"><circle cx="22" cy="29" r="12"/><path d="M19 13h8v5h-8zM27 13l9 6-2 3-8-5z" opacity=".75"/></svg>',
   key: '<svg viewBox="0 0 48 48" fill="currentColor" aria-hidden="true"><path d="M14 16a8 8 0 1 1 0 16 8 8 0 0 1 0-16zm0 5a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M21 22h22v4h-4v6h-4v-6h-3v4h-4v-4h-7z"/></svg>',
   doc: '<svg viewBox="0 0 48 48" fill="currentColor" aria-hidden="true"><path d="M10 5h20l8 8v30H10z"/><path d="M15 18h18v2H15zm0 5h18v2H15zm0 5h18v2H15zm0 5h12v2H15z" fill="#15171b" opacity=".6"/></svg>',
+  smg: '<svg viewBox="0 0 48 48" fill="currentColor" aria-hidden="true"><path d="M6 16h30l3 2v5H24l-2 3h-3l-2 8h-6l2-8H9z"/><path d="M39 18h6v3h-6zM21 26h4l2 12h-4zM2 18h6v4H2z"/></svg>',
+  rifle: '<svg viewBox="0 0 48 48" fill="currentColor" aria-hidden="true"><path d="M2 22h30v4H16l-4 7H5l3-7H2z"/><path d="M30 22.5h16v2H30zM14 15h14v4H14z"/></svg>',
+  magnum: '<svg viewBox="0 0 48 48" fill="currentColor" aria-hidden="true"><path d="M8 16h26v5H22l-1 3h-5l-3 13H7l3-13H6z"/><path d="M34 17h8v3h-8zM16 21h6v6h-6z" opacity=".75"/></svg>',
+  molotov: '<svg viewBox="0 0 48 48" fill="currentColor" aria-hidden="true"><path d="M20 4h8v8l4 6v24a2 2 0 0 1-2 2H18a2 2 0 0 1-2-2V18l4-6z"/><path d="M22 0h6l-2 6h-4z" fill="#ff8a3a"/></svg>',
+  ammo: '<svg viewBox="0 0 48 48" fill="currentColor" aria-hidden="true"><path d="M8 24h32v16H8z"/><path d="M13 24v-8c0-4 6-4 6 0v8zm8 0v-8c0-4 6-4 6 0v8zm8 0v-8c0-4 6-4 6 0v8z" opacity=".7"/></svg>',
+  mission: '<svg viewBox="0 0 48 48" fill="currentColor" aria-hidden="true"><path d="M8 12h32v28H8z"/><path d="M18 6h12v6H18z" opacity=".7"/><path d="m16 26 6 6 10-12" fill="none" stroke="#15171b" stroke-width="4"/></svg>',
 };
 
 const fmtTime = (s) => {
@@ -61,8 +68,17 @@ export class UI {
       fade: $('fx-fade'),
       bosscard: $('bosscard'),
       touch: $('touch'),
+      iMolo: $('i-molotov'),
+      missions: $('missions'),
+      scope: $('scope'),
+      say: $('say'),
+      sayWho: $('say-who'),
+      sayText: $('say-text'),
+      scream: $('fx-scream'),
     };
-    this.screens = ['s-title', 's-new', 's-options', 's-controls', 's-intro', 's-pause', 's-inv', 's-note', 's-dead', 's-win', 's-loading'];
+    this.screens = ['s-title', 's-new', 's-chapters', 's-lore', 's-options', 's-controls', 's-intro', 's-chend', 's-map', 's-pause', 's-inv', 's-note', 's-dead', 's-win', 's-loading'];
+    this.sayT = 0;
+    this.newChapter = 1;
     this.current = 's-loading';
     this.hurtK = 0;
     this.cache = {};
@@ -100,13 +116,17 @@ export class UI {
     if (text) this.$('load-text').textContent = text;
   }
 
-  showTitle(hasSave) {
+  showTitle(hasSave, unlocked = 1) {
     this.$('b-continue').hidden = !hasSave;
+    this.unlocked = unlocked;
     this.backTo = 's-title';
     this.show('s-title');
   }
 
-  showNewGame() {
+  // Novo jogo (capítulo 1) ou começar direto de um capítulo liberado.
+  showNewGame(chapterId = 1) {
+    this.newChapter = chapterId;
+    this.$('new-title').textContent = chapterId === 1 ? 'Dificuldade' : `${CHAPTER_TEXT[chapterId].tag}: dificuldade`;
     const list = this.$('diff-list');
     list.innerHTML = '';
     for (const k of Object.keys(DIFFICULTY)) {
@@ -117,12 +137,52 @@ export class UI {
       b.addEventListener('click', () => {
         this.G.audio.init();
         this.G.audio.ui('select');
-        this.G.game.newGame(k);
+        if (chapterId === 1) this.G.game.newGame(k);
+        else this.G.game.startChapterFresh(chapterId, k);
       });
       list.appendChild(b);
     }
-    this.backTo = 's-title';
+    this.backTo = chapterId === 1 ? 's-title' : 's-chapters';
     this.show('s-new');
+  }
+
+  showChapters() {
+    const list = this.$('chapter-list');
+    list.innerHTML = '';
+    const unlocked = this.unlocked || 1;
+    const desc = {
+      1: 'A vila, o cemitério e a forja do Ferreiro.',
+      2: 'A cidade abandonada, os sobreviventes do beco e cinco missões.',
+      3: 'A serra em mundo aberto, três missões e a Siderúrgica Aurora.',
+    };
+    for (let i = 1; i <= CHAPTER_COUNT; i++) {
+      const t = CHAPTER_TEXT[i];
+      const b = document.createElement('button');
+      b.className = 'chap';
+      const locked = i > unlocked;
+      b.disabled = locked;
+      b.innerHTML = `<span class="n">${t.tag}</span><span class="t">${t.title}</span><span class="d">${locked ? 'Termine o capítulo anterior para liberar.' : desc[i]}</span>`;
+      if (!locked)
+        b.addEventListener('click', () => {
+          this.G.audio.init();
+          this.G.audio.ui('select');
+          this.showNewGame(i);
+        });
+      list.appendChild(b);
+    }
+    this.backTo = 's-title';
+    this.show('s-chapters');
+  }
+
+  showLore() {
+    const body = this.$('lore-body');
+    const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    let html = LORE.map((l) => `<h3>${esc(l.title)}</h3><p>${esc(l.text)}</p>`).join('');
+    html += '<h3>Os infectados</h3><div class="bestiary">' + BESTIARY.map((b) => `<p><b>${esc(b.name)}.</b> ${esc(b.text)}</p>`).join('') + '</div>';
+    body.innerHTML = html;
+    body.scrollTop = 0;
+    this.backTo = 's-title';
+    this.show('s-lore');
   }
 
   showOptions(from) {
@@ -156,9 +216,14 @@ export class UI {
     this.show('s-controls');
   }
 
-  playIntro(done) {
+  // Cartão do capítulo (tag + título) e as linhas do texto, uma a uma.
+  playIntro(lines, tag, title, done) {
+    const INTRO = lines || [];
     const box = this.$('intro-lines');
     box.innerHTML = '';
+    this.$('intro-tag').textContent = tag || '';
+    this.$('intro-title').textContent = title || '';
+    this.$('intro-card').hidden = !title;
     this.show('s-intro');
     let i = 0,
       finished = false;
@@ -185,12 +250,187 @@ export class UI {
       box.appendChild(p);
       timers.push(setTimeout(next, 1900));
     };
-    timers.push(setTimeout(next, 400));
+    timers.push(setTimeout(next, title ? 1500 : 400));
     setTimeout(() => {
       if (finished) return;
       window.addEventListener('keydown', skip, true);
       this.$('s-intro').addEventListener('pointerdown', skip);
     }, 350);
+  }
+
+  // Fim de capítulo: texto de encerramento e botão para seguir.
+  showChapterEnd(lines, text, done) {
+    this.$('chend-tag').textContent = (text && text.tag ? text.tag : '') + ' · fim';
+    this.$('chend-title').textContent = text ? text.title : '';
+    const box = this.$('chend-lines');
+    box.innerHTML = '';
+    lines.forEach((l, i) => {
+      const p = document.createElement('p');
+      p.textContent = l;
+      p.style.animationDelay = 0.8 + i * 1.4 + 's';
+      box.appendChild(p);
+    });
+    const b = this.$('b-chend');
+    b.hidden = true;
+    clearTimeout(this.chendT);
+    this.chendT = setTimeout(() => {
+      b.hidden = false;
+      if (!this.touchOn) b.focus({ preventScroll: true });
+    }, 1200 + lines.length * 1400);
+    this.chendDone = done;
+    this.show('s-chend');
+  }
+
+  // Fala curta da companheira (sem pausar o jogo).
+  say(who, text, dur = 2.4) {
+    const e = this.e;
+    e.sayWho.textContent = who;
+    e.sayText.textContent = text;
+    e.say.hidden = false;
+    e.say.style.animation = 'none';
+    void e.say.offsetWidth;
+    e.say.style.animation = '';
+    this.sayT = dur;
+  }
+
+  screamFx() {
+    const s = this.e.scream;
+    s.classList.remove('on');
+    void s.offsetWidth;
+    s.classList.add('on');
+  }
+
+  // ------------------------------------------------------------------ mapa
+  showMap() {
+    const G = this.G,
+      ch = G.chapter;
+    this.$('map-title').textContent = ch.title;
+    this.$('map-sub').textContent = ch.name;
+    const ms = G.level.missions();
+    const ol = this.$('map-missions');
+    ol.innerHTML = '';
+    if (ms && ms.length) {
+      for (const m of ms) {
+        const li = document.createElement('li');
+        li.className = m.done ? 'done' : m.active ? 'active' : '';
+        li.innerHTML = `${m.done ? '✓ ' : ''}${m.title}<small>${m.desc}</small>`;
+        ol.appendChild(li);
+      }
+    } else {
+      const li = document.createElement('li');
+      li.className = 'active';
+      li.innerHTML = `${G.level.objective().text}<small>Objetivo atual.</small>`;
+      ol.appendChild(li);
+    }
+    this.$('map-hint').textContent = this.touchOn ? '' : 'M ou Esc para fechar.';
+    this.drawMap();
+    this.backTo = 's-map';
+    this.show('s-map');
+  }
+
+  drawMap() {
+    const G = this.G,
+      ch = G.chapter,
+      P = G.player;
+    const cv = this.$('map-canvas');
+    const g = cv.getContext('2d');
+    const W = cv.width,
+      H = cv.height;
+    const m = ch.map || {};
+    const b = m.bounds || ch.bounds;
+    const sx = b.maxX - b.minX,
+      sz = b.maxZ - b.minZ;
+    const k = Math.min((W - 30) / sx, (H - 30) / sz);
+    const ox = (W - sx * k) / 2,
+      oz = (H - sz * k) / 2;
+    // +X fica à esquerda (igual à visão do jogador olhando para o norte)
+    const X = (x) => ox + (b.maxX - x) * k;
+    const Z = (z) => oz + (b.maxZ - z) * k;
+    g.fillStyle = '#0d0f12';
+    g.fillRect(0, 0, W, H);
+    g.fillStyle = m.ground || '#1c1d1a';
+    g.fillRect(X(b.maxX), Z(b.maxZ), sx * k, sz * k);
+    for (const s of m.shapes || []) {
+      g.globalAlpha = s.a ?? 1;
+      if (s.t === 'rect') {
+        g.fillStyle = s.c || '#2c2e30';
+        g.fillRect(X(s.x + s.w / 2), Z(s.z + s.d / 2), s.w * k, s.d * k);
+      } else if (s.t === 'circle') {
+        g.fillStyle = s.c || '#2c2e30';
+        g.beginPath();
+        g.arc(X(s.x), Z(s.z), s.r * k, 0, Math.PI * 2);
+        g.fill();
+      } else if (s.t === 'line') {
+        g.strokeStyle = s.c || '#3a3c3e';
+        g.lineWidth = Math.max(1, (s.w || 4) * k);
+        g.lineCap = 'round';
+        g.lineJoin = 'round';
+        g.beginPath();
+        s.pts.forEach((p, i) => (i ? g.lineTo(X(p[0]), Z(p[1])) : g.moveTo(X(p[0]), Z(p[1]))));
+        g.stroke();
+      }
+    }
+    g.globalAlpha = 1;
+    g.font = '600 15px "Barlow Condensed", "Arial Narrow", sans-serif';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    for (const s of m.labels || []) {
+      g.fillStyle = 'rgba(0,0,0,0.7)';
+      g.fillText(s.text, X(s.x) + 1, Z(s.z) + 1);
+      g.fillStyle = s.c || '#948f86';
+      g.fillText(s.text, X(s.x), Z(s.z));
+    }
+    // marcadores das missões
+    const marks = ch.mapMarkers ? ch.mapMarkers(G.level) : [];
+    const ob = G.level.objective();
+    if (ob.target && !marks.some((mk) => mk.kind === 'target')) marks.push({ x: ob.target.x, z: ob.target.z, kind: 'target' });
+    for (const mk of marks) {
+      const x = X(mk.x),
+        y = Z(mk.z);
+      g.lineWidth = 2;
+      if (mk.kind === 'done') {
+        g.strokeStyle = '#8fa86a';
+        g.beginPath();
+        g.arc(x, y, 7, 0, Math.PI * 2);
+        g.stroke();
+      } else {
+        const pulse = mk.kind === 'target' ? 1 : 0.8;
+        g.fillStyle = mk.kind === 'target' ? '#ff8a3a' : '#d79a3e';
+        g.beginPath();
+        g.moveTo(x, y - 10 * pulse);
+        g.lineTo(x + 7 * pulse, y);
+        g.lineTo(x, y + 10 * pulse);
+        g.lineTo(x - 7 * pulse, y);
+        g.closePath();
+        g.fill();
+      }
+      if (mk.label) {
+        g.fillStyle = 'rgba(0,0,0,0.75)';
+        g.fillText(mk.label, x + 1, y - 17);
+        g.fillStyle = mk.kind === 'done' ? '#8fa86a' : '#ddd3c2';
+        g.fillText(mk.label, x, y - 18);
+      }
+    }
+    // jogador
+    const px = X(P.pos.x),
+      py = Z(P.pos.z);
+    const dx = -Math.sin(P.yaw),
+      dy = -Math.cos(P.yaw);
+    g.fillStyle = '#ff3a24';
+    g.strokeStyle = '#000';
+    g.lineWidth = 2;
+    g.beginPath();
+    g.moveTo(px + dx * 12, py + dy * 12);
+    g.lineTo(px - dx * 7 + dy * 7, py - dy * 7 - dx * 7);
+    g.lineTo(px - dx * 3, py - dy * 3);
+    g.lineTo(px - dx * 7 - dy * 7, py - dy * 7 + dx * 7);
+    g.closePath();
+    g.stroke();
+    g.fill();
+    // rosa dos ventos
+    g.fillStyle = '#948f86';
+    g.font = '700 16px "Barlow Condensed", sans-serif';
+    g.fillText('N', W - 20, 20);
   }
 
   showPause() {
@@ -249,15 +489,35 @@ export class UI {
     const use = (it) => () => {
       if (P.useItem(it)) this.showInventory();
     };
-    slots.push({ key: 'pistol', icon: 'pistol', name: ITEMS.pistol.name, count: `${P.weapons.pistol.mag}/${WEAPONS.pistol.mag}`, desc: ITEMS.pistol.desc + (P.current === 'pistol' ? ' Equipada.' : ''), actions: P.current === 'pistol' ? [] : [['Equipar', equip('pistol')]] });
-    if (P.weapons.shotgun.owned)
-      slots.push({ key: 'shotgun', icon: 'shotgun', name: ITEMS.shotgun.name, count: `${P.weapons.shotgun.mag}/${WEAPONS.shotgun.mag}`, desc: ITEMS.shotgun.desc + (P.current === 'shotgun' ? ' Equipada.' : ''), actions: P.current === 'shotgun' ? [] : [['Equipar', equip('shotgun')]] });
+    for (const id of WEAPON_ORDER) {
+      const st = P.weapons[id];
+      if (!st || !st.owned) continue;
+      const w = WEAPONS[id];
+      slots.push({ key: id, icon: id, name: ITEMS[id].name, count: `${st.mag}/${w.mag}`, desc: ITEMS[id].desc + (P.current === id ? ' Equipada.' : ` Tecla ${WEAPON_ORDER.indexOf(id) + 1}.`), actions: P.current === id ? [] : [['Equipar', equip(id)]] });
+    }
     slots.push({ key: 'knife', icon: 'knife', name: ITEMS.knife.name, count: '', desc: ITEMS.knife.desc, actions: [] });
-    slots.push({ key: 'ammo_pistol', icon: 'ammo_pistol', name: ITEMS.ammo_pistol.name, count: P.ammo.pistol, desc: ITEMS.ammo_pistol.desc, actions: [] });
-    if (P.weapons.shotgun.owned || P.ammo.shotgun) slots.push({ key: 'ammo_shotgun', icon: 'ammo_shotgun', name: ITEMS.ammo_shotgun.name, count: P.ammo.shotgun, desc: ITEMS.ammo_shotgun.desc, actions: [] });
+    for (const a of Object.keys(AMMO)) {
+      const owned = WEAPON_ORDER.some((id) => P.weapons[id] && P.weapons[id].owned && WEAPONS[id].ammo === a);
+      if (!owned && !P.ammo[a]) continue;
+      const key = 'ammo_' + a;
+      slots.push({ key, icon: ICON[key] ? key : 'ammo', name: ITEMS[key].name, count: P.ammo[a] || 0, desc: ITEMS[key].desc, actions: [] });
+    }
     for (const it of ['tonic', 'medkit']) if (P.items[it] > 0) slots.push({ key: it, icon: it, name: ITEMS[it].name, count: P.items[it], desc: ITEMS[it].desc, actions: [['Usar', use(it)]] });
-    if (P.items.grenade > 0) slots.push({ key: 'grenade', icon: 'grenade', name: ITEMS.grenade.name, count: P.items.grenade, desc: ITEMS.grenade.desc + ' Tecla G para lançar.', actions: [] });
+    const selThrow = (it) => () => {
+      P.throwSel = it;
+      G.audio.ui('select');
+      this.showInventory();
+    };
+    for (const it of ['grenade', 'molotov']) {
+      if (!(P.items[it] > 0)) continue;
+      const sel = P.throwSel === it;
+      slots.push({ key: it, icon: it, name: ITEMS[it].name, count: P.items[it], desc: ITEMS[it].desc + (sel ? ' Selecionado para arremesso.' : ''), actions: sel ? [] : [['Selecionar', selThrow(it)]] });
+    }
     if (P.keys.cemetery) slots.push({ key: 'key', icon: 'key', name: ITEMS.key.name, count: '', desc: ITEMS.key.desc, actions: [] });
+    for (const k of Object.keys(P.keys)) {
+      if (!k.startsWith('mission_') || !P.keys[k]) continue;
+      slots.push({ key: k, icon: 'mission', name: ITEMS[k].name, count: P.keys[k] > 1 ? P.keys[k] : '', desc: ITEMS[k].desc, actions: [] });
+    }
     for (const n of P.notes) {
       slots.push({
         key: 'doc:' + n,
@@ -265,7 +525,7 @@ export class UI {
         name: NOTES[n].title,
         count: '',
         doc: true,
-        desc: 'Documento encontrado no vale.',
+        desc: 'Documento encontrado pelo caminho.',
         actions: [
           [
             'Ler',
@@ -328,7 +588,16 @@ export class UI {
         G.audio.ui('select');
         fn();
       });
-    click('b-new', () => this.showNewGame());
+    click('b-new', () => this.showNewGame(1));
+    click('b-chapters', () => this.showChapters());
+    click('b-lore', () => this.showLore());
+    click('b-map', () => G.game.openMap());
+    click('b-map-close', () => G.game.closeOverlay());
+    click('b-chend', () => {
+      const cb = this.chendDone;
+      this.chendDone = null;
+      if (cb) cb();
+    });
     click('b-continue', () => G.game.continueSaved());
     click('b-controls', () => this.showControls('s-title'));
     click('b-options', () => this.showOptions('s-title'));
@@ -384,12 +653,12 @@ export class UI {
         G.audio.ui('move');
         return;
       }
-      if (e.code === 'Escape' || e.code === 'KeyP' || ((e.code === 'Tab' || e.code === 'KeyI') && this.current === 's-inv')) {
+      if (e.code === 'Escape' || e.code === 'KeyP' || ((e.code === 'Tab' || e.code === 'KeyI') && this.current === 's-inv') || (e.code === 'KeyM' && this.current === 's-map')) {
         e.preventDefault();
         if (this.current === 's-pause') G.game.resume();
-        else if (this.current === 's-inv') G.game.closeOverlay();
+        else if (this.current === 's-inv' || this.current === 's-map') G.game.closeOverlay();
         else if (this.current === 's-note') this.closeNote();
-        else if (['s-options', 's-controls', 's-new'].includes(this.current)) this.back();
+        else if (['s-options', 's-controls', 's-new', 's-chapters', 's-lore'].includes(this.current)) this.back();
       }
     });
   }
@@ -398,7 +667,8 @@ export class UI {
     const to = this.backTo || 's-title';
     if (to === 's-pause') this.showPause();
     else if (to === 's-inv') this.showInventory();
-    else this.showTitle(this.G.game.hasSave());
+    else if (to === 's-chapters') this.showChapters();
+    else this.showTitle(this.G.game.hasSave(), this.unlocked);
   }
 
   closeNote() {
@@ -485,8 +755,13 @@ export class UI {
     this.savedT = setTimeout(() => (s.hidden = true), 3100);
   }
 
-  bossIntro() {
+  bossIntro(name, sub) {
     const c = this.e.bosscard;
+    if (name) {
+      c.querySelector('.bc-name').textContent = name;
+      c.querySelector('.bc-sub').textContent = sub || '';
+      this.$('boss-name').textContent = name;
+    }
     c.hidden = false;
     clearTimeout(this.bossT);
     this.bossT = setTimeout(() => (c.hidden = true), 3500);
@@ -523,14 +798,35 @@ export class UI {
     this.set('wst', e.wState, 'text', state);
     this.set('it', e.iTonic, 'text', P.items.tonic ? `Tônico ${P.items.tonic}` : P.items.medkit ? `Kit ${P.items.medkit}` : '');
     this.set('ig', e.iGren, 'text', P.items.grenade ? `Granada ${P.items.grenade}` : '');
+    this.set('im', e.iMolo, 'text', P.items.molotov ? `Molotov ${P.items.molotov}` : '');
+    const both = P.items.grenade > 0 && P.items.molotov > 0;
+    this.set('igc', e.iGren, 'class', both && P.throwSel === 'grenade' ? 'sel' : '');
+    this.set('imc', e.iMolo, 'class', both && P.throwSel === 'molotov' ? 'sel' : '');
+    // luneta
+    this.set('scp', e.scope, 'hidden', !(P.scoped && G.state === 'play'));
+    // missões
+    const ms = G.level.missions();
+    const mkey = ms ? ms.map((m) => (m.done ? 'd' : m.active ? 'a' : 'o') + m.title).join('|') : '';
+    if (this.cache.ms !== mkey) {
+      this.cache.ms = mkey;
+      e.missions.hidden = !ms;
+      e.missions.innerHTML = ms ? ms.map((m) => `<li class="${m.done ? 'done' : m.active ? 'active' : ''}">${m.title}</li>`).join('') : '';
+    }
+    // fala da companheira
+    if (this.sayT > 0) {
+      this.sayT -= dt;
+      if (this.sayT <= 0) e.say.hidden = true;
+    }
     // objetivo
     const ob = G.level.objective();
     if (this.cache.obj !== ob.text) {
       this.cache.obj = ob.text;
       e.objText.textContent = ob.text;
-      e.objText.classList.remove('flash');
-      void e.objText.offsetWidth;
-      e.objText.classList.add('flash');
+      if (!ob.quiet) {
+        e.objText.classList.remove('flash');
+        void e.objText.offsetWidth;
+        e.objText.classList.add('flash');
+      }
     }
     // bússola
     const showC = G.settings.compass && ob.target && !P.dead;
@@ -549,7 +845,7 @@ export class UI {
     }
     // chefe
     const B = G.enemies.boss;
-    const showB = !!(B && G.level.flags.arena && B.state !== 'dormant' && !B.removed && B.state !== 'dead');
+    const showB = !!(B && B.showBar && B.alive);
     this.set('bb', e.bossbar, 'hidden', !showB);
     if (showB) this.set('bf', e.bossFill, 'width', Math.max(0, (B.hp / B.maxHp) * 100).toFixed(1) + '%');
     // aviso para capturar o mouse

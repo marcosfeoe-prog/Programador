@@ -80,6 +80,29 @@ export function writeSave(data) {
   }
 }
 
+const PROGRESS_KEY = 'ferrugem.progress.v1';
+
+// Capítulos liberados (para começar direto de um capítulo pelo título).
+export function loadProgress() {
+  try {
+    const d = JSON.parse(localStorage.getItem(PROGRESS_KEY) || 'null');
+    if (d && typeof d.unlocked === 'number') return { unlocked: Math.max(1, Math.min(3, d.unlocked)) };
+  } catch (e) {
+    /* sem armazenamento */
+  }
+  return { unlocked: 1 };
+}
+
+export function unlockChapter(n) {
+  const p = loadProgress();
+  if (n <= p.unlocked) return;
+  try {
+    localStorage.setItem(PROGRESS_KEY, JSON.stringify({ unlocked: n }));
+  } catch (e) {
+    /* sem armazenamento */
+  }
+}
+
 export function clearSave() {
   try {
     localStorage.removeItem(SAVE_KEY);

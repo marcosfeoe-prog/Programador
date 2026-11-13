@@ -1,23 +1,55 @@
-// Ferrugem: survival horror em terceira pessoa. Orquestra renderização, estados do jogo
-// (título, introdução, jogo, pausa, mochila, documento, morte, vitória), checkpoints e o laço.
+// Ferrugem: survival horror em terceira pessoa em três capítulos. Orquestra renderização,
+// estados do jogo (título, cartões de capítulo, jogo, cenas, pausa, mochila, documento,
+// mapa, morte, vitória), carregamento de capítulos, checkpoints e o laço principal.
 import * as THREE from 'three';
-import { loadSettings, saveSettings, QUALITY, DIFFICULTY, loadSave, writeSave, clearSave } from './config.js';
+import { loadSettings, saveSettings, QUALITY, DIFFICULTY, loadSave, writeSave, clearSave, loadProgress, unlockChapter } from './config.js';
 import { tex, setAnisotropy, WORLD_TEXTURES } from './textures.js';
 import { AudioEngine } from './audio.js';
 import { Input } from './input.js';
 import { Collision } from './collision.js';
 import { NavGrid } from './nav.js';
 import { Effects } from './effects.js';
-import { World, BOUNDS, ARENA } from './world.js';
-import { Level, GROUPS, CHECKPOINTS } from './level.js';
+import { World } from './world.js';
+import { Level } from './level.js';
 import { Player } from './player.js';
 import { EnemyManager } from './enemies.js';
+import './infected.js';
+import './bosses.js';
 import { Projectiles } from './projectiles.js';
 import { UI } from './ui.js';
+import { NPCManager } from './npc.js';
+import { Cutscene } from './cutscene.js';
+import { Helicopter } from './heli.js';
+import { CHAPTERS, CHAPTER_COUNT } from './chapters/index.js';
+import { CHAPTER_TEXT, CHAPTER_END } from './story.js';
+import { newLoadout } from './weapons.js';
 import { nextFrame, clamp } from './util.js';
 
 const newStats = () => ({ time: 0, shots: 0, hits: 0, kills: 0, heads: 0, deaths: 0, damage: 0 });
 const _size = new THREE.Vector2();
+
+// Equipamento padrão para quem começa direto num capítulo pelo menu.
+function chapterLoadout(id) {
+  const L = newLoadout();
+  if (id >= 2) {
+    L.weapons.shotgun = { owned: true, mag: 6 };
+    L.ammo.pistol = 40;
+    L.ammo.shotgun = 10;
+    L.items.tonic = 2;
+    L.items.grenade = 1;
+  }
+  if (id >= 3) {
+    L.weapons.smg = { owned: true, mag: 30 };
+    L.weapons.magnum = { owned: true, mag: 6 };
+    L.weapons.rifle = { owned: true, mag: 5 };
+    L.ammo.smg = 60;
+    L.ammo.magnum = 6;
+    L.ammo.rifle = 8;
+    L.items.medkit = 1;
+    L.items.molotov = 2;
+  }
+  return L;
+}
 
 class Game {
   constructor(hotData) {
@@ -31,6 +63,7 @@ class Game {
       time: 0,
       state: 'loading',
       stats: newStats(),
+      chapter: null,
     };
     this.timers = [];
     this.timeScale = 1;
@@ -41,6 +74,7 @@ class Game {
     this.fps = 0;
     this.errors = 0;
     this.titleT = 0;
+    this.busy = false;
     this.loop = this.loop.bind(this);
   }
 
@@ -79,28 +113,23 @@ class Game {
     for (let i = 0; i < WORLD_TEXTURES.length; i++) {
       tex(WORLD_TEXTURES[i]);
       if (i % 3 === 2) {
-        G.ui.loading(0.04 + (0.36 * i) / WORLD_TEXTURES.length);
+        G.ui.loading(0.04 + (0.3 * i) / WORLD_TEXTURES.length);
         await nextFrame();
       }
     }
     G.col = new Collision();
     G.fx = new Effects(G);
-    G.ui.loading(0.42, 'Construindo o Vale dos Corvos…');
-    await nextFrame();
     G.world = new World(G);
-    G.world.build();
-    G.ui.loading(0.72, 'Acordando os moradores…');
-    await nextFrame();
-    G.nav = new NavGrid(BOUNDS.minX, BOUNDS.minZ, BOUNDS.maxX, BOUNDS.maxZ, 1);
     G.player = new Player(G);
     G.enemies = new EnemyManager(G);
     G.proj = new Projectiles(G);
     G.level = new Level(G);
-    G.level.load(G.level.newState());
+    G.npcs = new NPCManager(G);
+    G.cutscene = new Cutscene(G);
+    G.heli = new Helicopter(G);
+    await this.loadChapter(1, true);
     this.applyQuality(true);
     this.resize();
-    G.ui.loading(0.9, 'Preparando a iluminação…');
-    await nextFrame();
     window.addEventListener('resize', () => this.resize());
     window.addEventListener('orientationchange', () => setTimeout(() => this.resize(), 250));
     G.input.onUnlock = () => {
@@ -123,15 +152,51 @@ class Game {
       G.state = 'loading';
     });
     this.toTitle();
-    try {
-      renderer.compile(G.scene, G.camera);
-    } catch (e) {
-      /* compilação antecipada é opcional */
-    }
     window.__ferrugemReady = true;
     window.__ferrugem = G;
     this.last = performance.now();
     requestAnimationFrame(this.loop);
+  }
+
+  // ------------------------------------------------------------------ capítulos
+  async loadChapter(id, initial = false) {
+    const G = this.G;
+    const ch = CHAPTERS[id];
+    if (!ch) throw new Error('Capítulo inexistente: ' + id);
+    const prevState = G.state;
+    G.state = 'loading';
+    G.ui.setHud(false);
+    G.ui.show('s-loading');
+    G.ui.loading(initial ? 0.4 : 0.1, `${ch.name}: ${ch.title}…`);
+    await nextFrame();
+    this.timers = [];
+    this.timeScale = 1;
+    G.enemies.clear();
+    G.proj.clear();
+    G.fx.clear();
+    if (G.npcs) G.npcs.clear();
+    if (G.cutscene) G.cutscene.stop();
+    if (G.heli) G.heli.reset();
+    G.col = new Collision();
+    G.col.groundFn = ch.groundY ? (x, z) => ch.groundY(x, z, G) : null;
+    G.chapter = ch;
+    G.world.load(ch);
+    G.ui.loading(initial ? 0.7 : 0.6, 'Preparando o caminho dos infectados…');
+    await nextFrame();
+    const b = ch.bounds;
+    G.nav = new NavGrid(b.minX, b.minZ, b.maxX, b.maxZ, 1);
+    G.level.setChapter(ch);
+    G.level.load(G.level.newState());
+    G.ui.loading(0.92, 'Acendendo as luzes…');
+    await nextFrame();
+    if (!initial) this.applyQuality(true);
+    try {
+      G.renderer.compile(G.scene, G.camera);
+    } catch (e) {
+      /* compilação antecipada é opcional */
+    }
+    this.chapterId = id;
+    if (prevState !== 'loading') G.state = prevState;
   }
 
   // ------------------------------------------------------------------ qualidade e tela
@@ -186,6 +251,12 @@ class Game {
     return !!(this.checkpointData || loadSave());
   }
 
+  savedData() {
+    const d = this.checkpointData || (loadSave() || {}).cp || null;
+    if (d && !d.chapter) d.chapter = 1;
+    return d;
+  }
+
   toTitle() {
     const G = this.G;
     G.state = 'title';
@@ -196,6 +267,8 @@ class Game {
     G.enemies.clear();
     G.proj.clear();
     G.fx.clear();
+    if (G.npcs) G.npcs.clear();
+    if (G.cutscene) G.cutscene.stop();
     G.ui.clearMsgs();
     G.ui.prompt(null);
     G.ui.setHud(false);
@@ -208,26 +281,22 @@ class Game {
     G.player.fill.intensity = 0;
     G.player.laser.visible = G.player.dot.visible = false;
     G.audio.paused = false;
-    G.enemies.spawnGroup(
-      [
-        { k: 'v', x: 2.4, z: 34.2, idle: 'talk', yaw: -2.3 },
-        { k: 'v', x: -1.9, z: 34.8, idle: 'talk', yaw: 2.6 },
-        { k: 'v', x: 1.3, z: 29.2, idle: 'talk', yaw: 0.2 },
-        { k: 'v', x: -18.4, z: 24.7, idle: 'chop', weapon: 'axe', yaw: Math.PI },
-      ],
-      0,
-    );
+    if (G.chapter.titleGroup) G.enemies.spawnGroup(G.chapter.titleGroup, 0);
+    if (G.chapter.titleScene) G.chapter.titleScene(G.level);
     this.titleT = 0;
-    G.ui.showTitle(this.hasSave());
+    G.ui.showTitle(this.hasSave(), loadProgress().unlocked);
   }
 
-  loadCheckpoint(snap, keepCounters = false) {
+  // Aplica um checkpoint do capítulo já carregado.
+  applyCheckpoint(snap, keepCounters = false) {
     const G = this.G;
     this.timers = [];
     this.timeScale = 1;
     G.enemies.clear();
     G.proj.clear();
     G.fx.clear();
+    if (G.npcs) G.npcs.clear();
+    if (G.cutscene) G.cutscene.stop();
     G.ui.clearMsgs();
     G.ui.prompt(null);
     const diffKey = snap.diff && DIFFICULTY[snap.diff] ? snap.diff : G.settings.difficulty;
@@ -245,51 +314,153 @@ class Game {
       G.stats.time = prev.time;
       G.stats.deaths = prev.deaths;
     }
-    const cp = CHECKPOINTS[snap.cp] || CHECKPOINTS.cp1;
-    if (cp.group === 'boss') G.enemies.spawn('boss', 0, ARENA.z + 9, { yaw: Math.PI });
-    else if (GROUPS[cp.group]) G.enemies.spawnGroup(GROUPS[cp.group], 0);
+    if (G.chapter.onCheckpointLoad) G.chapter.onCheckpointLoad(G.level, snap.cp);
     this.checkpointData = snap;
+  }
+
+  async loadCheckpoint(snap, keepCounters = false) {
+    const ch = snap.chapter || 1;
+    if (ch !== this.chapterId) await this.loadChapter(ch);
+    this.applyCheckpoint(snap, keepCounters);
   }
 
   saveCheckpoint(snap) {
     snap.diff = this.G.diffKey;
+    snap.chapter = snap.chapter || this.chapterId;
     this.checkpointData = snap;
     writeSave({ cp: snap });
+    unlockChapter(snap.chapter);
   }
 
-  newGame(diffKey) {
+  // Monta o estado inicial de um capítulo com o equipamento do jogador.
+  startState(id, playerData, stats) {
     const G = this.G;
-    G.settings.difficulty = diffKey;
-    saveSettings(G.settings);
-    clearSave();
-    G.diffKey = diffKey;
-    G.diff = DIFFICULTY[diffKey];
-    G.player.reset();
+    const ch = CHAPTERS[id];
     const st = G.level.newState();
-    const snap = { ...st, player: G.player.serialize(), stats: newStats(), pos: { x: 0, z: -18, yaw: 0 }, diff: diffKey };
-    snap.player.hp = 100;
-    G.stats = newStats();
-    this.loadCheckpoint(snap);
-    this.saveCheckpoint(JSON.parse(JSON.stringify(snap)));
+    st.chapter = id;
+    const cp = ch.checkpoints[ch.firstCheckpoint];
+    return { ...st, player: playerData, stats: stats || newStats(), pos: { x: cp.x, z: cp.z, yaw: cp.yaw }, diff: G.diffKey };
+  }
+
+  async newGame(diffKey) {
+    if (this.busy) return;
+    this.busy = true;
+    try {
+      const G = this.G;
+      G.settings.difficulty = diffKey;
+      saveSettings(G.settings);
+      clearSave();
+      G.diffKey = diffKey;
+      G.diff = DIFFICULTY[diffKey];
+      G.stats = newStats();
+      if (this.chapterId !== 1) await this.loadChapter(1);
+      G.player.reset();
+      const pdata = G.player.serialize();
+      pdata.hp = 100;
+      const snap = this.startState(1, pdata, newStats());
+      this.applyCheckpoint(snap);
+      this.saveCheckpoint(JSON.parse(JSON.stringify(snap)));
+      this.chapterIntro(1, true);
+    } finally {
+      this.busy = false;
+    }
+  }
+
+  // Cartão do capítulo + texto; depois o jogo começa.
+  chapterIntro(id, firstTime) {
+    const G = this.G;
     G.player.rig.root.visible = false;
     G.state = 'intro';
     G.ui.setHud(false);
     G.audio.init();
-    G.ui.playIntro(() => {
+    const t = CHAPTER_TEXT[id];
+    G.ui.playIntro(t.lines, t.tag, t.title, () => {
       G.player.rig.root.visible = true;
+      if (G.chapter.onStart && !G.level.flags.started) {
+        G.level.flags.started = true;
+        const handled = G.chapter.onStart(G.level);
+        if (handled) return;
+      }
       this.startPlay(true);
-      const tip = G.input.touchMode
-        ? 'Joystick para andar. Mirar liga a mira; Atirar dispara. Ação interage e chuta.'
-        : 'Botão direito mira, botão esquerdo atira. E para pegar, ler e chutar. Tab abre a mochila.';
-      G.ui.msg(tip);
+      if (firstTime && id === 1) {
+        const tip = G.input.touchMode
+          ? 'Joystick para andar. Mirar liga a mira; Atirar dispara. Ação interage e chuta.'
+          : 'Botão direito mira, botão esquerdo atira. E para pegar, ler e chutar. Tab abre a mochila.';
+        G.ui.msg(tip);
+      }
     });
   }
 
-  continueSaved() {
-    const data = this.checkpointData || (loadSave() || {}).cp;
+  // Começa um capítulo pelo menu, com equipamento padrão.
+  async startChapterFresh(id, diffKey) {
+    if (this.busy) return;
+    this.busy = true;
+    try {
+      const G = this.G;
+      if (diffKey) {
+        G.diffKey = diffKey;
+        G.diff = DIFFICULTY[diffKey];
+      }
+      if (this.chapterId !== id) await this.loadChapter(id);
+      G.player.reset();
+      const pdata = G.player.serialize();
+      Object.assign(pdata, chapterLoadout(id));
+      pdata.hp = 100;
+      const snap = this.startState(id, pdata, newStats());
+      this.applyCheckpoint(snap);
+      this.saveCheckpoint(JSON.parse(JSON.stringify(snap)));
+      this.chapterIntro(id, true);
+    } finally {
+      this.busy = false;
+    }
+  }
+
+  // Fim de capítulo: texto de encerramento e o próximo capítulo com o mesmo equipamento.
+  completeChapter() {
+    const G = this.G;
+    if (G.state !== 'play' && G.state !== 'cutscene') return;
+    const id = this.chapterId;
+    if (id >= CHAPTER_COUNT || !CHAPTERS[id + 1]) {
+      this.victory();
+      return;
+    }
+    G.state = 'chapterEnd';
+    G.input.setEnabled(false);
+    G.input.unlock();
+    G.audio.paused = true;
+    G.ui.prompt(null);
+    G.ui.setHud(false);
+    const pdata = G.player.serialize();
+    pdata.hp = Math.max(pdata.hp, 60);
+    pdata.keys = {};
+    const stats = { ...G.stats };
+    unlockChapter(id + 1);
+    G.ui.showChapterEnd(CHAPTER_END[id] || [], CHAPTER_TEXT[id], async () => {
+      if (this.busy) return;
+      this.busy = true;
+      try {
+        await this.loadChapter(id + 1);
+        const snap = this.startState(id + 1, pdata, stats);
+        this.applyCheckpoint(snap);
+        this.saveCheckpoint(JSON.parse(JSON.stringify(snap)));
+        this.chapterIntro(id + 1, true);
+      } finally {
+        this.busy = false;
+      }
+    });
+  }
+
+  async continueSaved() {
+    if (this.busy) return;
+    const data = this.savedData();
     if (!data) return this.G.ui.showNewGame();
-    this.loadCheckpoint(JSON.parse(JSON.stringify(data)));
-    this.startPlay(true);
+    this.busy = true;
+    try {
+      await this.loadCheckpoint(JSON.parse(JSON.stringify(data)));
+      this.startPlay(true);
+    } finally {
+      this.busy = false;
+    }
   }
 
   startPlay(gesture) {
@@ -305,6 +476,23 @@ class Game {
     G.audio.paused = false;
     this.ignoreMenuUntil = performance.now() + 400;
     this.last = performance.now();
+  }
+
+  // Cenas: o jogador perde o controle até a cena terminar.
+  enterCutscene() {
+    const G = this.G;
+    G.state = 'cutscene';
+    G.input.setEnabled(false);
+    G.ui.prompt(null);
+    G.ui.setHud(false);
+    G.player.laser.visible = G.player.dot.visible = false;
+    G.player.cine = G.player.cine || {};
+  }
+
+  leaveCutscene() {
+    const G = this.G;
+    if (G.state !== 'cutscene') return;
+    this.startPlay(false);
   }
 
   pause() {
@@ -335,6 +523,16 @@ class Game {
     G.ui.showInventory();
   }
 
+  openMap() {
+    const G = this.G;
+    if (G.state !== 'play' && G.state !== 'pause') return;
+    G.state = 'map';
+    G.input.setEnabled(false);
+    G.input.unlock();
+    G.ui.prompt(null);
+    G.ui.showMap();
+  }
+
   openNote(id) {
     const G = this.G;
     G.state = 'note';
@@ -349,12 +547,18 @@ class Game {
     this.startPlay(true);
   }
 
-  retryCheckpoint() {
+  async retryCheckpoint() {
+    if (this.busy) return;
     const G = this.G;
     const data = this.checkpointData;
     if (!data) return this.newGame(G.diffKey);
-    this.loadCheckpoint(JSON.parse(JSON.stringify(data)), true);
-    this.startPlay(true);
+    this.busy = true;
+    try {
+      await this.loadCheckpoint(JSON.parse(JSON.stringify(data)), true);
+      this.startPlay(true);
+    } finally {
+      this.busy = false;
+    }
   }
 
   quitToTitle() {
@@ -377,17 +581,19 @@ class Game {
   onEnemyDeath(e) {
     const G = this.G;
     if (!e.isBoss) return;
-    G.level.flags.bossDead = true;
-    this.timeScale = 0.35;
-    this.after(2.4, () => (this.timeScale = 1), true);
-    G.ui.msg('O Ferreiro caiu.', true);
-    this.after(7, () => this.victory());
+    if (G.chapter.onBossDeath) G.chapter.onBossDeath(G.level, e);
+  }
+
+  slowMo(scale, realSeconds) {
+    this.timeScale = scale;
+    this.after(realSeconds, () => (this.timeScale = 1), true);
   }
 
   victory() {
     const G = this.G;
-    if (G.state !== 'play') return;
+    if (G.state !== 'play' && G.state !== 'cutscene') return;
     G.ui.fade(true);
+    G.state = 'cutscene';
     this.after(
       1.2,
       () => {
@@ -466,24 +672,32 @@ class Game {
     if (G.state === 'play') {
       const gdt = dt * this.timeScale;
       G.stats.time += dt;
-      if (G.input.pressed('menu') && performance.now() > this.ignoreMenuUntil) this.pause();
-      else if (G.input.pressed('inv') && performance.now() > this.ignoreMenuUntil) this.openInventory();
+      const ok = performance.now() > this.ignoreMenuUntil;
+      if (G.input.pressed('menu') && ok) this.pause();
+      else if (G.input.pressed('inv') && ok) this.openInventory();
+      else if (G.input.pressed('map') && ok) this.openMap();
       if (G.state === 'play') {
         G.time += gdt;
         this.step(gdt);
         this.runTimers(dt, gdt);
       }
+      if (G.ui) G.ui.update(dt, this.fps);
+    } else if (G.state === 'cutscene') {
+      const gdt = dt * this.timeScale;
+      G.time += gdt;
+      this.cutsceneStep(gdt);
+      this.runTimers(dt, gdt);
       G.ui.update(dt, this.fps);
     } else if (G.state === 'title') {
       this.titleStep(dt);
-    } else if (G.state === 'dead' || G.state === 'win') {
+    } else if (G.state === 'dead' || G.state === 'win' || G.state === 'chapterEnd') {
       G.time += dt * 0.5;
       G.world.update(dt * 0.5, G.camera, G.player.pos.x, G.player.pos.z);
       G.fx.update(dt * 0.5, G.player.pos.x, G.player.pos.z);
       this.runTimers(dt, 0);
       G.audio.update(dt, 0, false, 1, false);
     } else {
-      // pausa, mochila, documento: cena congelada
+      // pausa, mochila, mapa, documento: cena congelada
       G.audio.update(dt, 0, false, 1, false);
     }
     this.updateParticleScale();
@@ -494,9 +708,11 @@ class Game {
     const G = this.G,
       P = G.player;
     P.update(dt);
+    if (G.npcs) G.npcs.update(dt);
     G.enemies.update(dt);
     G.proj.update(dt);
     G.level.update(dt);
+    if (G.heli) G.heli.update(dt);
     G.world.update(dt, G.camera, P.pos.x, P.pos.z);
     G.fx.update(dt, P.pos.x, P.pos.z);
     G.audio.indoor += ((G.world.isIndoor(P.pos.x, P.pos.z) ? 1 : 0) - G.audio.indoor) * Math.min(1, dt * 3);
@@ -505,23 +721,51 @@ class Game {
     G.audio.update(dt, G.enemies.intensity(), bossOn, P.hp / P.maxHp, true);
   }
 
+  // Durante as cenas o mundo continua vivo, mas o jogador não controla nada.
+  cutsceneStep(dt) {
+    const G = this.G,
+      P = G.player;
+    if (G.cutscene) G.cutscene.update(dt);
+    P.cinematic(dt);
+    if (G.npcs) G.npcs.update(dt);
+    G.enemies.update(dt);
+    G.proj.update(dt);
+    G.level.update(dt);
+    if (G.heli) G.heli.update(dt);
+    const cx = G.camera.position.x,
+      cz = G.camera.position.z;
+    G.world.update(dt, G.camera, P.pos.x, P.pos.z);
+    G.fx.update(dt, P.pos.x, P.pos.z);
+    G.audio.setListener(cx, cz, G.cutscene ? G.cutscene.listenerYaw() : 0);
+    G.audio.update(dt, 0.1, false, P.hp / P.maxHp, true);
+  }
+
   titleStep(dt) {
     const G = this.G,
       cam = G.camera;
     G.time += dt;
     this.titleT += dt;
-    const a = this.titleT * 0.045 + 2.3;
-    cam.position.set(Math.sin(a) * 12.5, 2.7 + Math.sin(this.titleT * 0.3) * 0.15, 32 + Math.cos(a) * 12.5);
     if (Math.abs(cam.fov - 55) > 0.01) {
       cam.fov = 55;
       cam.updateProjectionMatrix();
     }
-    cam.lookAt(0, 1.5, 32);
+    const ch = G.chapter;
+    let focus = { x: 0, z: 0, yaw: 0 };
+    if (ch.titleCam) focus = ch.titleCam(this.titleT, cam);
+    else {
+      const s = ch.start;
+      const a = this.titleT * 0.04;
+      cam.position.set(s.x + Math.sin(a) * 10, 3, s.z + Math.cos(a) * 10);
+      cam.lookAt(s.x, 1.5, s.z);
+      focus = { x: s.x, z: s.z, yaw: a + Math.PI };
+    }
+    if (G.npcs) G.npcs.update(dt);
     G.enemies.update(dt);
     G.level.update(dt);
-    G.world.update(dt, cam, 0, 32);
-    G.fx.update(dt, 0, 32);
-    G.audio.setListener(cam.position.x, cam.position.z, a + Math.PI);
+    if (G.heli) G.heli.update(dt);
+    G.world.update(dt, cam, focus.x, focus.z);
+    G.fx.update(dt, focus.x, focus.z);
+    G.audio.setListener(cam.position.x, cam.position.z, focus.yaw);
     G.audio.update(dt, 0, false, 1, false);
   }
 }

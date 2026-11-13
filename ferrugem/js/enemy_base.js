@@ -36,6 +36,8 @@ export class Enemy {
     this.sink = 0;
     this.isBoss = false;
     this.mass = 1;
+    this.burnT = 0;
+    this.buffT = 0;
   }
 
   get mgr() {
@@ -155,6 +157,19 @@ export class Enemy {
     // partes prioritárias (núcleo do chefe) vencem se estiverem logo atrás do primeiro acerto
     if (prio && pt <= bt + prio.priority * s && pt < maxT) return { part: prio.part, t: Math.min(pt, bt) };
     return best ? { part: best, t: bt } : null;
+  }
+
+  // Fogo (molotov, Incendiário): dano contínuo sem reação de dor.
+  onBurn(dmg) {
+    if (!this.alive) return;
+    this.hp -= dmg * (this.fireMult ?? 1);
+    if (!this.alert && this.becomeAlert) this.becomeAlert(false);
+    if (this.hp <= 0) this.die({ part: 'body', weapon: 'fire', dir: null, force: 1 });
+  }
+
+  // Multiplicador de velocidade (o grito do Gritador acelera os vizinhos).
+  get buff() {
+    return this.buffT > 0 ? 1.35 : 1;
   }
 
   worldOf(jointName, x, y, z, out) {

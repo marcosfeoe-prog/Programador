@@ -5,16 +5,14 @@ import { clamp } from './util.js';
 const CELL = 4;
 const key = (ix, iz) => (ix + 1024) * 4096 + (iz + 1024);
 
-// Nível da água do rio (o chão afunda entre estas coordenadas Z).
-export const RIVER = { z0: 130, z1: 140, y: -0.9 };
-
 export class Collision {
   constructor() {
     this.list = [];
     this.grid = new Map();
     this.stamp = 1;
     this._cand = [];
-    this.bridgeDown = false;
+    // altura do chão (rios, lagos): definida pelo capítulo atual
+    this.groundFn = null;
   }
 
   _bounds(c) {
@@ -202,11 +200,7 @@ export class Collision {
   }
 
   groundY(x, z) {
-    if (z > RIVER.z0 && z < RIVER.z1) {
-      if (this.bridgeDown && Math.abs(x) < 2.6) return 0;
-      return RIVER.y;
-    }
-    return 0;
+    return this.groundFn ? this.groundFn(x, z) : 0;
   }
 
   /*
